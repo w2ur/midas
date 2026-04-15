@@ -139,7 +139,15 @@ class MarketDataFetcher:
 
         # yfinance always returns MultiIndex columns — Close is a DataFrame with ticker columns
         close = raw["Close"]
-        return {ticker: float(close[ticker].dropna().iloc[-1]) for ticker in tickers}
+        result = {}
+        for ticker in tickers:
+            try:
+                series = close[ticker].dropna()
+                if len(series) > 0:
+                    result[ticker] = float(series.iloc[-1])
+            except (KeyError, IndexError):
+                pass
+        return result
 
     # ------------------------------------------------------------------
     # Caching helpers
