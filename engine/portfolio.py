@@ -137,7 +137,13 @@ class PortfolioManager:
         action = trade.action.upper()
 
         if action == "BUY":
-            portfolio.cash -= trade.total + trade.fees
+            cost = trade.total + trade.fees
+            if cost > portfolio.cash:
+                raise ValueError(
+                    f"Insufficient cash for {trade.ticker}: "
+                    f"trade costs ${cost:,.2f} but only ${portfolio.cash:,.2f} available"
+                )
+            portfolio.cash -= cost
 
             # Find existing position for this ticker.
             existing = next((p for p in portfolio.positions if p.ticker == trade.ticker), None)

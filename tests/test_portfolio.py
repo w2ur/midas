@@ -262,3 +262,73 @@ class TestSnapshots:
         assert len(snapshots) == 3
         assert snapshots[0]["date"] == "2024-06-01"
         assert snapshots[2]["date"] == "2024-06-03"
+
+
+class TestBudgetGuard:
+    """Verify that apply_trade rejects BUY trades exceeding available cash."""
+
+    def test_buy_exceeding_cash_is_rejected(self, tmp_path: Path) -> None:
+        pm = PortfolioManager(base_dir=tmp_path)
+        pm.initialize("test", initial_capital=1000.0)
+
+        expensive_trade = Trade(
+            id="t999",
+            timestamp=datetime(2026, 4, 14, 22, 0),
+            action="BUY",
+            ticker="NVDA",
+            shares=100,
+            price=200.0,
+            total=20000.0,
+            fees=0.0,
+            reasoning="Too expensive",
+        )
+        with pytest.raises(ValueError, match="Insufficient cash"):
+            pm.apply_trade("test", expensive_trade)
+
+        # Portfolio should be unchanged
+        portfolio = pm.load("test")
+        assert portfolio.cash == 1000.0
+        assert len(portfolio.positions) == 0
+
+    def test_buy_within_budget_succeeds(self, tmp_path: Path) -> None:
+        pm = PortfolioManager(base_dir=tmp_path)
+        pm.initialize("test", initial_capital=1000.0)
+
+        trade = Trade(
+            id="t001",
+            timestamp=datetime(2026, 4, 14, 22, 0),
+            action="BUY",
+            ticker="AAPL",
+            shares=5,
+            price=100.0,
+            total=500.0,
+            fees=0.0,
+            reasoning="Affordable",
+        )
+        pm.apply_trade("test", trade)
+        portfolio = pm.load("test")
+        assert portfolio.cash == 500.0
+        assert len(portfolio.positions) == 1
+
+    def test_sequential_buys_respect_remaining_cash(self, tmp_path: Path) -> None:
+        pm = PortfolioManager(base_dir=tmp_path)
+        pm.initialize("test", initial_capital=1000.0)
+
+        # First buy: $600
+        pm.apply_trade("test", Trade(
+            id="t001", timestamp=datetime(2026, 4, 14, 22, 0),
+            action="BUY", ticker="AAPL", shares=6, price=100.0,
+            total=600.0, fees=0.0, reasoning="First",
+        ))
+
+        # Second buy: $500 — should fail, only $400 left
+        with pytest.raises(ValueError, match="Insufficient cash"):
+            pm.apply_trade("test", Trade(
+                id="t002", timestamp=datetime(2026, 4, 14, 22, 0),
+                action="BUY", ticker="MSFT", shares=5, price=100.0,
+                total=500.0, fees=0.0, reasoning="Over budget",
+            ))
+
+        portfolio = pm.load("test")
+        assert portfolio.cash == 400.0
+        assert len(portfolio.positions) == 1
