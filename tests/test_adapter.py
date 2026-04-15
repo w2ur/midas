@@ -50,6 +50,7 @@ class TestAdapter:
         assert "earnings-beat" in SELECTOR_REGISTRY
         assert "sector-cycle" in SELECTOR_REGISTRY
         assert "random" in SELECTOR_REGISTRY
+        assert "buy-and-hold" in SELECTOR_REGISTRY
 
     def test_manager_registry_populated(self):
         assert "equal-weight" in MANAGER_REGISTRY
@@ -60,6 +61,7 @@ class TestAdapter:
         assert "time-boxed" in MANAGER_REGISTRY
         assert "rebalance-monthly" in MANAGER_REGISTRY
         assert "volatility-sized" in MANAGER_REGISTRY
+        assert "fixed-60-40" in MANAGER_REGISTRY
 
     # ----- Error handling -----
 
@@ -192,6 +194,35 @@ class TestAdapter:
         spec = self._make_spec("random", "volatility-sized")
         strategy = build_bt_strategy(spec, sample_prices)
         test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
+        result = bt.run(test)
+        assert result.stats is not None
+
+    # ----- Baseline selector/manager tests -----
+
+    def test_buy_and_hold_selector_runs(self, sample_prices):
+        spec = self._make_spec("buy-and-hold", "equal-weight")
+        strategy = build_bt_strategy(spec, sample_prices)
+        test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
+        result = bt.run(test)
+        assert result.stats is not None
+
+    def test_fixed_60_40_manager_runs(self):
+        """fixed-60-40 manager requires VOO and BND columns."""
+        dates = pd.bdate_range("2025-01-01", periods=200)
+        np.random.seed(0)
+        data = {}
+        for t in ["VOO", "BND"]:
+            base = np.random.uniform(100, 300)
+            returns = np.random.normal(0.0005, 0.01, 200)
+            data[t] = base * np.cumprod(1 + returns)
+        prices = pd.DataFrame(data, index=dates)
+
+        spec = self._make_spec(
+            "buy-and-hold", "fixed-60-40",
+            rules=StrategyRules(max_positions=2, max_position_pct=100, min_hold_days=1),
+        )
+        strategy = build_bt_strategy(spec, prices)
+        test = bt.Backtest(strategy, prices, initial_capital=10000)
         result = bt.run(test)
         assert result.stats is not None
 

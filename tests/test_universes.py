@@ -12,6 +12,8 @@ from engine.universes.assets import (
     get_crypto_tickers,
     get_forex_tickers,
     get_metals_tickers,
+    get_voo_only,
+    get_classic_60_40,
 )
 from engine.universes.alternative import (
     get_congressional_tickers,
@@ -246,6 +248,29 @@ class TestMetalsTickers:
     def test_returns_8_tickers(self):
         result = get_metals_tickers()
         assert len(result) == 8
+
+
+class TestVOOOnlyTickers:
+    def test_returns_single_ticker(self):
+        result = get_voo_only()
+        assert result == ["VOO"]
+
+    def test_returns_list(self):
+        assert isinstance(get_voo_only(), list)
+
+
+class TestClassic6040Tickers:
+    def test_returns_two_tickers(self):
+        result = get_classic_60_40()
+        assert len(result) == 2
+
+    def test_contains_voo_and_bnd(self):
+        result = get_classic_60_40()
+        assert "VOO" in result
+        assert "BND" in result
+
+    def test_returns_list(self):
+        assert isinstance(get_classic_60_40(), list)
 
 
 # ---------------------------------------------------------------------------

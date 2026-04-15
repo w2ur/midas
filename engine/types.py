@@ -17,6 +17,7 @@ VALID_UNIVERSES: frozenset[str] = frozenset({
     "congress", "insiders", "13f-whales", "high-short",
     "etf-sectors", "etf-broad",
     "crypto-top20", "forex-majors", "metals-commodities",
+    "single-voo", "classic-60-40",
 })
 
 VALID_SELECTORS: frozenset[str] = frozenset({
@@ -26,12 +27,14 @@ VALID_SELECTORS: frozenset[str] = frozenset({
     "data-follow",
     "claude-analysis",
     "random",
+    "buy-and-hold",
 })
 
 VALID_MANAGERS: frozenset[str] = frozenset({
     "equal-weight", "grid-conservative", "grid-aggressive",
     "scaled-exit", "trailing-stop", "time-boxed",
     "rebalance-monthly", "volatility-sized",
+    "fixed-60-40",
 })
 
 

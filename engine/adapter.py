@@ -147,6 +147,12 @@ def _selector_data_follow(spec: StrategySpec, price_data: pd.DataFrame) -> list[
     return [bt.algos.SelectAll()]
 
 
+@register_selector("buy-and-hold")
+def _selector_buy_and_hold(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+    """Select all tickers — buy and hold everything."""
+    return [bt.algos.SelectAll()]
+
+
 @register_selector("earnings-beat")
 def _selector_earnings_beat(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
     """Placeholder — momentum proxy using total return ranking."""
@@ -210,3 +216,9 @@ def _manager_rebalance_monthly(spec: StrategySpec, price_data: pd.DataFrame) -> 
 def _manager_volatility_sized(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
     """Inverse volatility weighting with 3-month lookback."""
     return [bt.algos.WeighInvVol(lookback=pd.DateOffset(months=3))]
+
+
+@register_manager("fixed-60-40")
+def _manager_fixed_60_40(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+    """Fixed 60/40 allocation: 60% VOO, 40% BND."""
+    return [bt.algos.WeighSpecified(VOO=0.6, BND=0.4)]

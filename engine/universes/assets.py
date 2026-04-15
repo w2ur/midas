@@ -60,3 +60,13 @@ def get_metals_tickers() -> list[str]:
         "SLV",    # iShares Silver ETF
         "USO",    # United States Oil Fund ETF
     ]
+
+
+def get_voo_only() -> list[str]:
+    """Return VOO as a single-ticker universe for buy-and-hold baseline."""
+    return ["VOO"]
+
+
+def get_classic_60_40() -> list[str]:
+    """Return VOO + BND for the classic 60/40 portfolio baseline."""
+    return ["VOO", "BND"]

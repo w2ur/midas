@@ -20,8 +20,8 @@ def test_all_specs_are_valid():
     """Every JSON file in data/strategies/ must parse without error and have
     an id matching the filename stem."""
     spec_files = list(STRATEGIES_DIR.glob("*.json"))
-    assert len(spec_files) >= 12, (
-        f"Expected at least 12 strategy specs, found {len(spec_files)}"
+    assert len(spec_files) >= 15, (
+        f"Expected at least 15 strategy specs, found {len(spec_files)}"
     )
     for path in spec_files:
         data = json.load(open(path))
@@ -218,3 +218,72 @@ class TestGoldenCrossLump:
         assert spec.universe == "sp500"
         assert spec.selector == "golden-cross"
         assert spec.manager == "trailing-stop"
+
+
+class TestBaselineVOOHold:
+    def _spec(self) -> StrategySpec:
+        return StrategySpec.from_json(STRATEGIES_DIR / "baseline-voo-hold.json")
+
+    def test_universe(self):
+        assert self._spec().universe == "single-voo"
+
+    def test_selector(self):
+        assert self._spec().selector == "buy-and-hold"
+
+    def test_manager(self):
+        assert self._spec().manager == "equal-weight"
+
+    def test_no_monthly_addition(self):
+        assert self._spec().funding.monthly_addition == 0
+
+    def test_dividends_reinvest(self):
+        assert self._spec().dividends == "reinvest"
+
+    def test_single_position(self):
+        assert self._spec().rules.max_positions == 1
+
+
+class TestBaselineEqualWeight:
+    def _spec(self) -> StrategySpec:
+        return StrategySpec.from_json(STRATEGIES_DIR / "baseline-equal-weight.json")
+
+    def test_universe(self):
+        assert self._spec().universe == "etf-broad"
+
+    def test_selector(self):
+        assert self._spec().selector == "buy-and-hold"
+
+    def test_manager(self):
+        assert self._spec().manager == "equal-weight"
+
+    def test_no_monthly_addition(self):
+        assert self._spec().funding.monthly_addition == 0
+
+    def test_dividends_reinvest(self):
+        assert self._spec().dividends == "reinvest"
+
+    def test_max_positions(self):
+        assert self._spec().rules.max_positions == 10
+
+
+class TestBaseline6040:
+    def _spec(self) -> StrategySpec:
+        return StrategySpec.from_json(STRATEGIES_DIR / "baseline-60-40.json")
+
+    def test_universe(self):
+        assert self._spec().universe == "classic-60-40"
+
+    def test_selector(self):
+        assert self._spec().selector == "buy-and-hold"
+
+    def test_manager(self):
+        assert self._spec().manager == "fixed-60-40"
+
+    def test_no_monthly_addition(self):
+        assert self._spec().funding.monthly_addition == 0
+
+    def test_dividends_reinvest(self):
+        assert self._spec().dividends == "reinvest"
+
+    def test_two_positions(self):
+        assert self._spec().rules.max_positions == 2
