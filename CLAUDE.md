@@ -29,6 +29,7 @@ streamlit run app/main.py
 
 ## Project Structure
 - `engine/` — Core trading logic: types, market data, bt adapter, backtest runner
+- `engine/posts.py` — post types, 11-agent display names + schedule (single source of truth)
 - `engine/selectors/` — bt Algos for entry signals (golden cross, RSI, etc.)
 - `engine/managers/` — bt Algos for position management (grid, trailing stop, etc.)
 - `engine/universes/` — Universe resolvers (S&P 500, congressional, crypto, etc.)

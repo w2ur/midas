@@ -6,6 +6,7 @@ from datetime import date
 from pathlib import Path
 
 from engine.fx import to_eur
+from engine.posts import AGENT_DISPLAY_NAMES
 from engine.valuation import portfolio_mtm, portfolio_mtm_eur
 
 LOGS_DIR = Path(__file__).parent.parent / "data" / "logs"
@@ -68,24 +69,8 @@ def generate_daily_log(
     lines.append("")
 
     # Agent sections
-    agent_display_names = {
-        "steady-eddie": "Steady Eddie",
-        "steady-eddie-usd": "Steady Eddie (USD)",
-        "steady-eddie-eur": "Steady Eddie (EUR)",
-        "sharp-shooter": "Sharp Shooter",
-        "sharp-shooter-usd": "Sharp Shooter (USD)",
-        "sharp-shooter-eur": "Sharp Shooter (EUR)",
-        "satoshi": "Satoshi",
-        "monsieur-forex": "Monsieur Forex",
-        "goldfinger": "Goldfinger",
-        "yolo-sapiens": "YOLO Sapiens",
-        "yolo-sapiens-usd": "YOLO Sapiens (USD)",
-        "yolo-sapiens-eur": "YOLO Sapiens (EUR)",
-        "world": "World",
-    }
-
     for agent_id, result in agent_results.items():
-        display_name = agent_display_names.get(agent_id, agent_id)
+        display_name = AGENT_DISPLAY_NAMES.get(agent_id, agent_id)
         lines.append(f"## {display_name}\n")
 
         # Commentary
@@ -136,7 +121,7 @@ def generate_daily_log(
         rows.append((agent_id, currency, native_mtm, eur_mtm))
     rows.sort(key=lambda r: r[3] if r[3] is not None else -1, reverse=True)
     for rank, (agent_id, currency, native_mtm, eur_mtm) in enumerate(rows, start=1):
-        display = agent_display_names.get(agent_id, agent_id)
+        display = AGENT_DISPLAY_NAMES.get(agent_id, agent_id)
         eur_str = _fmt(eur_mtm, "EUR") if eur_mtm is not None else "— (rate unavailable)"
         if eur_mtm is None:
             pnl_str = "—"
