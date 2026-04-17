@@ -127,7 +127,7 @@ def test_fills_valid_buy_and_updates_portfolio(broker_env):
     assert len(fills) == 1
     assert fills[0].status == "filled"
     assert fills[0].fill_price == 500.0
-    assert fills[0].notional == 2500.0
+    assert fills[0].notional_base == 2500.0
     p = pm.load("agent1")
     assert p.cash == 5000.0 - 2500.0
     assert len(p.positions) == 1
@@ -508,8 +508,8 @@ def test_ticker_currency_override_takes_precedence_over_heuristic(broker_env):
     fills = fill_day(TRADE_DATE, pm)
     assert fills[0].status == "filled"
     assert fills[0].fill_currency == "EUR"
-    # Because ticker_ccy == base_ccy, notional == notional_native, no FX conversion.
-    assert fills[0].notional == 100.0
+    # Because ticker_ccy == base_ccy, notional_base == notional_native, no FX conversion.
+    assert fills[0].notional_base == 100.0
 
 
 # ---------------------------------------------------------------------------

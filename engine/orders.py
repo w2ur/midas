@@ -30,7 +30,7 @@ class Order:
     order_id: str
     ts: datetime
     agent_id: str
-    action: str            # "BUY" | "SELL"
+    action: str  # "BUY" | "SELL"
     ticker: str
     shares: float
     reasoning: str
@@ -40,7 +40,9 @@ class Order:
         if not (self.shares > 0):
             raise ValueError(f"Order.shares must be > 0, got {self.shares}")
         if self.action not in ("BUY", "SELL"):
-            raise ValueError(f"Order.action must be 'BUY' or 'SELL', got {self.action!r}")
+            raise ValueError(
+                f"Order.action must be 'BUY' or 'SELL', got {self.action!r}"
+            )
 
     def to_dict(self) -> dict:
         return {
@@ -76,23 +78,27 @@ class Fill:
 
     Currency convention (filled orders):
       - fill_price, fill_currency — the ticker's NATIVE currency (e.g., MSFT → USD)
-      - notional                  — the agent's BASE currency (post-FX conversion)
+      - notional_base             — the agent's BASE currency (post-FX conversion)
     This asymmetry means a USD ticker bought by an EUR agent produces:
-        fill_price=400.0, fill_currency="USD", notional=360.0  (EUR-equivalent).
+        fill_price=400.0, fill_currency="USD", notional_base=360.0  (EUR-equivalent).
+    The `_base` suffix is explicit so downstream consumers never confuse the
+    two — critical for audit trails and tax reporting later.
     """
 
     order_id: str
     ts_filled: datetime
-    status: str            # "filled" | "rejected"
+    status: str  # "filled" | "rejected"
     fill_price: float | None
     fill_currency: str | None
-    notional: float | None
+    notional_base: float | None
     fees: float | None
     reason: str | None
 
     def __post_init__(self) -> None:
         if self.status not in ("filled", "rejected"):
-            raise ValueError(f"Fill.status must be 'filled' or 'rejected', got {self.status!r}")
+            raise ValueError(
+                f"Fill.status must be 'filled' or 'rejected', got {self.status!r}"
+            )
 
     def to_dict(self) -> dict:
         return {
@@ -101,7 +107,7 @@ class Fill:
             "status": self.status,
             "fill_price": self.fill_price,
             "fill_currency": self.fill_currency,
-            "notional": self.notional,
+            "notional_base": self.notional_base,
             "fees": self.fees,
             "reason": self.reason,
         }
@@ -114,7 +120,7 @@ class Fill:
             status=d["status"],
             fill_price=d.get("fill_price"),
             fill_currency=d.get("fill_currency"),
-            notional=d.get("notional"),
+            notional_base=d.get("notional_base"),
             fees=d.get("fees"),
             reason=d.get("reason"),
         )
@@ -146,7 +152,9 @@ def append_order(d: date, order: Order) -> None:
 
 
 def read_outbox(d: date) -> list[Order]:
-    return [Order.from_dict(r) for r in _read_jsonl(OUTBOX_DIR / f"{d.isoformat()}.jsonl")]
+    return [
+        Order.from_dict(r) for r in _read_jsonl(OUTBOX_DIR / f"{d.isoformat()}.jsonl")
+    ]
 
 
 def append_fill(d: date, fill: Fill) -> None:
@@ -154,4 +162,6 @@ def append_fill(d: date, fill: Fill) -> None:
 
 
 def read_inbox(d: date) -> list[Fill]:
-    return [Fill.from_dict(r) for r in _read_jsonl(INBOX_DIR / f"{d.isoformat()}.jsonl")]
+    return [
+        Fill.from_dict(r) for r in _read_jsonl(INBOX_DIR / f"{d.isoformat()}.jsonl")
+    ]

@@ -150,7 +150,7 @@ def _reject(order_id: str, reason: str) -> Fill:
         status="rejected",
         fill_price=None,
         fill_currency=None,
-        notional=None,
+        notional_base=None,
         fees=None,
         reason=reason,
     )
@@ -274,7 +274,7 @@ def _process_one(
         status="filled",
         fill_price=price,
         fill_currency=ticker_ccy,
-        notional=notional_base,
+        notional_base=notional_base,
         fees=0.0,
         reason=None,
     )

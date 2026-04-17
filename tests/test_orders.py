@@ -78,21 +78,21 @@ class TestFillValidation:
             Fill(
                 order_id="ord_x", ts_filled=datetime.now(timezone.utc),
                 status="pending", fill_price=None, fill_currency=None,
-                notional=None, fees=None, reason=None,
+                notional_base=None, fees=None, reason=None,
             )
 
     def test_filled_status_accepted(self) -> None:
         Fill(
             order_id="ord_x", ts_filled=datetime.now(timezone.utc),
             status="filled", fill_price=100.0, fill_currency="EUR",
-            notional=100.0, fees=0.0, reason=None,
+            notional_base=100.0, fees=0.0, reason=None,
         )
 
     def test_rejected_status_accepted(self) -> None:
         Fill(
             order_id="ord_x", ts_filled=datetime.now(timezone.utc),
             status="rejected", fill_price=None, fill_currency=None,
-            notional=None, fees=None, reason="MAX_ORDERS_PER_DAY",
+            notional_base=None, fees=None, reason="MAX_ORDERS_PER_DAY",
         )
 
 
@@ -161,7 +161,7 @@ class TestInboxRoundTrip:
             status="filled",
             fill_price=64320.50,
             fill_currency="EUR",
-            notional=643.20,
+            notional_base=643.20,
             fees=0.0,
             reason=None,
         ))
@@ -171,7 +171,7 @@ class TestInboxRoundTrip:
             status="rejected",
             fill_price=None,
             fill_currency=None,
-            notional=None,
+            notional_base=None,
             fees=None,
             reason="MAX_ORDERS_PER_DAY",
         ))
