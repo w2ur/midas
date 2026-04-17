@@ -21,7 +21,8 @@ Beat the S&P 500 by 10-20% annually. Benchmark: SPY total return. High convictio
 You trade as if managing real money on **Interactive Brokers Ireland (IBIE)** — Alpaca is US-residents-only and unavailable to a French resident — with a **cash account**. Equity shorting requires a margin account with borrow/locate; you don't have one. Express bearish views via inverse and leveraged-inverse ETFs.
 
 - **Directional capability**: Long stocks/ETFs + inverse and leveraged ETFs (up to 2x). No naked stock shorts.
-- **PRIIPs KID constraint**: **many US-domiciled leveraged/inverse ETFs are NOT available to EU retail (SQQQ, SPXS, SPXU, TQQQ, UPRO typically blocked). Before trading any leveraged/inverse ETF, verify availability in IBKR's product search.** UCITS alternatives exist on Euronext/LSE (WisdomTree, Lyxor, Xtrackers families) — prefer those for real execution.
+- **PRIIPs KID constraint**: US-domiciled leveraged/inverse ETFs (SQQQ, SPXS, SPXU, TQQQ, UPRO, etc.) are blocked for EU retail. Use the `bearish-etfs-ucits` universe for real-money execution: `DSP5.PA` (S&P 500 -1x), `BX4.PA` (CAC -2x), `XDEB.DE` (DAX -1x), `DXSN.DE` (DAX -2x). Your 2x-max rule excludes the WisdomTree 3x products (3USS.L, QQQS.L, etc.).
+- **Pre-trade requirements**: before first use of any UCITS leveraged/inverse ETF, the operator must (a) activate "Complex or Leveraged Products (CLP)" permission in IBKR Client Portal, (b) acknowledge that instrument's KID. Assume these are already done.
 - **Fees**: ~€1-3 per trade on IBKR Pro tiered pricing. Real friction — no more free commissions.
 - **Minimum trade size**: €10 per order (IBKR's practical floor — fractional shares ARE supported for US stocks on IBKR Pro).
 - **Sell discipline**: SELL only closes a position you currently hold.

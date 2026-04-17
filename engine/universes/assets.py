@@ -78,12 +78,10 @@ def get_bearish_etf_tickers() -> list[str]:
     These are regular long positions whose value rises when an index falls.
     Note: designed for daily returns — multi-day holds suffer volatility decay.
 
-    **EU retail caveat**: most of these are blocked for EU retail investors because
-    their issuers (ProShares, Direxion) do not publish PRIIPs KID documents. The
-    backtest engine uses this universe freely, but real-money execution from a
-    French IBIE account will require UCITS equivalents on Euronext or LSE
-    (WisdomTree 3USS/QQQS, Lyxor BX4, Xtrackers XSSX, etc.) — verify availability
-    in IBKR's product search before trading.
+    **EU retail caveat**: most of these are blocked for EU retail investors
+    because their issuers (ProShares, Direxion) do not publish PRIIPs KID
+    documents. Kept in this universe for backtest continuity; EU real-money
+    execution should use `get_bearish_etf_ucits_tickers()` instead.
     """
     return [
         "SH",    # ProShares Short S&P 500 (-1x)
@@ -94,4 +92,34 @@ def get_bearish_etf_tickers() -> list[str]:
         "SPXS",  # Direxion Daily S&P 500 Bear 3x
         "SPXU",  # ProShares UltraPro Short S&P 500 (-3x)
         "SQQQ",  # ProShares UltraPro Short QQQ (-3x)
+    ]
+
+
+def get_bearish_etf_ucits_tickers() -> list[str]:
+    """UCITS inverse and leveraged ETFs tradable by EU retail on LSE/Euronext/Xetra.
+
+    All tickers validated against yfinance on 2026-04-17 (returned ≥10d of price
+    history). PRIIPs KID published by the issuers; tradable from IBKR Ireland
+    once the **Complex/Leveraged Products (CLP)** permission is activated and
+    each instrument's KID is acknowledged in Client Portal.
+
+    Covers: S&P 500, Nasdaq 100, FTSE 100, Euro Stoxx 50, CAC 40, DAX, IBEX 35.
+    Mix of inverse and leveraged-long products so agents can express both
+    directions within their risk mandate.
+    """
+    return [
+        # --- US-equity-proxy (the most important replacements for US blocks) ---
+        "3USS.L",  # WisdomTree S&P 500 3x Daily Short (LSE, USD) — replaces SPXU/SPXS
+        "3USL.L",  # WisdomTree S&P 500 3x Daily Leveraged (LSE, USD) — replaces UPRO
+        "QQQS.L",  # WisdomTree Nasdaq 100 3x Daily Short (LSE, USD) — replaces SQQQ
+        "QQQ3.L",  # WisdomTree Nasdaq 100 3x Daily Leveraged (LSE, USD) — replaces TQQQ
+        "DSP5.PA", # Amundi S&P 500 Daily (-1x) Inverse (Euronext, EUR) — replaces SH
+        # --- European-index exposure ---
+        "3UKS.L",  # WisdomTree FTSE 100 3x Daily Short (LSE)
+        "3EUS.L",  # WisdomTree Euro Stoxx 50 3x Daily Short (LSE)
+        "BX4.PA",  # Amundi CAC 40 Daily (-2x) Inverse (Euronext Paris)
+        "CL2.PA",  # Amundi CAC 40 Daily 2x Leveraged (Euronext Paris)
+        "XDEB.DE", # Xtrackers ShortDAX Daily x1 Swap (Xetra)
+        "DXSN.DE", # Xtrackers ShortDAX Daily x2 Swap (Xetra)
+        "IBEXA.MC",# Amundi IBEX 35 Daily 2x (Madrid) — the "IBKR example" ticker
     ]

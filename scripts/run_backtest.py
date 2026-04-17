@@ -30,6 +30,7 @@ from engine.universes.assets import (
     get_voo_only,
     get_classic_60_40,
     get_bearish_etf_tickers,
+    get_bearish_etf_ucits_tickers,
 )
 
 # ---------------------------------------------------------------------------
@@ -71,6 +72,7 @@ def _resolve_universe(universe_id: str) -> list[str]:
         "single-voo": get_voo_only,
         "classic-60-40": get_classic_60_40,
         "bearish-etfs": get_bearish_etf_tickers,
+        "bearish-etfs-ucits": get_bearish_etf_ucits_tickers,
     }
     if universe_id in dynamic_fetchers:
         return dynamic_fetchers[universe_id]()

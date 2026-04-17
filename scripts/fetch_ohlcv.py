@@ -45,6 +45,7 @@ from engine.universes.assets import (
     get_voo_only,
     get_classic_60_40,
     get_bearish_etf_tickers,
+    get_bearish_etf_ucits_tickers,
 )
 
 _OHLCV_DIR = _PROJECT_ROOT / "data" / "market" / "ohlcv"
@@ -96,6 +97,7 @@ def _collect_universe_symbols() -> set[str]:
         get_voo_only,
         get_classic_60_40,
         get_bearish_etf_tickers,
+        get_bearish_etf_ucits_tickers,
         get_congressional_tickers,
         get_insider_tickers,
         get_high_short_tickers,
