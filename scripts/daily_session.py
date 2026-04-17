@@ -1,11 +1,19 @@
 """Orchestrator for the daily Midas trading session.
 
-Steps:
-  1. Fetch today's market data  → data/market/today.json
-  2. Deterministic strategies   → placeholder (use backtest CLI)
-  3. Claude agents              → placeholder (dispatched by orchestrating session)
-  4. Update daily snapshots     → data/portfolios/{id}/snapshots.json
+Core pipeline (run by run_daily_session):
+  1. Fetch today's market data       → data/market/today.json
+  2. Deterministic strategies         → placeholder (use backtest CLI)
+  3. Claude trading agents            → placeholder (dispatched by orchestrating session)
+  4. Update daily snapshots           → data/portfolios/{id}/snapshots.json
   5. Git commit and push data changes
+
+Ring 1 content pipeline (called by the orchestrating Claude Code session after
+agent {commentary, trades} output is collected):
+  3a. step_author_orders()            → data/orders/outbox/YYYY-MM-DD.jsonl
+  3b. step_fill_orders()              → data/orders/inbox/YYYY-MM-DD.jsonl + portfolio mutation
+  5a. step_build_post_prompts()       → returns prompts for orchestrator to dispatch
+  5b. step_build_oracle_prompt()      → returns prompt for orchestrator to dispatch
+  6.  step_save_content()             → data/posts/, data/blog/, data/output/
 
 Usage:
     python scripts/daily_session.py
@@ -25,8 +33,21 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
+from datetime import datetime, timezone
+
+from engine.blog import build_oracle_prompt, parse_oracle_response, save_daily_blog_draft
 from engine.market_data import MarketDataFetcher
+from engine.orders import Order, append_order, make_order_id
+from engine.output_bundle import assemble_output_bundle, get_day_number, save_output_bundle
+from engine.paper_broker import fill_day
 from engine.portfolio import PortfolioManager
+from engine.posts import (
+    AGENT_DISPLAY_NAMES,
+    AGENT_POST_TIMES,
+    PostPayload,
+    build_post_prompt,
+    save_daily_posts,
+)
 from scripts.fetch_market_data import fetch_and_save as fetch_market_data
 
 
@@ -65,6 +86,138 @@ def step_claude_agents() -> None:
     print("  [DELEGATED] — Should be dispatched by the orchestrating session.")
     print("  Agents: trend-trader, contrarian, macro-quant, dividend-collector,")
     print("          momentum-surfer, risk-manager")
+
+
+# ---------------------------------------------------------------------------
+# Ring 1 content pipeline — step functions for the orchestrator to call
+# after Claude agents have produced their {commentary, trades} output.
+# Not wired into run_daily_session(); call them from the orchestrating session.
+# ---------------------------------------------------------------------------
+
+
+def step_author_orders(agent_id: str, trades: list[dict], trade_date: date, currency: str) -> int:
+    """Step 3a — convert an agent's trades[] into outbox orders.
+
+    Parameters
+    ----------
+    agent_id:
+        Agent authoring the orders (e.g. "satoshi").
+    trades:
+        List of trade dicts with keys: action ("BUY"|"SELL"), ticker, shares, reasoning.
+    trade_date:
+        The session's trading date.
+    currency:
+        Agent's portfolio base currency (e.g. "EUR"). Matches portfolio.currency.
+
+    Returns
+    -------
+    Number of orders appended to the outbox (malformed trades raise at Order construction
+    time; callers are expected to pass well-formed trades from agent JSON).
+    """
+    print(f"\n=== Step 3a: Author orders for {agent_id} ({len(trades)} trades) ===")
+    for seq, t in enumerate(trades, start=1):
+        order = Order(
+            order_id=make_order_id(trade_date, agent_id, seq),
+            ts=datetime.now(timezone.utc),
+            agent_id=agent_id,
+            action=t["action"],
+            ticker=t["ticker"],
+            shares=float(t["shares"]),
+            reasoning=t.get("reasoning", ""),
+            currency=currency,
+        )
+        append_order(trade_date, order)
+    return len(trades)
+
+
+def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> list:
+    """Step 3b — invoke the paper broker on the day's outbox.
+
+    The broker reads data/orders/outbox/YYYY-MM-DD.jsonl, applies safety rails,
+    writes data/orders/inbox/YYYY-MM-DD.jsonl, and (for successful fills)
+    mutates portfolios via PortfolioManager.apply_trade.
+    """
+    print("\n=== Step 3b: Fill orders (paper broker) ===")
+    fills = fill_day(trade_date, portfolio_manager)
+    filled = sum(1 for f in fills if f.status == "filled")
+    rejected = sum(1 for f in fills if f.status == "rejected")
+    print(f"  {filled} filled, {rejected} rejected out of {len(fills)}")
+    return fills
+
+
+def step_build_post_prompts(agent_results: dict[str, dict]) -> dict[str, str]:
+    """Step 5a — build post-generation prompts for each trading agent.
+
+    Does NOT call Claude. Returns a dict of {agent_id: prompt_str} the orchestrator
+    dispatches to each agent. The Oracle is excluded — it gets a different prompt
+    via step_build_oracle_prompt.
+    """
+    print("\n=== Step 5a: Build post prompts ===")
+    prompts: dict[str, str] = {}
+    for agent_id in agent_results:
+        if agent_id in AGENT_POST_TIMES:  # trading agents only
+            prompts[agent_id] = build_post_prompt(agent_id, agent_results)
+    print(f"  Built {len(prompts)} post prompts")
+    return prompts
+
+
+def step_build_oracle_prompt(
+    market_data: dict,
+    agent_results: dict[str, dict],
+    agent_posts: dict[str, list[dict]],
+    leaderboard: list[dict],
+) -> str:
+    """Step 5b — build The Oracle's daily narration prompt.
+
+    Does NOT call Claude. Returns the prompt string the orchestrator dispatches
+    to the-oracle agent.
+    """
+    print("\n=== Step 5b: Build Oracle prompt ===")
+    day_number = get_day_number()
+    prompt = build_oracle_prompt(
+        day_number=day_number,
+        market_data=market_data,
+        agent_results=agent_results,
+        agent_posts=agent_posts,
+        leaderboard=leaderboard,
+    )
+    print(f"  Built Oracle prompt (day {day_number})")
+    return prompt
+
+
+def step_save_content(
+    bundle_date: date,
+    market_data: dict,
+    agent_results: dict[str, dict],
+    agent_posts: dict[str, list[PostPayload]],
+    portfolio_summaries: dict[str, dict],
+    leaderboard: list[dict],
+    blog_draft,
+    oracle_posts: list[PostPayload],
+) -> dict:
+    """Step 6 — persist posts, blog draft, and output bundle.
+
+    Returns the assembled bundle dict so callers can log its shape or pass it
+    onwards (e.g. to a future publisher).
+    """
+    print("\n=== Step 6: Save content ===")
+    posts_path = save_daily_posts(bundle_date, agent_posts)
+    print(f"  Saved posts → {posts_path.name}")
+    blog_path = save_daily_blog_draft(bundle_date, blog_draft)
+    print(f"  Saved blog draft → {blog_path.name}")
+    bundle = assemble_output_bundle(
+        bundle_date=bundle_date,
+        market_data=market_data,
+        agent_results=agent_results,
+        agent_posts=agent_posts,
+        portfolio_summaries=portfolio_summaries,
+        leaderboard=leaderboard,
+        blog_draft=blog_draft,
+        oracle_posts=oracle_posts,
+    )
+    bundle_path = save_output_bundle(bundle_date, bundle)
+    print(f"  Saved output bundle → {bundle_path.name}")
+    return bundle
 
 
 def step_update_snapshots(market_payload: dict) -> list[str]:
