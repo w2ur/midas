@@ -11,6 +11,7 @@ Rejection reason codes:
 - MAX_ORDER_NOTIONAL: order notional (base currency) > per-agent cap
 - TICKER_NOT_IN_UNIVERSE: allowed_universe is non-empty and ticker not in union
 - NO_PRICE_DATA: no row in OHLCV store for ticker <= trade_date
+- NO_FX_RATE: ticker currency ≠ base and no FX rate available to convert notional
 - INSUFFICIENT_CASH: BUY cost > portfolio cash (post earlier fills)
 - NO_POSITION_TO_SELL: SELL on a ticker not held
 - INSUFFICIENT_SHARES: SELL shares > held shares
@@ -27,7 +28,10 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from engine.fx import convert as fx_convert
-from engine.ohlcv_store import OHLCV_STORE as _DEFAULT_OHLCV_STORE, latest_close_on_or_before
+from engine.ohlcv_store import (
+    OHLCV_STORE as _DEFAULT_OHLCV_STORE,
+    latest_close_on_or_before,
+)
 from engine.orders import Fill, Order, append_fill
 from engine.portfolio import PortfolioManager
 from engine.types import Trade
@@ -75,9 +79,10 @@ class AgentConfig:
             d = json.loads(path.read_text(encoding="utf-8"))
             return cls(**d)
         except (json.JSONDecodeError, TypeError) as exc:
-            logger.warning("Malformed agent config at %s: %s — falling back to defaults", path, exc)
+            logger.warning(
+                "Malformed agent config at %s: %s — falling back to defaults", path, exc
+            )
             return defaults
-
 
 
 _TICKER_CURRENCY_OVERRIDES: dict[str, str] | None = None
@@ -87,7 +92,9 @@ def _load_ticker_currency_overrides() -> dict[str, str]:
     global _TICKER_CURRENCY_OVERRIDES
     if _TICKER_CURRENCY_OVERRIDES is None:
         if TICKER_CURRENCIES_PATH.exists():
-            _TICKER_CURRENCY_OVERRIDES = json.loads(TICKER_CURRENCIES_PATH.read_text(encoding="utf-8"))
+            _TICKER_CURRENCY_OVERRIDES = json.loads(
+                TICKER_CURRENCIES_PATH.read_text(encoding="utf-8")
+            )
         else:
             _TICKER_CURRENCY_OVERRIDES = {}
     return _TICKER_CURRENCY_OVERRIDES
@@ -117,7 +124,9 @@ def _ticker_currency(ticker: str) -> str:
     return "USD"
 
 
-def _drawdown_pct(agent_id: str, portfolio_manager: PortfolioManager, today: date) -> float:
+def _drawdown_pct(
+    agent_id: str, portfolio_manager: PortfolioManager, today: date
+) -> float:
     """Drawdown % from the most recent snapshot, in the portfolio's base currency.
 
     Returns 0.0 if no snapshot exists yet (first day of experiment).
@@ -182,7 +191,9 @@ def _read_outbox_lines(trade_date: date) -> tuple[list[Order], list[str]]:
             except (ValueError, KeyError, TypeError) as exc:
                 logger.warning("Invalid outbox order on line %d: %s", idx, exc)
                 oid = raw.get("order_id") if isinstance(raw, dict) else None
-                invalid_ids.append(oid or f"malformed_{trade_date.isoformat()}_{idx:03d}")
+                invalid_ids.append(
+                    oid or f"malformed_{trade_date.isoformat()}_{idx:03d}"
+                )
 
     return orders, invalid_ids
 
@@ -220,7 +231,7 @@ def _process_one(
     else:
         converted = fx_convert(notional_native, ticker_ccy, base_ccy, trade_date)
         if converted is None:
-            return _reject(order.order_id, "NO_PRICE_DATA")
+            return _reject(order.order_id, "NO_FX_RATE")
         notional_base = converted
 
     if notional_base > config.max_order_notional:
@@ -230,7 +241,9 @@ def _process_one(
         return _reject(order.order_id, "INSUFFICIENT_CASH")
 
     if order.action == "SELL":
-        position = next((p for p in portfolio.positions if p.ticker == order.ticker), None)
+        position = next(
+            (p for p in portfolio.positions if p.ticker == order.ticker), None
+        )
         if position is None:
             return _reject(order.order_id, "NO_POSITION_TO_SELL")
         if order.shares > position.shares:
@@ -291,7 +304,10 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
         config = AgentConfig.load(agent_id)
 
         # Drawdown halt: a single per-agent decision that rejects ALL orders.
-        if _drawdown_pct(agent_id, portfolio_manager, trade_date) < config.daily_drawdown_halt_pct:
+        if (
+            _drawdown_pct(agent_id, portfolio_manager, trade_date)
+            < config.daily_drawdown_halt_pct
+        ):
             for o in agent_orders:
                 f = _reject(o.order_id, "DAILY_DRAWDOWN_HALT")
                 fills.append(f)
@@ -308,7 +324,9 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
 
         filled = 0
         for o in agent_orders:
-            f = _process_one(o, config, portfolio_manager, trade_date, filled, allowed_tickers)
+            f = _process_one(
+                o, config, portfolio_manager, trade_date, filled, allowed_tickers
+            )
             fills.append(f)
             append_fill(trade_date, f)
             if f.status == "filled":

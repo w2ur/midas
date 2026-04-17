@@ -33,6 +33,7 @@ streamlit run app/main.py
 - `engine/paper_broker.py` — Hands side: 9 safety rails + fill logic + portfolio update
 - `engine/posts.py` — post types, 11-agent display names + schedule (single source of truth)
 - `engine/blog.py` — Oracle prompt builder + response parser + blog draft saver
+- `engine/agent_memory.py` — Ring 2 per-agent journal I/O + digest/excerpt helpers + session-end rewrite prompt
 - `engine/selectors/` — bt Algos for entry signals (golden cross, RSI, etc.)
 - `engine/managers/` — bt Algos for position management (grid, trailing stop, etc.)
 - `engine/universes/` — Universe resolvers (S&P 500, congressional, crypto, etc.)
@@ -42,11 +43,12 @@ streamlit run app/main.py
 - `data/portfolios/` — Runtime portfolio state (gitignored)
 - `data/agent_config/` — per-agent safety rails (committed)
 - `data/ticker_currencies.json` — ticker → ISO currency override map (committed)
-- `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (gitignored)
+- `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (committed)
+- `data/agent_memory/` — Ring 2 per-agent journals, 11 markdown files, first-person + biased, rewritten each session (committed)
 - `.claude/agents/` — Ten trading agent personas (EUR/USD twins + Satoshi, Monsieur Forex, Goldfinger, World)
 - `.claude/agents/the-oracle.md` — The Oracle narrator agent (does not trade; blog drafts + scoreboard posts)
 - `engine/output_bundle.py` — assembles data/output/YYYY-MM-DD.json (single source of truth for API + retries)
-- `data/posts/, data/blog/, data/output/` — daily artifacts (gitignored)
+- `data/posts/, data/blog/, data/output/` — daily artifacts (committed; see `.gitignore` comment)
 
 ## Architecture Principle — Brain / Hands
 

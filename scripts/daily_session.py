@@ -1,21 +1,23 @@
 """Orchestrator for the daily Midas trading session.
 
-Core pipeline (run by run_daily_session):
-  1. Fetch today's market data       → data/market/today.json
-  2. Deterministic strategies         → placeholder (use backtest CLI)
-  3. Claude trading agents            → placeholder (dispatched by orchestrating session)
-  4. Update daily snapshots           → data/portfolios/{id}/snapshots.json
-  5. Git commit and push data changes
+Two modes:
 
-Ring 1 content pipeline (called by the orchestrating Claude Code session after
-agent {commentary, trades} output is collected):
-  3a. step_author_orders()            → data/orders/outbox/YYYY-MM-DD.jsonl
-  3b. step_fill_orders()              → data/orders/inbox/YYYY-MM-DD.jsonl + portfolio mutation
-  5a. step_build_post_prompts()       → returns prompts for orchestrator to dispatch
-  5b. step_build_oracle_prompt()      → returns prompt for orchestrator to dispatch
-  6.  step_save_content()             → data/posts/, data/blog/, data/output/
+1. **Snapshot-only CLI** (`run_daily_session()`): fetch market data, snapshot
+   portfolios, commit & push. Intended for manual EOD runs and CI health
+   checks — does NOT dispatch Claude agents. Every step is idempotent.
 
-Usage:
+2. **Full Ring 1 + Ring 2 pipeline** (step_* helpers, called from an
+   orchestrating Claude Code session that parallelises agent dispatch):
+     - step_author_orders()                → data/orders/outbox/
+     - step_fill_orders()                  → data/orders/inbox/ + portfolio mutation
+     - step_build_post_prompts()           → prompts for the orchestrator
+     - step_load_memories()                → dict[agent_id, str]
+     - step_build_oracle_prompt()          → Oracle prompt (optionally with journals)
+     - step_save_content()                 → data/posts/, data/blog/, data/output/
+     - step_build_memory_update_prompts()  → Ring 2 session-end rewrite prompts
+     - step_save_memories()                → data/agent_memory/
+
+Usage (snapshot-only):
     python scripts/daily_session.py
     python scripts/daily_session.py --dry-run   # skip git commit/push
 """
@@ -33,10 +35,19 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
+from engine.agent_memory import (
+    build_memory_update_prompt,
+    load_journal,
+    save_journal,
+)
 from engine.blog import build_oracle_prompt, save_daily_blog_draft
 from engine.market_data import MarketDataFetcher
 from engine.orders import Order, append_order, make_order_id
-from engine.output_bundle import assemble_output_bundle, get_day_number, save_output_bundle
+from engine.output_bundle import (
+    assemble_output_bundle,
+    get_day_number,
+    save_output_bundle,
+)
 from engine.paper_broker import fill_day
 from engine.portfolio import PortfolioManager
 from engine.posts import (
@@ -60,32 +71,6 @@ def step_fetch_market_data() -> dict:
     return fetch_market_data()
 
 
-def step_deterministic_strategies() -> None:
-    """Step 2 — Deterministic strategies (bt-based).
-
-    Not yet implemented in this script.
-    Use the backtest CLI:
-        python scripts/run_backtest.py --all
-    Live execution via bt is planned for a future session.
-    """
-    print("\n=== Step 2: Deterministic strategies ===")
-    print("  [NOT YET IMPLEMENTED] — Use the backtest CLI:")
-    print("    python scripts/run_backtest.py --all")
-
-
-def step_claude_agents() -> None:
-    """Step 3 — Claude analytical agents.
-
-    Not dispatched here. Claude agents should be dispatched by the
-    orchestrating Claude Code session that invokes this script, so they
-    can be parallelised and observed interactively.
-    """
-    print("\n=== Step 3: Claude agents ===")
-    print("  [DELEGATED] — Should be dispatched by the orchestrating session.")
-    print("  Agents: trend-trader, contrarian, macro-quant, dividend-collector,")
-    print("          momentum-surfer, risk-manager")
-
-
 # ---------------------------------------------------------------------------
 # Ring 1 content pipeline — step functions for the orchestrator to call
 # after Claude agents have produced their {commentary, trades} output.
@@ -93,7 +78,9 @@ def step_claude_agents() -> None:
 # ---------------------------------------------------------------------------
 
 
-def step_author_orders(agent_id: str, trades: list[dict], trade_date: date, currency: str) -> int:
+def step_author_orders(
+    agent_id: str, trades: list[dict], trade_date: date, currency: str
+) -> int:
     """Step 3a — convert an agent's trades[] into outbox orders.
 
     Parameters
@@ -164,11 +151,13 @@ def step_build_oracle_prompt(
     agent_results: dict[str, dict],
     agent_posts: dict[str, list[dict]],
     leaderboard: list[dict],
+    agent_memories: dict[str, str] | None = None,
 ) -> str:
     """Step 5b — build The Oracle's daily narration prompt.
 
     Does NOT call Claude. Returns the prompt string the orchestrator dispatches
-    to the-oracle agent.
+    to the-oracle agent. When `agent_memories` is provided, each agent's latest
+    journal is digested into the prompt so The Oracle can quote specific entries.
     """
     print("\n=== Step 5b: Build Oracle prompt ===")
     day_number = get_day_number()
@@ -178,9 +167,84 @@ def step_build_oracle_prompt(
         agent_results=agent_results,
         agent_posts=agent_posts,
         leaderboard=leaderboard,
+        agent_memories=agent_memories,
     )
     print(f"  Built Oracle prompt (day {day_number})")
     return prompt
+
+
+def step_load_memories(agent_ids: list[str]) -> dict[str, str]:
+    """Step 5c — load each agent's journal from disk for Oracle prompt assembly.
+
+    Returns a dict keyed by agent_id. Missing journals become empty strings so
+    the Oracle prompt can still render a "first session" marker.
+    """
+    print("\n=== Step 5c: Load agent memories ===")
+    memories = {aid: load_journal(aid) for aid in agent_ids}
+    non_empty = sum(1 for v in memories.values() if v.strip())
+    print(f"  Loaded {non_empty}/{len(agent_ids)} non-empty journals")
+    return memories
+
+
+def step_build_memory_update_prompts(
+    agent_results: dict[str, dict],
+    agent_posts: dict[str, list[dict]],
+    portfolio_summaries: dict[str, dict],
+    day_number: int,
+) -> dict[str, str]:
+    """Step 7a — build session-end journal-rewrite prompts for every agent.
+
+    Does NOT call Claude. Returns {agent_id: prompt} the orchestrator dispatches.
+    Covers all 11 agents (the 10 traders plus the-oracle). Each agent reads its
+    current journal from disk in-prompt; we embed it here so the dispatched
+    prompt is fully self-contained.
+    """
+    print("\n=== Step 7a: Build memory-update prompts ===")
+    prompts: dict[str, str] = {}
+    # Traders
+    for agent_id, result in agent_results.items():
+        prompts[agent_id] = build_memory_update_prompt(
+            agent_id=agent_id,
+            day_number=day_number,
+            current_journal=load_journal(agent_id),
+            trades_today=result.get("trades", []),
+            posts_today=agent_posts.get(agent_id, []),
+            portfolio_summary=portfolio_summaries.get(agent_id, {}),
+        )
+    # The Oracle doesn't trade; its journal update prompt has no trades.
+    prompts["the-oracle"] = build_memory_update_prompt(
+        agent_id="the-oracle",
+        day_number=day_number,
+        current_journal=load_journal("the-oracle"),
+        trades_today=[],
+        posts_today=agent_posts.get("the-oracle", []),
+        portfolio_summary={"currency": "EUR"},
+    )
+    print(f"  Built {len(prompts)} memory-update prompts")
+    return prompts
+
+
+def step_save_memories(new_journals: dict[str, str]) -> int:
+    """Step 7b — persist rewritten journals back to data/agent_memory/.
+
+    Parameters
+    ----------
+    new_journals:
+        {agent_id: new_journal_content} returned by orchestrator after dispatch.
+        Empty/blank values are skipped so a partial round doesn't wipe a journal.
+
+    Returns the number of journals actually written.
+    """
+    print("\n=== Step 7b: Save updated memories ===")
+    written = 0
+    for agent_id, content in new_journals.items():
+        if not content or not content.strip():
+            print(f"  [SKIP] {agent_id}: empty response")
+            continue
+        save_journal(agent_id, content)
+        written += 1
+    print(f"  Saved {written}/{len(new_journals)} journals")
+    return written
 
 
 def step_save_content(
@@ -271,9 +335,12 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
         if portfolio.positions:
             tickers = [p.ticker for p in portfolio.positions]
             from datetime import timedelta
+
             start = snapshot_date - timedelta(days=7)
             try:
-                prices_df = fetcher.fetch_prices(tickers, start=start, end=snapshot_date)
+                prices_df = fetcher.fetch_prices(
+                    tickers, start=start, end=snapshot_date
+                )
                 if not prices_df.empty:
                     latest_prices = prices_df.iloc[-1].to_dict()
                     positions_value = sum(
@@ -297,7 +364,9 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
             benchmarks=benchmarks,
         )
 
-        print(f"  Snapshotted {strategy_id}: value={portfolio_value:.2f}, cash={portfolio.cash:.2f}")
+        print(
+            f"  Snapshotted {strategy_id}: value={portfolio_value:.2f}, cash={portfolio.cash:.2f}"
+        )
         snapshotted.append(strategy_id)
 
     if not snapshotted:
@@ -331,7 +400,9 @@ def step_git_commit_push(dry_run: bool = False) -> None:
 
         today_str = date.today().isoformat()
         commit_msg = f"chore: daily snapshot {today_str}"
-        subprocess.run(["git", "commit", "-m", commit_msg], cwd=_PROJECT_ROOT, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", commit_msg], cwd=_PROJECT_ROOT, check=True
+        )
         print(f"  Committed: {commit_msg}")
 
         subprocess.run(["git", "push"], cwd=_PROJECT_ROOT, check=True)
@@ -348,21 +419,26 @@ def step_git_commit_push(dry_run: bool = False) -> None:
 
 
 def run_daily_session(dry_run: bool = False) -> None:
-    """Run all steps of the daily trading session."""
-    print(f"Midas daily session — {date.today().isoformat()}")
+    """Snapshot-only EOD run.
+
+    Dispatches no Claude agents — the full trading round is driven by an
+    orchestrating Claude Code session that calls the step_* helpers directly.
+    Use this CLI for manual snapshot refreshes or CI health checks.
+    """
+    print(f"Midas daily snapshot — {date.today().isoformat()}")
     print("=" * 50)
 
     market_payload = step_fetch_market_data()
-    step_deterministic_strategies()
-    step_claude_agents()
     step_update_snapshots(market_payload)
     step_git_commit_push(dry_run=dry_run)
 
-    print("\n=== Daily session complete ===")
+    print("\n=== Snapshot complete ===")
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Midas daily trading session orchestrator.")
+    parser = argparse.ArgumentParser(
+        description="Midas daily trading session orchestrator."
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",

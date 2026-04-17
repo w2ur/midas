@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from engine.agent_memory import format_oracle_digest
 from engine.posts import AGENT_DISPLAY_NAMES, PostPayload
 
 BLOG_DIR = Path(__file__).parent.parent / "data" / "blog"
@@ -34,10 +35,17 @@ def build_oracle_prompt(
     agent_results: dict[str, dict],
     agent_posts: dict[str, list[dict]],
     leaderboard: list[dict],
+    agent_memories: dict[str, str] | None = None,
 ) -> str:
-    """Build The Oracle's daily prompt — blog draft + narrator posts."""
+    """Build The Oracle's daily prompt — blog draft + narrator posts.
+
+    When `agent_memories` is provided (Ring 2 onwards), a journal digest is
+    appended so The Oracle can cite specific prior entries in its narration.
+    """
     market = "\n".join(
-        f"  {k}: {v:,.2f}" for k, v in market_data.items() if isinstance(v, (int, float))
+        f"  {k}: {v:,.2f}"
+        for k, v in market_data.items()
+        if isinstance(v, (int, float))
     )
 
     agents_s = ""
@@ -60,6 +68,13 @@ def build_oracle_prompt(
         for e in leaderboard
     )
 
+    journal_section = ""
+    if agent_memories:
+        journal_section = (
+            "\n\nAGENT JOURNAL DIGEST (latest in-character entries — cite them when relevant):\n"
+            + format_oracle_digest(agent_memories)
+        )
+
     return f"""You are The Oracle, narrator of the Midas experiment. Day {day_number}.
 
 MARKET DATA TODAY:
@@ -70,7 +85,7 @@ AGENT ACTIVITY TODAY:{agents_s}
 AGENT POSTS TODAY:{posts_s}
 
 CURRENT LEADERBOARD (EUR-normalized):
-{lb_s}
+{lb_s}{journal_section}
 
 INSTRUCTIONS: produce a daily blog draft and 1-3 narrator posts following your agent definition.
 
@@ -92,7 +107,9 @@ def parse_oracle_response(response: str) -> tuple[BlogDraft, list[PostPayload]]:
         text = "\n".join(lines[start:end]).strip()
     data = json.loads(text)
     draft = BlogDraft.from_dict(data["blog_draft"])
-    posts = [PostPayload.from_agent_output("the-oracle", p) for p in data.get("posts", [])]
+    posts = [
+        PostPayload.from_agent_output("the-oracle", p) for p in data.get("posts", [])
+    ]
     return draft, posts
 
 

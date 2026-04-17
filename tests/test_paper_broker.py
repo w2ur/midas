@@ -21,14 +21,20 @@ from engine.portfolio import PortfolioManager
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def broker_env(tmp_path, monkeypatch):
-    ohlcv = tmp_path / "ohlcv"; ohlcv.mkdir()
-    config_dir = tmp_path / "config"; config_dir.mkdir()
+    ohlcv = tmp_path / "ohlcv"
+    ohlcv.mkdir()
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
     ticker_ccy_path = tmp_path / "ticker_currencies.json"
-    outbox = tmp_path / "outbox"; outbox.mkdir()
-    inbox = tmp_path / "inbox"; inbox.mkdir()
-    pm_base = tmp_path / "portfolios"; pm_base.mkdir()
+    outbox = tmp_path / "outbox"
+    outbox.mkdir()
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    pm_base = tmp_path / "portfolios"
+    pm_base.mkdir()
     monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", ohlcv)
     monkeypatch.setattr("engine.paper_broker.AGENT_CONFIG_DIR", config_dir)
     monkeypatch.setattr("engine.paper_broker.TICKER_CURRENCIES_PATH", ticker_ccy_path)
@@ -36,8 +42,12 @@ def broker_env(tmp_path, monkeypatch):
     monkeypatch.setattr("engine.orders.OUTBOX_DIR", outbox)
     monkeypatch.setattr("engine.orders.INBOX_DIR", inbox)
     return {
-        "ohlcv": ohlcv, "config_dir": config_dir, "ticker_ccy": ticker_ccy_path,
-        "outbox": outbox, "inbox": inbox, "pm_base": pm_base,
+        "ohlcv": ohlcv,
+        "config_dir": config_dir,
+        "ticker_ccy": ticker_ccy_path,
+        "outbox": outbox,
+        "inbox": inbox,
+        "pm_base": pm_base,
     }
 
 
@@ -61,14 +71,22 @@ def _write_config(config_dir: Path, agent_id: str, **overrides) -> None:
     (config_dir / f"{agent_id}.json").write_text(json.dumps(cfg), encoding="utf-8")
 
 
-def _init_portfolio(pm_base: Path, agent_id: str, cash: float = 10_000.0, currency: str = "USD") -> PortfolioManager:
+def _init_portfolio(
+    pm_base: Path, agent_id: str, cash: float = 10_000.0, currency: str = "USD"
+) -> PortfolioManager:
     pm = PortfolioManager(pm_base)
     pm.initialize(agent_id, initial_capital=cash, currency=currency)
     return pm
 
 
-def _make_order(order_id: str, agent_id: str, action: str, ticker: str, shares: float,
-                currency: str = "USD") -> Order:
+def _make_order(
+    order_id: str,
+    agent_id: str,
+    action: str,
+    ticker: str,
+    shares: float,
+    currency: str = "USD",
+) -> Order:
     return Order(
         order_id=order_id,
         ts=datetime(2026, 4, 17, 20, 0, 0, tzinfo=timezone.utc),
@@ -88,12 +106,17 @@ TRADE_DATE = date(2026, 4, 17)
 # 1. Fills a valid BUY
 # ---------------------------------------------------------------------------
 
+
 def test_fills_valid_buy_and_updates_portfolio(broker_env):
     from engine.paper_broker import fill_day
 
     _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
-    _write_config(broker_env["config_dir"], "agent1",
-                  allowed_universe=["single-voo"], max_order_notional=10_000.0)
+    _write_config(
+        broker_env["config_dir"],
+        "agent1",
+        allowed_universe=["single-voo"],
+        max_order_notional=10_000.0,
+    )
     pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=5000.0, currency="USD")
 
     order = _make_order("ord_001", "agent1", "BUY", "VOO", 5)
@@ -116,6 +139,7 @@ def test_fills_valid_buy_and_updates_portfolio(broker_env):
 # 2. Fills a valid SELL
 # ---------------------------------------------------------------------------
 
+
 def test_fills_valid_sell_and_updates_portfolio(broker_env):
     from engine.paper_broker import fill_day
     from engine.types import Trade
@@ -125,14 +149,26 @@ def test_fills_valid_sell_and_updates_portfolio(broker_env):
     pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=1000.0)
 
     # Seed a position by applying a BUY trade directly through the PortfolioManager.
-    buy = Trade(id="seed_buy", timestamp=datetime(2026, 4, 16, 20, 0, 0, tzinfo=timezone.utc),
-                action="BUY", ticker="VOO", shares=5, price=400.0, total=2000.0,
-                fees=0.0, reasoning="seed")
-    pm.initialize("agent1", initial_capital=3000.0)  # already there; noop but ensures state
+    buy = Trade(
+        id="seed_buy",
+        timestamp=datetime(2026, 4, 16, 20, 0, 0, tzinfo=timezone.utc),
+        action="BUY",
+        ticker="VOO",
+        shares=5,
+        price=400.0,
+        total=2000.0,
+        fees=0.0,
+        reasoning="seed",
+    )
+    pm.initialize(
+        "agent1", initial_capital=3000.0
+    )  # already there; noop but ensures state
     # Reset portfolio cash to cover the seed buy.
     p = pm.load("agent1")
     p.cash = 3000.0
-    (broker_env["pm_base"] / "agent1" / "portfolio.json").write_text(json.dumps(p.to_dict()), encoding="utf-8")
+    (broker_env["pm_base"] / "agent1" / "portfolio.json").write_text(
+        json.dumps(p.to_dict()), encoding="utf-8"
+    )
     pm.apply_trade("agent1", buy)
 
     p_before = pm.load("agent1")
@@ -154,6 +190,7 @@ def test_fills_valid_sell_and_updates_portfolio(broker_env):
 # ---------------------------------------------------------------------------
 # 3. Rejects malformed outbox (shares <= 0)
 # ---------------------------------------------------------------------------
+
 
 def test_rejects_invalid_shares_from_malformed_outbox(broker_env):
     from engine.paper_broker import fill_day
@@ -185,6 +222,7 @@ def test_rejects_invalid_shares_from_malformed_outbox(broker_env):
 # 4. Rejects corrupted JSON line
 # ---------------------------------------------------------------------------
 
+
 def test_rejects_corrupted_json_outbox_line(broker_env):
     from engine.paper_broker import fill_day
 
@@ -204,12 +242,17 @@ def test_rejects_corrupted_json_outbox_line(broker_env):
 # 5. Rejects when over max_orders_per_day
 # ---------------------------------------------------------------------------
 
+
 def test_rejects_when_over_max_orders_per_day(broker_env):
     from engine.paper_broker import fill_day
 
     _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
-    _write_config(broker_env["config_dir"], "agent1",
-                  allowed_universe=["single-voo"], max_orders_per_day=1)
+    _write_config(
+        broker_env["config_dir"],
+        "agent1",
+        allowed_universe=["single-voo"],
+        max_orders_per_day=1,
+    )
     pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=20_000.0)
 
     append_order(TRADE_DATE, _make_order("ord_1", "agent1", "BUY", "VOO", 1))
@@ -226,12 +269,17 @@ def test_rejects_when_over_max_orders_per_day(broker_env):
 # 6. Rejects when notional exceeds cap
 # ---------------------------------------------------------------------------
 
+
 def test_rejects_when_notional_exceeds_cap(broker_env):
     from engine.paper_broker import fill_day
 
     _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
-    _write_config(broker_env["config_dir"], "agent1",
-                  allowed_universe=["single-voo"], max_order_notional=100.0)
+    _write_config(
+        broker_env["config_dir"],
+        "agent1",
+        allowed_universe=["single-voo"],
+        max_order_notional=100.0,
+    )
     pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=10_000.0)
 
     # 1 share × 500 = 500 > 100 cap
@@ -245,6 +293,7 @@ def test_rejects_when_notional_exceeds_cap(broker_env):
 # ---------------------------------------------------------------------------
 # 7. Rejects when cash insufficient
 # ---------------------------------------------------------------------------
+
 
 def test_rejects_when_cash_insufficient(broker_env):
     from engine.paper_broker import fill_day
@@ -264,6 +313,7 @@ def test_rejects_when_cash_insufficient(broker_env):
 # 8. Rejects ticker outside universe
 # ---------------------------------------------------------------------------
 
+
 def test_rejects_when_ticker_outside_universe(broker_env):
     from engine.paper_broker import fill_day
 
@@ -282,6 +332,7 @@ def test_rejects_when_ticker_outside_universe(broker_env):
 # 9. Rejects when no price data
 # ---------------------------------------------------------------------------
 
+
 def test_rejects_when_no_price_data(broker_env):
     from engine.paper_broker import fill_day
 
@@ -296,9 +347,42 @@ def test_rejects_when_no_price_data(broker_env):
     assert fills[0].reason == "NO_PRICE_DATA"
 
 
+def test_rejects_with_no_fx_rate_when_ticker_currency_has_no_rate(
+    broker_env, monkeypatch
+):
+    """Ticker has a price but cross-currency conversion fails → NO_FX_RATE.
+
+    Distinguishes "missing OHLCV" from "missing FX pair" in the inbox audit.
+    """
+    from engine.paper_broker import fill_day
+
+    # EUR-base agent buying a USD-denominated ticker; force FX lookup to fail.
+    _seed_ohlcv(broker_env["ohlcv"], "FOREIGN", [("2026-04-17", 100.0)])
+    _write_config(broker_env["config_dir"], "agent_eur", allowed_universe=[])
+    pm = _init_portfolio(
+        broker_env["pm_base"], "agent_eur", cash=10_000.0, currency="EUR"
+    )
+
+    # Force the ticker to resolve to USD so a cross-currency hop is required,
+    # then make fx_convert return None.
+    broker_env["ticker_ccy"].write_text('{"FOREIGN": "USD"}', encoding="utf-8")
+    monkeypatch.setattr("engine.paper_broker._TICKER_CURRENCY_OVERRIDES", None)
+    monkeypatch.setattr("engine.paper_broker.fx_convert", lambda *a, **kw: None)
+
+    append_order(
+        TRADE_DATE,
+        _make_order("ord_nofx", "agent_eur", "BUY", "FOREIGN", 1, currency="EUR"),
+    )
+
+    fills = fill_day(TRADE_DATE, pm)
+    assert fills[0].status == "rejected"
+    assert fills[0].reason == "NO_FX_RATE"
+
+
 # ---------------------------------------------------------------------------
 # 10. Uses latest close on-or-before trade date
 # ---------------------------------------------------------------------------
+
 
 def test_uses_latest_close_on_or_before_when_today_missing(broker_env):
     from engine.paper_broker import fill_day
@@ -319,6 +403,7 @@ def test_uses_latest_close_on_or_before_when_today_missing(broker_env):
 # 11. Rejects SELL with no position
 # ---------------------------------------------------------------------------
 
+
 def test_rejects_sell_when_no_position(broker_env):
     from engine.paper_broker import fill_day
 
@@ -337,6 +422,7 @@ def test_rejects_sell_when_no_position(broker_env):
 # 12. Rejects SELL with insufficient shares
 # ---------------------------------------------------------------------------
 
+
 def test_rejects_sell_when_insufficient_shares(broker_env):
     from engine.paper_broker import fill_day
     from engine.types import Trade
@@ -346,9 +432,17 @@ def test_rejects_sell_when_insufficient_shares(broker_env):
     pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=10_000.0)
 
     # Seed holding 5 shares via apply_trade.
-    seed = Trade(id="seed", timestamp=datetime(2026, 4, 16, tzinfo=timezone.utc),
-                 action="BUY", ticker="VOO", shares=5, price=400.0, total=2000.0,
-                 fees=0.0, reasoning="seed")
+    seed = Trade(
+        id="seed",
+        timestamp=datetime(2026, 4, 16, tzinfo=timezone.utc),
+        action="BUY",
+        ticker="VOO",
+        shares=5,
+        price=400.0,
+        total=2000.0,
+        fees=0.0,
+        reasoning="seed",
+    )
     pm.apply_trade("agent1", seed)
 
     append_order(TRADE_DATE, _make_order("ord_over", "agent1", "SELL", "VOO", 10))
@@ -362,16 +456,27 @@ def test_rejects_sell_when_insufficient_shares(broker_env):
 # 13. Drawdown halt rejects all orders
 # ---------------------------------------------------------------------------
 
+
 def test_rejects_all_orders_when_drawdown_halt_triggered(broker_env):
     from engine.paper_broker import fill_day
 
     _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
-    _write_config(broker_env["config_dir"], "agent1",
-                  allowed_universe=["single-voo"], daily_drawdown_halt_pct=-5.0)
+    _write_config(
+        broker_env["config_dir"],
+        "agent1",
+        allowed_universe=["single-voo"],
+        daily_drawdown_halt_pct=-5.0,
+    )
     # Portfolio is tiny (cash=100) but previous snapshot claimed 10_000 → big drawdown.
     pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=100.0)
-    pm.add_snapshot("agent1", date(2026, 4, 16), portfolio_value=10_000.0,
-                    cash=10_000.0, positions_value=0.0, benchmarks={})
+    pm.add_snapshot(
+        "agent1",
+        date(2026, 4, 16),
+        portfolio_value=10_000.0,
+        cash=10_000.0,
+        positions_value=0.0,
+        benchmarks={},
+    )
 
     append_order(TRADE_DATE, _make_order("ord_a", "agent1", "BUY", "VOO", 1))
     append_order(TRADE_DATE, _make_order("ord_b", "agent1", "BUY", "VOO", 1))
@@ -386,13 +491,16 @@ def test_rejects_all_orders_when_drawdown_halt_triggered(broker_env):
 # 14. Ticker currency override takes precedence
 # ---------------------------------------------------------------------------
 
+
 def test_ticker_currency_override_takes_precedence_over_heuristic(broker_env):
     from engine.paper_broker import fill_day
 
     # MSFT default would be USD. Override says EUR.
     broker_env["ticker_ccy"].write_text(json.dumps({"MSFT": "EUR"}), encoding="utf-8")
     _seed_ohlcv(broker_env["ohlcv"], "MSFT", [("2026-04-17", 100.0)])
-    _write_config(broker_env["config_dir"], "agent1", allowed_universe=[])  # no allowlist
+    _write_config(
+        broker_env["config_dir"], "agent1", allowed_universe=[]
+    )  # no allowlist
     pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=10_000.0, currency="EUR")
 
     append_order(TRADE_DATE, _make_order("ord_eur", "agent1", "BUY", "MSFT", 1))
@@ -408,7 +516,10 @@ def test_ticker_currency_override_takes_precedence_over_heuristic(broker_env):
 # 15. apply_trade failure → APPLY_TRADE_FAILED, loop continues
 # ---------------------------------------------------------------------------
 
-def test_apply_trade_failure_rejects_cleanly_and_continues_loop(broker_env, monkeypatch):
+
+def test_apply_trade_failure_rejects_cleanly_and_continues_loop(
+    broker_env, monkeypatch
+):
     from engine.paper_broker import fill_day
 
     _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
@@ -441,6 +552,7 @@ def test_apply_trade_failure_rejects_cleanly_and_continues_loop(broker_env, monk
 # 16. Malformed agent config falls back to defaults without crashing
 # ---------------------------------------------------------------------------
 
+
 def test_malformed_agent_config_falls_back_to_defaults(broker_env):
     """A corrupt agent config file must not crash fill_day; defaults are used instead."""
     from engine.paper_broker import AgentConfig
@@ -448,8 +560,8 @@ def test_malformed_agent_config_falls_back_to_defaults(broker_env):
     config_path = broker_env["config_dir"] / "ghostagent.json"
     config_path.write_text("{ not json", encoding="utf-8")
     cfg = AgentConfig.load("ghostagent")
-    assert cfg.max_order_notional == 500.0   # default
-    assert cfg.max_orders_per_day == 5        # default
+    assert cfg.max_order_notional == 500.0  # default
+    assert cfg.max_orders_per_day == 5  # default
     assert cfg.daily_drawdown_halt_pct == -5.0
     assert cfg.allowed_universe == []
     assert cfg.dry_run is False
@@ -459,12 +571,17 @@ def test_malformed_agent_config_falls_back_to_defaults(broker_env):
 # 17. dry_run mode
 # ---------------------------------------------------------------------------
 
+
 def test_dry_run_fills_inbox_but_does_not_mutate_portfolio(broker_env):
     from engine.paper_broker import fill_day
 
     _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
-    _write_config(broker_env["config_dir"], "agent1",
-                  allowed_universe=["single-voo"], dry_run=True)
+    _write_config(
+        broker_env["config_dir"],
+        "agent1",
+        allowed_universe=["single-voo"],
+        dry_run=True,
+    )
     pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=10_000.0)
     cash_before = pm.load("agent1").cash
 
