@@ -6,6 +6,40 @@ from pathlib import Path
 from engine.daily_log import generate_daily_log
 
 
+class TestPositionsDualShape:
+    """Positions may be a list of ticker strings OR a list of {ticker, shares} dicts.
+
+    Regression (2026-04-17): the leaderboard silently returned cash-only MTM when
+    positions were passed as strings because portfolio_mtm couldn't extract shares.
+    The per-agent display line then TypeError'd when positions were dicts.
+    Both shapes must now work.
+    """
+
+    def test_positions_as_strings_renders(self, tmp_path: Path) -> None:
+        import engine.daily_log as dl
+        dl.LOGS_DIR = tmp_path
+        summaries = {
+            "satoshi": {"cash": 5000.0, "deployed": 5000.0, "positions": ["BTC-EUR", "ETH-EUR"], "currency": "EUR"},
+        }
+        path = generate_daily_log(date(2026, 4, 17), {}, {"satoshi": {"commentary": "", "trades": []}}, summaries)
+        c = path.read_text()
+        assert "**Positions (2):** BTC-EUR, ETH-EUR" in c
+
+    def test_positions_as_dicts_renders(self, tmp_path: Path) -> None:
+        import engine.daily_log as dl
+        dl.LOGS_DIR = tmp_path
+        summaries = {
+            "satoshi": {
+                "cash": 5000.0, "deployed": 5000.0,
+                "positions": [{"ticker": "BTC-EUR", "shares": 0.05}, {"ticker": "ETH-EUR", "shares": 1.5}],
+                "currency": "EUR",
+            },
+        }
+        path = generate_daily_log(date(2026, 4, 17), {}, {"satoshi": {"commentary": "", "trades": []}}, summaries)
+        c = path.read_text()
+        assert "**Positions (2):** BTC-EUR, ETH-EUR" in c
+
+
 class TestDailyLog:
     def test_generates_markdown_file(self, tmp_path: Path) -> None:
         import engine.daily_log as dl

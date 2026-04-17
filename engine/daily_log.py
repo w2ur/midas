@@ -104,7 +104,11 @@ def generate_daily_log(
             lines.append(f"- **Deployed (cost basis):** {_fmt_with_eur(deployed, currency, log_date)}")
             positions = summary.get("positions", [])
             if positions:
-                lines.append(f"- **Positions ({len(positions)}):** {', '.join(positions)}")
+                # Positions may be a list of ticker strings OR dicts {ticker, shares}.
+                # The leaderboard (below) needs dicts to value MTM; the display here
+                # only cares about tickers. Accept both shapes defensively.
+                tickers = [p["ticker"] if isinstance(p, dict) else p for p in positions]
+                lines.append(f"- **Positions ({len(tickers)}):** {', '.join(tickers)}")
             lines.append("")
 
     # Leaderboard — MTM valuation in EUR for cross-agent comparison
