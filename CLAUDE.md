@@ -32,6 +32,7 @@ streamlit run app/main.py
 - `engine/orders.py` — Order/Fill types + outbox/inbox JSONL serde (Brain/Hands primitive)
 - `engine/paper_broker.py` — Hands side: 9 safety rails + fill logic + portfolio update
 - `engine/posts.py` — post types, 11-agent display names + schedule (single source of truth)
+- `engine/blog.py` — Oracle prompt builder + response parser + blog draft saver
 - `engine/selectors/` — bt Algos for entry signals (golden cross, RSI, etc.)
 - `engine/managers/` — bt Algos for position management (grid, trailing stop, etc.)
 - `engine/universes/` — Universe resolvers (S&P 500, congressional, crypto, etc.)

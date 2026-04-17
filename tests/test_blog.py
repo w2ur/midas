@@ -1,0 +1,105 @@
+"""Tests for engine.blog."""
+
+import json
+from datetime import date
+from pathlib import Path
+
+from engine.blog import (
+    BlogDraft,
+    build_oracle_prompt,
+    parse_oracle_response,
+    save_daily_blog_draft,
+)
+
+
+class TestBlogDraft:
+    def test_roundtrip(self) -> None:
+        d = BlogDraft(title="Day 2: YOLO Leads", body_md="# Body", slug="day-2-yolo")
+        out = d.to_dict()
+        assert out == {"title": "Day 2: YOLO Leads", "body_md": "# Body", "slug": "day-2-yolo"}
+        reconstructed = BlogDraft.from_dict(out)
+        assert reconstructed == d
+
+
+class TestBuildOraclePrompt:
+    def test_includes_all_agent_data(self) -> None:
+        agent_results = {
+            "steady-eddie-eur": {"commentary": "Holding.", "trades": []},
+            "yolo-sapiens-eur": {
+                "commentary": "Going all in.",
+                "trades": [{"action": "BUY", "ticker": "SX5E.PA", "shares": 3, "reasoning": "3x EU."}],
+            },
+        }
+        agent_posts = {
+            "steady-eddie-eur": [{"text": "Patience.", "kind": "trade"}],
+        }
+        leaderboard = [
+            {"agent": "yolo-sapiens-eur", "return_pct": 14.2, "rank": 1},
+            {"agent": "steady-eddie-eur", "return_pct": 2.1, "rank": 2},
+        ]
+        market_data = {"sp500": 7000.0, "gold": 4900.0, "btc": 75000.0, "eur_usd": 1.1784}
+        prompt = build_oracle_prompt(
+            day_number=2, market_data=market_data,
+            agent_results=agent_results, agent_posts=agent_posts,
+            leaderboard=leaderboard,
+        )
+        assert "Day 2" in prompt
+        assert "Steady Eddie EUR" in prompt
+        assert "YOLO Sapiens EUR" in prompt
+        assert "SX5E.PA" in prompt
+        assert "14.2" in prompt
+        assert "Patience." in prompt
+
+    def test_prompt_mentions_market_data(self) -> None:
+        prompt = build_oracle_prompt(
+            day_number=1, market_data={"sp500": 7000.0, "eur_usd": 1.18},
+            agent_results={}, agent_posts={}, leaderboard=[],
+        )
+        assert "7,000" in prompt or "7000" in prompt
+
+
+class TestParseOracleResponse:
+    def test_clean_json(self) -> None:
+        resp = json.dumps({
+            "blog_draft": {"title": "Day 2", "body_md": "Body", "slug": "day-2"},
+            "posts": [
+                {"text": "Scoreboard.", "mentions": [], "kind": "scoreboard"},
+            ],
+        })
+        draft, posts = parse_oracle_response(resp)
+        assert draft.title == "Day 2"
+        assert draft.slug == "day-2"
+        assert len(posts) == 1
+        assert posts[0].kind == "scoreboard"
+
+    def test_with_code_fences(self) -> None:
+        inner = json.dumps({
+            "blog_draft": {"title": "T", "body_md": "B", "slug": "s"},
+            "posts": [],
+        })
+        resp = f"```json\n{inner}\n```"
+        draft, posts = parse_oracle_response(resp)
+        assert draft.title == "T"
+        assert posts == []
+
+
+class TestSaveDailyBlogDraft:
+    def test_writes_frontmatter_and_body(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setattr("engine.blog.BLOG_DIR", tmp_path)
+        draft = BlogDraft(title="Day 1: Opening", body_md="# Day 1\n\nThe agents made their first trades.", slug="day-1")
+        path = save_daily_blog_draft(date(2026, 4, 17), draft)
+        assert path.name == "2026-04-17.md"
+        content = path.read_text(encoding="utf-8")
+        assert content.startswith("---\n")
+        assert 'title: "Day 1: Opening"' in content
+        assert "slug: day-1" in content
+        assert "date: 2026-04-17" in content
+        assert "The agents made their first trades." in content
+
+    def test_quotes_title_even_when_it_contains_colon(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setattr("engine.blog.BLOG_DIR", tmp_path)
+        draft = BlogDraft(title="Day 2: The Split", body_md="Content.", slug="day-2")
+        path = save_daily_blog_draft(date(2026, 4, 17), draft)
+        content = path.read_text(encoding="utf-8")
+        # Title containing colon MUST be quoted to stay valid YAML
+        assert 'title: "Day 2: The Split"' in content
