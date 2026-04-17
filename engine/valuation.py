@@ -85,3 +85,12 @@ def portfolio_mtm_eur(portfolio_summary: dict, on: date | None = None) -> float 
     if currency == "EUR":
         return native
     return to_eur(native, currency, on)
+
+
+def mtm_base_currency(portfolio_summary: dict, on: date | None = None) -> float:
+    """Mark-to-market in the portfolio's own base currency (no FX conversion).
+
+    Wrapper around portfolio_mtm that preserves the native currency — intended
+    for per-agent drawdown checks (same currency throughout, no FX noise).
+    """
+    return portfolio_mtm(portfolio_summary, on)
