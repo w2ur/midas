@@ -1,6 +1,6 @@
 """Post generation — single source of truth for agent display names and schedule.
 
-Imported by engine/daily_log.py, engine/blog.py, engine/output_bundle.py.
+Imported by engine/daily_log.py; engine/blog.py and engine/output_bundle.py will import from here in later tasks.
 """
 
 from __future__ import annotations
@@ -161,7 +161,10 @@ OUTPUT — JSON array, no other text:
 def parse_post_response(agent_id: str, response_text: str) -> list[PostPayload]:
     text = response_text.strip()
     if text.startswith("```"):
-        text = "\n".join(l for l in text.splitlines() if not l.strip().startswith("```")).strip()
+        lines = text.splitlines()
+        start = 1
+        end = len(lines) - 1 if lines[-1].strip().startswith("```") else len(lines)
+        text = "\n".join(lines[start:end]).strip()
     raw = json.loads(text)
     return [PostPayload.from_agent_output(agent_id, r) for r in raw]
 

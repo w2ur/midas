@@ -82,7 +82,12 @@ class TestResolvedPostTime:
     def test_random_differs_by_date(self) -> None:
         a = resolved_post_time("yolo-sapiens-eur", date(2026, 4, 17))
         b = resolved_post_time("yolo-sapiens-eur", date(2026, 4, 18))
-        # Not strictly required to differ, but extremely likely with MD5
+        assert a != b
+
+    def test_random_differs_by_agent(self) -> None:
+        d = date(2026, 4, 17)
+        a = resolved_post_time("yolo-sapiens-eur", d)
+        b = resolved_post_time("yolo-sapiens-usd", d)
         assert a != b
 
     def test_random_in_window(self) -> None:
