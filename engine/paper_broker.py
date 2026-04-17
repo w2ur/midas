@@ -27,6 +27,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from engine.fx import convert as fx_convert
+from engine.ohlcv_store import OHLCV_STORE as _DEFAULT_OHLCV_STORE, latest_close_on_or_before
 from engine.orders import Fill, Order, append_fill
 from engine.portfolio import PortfolioManager
 from engine.types import Trade
@@ -34,7 +35,9 @@ from engine.universes import resolve_universe
 from engine.valuation import mtm_base_currency
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_OHLCV_STORE = _REPO_ROOT / "data" / "market" / "ohlcv"
+# Module-level constant kept for test monkeypatching compatibility:
+# tests do `monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", tmp_path)`.
+_OHLCV_STORE = _DEFAULT_OHLCV_STORE
 AGENT_CONFIG_DIR = _REPO_ROOT / "data" / "agent_config"
 TICKER_CURRENCIES_PATH = _REPO_ROOT / "data" / "ticker_currencies.json"
 
@@ -52,43 +55,22 @@ class AgentConfig:
     @classmethod
     def load(cls, agent_id: str) -> "AgentConfig":
         path = AGENT_CONFIG_DIR / f"{agent_id}.json"
+        defaults = cls(
+            max_order_notional=500.0,
+            max_orders_per_day=5,
+            daily_drawdown_halt_pct=-5.0,
+            allowed_universe=[],
+            dry_run=False,
+        )
         if not path.exists():
-            return cls(
-                max_order_notional=500.0,
-                max_orders_per_day=5,
-                daily_drawdown_halt_pct=-5.0,
-                allowed_universe=[],
-                dry_run=False,
-            )
-        d = json.loads(path.read_text(encoding="utf-8"))
-        return cls(**d)
+            return defaults
+        try:
+            d = json.loads(path.read_text(encoding="utf-8"))
+            return cls(**d)
+        except (json.JSONDecodeError, TypeError) as exc:
+            logger.warning("Malformed agent config at %s: %s — falling back to defaults", path, exc)
+            return defaults
 
-
-def _lookup_close(ticker: str, d: date) -> float | None:
-    """Latest close on-or-before `d` for `ticker` from the committed OHLCV store."""
-    path = _OHLCV_STORE / f"{ticker}.jsonl"
-    if not path.exists():
-        return None
-    target = d.isoformat()
-    best_date: str | None = None
-    best_price: float | None = None
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            row_date = row.get("date")
-            if row_date is None or row_date > target:
-                continue
-            if best_date is None or row_date > best_date:
-                best_date = row_date
-                val = row.get("adj_close") if row.get("adj_close") is not None else row.get("close")
-                best_price = float(val) if val is not None else None
-    return best_price
 
 
 _TICKER_CURRENCY_OVERRIDES: dict[str, str] | None = None
@@ -217,7 +199,7 @@ def _process_one(
     if allowed_tickers and order.ticker not in allowed_tickers:
         return _reject(order.order_id, "TICKER_NOT_IN_UNIVERSE")
 
-    price = _lookup_close(order.ticker, trade_date)
+    price = latest_close_on_or_before(order.ticker, trade_date, store=_OHLCV_STORE)
     if price is None:
         return _reject(order.order_id, "NO_PRICE_DATA")
 

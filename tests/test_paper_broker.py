@@ -438,7 +438,25 @@ def test_apply_trade_failure_rejects_cleanly_and_continues_loop(broker_env, monk
 
 
 # ---------------------------------------------------------------------------
-# 16. dry_run mode
+# 16. Malformed agent config falls back to defaults without crashing
+# ---------------------------------------------------------------------------
+
+def test_malformed_agent_config_falls_back_to_defaults(broker_env):
+    """A corrupt agent config file must not crash fill_day; defaults are used instead."""
+    from engine.paper_broker import AgentConfig
+
+    config_path = broker_env["config_dir"] / "ghostagent.json"
+    config_path.write_text("{ not json", encoding="utf-8")
+    cfg = AgentConfig.load("ghostagent")
+    assert cfg.max_order_notional == 500.0   # default
+    assert cfg.max_orders_per_day == 5        # default
+    assert cfg.daily_drawdown_halt_pct == -5.0
+    assert cfg.allowed_universe == []
+    assert cfg.dry_run is False
+
+
+# ---------------------------------------------------------------------------
+# 17. dry_run mode
 # ---------------------------------------------------------------------------
 
 def test_dry_run_fills_inbox_but_does_not_mutate_portfolio(broker_env):
