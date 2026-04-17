@@ -48,6 +48,22 @@ streamlit run app/main.py
 - `engine/output_bundle.py` — assembles data/output/YYYY-MM-DD.json (single source of truth for API + retries)
 - `data/posts/, data/blog/, data/output/` — daily artifacts (gitignored)
 
+## Architecture Principle — Brain / Hands
+
+All external-world integrations in Midas follow a **Brain / Hands split**:
+
+- **Brain** — the Claude Code sandbox (daily trigger cron). Reads from disk, authors decisions (trades, posts, journal entries), writes to an outbox on disk. Holds no external credentials.
+- **Hands** — separate workers (paper broker for simulation, future real-broker worker for live execution). Read outbox, validate against safety rails, execute, write confirmations to inbox on disk. Pure executors.
+
+First application (Ring 1): trade execution.
+- Agents write orders to `data/orders/outbox/YYYY-MM-DD.jsonl`.
+- `engine/paper_broker.py` applies 9 safety rails, fills at end-of-day close from the OHLCV store, writes to `data/orders/inbox/YYYY-MM-DD.jsonl`.
+- Fills with `status="filled"` mutate portfolios via `PortfolioManager.apply_trade`; rejections carry a reason code.
+
+**Safety rails live in the Hands, not agent prompts.** The agent persona is aspirational; the broker is enforcing.
+
+Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_broker.py` that talks to Interactive Brokers — same outbox/inbox contract, credentials held outside the sandbox. See `~/.claude/plans/2026-04-17-midas-public-experiment-design-v2.md` for the full experiment design.
+
 ## Real-Money Tax & Regulatory Context
 - Operator is a **French tax resident**. All broker choices must serve France and expose a trading API.
 - Approved brokers: **Interactive Brokers Ireland (IBIE)** for equities/ETFs/forex; **Kraken** (PSAN-registered in France) for crypto; **OANDA Europe (Ireland)** for dedicated forex.

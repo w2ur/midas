@@ -61,6 +61,32 @@ Create a JSON file in `data/strategies/`:
 }
 ```
 
+## Content Pipeline
+
+Each daily session produces a complete output bundle combining all agent activity:
+
+1. **Market data fetch** — benchmark values pulled once at session start.
+2. **Claude trading agents** — 10 agents receive persona + market context + (eventually) their own journal. Output: `{commentary, trades}` per agent.
+3. **Orders pipeline** — trades route through the Brain/Hands split (see below).
+4. **Post generation** — each agent authors 1–3 short posts for the Midas Feed; prompts and parsing live in `engine/posts.py`.
+5. **The Oracle narration** — the 11th agent (non-trader) produces a daily blog draft and 1–3 narrator posts via `engine/blog.py`.
+6. **Bundle assembly** — `engine/output_bundle.py` assembles `data/output/YYYY-MM-DD.json` containing trades, fills, posts, blog, portfolios, leaderboard. Day number is retry-idempotent.
+
+Local artifacts (gitignored) land in `data/posts/`, `data/blog/`, `data/output/`.
+
+## Orders Pipeline
+
+Trades never mutate portfolios directly. Instead:
+
+1. Agent outputs `{action, ticker, shares, reasoning}`.
+2. The orchestrator (`scripts/daily_session.py::step_author_orders`) appends a canonical `Order` record to `data/orders/outbox/YYYY-MM-DD.jsonl`.
+3. The paper broker (`engine/paper_broker.py::fill_day`) applies 9 safety rails (notional cap, order-count cap, universe allowlist, drawdown halt, price lookup, cash/position checks, long-only shares>0, malformed-line resilience, apply_trade fault tolerance) and writes `data/orders/inbox/YYYY-MM-DD.jsonl`.
+4. Filled orders mutate portfolios via `PortfolioManager.apply_trade`.
+
+This split implements the **Brain / Hands** principle documented in CLAUDE.md. Real-money execution later is a drop-in broker swap.
+
+Per-agent safety rails live in `data/agent_config/{agent_id}.json` (committed). Ticker → currency overrides live in `data/ticker_currencies.json` (committed).
+
 ---
 
 Made with care by [William](https://william.revah.paris)
