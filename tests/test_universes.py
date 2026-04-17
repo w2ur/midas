@@ -176,13 +176,14 @@ class TestIndexCaching:
         import os
         os.utime(cache_file, (old_mtime, old_mtime))
 
-        fresh = ["AAPL", "MSFT"]
+        # Provide ≥100 fake tickers so the scrape sanity check passes.
+        fresh = [f"T{i:03d}" for i in range(150)]
         import pandas as pd
 
-        def fake_read_html(url, *args, **kwargs):
+        def fake_fetch(url):
             return [pd.DataFrame({"Symbol": fresh})]
 
-        monkeypatch.setattr("pandas.read_html", fake_read_html)
+        monkeypatch.setattr(ix_mod, "_fetch_wikipedia_tables", fake_fetch)
 
         result = ix_mod.get_sp500_tickers()
         assert result == sorted(fresh)

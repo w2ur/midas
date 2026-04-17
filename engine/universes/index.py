@@ -29,6 +29,20 @@ def _fetch_wikipedia_tables(url: str) -> list[pd.DataFrame]:
         html = resp.read().decode("utf-8")
     return pd.read_html(io.StringIO(html))
 
+
+def _largest_table_with_column(
+    tables: list[pd.DataFrame], column: str
+) -> pd.DataFrame | None:
+    """Return the largest table containing `column` in its columns.
+
+    Robust against Wikipedia page layout changes: avoids picking small
+    "examples" or "recent changes" tables that happen to share a column name.
+    """
+    candidates = [t for t in tables if column in [str(c) for c in t.columns]]
+    if not candidates:
+        return None
+    return max(candidates, key=len)
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
@@ -83,19 +97,19 @@ def get_sp500_tickers() -> list[str]:
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
     tables = _fetch_wikipedia_tables(url)
 
-    tickers: list[str] | None = None
-    for table in tables:
-        cols = [str(c) for c in table.columns]
-        if "Symbol" in cols:
-            tickers = [_normalise(str(t)) for t in table["Symbol"].tolist()]
-            break
-
-    if tickers is None:
+    table = _largest_table_with_column(tables, "Symbol")
+    if table is None:
         raise RuntimeError("Could not find 'Symbol' column in S&P 500 Wikipedia tables")
 
-    result = sorted(tickers)
-    _write_cache(cache_path, result)
-    return result
+    tickers = sorted({_normalise(str(t)) for t in table["Symbol"].tolist()})
+    # Sanity check: S&P 500 must have ~500 constituents, never a handful.
+    if len(tickers) < 100:
+        raise RuntimeError(
+            f"S&P 500 scrape returned only {len(tickers)} tickers — Wikipedia layout may have changed"
+        )
+
+    _write_cache(cache_path, tickers)
+    return tickers
 
 
 # ---------------------------------------------------------------------------
@@ -116,18 +130,16 @@ def get_dow30_tickers() -> list[str]:
     url = "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average"
     tables = _fetch_wikipedia_tables(url)
 
-    tickers: list[str] | None = None
-    for table in tables:
-        cols = [str(c) for c in table.columns]
-        if "Symbol" in cols:
-            raw = table["Symbol"].dropna().tolist()
-            # Drop any header-like values that snuck through
-            raw = [str(t) for t in raw if str(t) != "Symbol"]
-            tickers = sorted({_normalise(t) for t in raw if t})
-            break
-
-    if tickers is None:
+    table = _largest_table_with_column(tables, "Symbol")
+    if table is None:
         raise RuntimeError("Could not find 'Symbol' column in Dow 30 Wikipedia tables")
+
+    raw = [str(t) for t in table["Symbol"].dropna().tolist() if str(t) != "Symbol"]
+    tickers = sorted({_normalise(t) for t in raw if t})
+    if len(tickers) < 20:
+        raise RuntimeError(
+            f"Dow 30 scrape returned only {len(tickers)} tickers — Wikipedia layout may have changed"
+        )
 
     _write_cache(cache_path, tickers)
     return tickers
@@ -151,28 +163,18 @@ def get_nasdaq100_tickers() -> list[str]:
     url = "https://en.wikipedia.org/wiki/Nasdaq-100"
     tables = _fetch_wikipedia_tables(url)
 
+    # Wikipedia occasionally restructures the page — check both possible column names.
+    table = _largest_table_with_column(tables, "Ticker") or _largest_table_with_column(tables, "Symbol")
     tickers: list[str] | None = None
-    for table in tables:
-        cols = [str(c) for c in table.columns]
-        if "Ticker" in cols:
-            raw = table["Ticker"].dropna().tolist()
-            raw = [str(t) for t in raw if str(t) not in ("Ticker", "nan")]
-            tickers = sorted({_normalise(t) for t in raw if t})
-            break
+    if table is not None:
+        col = "Ticker" if "Ticker" in [str(c) for c in table.columns] else "Symbol"
+        raw = [str(t) for t in table[col].dropna().tolist() if str(t) not in (col, "nan")]
+        tickers = sorted({_normalise(t) for t in raw if t})
 
-    if tickers is None:
-        # Fallback: try "Symbol" column (Wikipedia occasionally restructures the page)
-        for table in tables:
-            cols = [str(c) for c in table.columns]
-            if "Symbol" in cols:
-                raw = table["Symbol"].dropna().tolist()
-                raw = [str(t) for t in raw if str(t) not in ("Symbol", "nan")]
-                tickers = sorted({_normalise(t) for t in raw if t})
-                break
-
-    if tickers is None:
+    if tickers is None or len(tickers) < 50:
         raise RuntimeError(
-            "Could not find 'Ticker' or 'Symbol' column in Nasdaq-100 Wikipedia tables"
+            f"Nasdaq-100 scrape returned {len(tickers) if tickers else 0} tickers — "
+            "Wikipedia layout may have changed"
         )
 
     _write_cache(cache_path, tickers)
