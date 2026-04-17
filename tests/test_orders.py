@@ -63,6 +63,38 @@ class TestOrderValidation:
             shares=0.01, reasoning="test", currency="EUR",
         )
 
+    def test_shares_nan_rejected(self) -> None:
+        with pytest.raises(ValueError, match="shares must be > 0"):
+            Order(
+                order_id="ord_x", ts=datetime.now(timezone.utc),
+                agent_id="satoshi", action="BUY", ticker="BTC-EUR",
+                shares=float("nan"), reasoning="test", currency="EUR",
+            )
+
+
+class TestFillValidation:
+    def test_invalid_status_rejected(self) -> None:
+        with pytest.raises(ValueError, match="status must be"):
+            Fill(
+                order_id="ord_x", ts_filled=datetime.now(timezone.utc),
+                status="pending", fill_price=None, fill_currency=None,
+                notional=None, fees=None, reason=None,
+            )
+
+    def test_filled_status_accepted(self) -> None:
+        Fill(
+            order_id="ord_x", ts_filled=datetime.now(timezone.utc),
+            status="filled", fill_price=100.0, fill_currency="EUR",
+            notional=100.0, fees=0.0, reason=None,
+        )
+
+    def test_rejected_status_accepted(self) -> None:
+        Fill(
+            order_id="ord_x", ts_filled=datetime.now(timezone.utc),
+            status="rejected", fill_price=None, fill_currency=None,
+            notional=None, fees=None, reason="MAX_ORDERS_PER_DAY",
+        )
+
 
 class TestOutboxRoundTrip:
     def test_append_and_read(self, tmp_path: Path, monkeypatch) -> None:
@@ -110,6 +142,13 @@ class TestOutboxRoundTrip:
     def test_empty_when_file_missing(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path)
         assert read_outbox(date(2026, 4, 17)) == []
+
+    def test_malformed_jsonl_raises_with_context(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path)
+        path = tmp_path / "2026-04-17.jsonl"
+        path.write_text('{"broken": ')  # truncated JSON
+        with pytest.raises(ValueError, match="Malformed JSON"):
+            read_outbox(date(2026, 4, 17))
 
 
 class TestInboxRoundTrip:

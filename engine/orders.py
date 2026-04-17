@@ -37,7 +37,7 @@ class Order:
     currency: str
 
     def __post_init__(self) -> None:
-        if self.shares <= 0:
+        if not (self.shares > 0):
             raise ValueError(f"Order.shares must be > 0, got {self.shares}")
         if self.action not in ("BUY", "SELL"):
             raise ValueError(f"Order.action must be 'BUY' or 'SELL', got {self.action!r}")
@@ -81,6 +81,10 @@ class Fill:
     fees: float | None
     reason: str | None
 
+    def __post_init__(self) -> None:
+        if self.status not in ("filled", "rejected"):
+            raise ValueError(f"Fill.status must be 'filled' or 'rejected', got {self.status!r}")
+
     def to_dict(self) -> dict:
         return {
             "order_id": self.order_id,
@@ -114,15 +118,18 @@ def make_order_id(d: date, agent_id: str, seq: int) -> str:
 
 def _append_jsonl(path: Path, obj: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a") as f:
+    with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(obj) + "\n")
 
 
 def _read_jsonl(path: Path) -> list[dict]:
     if not path.exists():
         return []
-    with path.open() as f:
-        return [json.loads(line) for line in f if line.strip()]
+    with path.open(encoding="utf-8") as f:
+        try:
+            return [json.loads(line) for line in f if line.strip()]
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Malformed JSON in {path}: {exc}") from exc
 
 
 def append_order(d: date, order: Order) -> None:
