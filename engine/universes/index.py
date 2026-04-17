@@ -1,7 +1,13 @@
-"""Index universe resolvers — S&P 500, Dow 30, Nasdaq 100.
+"""Index universe resolvers.
+
+US: S&P 500, Dow 30, Nasdaq 100.
+EU: CAC 40, DAX, FTSE 100, STOXX Europe 600.
 
 All resolvers use a 24-hour file cache under data/cache/universes/.
-Wikipedia tables are fetched via pd.read_html().
+Wikipedia tables are fetched via pd.read_html(). EU universes append
+yfinance-compatible exchange suffixes (.L for LSE, .PA for Euronext
+Paris, .DE for Xetra, etc.) where the Wikipedia table doesn't already
+include them.
 """
 
 from __future__ import annotations
@@ -179,3 +185,166 @@ def get_nasdaq100_tickers() -> list[str]:
 
     _write_cache(cache_path, tickers)
     return tickers
+
+
+# ---------------------------------------------------------------------------
+# EU indices — CAC 40, DAX, FTSE 100, STOXX Europe 600
+# ---------------------------------------------------------------------------
+
+# Country → yfinance exchange suffix, used for STOXX 600 (tickers without suffix).
+_STOXX_COUNTRY_SUFFIX: dict[str, str] = {
+    "Austria": ".VI",
+    "Belgium": ".BR",
+    "Denmark": ".CO",
+    "Finland": ".HE",
+    "France": ".PA",
+    "Germany": ".DE",
+    "Greece": ".AT",
+    "Ireland": ".IR",
+    "Italy": ".MI",
+    "Luxembourg": ".LU",
+    "Netherlands": ".AS",
+    "Norway": ".OL",
+    "Poland": ".WA",
+    "Portugal": ".LS",
+    "Spain": ".MC",
+    "Sweden": ".ST",
+    "Switzerland": ".SW",
+    "United Kingdom": ".L",
+    # Jersey / Bermuda / Israel companies often list on LSE
+    "Jersey": ".L",
+    "Bermuda": ".L",
+    "Israel": ".L",
+}
+
+
+def _clean_ticker(raw: object) -> str | None:
+    s = str(raw).strip()
+    if not s or s.lower() in ("ticker", "nan", "none", "—"):
+        return None
+    # Strip footnote markers like "[1]" that Wikipedia sometimes leaves
+    if "[" in s:
+        s = s.split("[", 1)[0].strip()
+    return s or None
+
+
+def get_cac40_tickers() -> list[str]:
+    """Return the CAC 40 (French benchmark) constituents.
+
+    Wikipedia lists these with yfinance-compatible suffixes already (e.g. AIR.PA).
+    Cached 24 h in data/cache/universes/cac40.json.
+    """
+    cache_path = _CACHE_DIR / "cac40.json"
+    cached = _read_cache(cache_path)
+    if cached is not None:
+        return cached
+
+    url = "https://en.wikipedia.org/wiki/CAC_40"
+    tables = _fetch_wikipedia_tables(url)
+    table = _largest_table_with_column(tables, "Ticker")
+    if table is None:
+        raise RuntimeError("CAC 40: no 'Ticker' column found on Wikipedia page")
+    tickers = sorted({t for t in (_clean_ticker(v) for v in table["Ticker"]) if t})
+    if len(tickers) < 30:
+        raise RuntimeError(f"CAC 40: only {len(tickers)} tickers — Wikipedia layout may have changed")
+    _write_cache(cache_path, tickers)
+    return tickers
+
+
+def get_dax_tickers() -> list[str]:
+    """Return the DAX (German benchmark, 40 constituents since 2021) members.
+
+    Cached 24 h in data/cache/universes/dax.json.
+    """
+    cache_path = _CACHE_DIR / "dax.json"
+    cached = _read_cache(cache_path)
+    if cached is not None:
+        return cached
+
+    url = "https://en.wikipedia.org/wiki/DAX"
+    tables = _fetch_wikipedia_tables(url)
+    table = _largest_table_with_column(tables, "Ticker")
+    if table is None:
+        raise RuntimeError("DAX: no 'Ticker' column found on Wikipedia page")
+    tickers = sorted({t for t in (_clean_ticker(v) for v in table["Ticker"]) if t})
+    if len(tickers) < 30:
+        raise RuntimeError(f"DAX: only {len(tickers)} tickers — Wikipedia layout may have changed")
+    _write_cache(cache_path, tickers)
+    return tickers
+
+
+def get_ftse100_tickers() -> list[str]:
+    """Return FTSE 100 constituents with .L (LSE) suffix appended for yfinance.
+
+    Cached 24 h in data/cache/universes/ftse100.json.
+    """
+    cache_path = _CACHE_DIR / "ftse100.json"
+    cached = _read_cache(cache_path)
+    if cached is not None:
+        return cached
+
+    url = "https://en.wikipedia.org/wiki/FTSE_100_Index"
+    tables = _fetch_wikipedia_tables(url)
+    table = _largest_table_with_column(tables, "Ticker")
+    if table is None:
+        raise RuntimeError("FTSE 100: no 'Ticker' column found on Wikipedia page")
+
+    tickers: set[str] = set()
+    for raw in table["Ticker"]:
+        t = _clean_ticker(raw)
+        if t is None:
+            continue
+        # Some Wikipedia rows already carry a dot (multiple share classes like BT.A, RR.)
+        # Always append .L to get the LSE-listed security on yfinance.
+        if not t.endswith(".L"):
+            t = f"{t}.L"
+        tickers.add(t)
+    result = sorted(tickers)
+    if len(result) < 80:
+        raise RuntimeError(f"FTSE 100: only {len(result)} tickers — Wikipedia layout may have changed")
+    _write_cache(cache_path, result)
+    return result
+
+
+def get_stoxx600_tickers() -> list[str]:
+    """Return STOXX Europe 600 constituents with country-appropriate suffixes.
+
+    Maps each row's Country column to the yfinance exchange suffix before
+    combining with the ticker. Rows whose country is not in the map are skipped.
+    Cached 24 h in data/cache/universes/stoxx600.json.
+    """
+    cache_path = _CACHE_DIR / "stoxx600.json"
+    cached = _read_cache(cache_path)
+    if cached is not None:
+        return cached
+
+    url = "https://en.wikipedia.org/wiki/STOXX_Europe_600"
+    tables = _fetch_wikipedia_tables(url)
+    table = _largest_table_with_column(tables, "Ticker")
+    if table is None:
+        raise RuntimeError("STOXX 600: no 'Ticker' column found on Wikipedia page")
+    if "Country" not in [str(c) for c in table.columns]:
+        raise RuntimeError("STOXX 600: no 'Country' column found — cannot map suffixes")
+
+    tickers: set[str] = set()
+    skipped_countries: set[str] = set()
+    for _, row in table.iterrows():
+        t = _clean_ticker(row["Ticker"])
+        country = str(row["Country"]).strip() if row["Country"] is not None else ""
+        if t is None or not country:
+            continue
+        suffix = _STOXX_COUNTRY_SUFFIX.get(country)
+        if suffix is None:
+            skipped_countries.add(country)
+            continue
+        if not t.endswith(suffix):
+            t = f"{t}{suffix}"
+        tickers.add(t)
+
+    result = sorted(tickers)
+    if len(result) < 400:
+        raise RuntimeError(
+            f"STOXX 600: only {len(result)} tickers (skipped countries: {sorted(skipped_countries)})"
+        )
+    _write_cache(cache_path, result)
+    return result

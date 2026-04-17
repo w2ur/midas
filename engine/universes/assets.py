@@ -95,6 +95,50 @@ def get_bearish_etf_tickers() -> list[str]:
     ]
 
 
+def get_crypto_eur_tickers() -> list[str]:
+    """Return the top crypto tickers quoted in EUR (Kraken spot format on yfinance).
+
+    Agents assigned to this universe trade BTC/EUR, ETH/EUR, etc. directly on
+    Kraken without an EUR→USD conversion. Validated against yfinance
+    2026-04-17; tickers without EUR pair coverage on Yahoo are omitted.
+    """
+    return [
+        "BTC-EUR",
+        "ETH-EUR",
+        "SOL-EUR",
+        "XRP-EUR",
+        "ADA-EUR",
+        "DOGE-EUR",
+        "DOT-EUR",
+        "LINK-EUR",
+        "LTC-EUR",
+        "BCH-EUR",
+        "AVAX-EUR",
+        "ATOM-EUR",
+        "XLM-EUR",
+        "FIL-EUR",
+    ]
+
+
+def get_commodities_eur_tickers() -> list[str]:
+    """Return EUR-quoted and EUR-hedged commodity ETFs for goldfinger's EUR-only form.
+
+    Gold, silver, and broad commodities via UCITS ETFs tradable from IBIE.
+    Some are GBP-denominated on LSE but still UCITS-compliant; their EUR
+    equivalents on Euronext may be thinner. Candidates validated against
+    yfinance on 2026-04-17 (see fetch_ohlcv smoke runs).
+    """
+    return [
+        "PHAU.L",   # WisdomTree Physical Gold (USD, LSE) — widely traded
+        "PHAG.L",   # WisdomTree Physical Silver (USD, LSE)
+        "SGLN.L",   # iShares Physical Gold ETC (USD, LSE)
+        "SGLN.MI",  # iShares Physical Gold ETC (EUR, Milan listing)
+        "4GLD.DE",  # Xetra-Gold (EUR, Xetra)
+        "PPFB.DE",  # WisdomTree Physical Gold EUR (Xetra)
+        "CRUD.L",   # WisdomTree Brent Crude Oil ETC (USD, LSE)
+    ]
+
+
 def get_bearish_etf_ucits_tickers() -> list[str]:
     """UCITS inverse and leveraged ETFs tradable by EU retail on LSE/Euronext/Xetra.
 

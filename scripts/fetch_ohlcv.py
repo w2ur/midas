@@ -32,6 +32,10 @@ from engine.universes.index import (
     get_sp500_tickers,
     get_dow30_tickers,
     get_nasdaq100_tickers,
+    get_cac40_tickers,
+    get_dax_tickers,
+    get_ftse100_tickers,
+    get_stoxx600_tickers,
 )
 from engine.universes.alternative import (
     get_congressional_tickers,
@@ -40,12 +44,14 @@ from engine.universes.alternative import (
 )
 from engine.universes.assets import (
     get_crypto_tickers,
+    get_crypto_eur_tickers,
     get_forex_tickers,
     get_metals_tickers,
     get_voo_only,
     get_classic_60_40,
     get_bearish_etf_tickers,
     get_bearish_etf_ucits_tickers,
+    get_commodities_eur_tickers,
 )
 
 _OHLCV_DIR = _PROJECT_ROOT / "data" / "market" / "ohlcv"
@@ -91,13 +97,19 @@ def _collect_universe_symbols() -> set[str]:
         get_sp500_tickers,
         get_dow30_tickers,
         get_nasdaq100_tickers,
+        get_cac40_tickers,
+        get_dax_tickers,
+        get_ftse100_tickers,
+        get_stoxx600_tickers,
         get_crypto_tickers,
+        get_crypto_eur_tickers,
         get_forex_tickers,
         get_metals_tickers,
         get_voo_only,
         get_classic_60_40,
         get_bearish_etf_tickers,
         get_bearish_etf_ucits_tickers,
+        get_commodities_eur_tickers,
         get_congressional_tickers,
         get_insider_tickers,
         get_high_short_tickers,
@@ -160,13 +172,26 @@ def _fetch_symbol(symbol: str, start: date, end: date) -> pd.DataFrame | None:
 
 
 def _safe_float(v) -> float | None:
-    if v is None or pd.isna(v):
+    """Coerce a DataFrame cell to float, defending against accidental Series values."""
+    if v is None:
+        return None
+    if isinstance(v, pd.Series):
+        if v.empty:
+            return None
+        v = v.iloc[0]
+    if pd.isna(v):
         return None
     return float(v)
 
 
 def _safe_int(v) -> int | None:
-    if v is None or pd.isna(v):
+    if v is None:
+        return None
+    if isinstance(v, pd.Series):
+        if v.empty:
+            return None
+        v = v.iloc[0]
+    if pd.isna(v):
         return None
     return int(v)
 

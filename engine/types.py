@@ -16,10 +16,12 @@ VALID_UNIVERSES: frozenset[str] = frozenset({
     "dow30", "sp500", "nasdaq100", "dividend-aristocrats",
     "congress", "insiders", "13f-whales", "high-short",
     "etf-sectors", "etf-broad",
-    "crypto-top20", "forex-majors", "metals-commodities",
+    "crypto-top20", "crypto-top20-eur",
+    "forex-majors", "metals-commodities", "commodities-eur",
     "single-voo", "classic-60-40",
-    "bearish-etfs",
-    "bearish-etfs-ucits",
+    "bearish-etfs", "bearish-etfs-ucits",
+    # EU indices
+    "cac40", "dax", "ftse100", "stoxx-600",
 })
 
 VALID_SELECTORS: frozenset[str] = frozenset({
@@ -144,11 +146,12 @@ class StrategyRules:
 
 @dataclass
 class Portfolio:
-    """Live portfolio state: cash + open positions."""
+    """Live portfolio state: cash + open positions + base currency."""
 
     cash: float
     positions: list[Position]
     last_updated: date
+    currency: str = "USD"  # ISO 4217 code; legacy portfolios default to USD
 
     @property
     def cost_basis(self) -> float:
@@ -159,6 +162,7 @@ class Portfolio:
         """Serialize to a JSON-safe dictionary."""
         return {
             "cash": self.cash,
+            "currency": self.currency,
             "last_updated": self.last_updated.isoformat(),
             "positions": [
                 {
@@ -189,6 +193,7 @@ class Portfolio:
             cash=data["cash"],
             positions=positions,
             last_updated=date.fromisoformat(data["last_updated"]),
+            currency=data.get("currency", "USD"),
         )
 
 

@@ -22,15 +22,25 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 from engine.backtest import run_backtest
 from engine.market_data import MarketDataFetcher
 from engine.types import StrategySpec
-from engine.universes.index import get_sp500_tickers, get_dow30_tickers, get_nasdaq100_tickers
+from engine.universes.index import (
+    get_sp500_tickers,
+    get_dow30_tickers,
+    get_nasdaq100_tickers,
+    get_cac40_tickers,
+    get_dax_tickers,
+    get_ftse100_tickers,
+    get_stoxx600_tickers,
+)
 from engine.universes.assets import (
     get_crypto_tickers,
+    get_crypto_eur_tickers,
     get_forex_tickers,
     get_metals_tickers,
     get_voo_only,
     get_classic_60_40,
     get_bearish_etf_tickers,
     get_bearish_etf_ucits_tickers,
+    get_commodities_eur_tickers,
 )
 
 # ---------------------------------------------------------------------------
@@ -73,6 +83,12 @@ def _resolve_universe(universe_id: str) -> list[str]:
         "classic-60-40": get_classic_60_40,
         "bearish-etfs": get_bearish_etf_tickers,
         "bearish-etfs-ucits": get_bearish_etf_ucits_tickers,
+        "crypto-top20-eur": get_crypto_eur_tickers,
+        "commodities-eur": get_commodities_eur_tickers,
+        "cac40": get_cac40_tickers,
+        "dax": get_dax_tickers,
+        "ftse100": get_ftse100_tickers,
+        "stoxx-600": get_stoxx600_tickers,
     }
     if universe_id in dynamic_fetchers:
         return dynamic_fetchers[universe_id]()

@@ -6,6 +6,7 @@ from datetime import date
 from pathlib import Path
 
 from engine.fx import to_eur
+from engine.valuation import portfolio_mtm, portfolio_mtm_eur
 
 LOGS_DIR = Path(__file__).parent.parent / "data" / "logs"
 
@@ -121,23 +122,28 @@ def generate_daily_log(
                 lines.append(f"- **Positions ({len(positions)}):** {', '.join(positions)}")
             lines.append("")
 
-    # Leaderboard — everyone normalized to EUR for cross-agent comparison
-    lines.append("## Leaderboard (EUR-equivalent, cost-basis approximation)\n")
-    lines.append("> Total value uses cash + cost basis of positions. Not mark-to-market — "
-                 "agent ranking should be read with that caveat until portfolio MTM ships.\n")
-    lines.append("| Rank | Agent | Native total | ≈ EUR |")
-    lines.append("|------|-------|--------------|-------|")
+    # Leaderboard — MTM valuation in EUR for cross-agent comparison
+    lines.append("## Leaderboard (mark-to-market, EUR-equivalent)\n")
+    lines.append("> Positions priced at latest close from the committed OHLCV store, "
+                 "converted to EUR at today's FX. All agents started at €10,000 equivalent.\n")
+    lines.append("| Rank | Agent | Native MTM | ≈ EUR | vs €10k |")
+    lines.append("|------|-------|------------|-------|---------|")
     rows = []
     for agent_id, summary in portfolio_summaries.items():
         currency = summary.get("currency", "USD")
-        native_total = summary.get("cash", 0) + summary.get("deployed", 0)
-        eur_total = to_eur(native_total, currency, log_date) if currency != "EUR" else native_total
-        rows.append((agent_id, currency, native_total, eur_total))
+        native_mtm = portfolio_mtm(summary, log_date)
+        eur_mtm = portfolio_mtm_eur(summary, log_date)
+        rows.append((agent_id, currency, native_mtm, eur_mtm))
     rows.sort(key=lambda r: r[3] if r[3] is not None else -1, reverse=True)
-    for rank, (agent_id, currency, native_total, eur_total) in enumerate(rows, start=1):
+    for rank, (agent_id, currency, native_mtm, eur_mtm) in enumerate(rows, start=1):
         display = agent_display_names.get(agent_id, agent_id)
-        eur_str = _fmt(eur_total, "EUR") if eur_total is not None else "— (rate unavailable)"
-        lines.append(f"| {rank} | {display} | {_fmt(native_total, currency)} | {eur_str} |")
+        eur_str = _fmt(eur_mtm, "EUR") if eur_mtm is not None else "— (rate unavailable)"
+        if eur_mtm is None:
+            pnl_str = "—"
+        else:
+            pnl_pct = (eur_mtm / 10_000 - 1) * 100
+            pnl_str = f"{pnl_pct:+.2f}%"
+        lines.append(f"| {rank} | {display} | {_fmt(native_mtm, currency)} | {eur_str} | {pnl_str} |")
     lines.append("")
 
     # Footer

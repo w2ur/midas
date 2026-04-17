@@ -65,7 +65,12 @@ class PortfolioManager:
     # Lifecycle
     # ------------------------------------------------------------------
 
-    def initialize(self, strategy_id: str, initial_capital: float) -> None:
+    def initialize(
+        self,
+        strategy_id: str,
+        initial_capital: float,
+        currency: str = "USD",
+    ) -> None:
         """Create portfolio directory with empty portfolio, trades, and snapshots files.
 
         Does nothing if the portfolio directory already exists.
@@ -79,6 +84,7 @@ class PortfolioManager:
                 cash=initial_capital,
                 positions=[],
                 last_updated=date.today(),
+                currency=currency,
             )
             self._write_json(portfolio_path, portfolio.to_dict())
 
