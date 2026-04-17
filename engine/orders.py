@@ -70,7 +70,16 @@ class Order:
 
 @dataclass
 class Fill:
-    """Paper broker confirmation. Status is "filled" or "rejected"; reason set only on rejections."""
+    """Paper broker confirmation.
+
+    Status is "filled" or "rejected"; reason set only on rejections.
+
+    Currency convention (filled orders):
+      - fill_price, fill_currency — the ticker's NATIVE currency (e.g., MSFT → USD)
+      - notional                  — the agent's BASE currency (post-FX conversion)
+    This asymmetry means a USD ticker bought by an EUR agent produces:
+        fill_price=400.0, fill_currency="USD", notional=360.0  (EUR-equivalent).
+    """
 
     order_id: str
     ts_filled: datetime

@@ -26,14 +26,12 @@ import argparse
 import json
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 # Add project root to sys.path so engine imports work when run directly.
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
-
-from datetime import datetime, timezone
 
 from engine.blog import build_oracle_prompt, save_daily_blog_draft
 from engine.market_data import MarketDataFetcher

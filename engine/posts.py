@@ -173,5 +173,5 @@ def save_daily_posts(post_date: date, all_posts: dict[str, list[PostPayload]]) -
     POSTS_DIR.mkdir(parents=True, exist_ok=True)
     path = POSTS_DIR / f"{post_date.isoformat()}.json"
     out = {aid: [p.to_dict() for p in posts] for aid, posts in all_posts.items()}
-    path.write_text(json.dumps(out, indent=2))
+    path.write_text(json.dumps(out, indent=2), encoding="utf-8")
     return path

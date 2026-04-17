@@ -46,6 +46,13 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AgentConfig:
+    """Per-agent safety rails loaded from data/agent_config/{agent_id}.json.
+
+    daily_drawdown_halt_pct uses NEGATIVE values. The broker halts all of the
+    agent's orders when the computed drawdown % is strictly less than this value
+    (i.e. -7.0 < -5.0 → halt). A value of 0.0 disables the halt for that agent.
+    """
+
     max_order_notional: float
     max_orders_per_day: int
     daily_drawdown_halt_pct: float
