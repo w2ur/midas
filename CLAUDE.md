@@ -42,7 +42,8 @@ streamlit run app/main.py
 - `data/agent_config/` — per-agent safety rails (committed)
 - `data/ticker_currencies.json` — ticker → ISO currency override map (committed)
 - `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (gitignored)
-- `.claude/agents/` — Six analytical trading agent personas
+- `.claude/agents/` — Ten trading agent personas (EUR/USD twins + Satoshi, Monsieur Forex, Goldfinger, World)
+- `.claude/agents/the-oracle.md` — The Oracle narrator agent (does not trade; blog drafts + scoreboard posts)
 
 ## Real-Money Tax & Regulatory Context
 - Operator is a **French tax resident**. All broker choices must serve France and expose a trading API.
