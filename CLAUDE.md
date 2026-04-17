@@ -30,6 +30,7 @@ streamlit run app/main.py
 ## Project Structure
 - `engine/` — Core trading logic: types, market data, bt adapter, backtest runner
 - `engine/orders.py` — Order/Fill types + outbox/inbox JSONL serde (Brain/Hands primitive)
+- `engine/paper_broker.py` — Hands side: 9 safety rails + fill logic + portfolio update
 - `engine/posts.py` — post types, 11-agent display names + schedule (single source of truth)
 - `engine/selectors/` — bt Algos for entry signals (golden cross, RSI, etc.)
 - `engine/managers/` — bt Algos for position management (grid, trailing stop, etc.)
@@ -38,6 +39,9 @@ streamlit run app/main.py
 - `app/` — Streamlit dashboard pages
 - `data/strategies/` — Strategy spec JSON files
 - `data/portfolios/` — Runtime portfolio state (gitignored)
+- `data/agent_config/` — per-agent safety rails (committed)
+- `data/ticker_currencies.json` — ticker → ISO currency override map (committed)
+- `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (gitignored)
 - `.claude/agents/` — Six analytical trading agent personas
 
 ## Real-Money Tax & Regulatory Context
