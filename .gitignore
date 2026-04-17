@@ -18,8 +18,7 @@ data/market/today.json
 *.db
 .worktrees/
 .claude/worktrees/
-data/posts/
-data/blog/
-data/output/
-data/orders/outbox/
-data/orders/inbox/
+# Ring 1 output artifacts: COMMITTED so the sandbox VM's ephemeral state persists
+# across runs (the remote session's files are destroyed at teardown). They become
+# the source of truth for Ring 2 (memory citations) and Ring 3 (website history).
+#   data/posts/, data/blog/, data/output/, data/orders/ are all tracked.
