@@ -73,10 +73,17 @@ def get_classic_60_40() -> list[str]:
 
 
 def get_bearish_etf_tickers() -> list[str]:
-    """Return inverse ETFs that express bearish views without true shorting.
+    """Return US-domiciled inverse ETFs that express bearish views without shorting.
 
     These are regular long positions whose value rises when an index falls.
     Note: designed for daily returns — multi-day holds suffer volatility decay.
+
+    **EU retail caveat**: most of these are blocked for EU retail investors because
+    their issuers (ProShares, Direxion) do not publish PRIIPs KID documents. The
+    backtest engine uses this universe freely, but real-money execution from a
+    French IBIE account will require UCITS equivalents on Euronext or LSE
+    (WisdomTree 3USS/QQQS, Lyxor BX4, Xtrackers XSSX, etc.) — verify availability
+    in IBKR's product search before trading.
     """
     return [
         "SH",    # ProShares Short S&P 500 (-1x)

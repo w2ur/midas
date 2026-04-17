@@ -38,6 +38,13 @@ streamlit run app/main.py
 - `data/portfolios/` — Runtime portfolio state (gitignored)
 - `.claude/agents/` — Six analytical trading agent personas
 
+## Real-Money Tax & Regulatory Context
+- Operator is a **French tax resident**. All broker choices must serve France and expose a trading API.
+- Approved brokers: **Interactive Brokers Ireland (IBIE)** for equities/ETFs/forex; **Kraken** (PSAN-registered in France) for crypto; **OANDA Europe (Ireland)** for dedicated forex.
+- Never assume Alpaca, Robinhood, Schwab, Fidelity, or any US-residents-only broker — they're closed to this operator.
+- PRIIPs KID requirement blocks many US-domiciled leveraged/inverse ETFs for EU retail. Verify availability in IBKR's product search before assuming a ticker is tradable.
+- See **TAX.md** for PFU 30%, form 3916/3916-bis declarations, and broker-specific tax notes.
+
 ## Project-Specific Rules
 - All strategy specs live in `data/strategies/` as JSON files
 - Portfolio state is committed (needed by the sandboxed remote agent)
