@@ -101,11 +101,12 @@ def get_congressional_tickers() -> list[str]:
 # Insider buying universe
 # ---------------------------------------------------------------------------
 
-# Curated list of stocks with historically significant insider buying activity
+# Curated list of stocks with historically significant insider buying activity.
+# PXD removed 2026-04-17 (acquired by Exxon in October 2023).
 _INSIDER_FALLBACK: list[str] = [
     "AAPL", "MSFT", "AMZN", "GOOG", "META",
     "BRK-B", "JPM", "BAC", "WFC", "C",
-    "XOM", "CVX", "OXY", "PXD", "COP",
+    "XOM", "CVX", "OXY", "COP",
     "LMT", "RTX", "NOC", "BA", "GD",
     "UNH", "CVS", "HCA", "CI", "MCK",
     "COST", "HD", "LOW", "TGT", "WMT",
@@ -131,13 +132,15 @@ def get_insider_tickers() -> list[str]:
 # High short-interest universe
 # ---------------------------------------------------------------------------
 
-# Curated list of stocks historically carrying elevated short interest
+# Curated list of stocks historically carrying elevated short interest.
+# Last refreshed 2026-04-17: removed BBBY, PRTY, JWN, OSTK, WISH, EXPR
+# (delisted / bankrupt between 2023-2025). A data-driven refresh via
+# the Finnhub short-interest API would be better long-term.
 _HIGH_SHORT_FALLBACK: list[str] = [
-    "GME", "AMC", "BBBY", "SPCE", "PLTR",
-    "RIVN", "LCID", "NKLA", "WKHS", "RIDE",
-    "BYND", "CVNA", "PRTY", "BBWI", "M",
-    "JWN", "KSS", "FUBO", "SFIX", "OSTK",
-    "CLOV", "WISH", "EXPR", "FIZZ", "PUBM",
+    "GME", "AMC", "SPCE", "PLTR", "RIVN",
+    "LCID", "NKLA", "WKHS", "RIDE", "BYND",
+    "CVNA", "BBWI", "M", "KSS", "FUBO",
+    "SFIX", "CLOV", "FIZZ", "PUBM",
 ]
 
 

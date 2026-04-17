@@ -340,7 +340,9 @@ class TestHighShortTickers:
     def test_returns_list_of_strings(self):
         result = get_high_short_tickers()
         assert isinstance(result, list)
-        assert len(result) >= 20
+        # Floor lowered from 20 to 15 after 2026-04-17 delisting cleanup.
+        # Raise back to 20+ once a data-driven refresh adds current names.
+        assert len(result) >= 15
         assert all(isinstance(t, str) for t in result)
 
     def test_contains_known_meme_stocks(self):
