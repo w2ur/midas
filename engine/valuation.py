@@ -7,44 +7,10 @@ and by the orchestrator for budget verification.
 
 from __future__ import annotations
 
-import json
 from datetime import date
-from pathlib import Path
 
 from engine.fx import to_eur
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-_OHLCV = _REPO_ROOT / "data" / "market" / "ohlcv"
-
-
-def _latest_close(ticker: str, on: date | None = None) -> float | None:
-    """Return the most recent close (or adj_close) for a ticker ≤ `on` date.
-
-    Reads the JSONL store directly to avoid circular imports via MarketDataFetcher.
-    """
-    path = _OHLCV / f"{ticker}.jsonl"
-    if not path.exists():
-        return None
-    target = on.isoformat() if on is not None else "9999-99-99"  # pick latest available
-    best_date: str | None = None
-    best_price: float | None = None
-    with path.open() as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            d = row.get("date")
-            if d is None or d > target:
-                continue
-            if best_date is None or d > best_date:
-                best_date = d
-                price = row.get("adj_close") if row.get("adj_close") is not None else row.get("close")
-                best_price = float(price) if price is not None else None
-    return best_price
+from engine.ohlcv_store import latest_close_on_or_before as _latest_close
 
 
 def portfolio_mtm(portfolio_summary: dict, on: date | None = None) -> float:
@@ -85,3 +51,12 @@ def portfolio_mtm_eur(portfolio_summary: dict, on: date | None = None) -> float 
     if currency == "EUR":
         return native
     return to_eur(native, currency, on)
+
+
+def mtm_base_currency(portfolio_summary: dict, on: date | None = None) -> float:
+    """Mark-to-market in the portfolio's own base currency (no FX conversion).
+
+    Wrapper around portfolio_mtm that preserves the native currency — intended
+    for per-agent drawdown checks (same currency throughout, no FX noise).
+    """
+    return portfolio_mtm(portfolio_summary, on)

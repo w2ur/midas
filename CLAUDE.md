@@ -29,6 +29,10 @@ streamlit run app/main.py
 
 ## Project Structure
 - `engine/` — Core trading logic: types, market data, bt adapter, backtest runner
+- `engine/orders.py` — Order/Fill types + outbox/inbox JSONL serde (Brain/Hands primitive)
+- `engine/paper_broker.py` — Hands side: 9 safety rails + fill logic + portfolio update
+- `engine/posts.py` — post types, 11-agent display names + schedule (single source of truth)
+- `engine/blog.py` — Oracle prompt builder + response parser + blog draft saver
 - `engine/selectors/` — bt Algos for entry signals (golden cross, RSI, etc.)
 - `engine/managers/` — bt Algos for position management (grid, trailing stop, etc.)
 - `engine/universes/` — Universe resolvers (S&P 500, congressional, crypto, etc.)
@@ -36,7 +40,29 @@ streamlit run app/main.py
 - `app/` — Streamlit dashboard pages
 - `data/strategies/` — Strategy spec JSON files
 - `data/portfolios/` — Runtime portfolio state (gitignored)
-- `.claude/agents/` — Six analytical trading agent personas
+- `data/agent_config/` — per-agent safety rails (committed)
+- `data/ticker_currencies.json` — ticker → ISO currency override map (committed)
+- `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (gitignored)
+- `.claude/agents/` — Ten trading agent personas (EUR/USD twins + Satoshi, Monsieur Forex, Goldfinger, World)
+- `.claude/agents/the-oracle.md` — The Oracle narrator agent (does not trade; blog drafts + scoreboard posts)
+- `engine/output_bundle.py` — assembles data/output/YYYY-MM-DD.json (single source of truth for API + retries)
+- `data/posts/, data/blog/, data/output/` — daily artifacts (gitignored)
+
+## Architecture Principle — Brain / Hands
+
+All external-world integrations in Midas follow a **Brain / Hands split**:
+
+- **Brain** — the Claude Code sandbox (daily trigger cron). Reads from disk, authors decisions (trades, posts, journal entries), writes to an outbox on disk. Holds no external credentials.
+- **Hands** — separate workers (paper broker for simulation, future real-broker worker for live execution). Read outbox, validate against safety rails, execute, write confirmations to inbox on disk. Pure executors.
+
+First application (Ring 1): trade execution.
+- Agents write orders to `data/orders/outbox/YYYY-MM-DD.jsonl`.
+- `engine/paper_broker.py` applies 9 safety rails, fills at end-of-day close from the OHLCV store, writes to `data/orders/inbox/YYYY-MM-DD.jsonl`.
+- Fills with `status="filled"` mutate portfolios via `PortfolioManager.apply_trade`; rejections carry a reason code.
+
+**Safety rails live in the Hands, not agent prompts.** The agent persona is aspirational; the broker is enforcing.
+
+Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_broker.py` that talks to Interactive Brokers — same outbox/inbox contract, credentials held outside the sandbox. See `~/.claude/plans/2026-04-17-midas-public-experiment-design-v2.md` for the full experiment design.
 
 ## Real-Money Tax & Regulatory Context
 - Operator is a **French tax resident**. All broker choices must serve France and expose a trading API.

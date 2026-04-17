@@ -1,6 +1,6 @@
 slug: midas
 name: Midas
-description: Personal AI fund manager — composable trading strategies, backtesting engine, and six Claude analytical agents managing paper portfolios across stocks, crypto, forex, and metals.
+description: Personal AI fund manager — 10 trading agents (EUR/USD twins, crypto, FX, commodities, cross-currency) + The Oracle narrator competing in simulated markets. Paper broker enforces safety rails; outputs daily post feed, blog drafts, and output bundles.
 tagline: "Everything I touch turns to JSON"
 status: active
 visibility: private
@@ -8,8 +8,10 @@ stack:
   - Python
   - bt
   - yfinance
+  - pandas-ta
   - Streamlit
   - Plotly
+  - pytest
   - Claude Code Agents
 deployment:
   platform: local
