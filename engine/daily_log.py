@@ -5,7 +5,27 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+from engine.fx import to_eur
+
 LOGS_DIR = Path(__file__).parent.parent / "data" / "logs"
+
+_CURRENCY_SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "JPY": "¥", "CHF": "CHF "}
+
+
+def _fmt(amount: float, currency: str) -> str:
+    sym = _CURRENCY_SYMBOLS.get(currency, f"{currency} ")
+    return f"{sym}{amount:,.2f}"
+
+
+def _fmt_with_eur(amount: float, currency: str, on: date) -> str:
+    """Format an amount in its native currency, adding the EUR equivalent if not already EUR."""
+    native = _fmt(amount, currency)
+    if currency == "EUR":
+        return native
+    eur_val = to_eur(amount, currency, on)
+    if eur_val is None:
+        return f"{native} (EUR rate unavailable)"
+    return f"{native} ≈ {_fmt(eur_val, 'EUR')}"
 
 
 def generate_daily_log(
@@ -49,11 +69,18 @@ def generate_daily_log(
     # Agent sections
     agent_display_names = {
         "steady-eddie": "Steady Eddie",
+        "steady-eddie-usd": "Steady Eddie (USD)",
+        "steady-eddie-eur": "Steady Eddie (EUR)",
         "sharp-shooter": "Sharp Shooter",
+        "sharp-shooter-usd": "Sharp Shooter (USD)",
+        "sharp-shooter-eur": "Sharp Shooter (EUR)",
         "satoshi": "Satoshi",
         "monsieur-forex": "Monsieur Forex",
         "goldfinger": "Goldfinger",
         "yolo-sapiens": "YOLO Sapiens",
+        "yolo-sapiens-usd": "YOLO Sapiens (USD)",
+        "yolo-sapiens-eur": "YOLO Sapiens (EUR)",
+        "world": "World",
     }
 
     for agent_id, result in agent_results.items():
@@ -83,13 +110,35 @@ def generate_daily_log(
         # Portfolio state
         summary = portfolio_summaries.get(agent_id)
         if summary:
+            currency = summary.get("currency", "USD")  # default USD for legacy portfolios
+            cash = summary.get("cash", 0)
+            deployed = summary.get("deployed", 0)
             lines.append("### Portfolio\n")
-            lines.append(f"- **Cash:** ${summary.get('cash', 0):,.2f}")
-            lines.append(f"- **Deployed:** ${summary.get('deployed', 0):,.2f}")
+            lines.append(f"- **Cash:** {_fmt_with_eur(cash, currency, log_date)}")
+            lines.append(f"- **Deployed (cost basis):** {_fmt_with_eur(deployed, currency, log_date)}")
             positions = summary.get("positions", [])
             if positions:
                 lines.append(f"- **Positions ({len(positions)}):** {', '.join(positions)}")
             lines.append("")
+
+    # Leaderboard — everyone normalized to EUR for cross-agent comparison
+    lines.append("## Leaderboard (EUR-equivalent, cost-basis approximation)\n")
+    lines.append("> Total value uses cash + cost basis of positions. Not mark-to-market — "
+                 "agent ranking should be read with that caveat until portfolio MTM ships.\n")
+    lines.append("| Rank | Agent | Native total | ≈ EUR |")
+    lines.append("|------|-------|--------------|-------|")
+    rows = []
+    for agent_id, summary in portfolio_summaries.items():
+        currency = summary.get("currency", "USD")
+        native_total = summary.get("cash", 0) + summary.get("deployed", 0)
+        eur_total = to_eur(native_total, currency, log_date) if currency != "EUR" else native_total
+        rows.append((agent_id, currency, native_total, eur_total))
+    rows.sort(key=lambda r: r[3] if r[3] is not None else -1, reverse=True)
+    for rank, (agent_id, currency, native_total, eur_total) in enumerate(rows, start=1):
+        display = agent_display_names.get(agent_id, agent_id)
+        eur_str = _fmt(eur_total, "EUR") if eur_total is not None else "— (rate unavailable)"
+        lines.append(f"| {rank} | {display} | {_fmt(native_total, currency)} | {eur_str} |")
+    lines.append("")
 
     # Footer
     lines.append("---\n")
