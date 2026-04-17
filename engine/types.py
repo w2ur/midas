@@ -18,6 +18,7 @@ VALID_UNIVERSES: frozenset[str] = frozenset({
     "etf-sectors", "etf-broad",
     "crypto-top20", "forex-majors", "metals-commodities",
     "single-voo", "classic-60-40",
+    "bearish-etfs",
 })
 
 VALID_SELECTORS: frozenset[str] = frozenset({

@@ -1,0 +1,73 @@
+name: fetch-ohlcv
+
+# Fetches daily OHLCV from Yahoo Finance and commits updates to
+# data/market/ohlcv/. The sandboxed agent reads from the committed repo,
+# so this workflow is what keeps it running autonomously.
+#
+# Schedule: weekdays 22:30 UTC (≈ 30 min after US market close at 21:00 UTC
+# during DST). Also exposes manual workflow_dispatch for ad-hoc refresh.
+
+on:
+  schedule:
+    - cron: "30 22 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      history_days:
+        description: "Days of history to fetch (default 730)"
+        required: false
+        default: "730"
+
+permissions:
+  contents: write  # needed to commit OHLCV updates back to main
+
+concurrency:
+  group: fetch-ohlcv
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fetch OHLCV
+        env:
+          HISTORY_DAYS: ${{ github.event.inputs.history_days || '730' }}
+        run: |
+          # Sanitize: only accept digits. Anything else → fall back to default.
+          if ! [[ "$HISTORY_DAYS" =~ ^[0-9]+$ ]]; then
+            HISTORY_DAYS=730
+          fi
+          python scripts/fetch_ohlcv.py --history-days "$HISTORY_DAYS"
+
+      - name: Commit and push updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [[ -z "$(git status --porcelain data/market/ohlcv/)" ]]; then
+            echo "No OHLCV changes to commit."
+            exit 0
+          fi
+
+          git add data/market/ohlcv/
+          DATE=$(date -u +%F)
+          git commit -m "[data] ${DATE} OHLCV update"
+          git push

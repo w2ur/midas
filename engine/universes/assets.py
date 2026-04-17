@@ -70,3 +70,21 @@ def get_voo_only() -> list[str]:
 def get_classic_60_40() -> list[str]:
     """Return VOO + BND for the classic 60/40 portfolio baseline."""
     return ["VOO", "BND"]
+
+
+def get_bearish_etf_tickers() -> list[str]:
+    """Return inverse ETFs that express bearish views without true shorting.
+
+    These are regular long positions whose value rises when an index falls.
+    Note: designed for daily returns — multi-day holds suffer volatility decay.
+    """
+    return [
+        "SH",    # ProShares Short S&P 500 (-1x)
+        "PSQ",   # ProShares Short QQQ (-1x)
+        "DOG",   # ProShares Short Dow 30 (-1x)
+        "RWM",   # ProShares Short Russell 2000 (-1x)
+        "SDS",   # ProShares UltraShort S&P 500 (-2x)
+        "SPXS",  # Direxion Daily S&P 500 Bear 3x
+        "SPXU",  # ProShares UltraPro Short S&P 500 (-3x)
+        "SQQQ",  # ProShares UltraPro Short QQQ (-3x)
+    ]

@@ -6,7 +6,10 @@ venv/
 dist/
 build/
 data/cache/
-data/market/
+# data/market/ is partially tracked: data/market/ohlcv/ is committed
+# (so sandboxed agents can read it); transient snapshots like today.json
+# are ignored below.
+data/market/today.json
 .env
 .env.*
 !.env.example

@@ -40,6 +40,13 @@ streamlit run app/main.py
 
 ## Project-Specific Rules
 - All strategy specs live in `data/strategies/` as JSON files
-- Portfolio state files in `data/portfolios/` are gitignored (runtime artifacts)
-- Cached price data goes in `data/cache/` (gitignored)
+- Portfolio state is committed (needed by the sandboxed remote agent)
+- Query-hash cached price data goes in `data/cache/` (gitignored)
 - Every trade must have a `reasoning` field — no silent trades
+- **Long-only, no short selling.** Use inverse ETFs (`bearish-etfs` universe: SH, PSQ, SQQQ, SPXS, etc.) to express bearish views as long positions. True shorts require borrow data we don't have.
+
+## Market Data Pipeline
+- **Source of truth**: `data/market/ohlcv/{SYMBOL}.jsonl` — one row per trading day, committed to git so the sandboxed remote agent can read prices without calling yfinance at runtime.
+- **Populator**: `.github/workflows/fetch-ohlcv.yml` runs weekdays 22:30 UTC. Invokes `scripts/fetch_ohlcv.py`, which resolves the union of all declared universes + current holdings + market-context symbols (~600 tickers) and appends new rows.
+- **Reader**: `engine.market_data.MarketDataFetcher` serves from the store first, falls back to yfinance only when the store doesn't cover the range. Same code path works in local dev and in the sandbox.
+- **Not to be confused**: `scripts/fetch_market_data.py` writes a single benchmark snapshot (`data/market/today.json`, gitignored) for daily session commentary. Different job.

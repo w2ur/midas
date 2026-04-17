@@ -1,4 +1,10 @@
-"""Market data fetcher — yfinance wrapper with optional disk caching."""
+"""Market data fetcher — yfinance wrapper with optional disk caching.
+
+Preferred data source is the committed OHLCV store at data/market/ohlcv/,
+populated by the fetch-ohlcv GitHub Action. In sandboxed environments where
+yfinance is blocked or rate-limited, the store is the only way to get data.
+yfinance is used as a fallback only for ranges the store doesn't cover.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +17,9 @@ from typing import Optional
 import pandas as pd
 import yfinance as yf
 
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_OHLCV_STORE = _REPO_ROOT / "data" / "market" / "ohlcv"
+
 # ---------------------------------------------------------------------------
 # Benchmark ticker mapping
 # ---------------------------------------------------------------------------
@@ -21,6 +30,72 @@ BENCHMARK_TICKERS: dict[str, str] = {
     "gold": "GC=F",
     "btc": "BTC-USD",
 }
+
+
+# ---------------------------------------------------------------------------
+# Committed OHLCV store (data/market/ohlcv/{SYMBOL}.jsonl)
+# ---------------------------------------------------------------------------
+
+def _read_store_file(ticker: str) -> list[dict] | None:
+    """Load all rows for a ticker from the committed JSONL store, or None."""
+    path = _OHLCV_STORE / f"{ticker}.jsonl"
+    if not path.exists():
+        return None
+    rows: list[dict] = []
+    with path.open() as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return rows if rows else None
+
+
+def _load_prices_from_store(
+    tickers: list[str], start: date, end: date
+) -> pd.DataFrame | None:
+    """Return adjusted-close DataFrame for tickers over [start, end] from the store.
+
+    Returns None if any ticker is missing from the store, or if the store
+    doesn't reach back to `start`. Partial coverage falls back to yfinance.
+    """
+    columns: dict[str, pd.Series] = {}
+    for ticker in tickers:
+        rows = _read_store_file(ticker)
+        if rows is None:
+            return None  # Missing entirely — fall back to yfinance for the whole request
+        earliest = min(r["date"] for r in rows)
+        if earliest > start.isoformat():
+            return None  # Store doesn't cover the requested range
+        # Use adj_close when present; fall back to close for instruments without splits/divs.
+        series_data = {
+            r["date"]: (r.get("adj_close") if r.get("adj_close") is not None else r.get("close"))
+            for r in rows
+            if start.isoformat() <= r["date"] <= end.isoformat()
+        }
+        if not series_data:
+            return None
+        idx = pd.to_datetime(sorted(series_data.keys()))
+        columns[ticker] = pd.Series([series_data[d.strftime("%Y-%m-%d")] for d in idx], index=idx)
+
+    df = pd.DataFrame(columns)
+    df.index.name = "Date"
+    return df
+
+
+def _latest_close_from_store(ticker: str) -> float | None:
+    """Return the latest adj_close (or close) for a ticker from the store."""
+    rows = _read_store_file(ticker)
+    if not rows:
+        return None
+    latest = max(rows, key=lambda r: r["date"])
+    val = latest.get("adj_close")
+    if val is None:
+        val = latest.get("close")
+    return float(val) if val is not None else None
 
 
 class MarketDataFetcher:
@@ -51,12 +126,19 @@ class MarketDataFetcher:
         """Fetch adjusted close prices for the given tickers.
 
         Returns a DataFrame with dates as index and tickers as columns.
-        Handles both single-ticker and multi-ticker yfinance responses.
+        Serves from the committed OHLCV store when it covers the range;
+        otherwise falls back to yfinance.
         """
         cache_key = self._make_cache_key("prices", tickers=sorted(tickers), start=str(start), end=str(end))
         cached = self._load_cache(cache_key)
         if cached is not None:
             return cached
+
+        store_df = _load_prices_from_store(tickers, start, end)
+        if store_df is not None:
+            store_df = self._normalize_index(store_df)
+            self._save_cache(cache_key, store_df)
+            return store_df
 
         raw = yf.download(
             tickers,
@@ -84,6 +166,14 @@ class MarketDataFetcher:
         cached = self._load_cache(cache_key)
         if cached is not None:
             return cached
+
+        store_df = _load_prices_from_store(tickers, start, end)
+        if store_df is not None:
+            reverse_map = {v: k for k, v in BENCHMARK_TICKERS.items()}
+            renamed = store_df.rename(columns=reverse_map)[list(BENCHMARK_TICKERS.keys())]
+            renamed = self._normalize_index(renamed)
+            self._save_cache(cache_key, renamed)
+            return renamed
 
         raw = yf.download(
             tickers,
@@ -127,20 +217,31 @@ class MarketDataFetcher:
     def fetch_current_prices(self, tickers: list[str]) -> dict[str, float]:
         """Fetch the most recent closing price for each ticker.
 
-        Uses a 5-day window so weekend/holiday gaps don't produce empty results.
+        Reads the latest row from the committed OHLCV store first; falls back
+        to yfinance only for tickers missing from the store.
         Returns dict mapping ticker → float price.
         """
+        result: dict[str, float] = {}
+        missing: list[str] = []
+        for ticker in tickers:
+            latest = _latest_close_from_store(ticker)
+            if latest is not None:
+                result[ticker] = latest
+            else:
+                missing.append(ticker)
+
+        if not missing:
+            return result
+
         raw = yf.download(
-            tickers,
+            missing,
             period="5d",
             auto_adjust=True,
             progress=False,
         )
 
-        # yfinance always returns MultiIndex columns — Close is a DataFrame with ticker columns
         close = raw["Close"]
-        result = {}
-        for ticker in tickers:
+        for ticker in missing:
             try:
                 series = close[ticker].dropna()
                 if len(series) > 0:

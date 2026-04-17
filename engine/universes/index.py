@@ -6,12 +6,28 @@ Wikipedia tables are fetched via pd.read_html().
 
 from __future__ import annotations
 
+import io
 import json
 import time
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+
+_WIKI_USER_AGENT = "midas-fund/0.1 (https://github.com/w2ur/midas; research)"
+
+
+def _fetch_wikipedia_tables(url: str) -> list[pd.DataFrame]:
+    """Fetch a Wikipedia page with a descriptive User-Agent and parse its tables.
+
+    Wikipedia rejects pandas' default Python-urllib UA, so we fetch the HTML
+    ourselves before handing it to pd.read_html.
+    """
+    req = urllib.request.Request(url, headers={"User-Agent": _WIKI_USER_AGENT})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        html = resp.read().decode("utf-8")
+    return pd.read_html(io.StringIO(html))
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -65,7 +81,7 @@ def get_sp500_tickers() -> list[str]:
         return cached
 
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    tables = pd.read_html(url)
+    tables = _fetch_wikipedia_tables(url)
 
     tickers: list[str] | None = None
     for table in tables:
@@ -98,7 +114,7 @@ def get_dow30_tickers() -> list[str]:
         return cached
 
     url = "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average"
-    tables = pd.read_html(url)
+    tables = _fetch_wikipedia_tables(url)
 
     tickers: list[str] | None = None
     for table in tables:
@@ -133,7 +149,7 @@ def get_nasdaq100_tickers() -> list[str]:
         return cached
 
     url = "https://en.wikipedia.org/wiki/Nasdaq-100"
-    tables = pd.read_html(url)
+    tables = _fetch_wikipedia_tables(url)
 
     tickers: list[str] | None = None
     for table in tables:
