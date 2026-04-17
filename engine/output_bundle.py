@@ -1,0 +1,77 @@
+"""Output bundle — single JSON file per day combining all session data.
+
+Read by the API, the frontend, and any downstream publisher. The single source
+of truth for a session's public output.
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import date
+from pathlib import Path
+
+from engine.blog import BlogDraft
+from engine.posts import PostPayload
+
+OUTPUT_DIR = Path(__file__).parent.parent / "data" / "output"
+
+
+def get_day_number(for_date: date | None = None) -> int:
+    """Return the day-number of `for_date` (defaults to today) in the experiment.
+
+    Idempotent on retry: if a bundle for `for_date` already exists, returns its
+    ordinal position (1-indexed) among sorted bundle files. Otherwise returns
+    `len(existing) + 1`. Prevents the day count from advancing when a session
+    is retried after a crash.
+    """
+    if not OUTPUT_DIR.exists():
+        return 1
+    existing = sorted(f.stem for f in OUTPUT_DIR.iterdir() if f.suffix == ".json")
+    target = (for_date or date.today()).isoformat()
+    if target in existing:
+        return existing.index(target) + 1
+    return len(existing) + 1
+
+
+def assemble_output_bundle(
+    bundle_date: date,
+    market_data: dict,
+    agent_results: dict[str, dict],
+    agent_posts: dict[str, list[PostPayload]],
+    portfolio_summaries: dict[str, dict],
+    leaderboard: list[dict],
+    blog_draft: BlogDraft,
+    oracle_posts: list[PostPayload],
+) -> dict:
+    """Assemble the complete daily output bundle.
+
+    Layout:
+        { "date", "market_snapshot", "agents": {id: {commentary, trades, portfolio, posts}},
+          "narrator": {"blog_draft", "posts"}, "leaderboard" }
+    """
+    agents = {}
+    for aid, result in agent_results.items():
+        agents[aid] = {
+            "commentary": result.get("commentary", ""),
+            "trades": result.get("trades", []),
+            "portfolio": portfolio_summaries.get(aid, {}),
+            "posts": [p.to_dict() for p in agent_posts.get(aid, [])],
+        }
+    return {
+        "date": bundle_date.isoformat(),
+        "market_snapshot": market_data,
+        "agents": agents,
+        "narrator": {
+            "blog_draft": blog_draft.to_dict(),
+            "posts": [p.to_dict() for p in oracle_posts],
+        },
+        "leaderboard": leaderboard,
+    }
+
+
+def save_output_bundle(bundle_date: date, bundle: dict) -> Path:
+    """Save the output bundle to data/output/YYYY-MM-DD.json."""
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    path = OUTPUT_DIR / f"{bundle_date.isoformat()}.json"
+    path.write_text(json.dumps(bundle, indent=2), encoding="utf-8")
+    return path

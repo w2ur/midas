@@ -45,6 +45,8 @@ streamlit run app/main.py
 - `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (gitignored)
 - `.claude/agents/` — Ten trading agent personas (EUR/USD twins + Satoshi, Monsieur Forex, Goldfinger, World)
 - `.claude/agents/the-oracle.md` — The Oracle narrator agent (does not trade; blog drafts + scoreboard posts)
+- `engine/output_bundle.py` — assembles data/output/YYYY-MM-DD.json (single source of truth for API + retries)
+- `data/posts/, data/blog/, data/output/` — daily artifacts (gitignored)
 
 ## Real-Money Tax & Regulatory Context
 - Operator is a **French tax resident**. All broker choices must serve France and expose a trading API.
