@@ -35,7 +35,7 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 
 from datetime import datetime, timezone
 
-from engine.blog import build_oracle_prompt, parse_oracle_response, save_daily_blog_draft
+from engine.blog import build_oracle_prompt, save_daily_blog_draft
 from engine.market_data import MarketDataFetcher
 from engine.orders import Order, append_order, make_order_id
 from engine.output_bundle import assemble_output_bundle, get_day_number, save_output_bundle
