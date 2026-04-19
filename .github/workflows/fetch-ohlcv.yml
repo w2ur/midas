@@ -4,18 +4,27 @@ name: fetch-ohlcv
 # data/market/ohlcv/. The sandboxed agent reads from the committed repo,
 # so this workflow is what keeps it running autonomously.
 #
-# Schedule: weekdays 22:30 UTC (≈ 30 min after US market close at 21:00 UTC
-# during DST). Also exposes manual workflow_dispatch for ad-hoc refresh.
+# Schedules:
+#   - Mon-Fri 22:30 UTC — full universe (~600 tickers, equities + ETFs
+#     + forex + crypto), ≈30 min after US market close at 21:00 UTC (DST).
+#   - Sat-Sun 22:30 UTC — crypto-only subset (~30 tickers). Crypto trades
+#     24/7; everything else is closed and would return no new rows anyway.
+# Also exposes manual workflow_dispatch for ad-hoc refresh.
 
 on:
   schedule:
     - cron: "30 22 * * 1-5"
+    - cron: "30 22 * * 6,0"
   workflow_dispatch:
     inputs:
       history_days:
         description: "Days of history to fetch (default 730)"
         required: false
         default: "730"
+      crypto_only:
+        description: "Restrict to crypto pairs (for manual weekend refresh)"
+        required: false
+        default: "false"
 
 permissions:
   contents: write  # needed to commit OHLCV updates back to main
@@ -50,12 +59,22 @@ jobs:
       - name: Fetch OHLCV
         env:
           HISTORY_DAYS: ${{ github.event.inputs.history_days || '730' }}
+          MANUAL_CRYPTO_ONLY: ${{ github.event.inputs.crypto_only || 'false' }}
         run: |
           # Sanitize: only accept digits. Anything else → fall back to default.
           if ! [[ "$HISTORY_DAYS" =~ ^[0-9]+$ ]]; then
             HISTORY_DAYS=730
           fi
-          python scripts/fetch_ohlcv.py --history-days "$HISTORY_DAYS"
+
+          # Weekend schedule (Sat=6, Sun=7 in `date -u +%u`) → crypto-only.
+          # Manual dispatch can also force crypto-only via the input flag.
+          DAY_OF_WEEK=$(date -u +%u)
+          FLAGS=(--history-days "$HISTORY_DAYS")
+          if [[ "$DAY_OF_WEEK" -ge 6 ]] || [[ "$MANUAL_CRYPTO_ONLY" == "true" ]]; then
+            echo "Weekend or manual crypto-only dispatch — restricting to crypto pairs."
+            FLAGS+=(--crypto-only)
+          fi
+          python scripts/fetch_ohlcv.py "${FLAGS[@]}"
 
       - name: Commit and push updates
         run: |

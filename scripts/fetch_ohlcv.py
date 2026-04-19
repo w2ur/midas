@@ -60,15 +60,36 @@ _PORTFOLIOS_DIR = _PROJECT_ROOT / "data" / "portfolios"
 # Reference symbols always fetched — used for market commentary and regime detection
 # even when no strategy directly references them.
 _MARKET_CONTEXT = [
-    "SPY", "QQQ", "IWM", "DIA",   # Broad indices (ETFs)
-    "^VIX",                        # Volatility
-    "GLD", "SLV", "TLT",           # Risk-off / safe-haven
-    "BTC-USD", "ETH-USD",          # Crypto reference
-    "DX-Y.NYB",                    # US Dollar Index
+    "SPY",
+    "QQQ",
+    "IWM",
+    "DIA",  # Broad indices (ETFs)
+    "^VIX",  # Volatility
+    "GLD",
+    "SLV",
+    "TLT",  # Risk-off / safe-haven
+    "BTC-USD",
+    "ETH-USD",  # Crypto reference
+    "DX-Y.NYB",  # US Dollar Index
 ]
 
+# Crypto reference subset — used for weekend fetches (crypto trades 24/7).
+_MARKET_CONTEXT_CRYPTO = ["BTC-USD", "ETH-USD"]
+
 # Static universes not covered by their own resolver.
-_ETF_SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLI", "XLC", "XLY", "XLP", "XLU", "XLRE", "XLB"]
+_ETF_SECTORS = [
+    "XLK",
+    "XLF",
+    "XLE",
+    "XLV",
+    "XLI",
+    "XLC",
+    "XLY",
+    "XLP",
+    "XLU",
+    "XLRE",
+    "XLB",
+]
 _ETF_BROAD = ["VOO", "QQQ", "VEA", "VWO", "GLD", "BND", "TLT", "IWM", "DIA", "HYG"]
 
 
@@ -131,6 +152,26 @@ def _all_symbols() -> list[str]:
     return sorted(universe | holdings | context)
 
 
+def _crypto_symbols() -> list[str]:
+    """Weekend fetch subset — crypto pairs only (24/7 markets).
+
+    Union of `crypto-top20` (USD) + `crypto-top20-eur` + crypto context +
+    any currently held ticker ending in `-EUR` or `-USD` that looks like
+    a crypto pair (upper-case ticker, not a stock).
+    """
+    symbols: set[str] = set()
+    for resolver in (get_crypto_tickers, get_crypto_eur_tickers):
+        try:
+            symbols.update(resolver())
+        except Exception as exc:
+            print(f"  ! {resolver.__name__} failed: {exc}", file=sys.stderr)
+    symbols.update(_MARKET_CONTEXT_CRYPTO)
+    for held in _collect_holdings():
+        if held.endswith("-EUR") or held.endswith("-USD"):
+            symbols.add(held)
+    return sorted(symbols)
+
+
 def _existing_dates(path: Path) -> set[str]:
     if not path.exists():
         return set()
@@ -157,7 +198,7 @@ def _fetch_symbol(symbol: str, start: date, end: date) -> pd.DataFrame | None:
             symbol,
             start=str(start),
             end=str(end + timedelta(days=1)),  # yfinance end is exclusive
-            auto_adjust=False,                 # keep raw Close + Adj Close separately
+            auto_adjust=False,  # keep raw Close + Adj Close separately
             progress=False,
             threads=False,
         )
@@ -231,21 +272,31 @@ def _write_rows(symbol: str, df: pd.DataFrame) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--history-days", type=int, default=730,
-        help="Days of history to fetch on first run (default 730 ≈ 2 years)"
+        "--history-days",
+        type=int,
+        default=730,
+        help="Days of history to fetch on first run (default 730 ≈ 2 years)",
     )
     parser.add_argument(
-        "--symbols", type=str, default=None,
-        help="Comma-separated override list (skip universe resolution)"
+        "--symbols",
+        type=str,
+        default=None,
+        help="Comma-separated override list (skip universe resolution)",
     )
     parser.add_argument(
-        "--dry-run", action="store_true",
-        help="List symbols without fetching"
+        "--crypto-only",
+        action="store_true",
+        help="Restrict to crypto pairs (weekend fetch — crypto trades 24/7)",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="List symbols without fetching"
     )
     args = parser.parse_args()
 
     if args.symbols:
         symbols = sorted({s.strip() for s in args.symbols.split(",") if s.strip()})
+    elif args.crypto_only:
+        symbols = _crypto_symbols()
     else:
         symbols = _all_symbols()
 
@@ -283,7 +334,9 @@ def main() -> int:
         if i % 25 == 0 or n > 0:
             print(f"  [{i}/{len(symbols)}] {symbol}: +{n} rows")
 
-    print(f"\nDone. Wrote {total_new} new rows across {len(symbols)} symbols. {failures} failures.")
+    print(
+        f"\nDone. Wrote {total_new} new rows across {len(symbols)} symbols. {failures} failures."
+    )
     return 0
 
 

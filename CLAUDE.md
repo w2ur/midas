@@ -82,6 +82,11 @@ Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_
 
 ## Market Data Pipeline
 - **Source of truth**: `data/market/ohlcv/{SYMBOL}.jsonl` — one row per trading day, committed to git so the sandboxed remote agent can read prices without calling yfinance at runtime.
-- **Populator**: `.github/workflows/fetch-ohlcv.yml` runs weekdays 22:30 UTC. Invokes `scripts/fetch_ohlcv.py`, which resolves the union of all declared universes + current holdings + market-context symbols (~600 tickers) and appends new rows.
+- **Populator**: `.github/workflows/fetch-ohlcv.yml` runs 22:30 UTC daily. Weekdays: full universe (~600 tickers — equities, ETFs, forex, crypto). Weekends: `--crypto-only` subset (~30 tickers) since crypto is the only market open Sat/Sun. Invokes `scripts/fetch_ohlcv.py`.
 - **Reader**: `engine.market_data.MarketDataFetcher` serves from the store first, falls back to yfinance only when the store doesn't cover the range. Same code path works in local dev and in the sandbox.
 - **Not to be confused**: `scripts/fetch_market_data.py` writes a single benchmark snapshot (`data/market/today.json`, gitignored) for daily session commentary. Different job.
+
+## Session Cadence (RemoteTriggers)
+- **Weekday session** (`0 20 * * 1-5`): full 10-agent roster + Oracle. Runs Mon-Fri 20:00 UTC.
+- **Weekend crypto session** (`0 20 * * 6,0`): `satoshi` only (crypto is 24/7 on Kraken) + Oracle narrates a "solo" day. Runs Sat-Sun 20:00 UTC. `world` is excluded — its cross-asset universe is mostly closed on weekends, so weekend trades would be mostly-rejections; revisit if `world` ends up heavily crypto-weighted.
+- Both triggers author orders via the outbox, call the paper broker for fills, write daily log + posts + blog + output bundle, then commit and push. Same engine, different roster.
