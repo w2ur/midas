@@ -82,11 +82,11 @@ Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_
 
 ## Market Data Pipeline
 - **Source of truth**: `data/market/ohlcv/{SYMBOL}.jsonl` — one row per trading day, committed to git so the sandboxed remote agent can read prices without calling yfinance at runtime.
-- **Populator**: `.github/workflows/fetch-ohlcv.yml` runs 22:30 UTC daily. Weekdays: full universe (~600 tickers — equities, ETFs, forex, crypto). Weekends: `--crypto-only` subset (~30 tickers) since crypto is the only market open Sat/Sun. Invokes `scripts/fetch_ohlcv.py`.
+- **Populator**: `.github/workflows/fetch-ohlcv.yml`. Weekdays 22:30 UTC: full universe (~600 tickers — equities, ETFs, forex, crypto), after US market close. Weekends 19:30 UTC: `--crypto-only` subset (~30 tickers), **before** the 20:00 UTC trading session so crypto agents read fresh intraday closes. Invokes `scripts/fetch_ohlcv.py`.
 - **Reader**: `engine.market_data.MarketDataFetcher` serves from the store first, falls back to yfinance only when the store doesn't cover the range. Same code path works in local dev and in the sandbox.
 - **Not to be confused**: `scripts/fetch_market_data.py` writes a single benchmark snapshot (`data/market/today.json`, gitignored) for daily session commentary. Different job.
 
 ## Session Cadence (RemoteTriggers)
 - **Weekday session** (`0 20 * * 1-5`): full 10-agent roster + Oracle. Runs Mon-Fri 20:00 UTC.
-- **Weekend crypto session** (`0 20 * * 6,0`): `satoshi` only (crypto is 24/7 on Kraken) + Oracle narrates a "solo" day. Runs Sat-Sun 20:00 UTC. `world` is excluded — its cross-asset universe is mostly closed on weekends, so weekend trades would be mostly-rejections; revisit if `world` ends up heavily crypto-weighted.
+- **Weekend crypto session** (`0 20 * * 6,0`): crypto-capable roster only — `satoshi`, `yolo-sapiens-eur`, `yolo-sapiens-usd` + Oracle. Runs Sat-Sun 20:00 UTC. Each agent is instructed to restrict this session's orders to crypto pairs in their respective base currency (other markets in their universes are closed; broker would reject anyway). `world` stays excluded — its breadth across equities/forex/ETFs makes it a mostly-rejections agent on weekends; revisit if it ends up heavily crypto-weighted. `steady-eddie-*` mention crypto but only as thematic context, not active trading.
 - Both triggers author orders via the outbox, call the paper broker for fills, write daily log + posts + blog + output bundle, then commit and push. Same engine, different roster.
