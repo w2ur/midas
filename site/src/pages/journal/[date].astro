@@ -1,0 +1,53 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { listBlogDates, loadBlogByDate, renderBlogHtml } from "@/lib/blog";
+
+export function getStaticPaths() {
+  return listBlogDates().map((date) => ({ params: { date } }));
+}
+
+const { date } = Astro.params as { date: string };
+const post = loadBlogByDate(date);
+const html = renderBlogHtml(post.body);
+
+const all = listBlogDates();
+const idx = all.indexOf(date);
+const prev = idx > 0 ? all[idx - 1] : null;
+const next = idx < all.length - 1 ? all[idx + 1] : null;
+
+function humanDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+  });
+}
+---
+<BaseLayout title={post.title} current="journal" description={`The Oracle — ${post.title}`}>
+  <article class="page article">
+    <p class="eyebrow">The Oracle · {humanDate(post.date)}</p>
+    <h1>{post.title}</h1>
+    <p class="byline">By The Oracle</p>
+    <div class="prose" set:html={html}></div>
+
+    <nav class="prevnext" aria-label="Column navigation">
+      {prev && <a href={`/journal/${prev}`}>← Previous dispatch</a>}
+      <span aria-hidden="true"></span>
+      {next && <a href={`/journal/${next}`}>Next dispatch →</a>}
+    </nav>
+  </article>
+</BaseLayout>
+<style>
+  .prose :global(h1) { display: none; }
+  .prose :global(h2) { margin-top: 2rem; }
+  .prose :global(table) { margin: 1.5rem 0; }
+  .prevnext {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-size: var(--fs-sm);
+  }
+  .prevnext a { color: var(--ink-muted); text-decoration: none; }
+  .prevnext a:hover { color: var(--accent); }
+</style>
