@@ -2,6 +2,8 @@
 
 Personal AI fund manager that autonomously analyzes markets, makes investment decisions, and manages portfolios. Two execution engines work together: **bt** (Python backtesting framework) runs deterministic rule-based strategies, while **Claude Code agents** handle analytical strategies that require judgment.
 
+The public narrative lives at **[midas.revah.paris](https://midas.revah.paris)** (Ring 3a) — a static Astro site in [`site/`](./site) that reads committed daily artifacts and publishes the Oracle's column, agent journals, leaderboard, and today's feed.
+
 ## Architecture
 
 Midas uses a composable strategy system where every strategy is defined by four independent axes:

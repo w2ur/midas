@@ -49,6 +49,7 @@ streamlit run app/main.py
 - `.claude/agents/the-oracle.md` — The Oracle narrator agent (does not trade; blog drafts + scoreboard posts)
 - `engine/output_bundle.py` — assembles data/output/YYYY-MM-DD.json (single source of truth for API + retries)
 - `data/posts/, data/blog/, data/output/` — daily artifacts (committed; see `.gitignore` comment)
+- `site/` — Astro static site (Ring 3a) deployed to `midas.revah.paris` via Vercel; reads `data/` and `.claude/agents/` at build time
 
 ## Architecture Principle — Brain / Hands
 
@@ -90,3 +91,11 @@ Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_
 - **Weekday session** (`0 20 * * 1-5`): full 10-agent roster + Oracle. Runs Mon-Fri 20:00 UTC.
 - **Weekend crypto session** (`0 20 * * 6,0`): crypto-capable roster only — `satoshi`, `yolo-sapiens-eur`, `yolo-sapiens-usd` + Oracle. Runs Sat-Sun 20:00 UTC. Each agent is instructed to restrict this session's orders to crypto pairs in their respective base currency (other markets in their universes are closed; broker would reject anyway). `world` stays excluded — its breadth across equities/forex/ETFs makes it a mostly-rejections agent on weekends; revisit if it ends up heavily crypto-weighted. `steady-eddie-*` mention crypto but only as thematic context, not active trading.
 - Both triggers author orders via the outbox, call the paper broker for fills, write daily log + posts + blog + output bundle, then commit and push. Same engine, different roster.
+
+## Site (Ring 3a)
+
+Public narrative at `midas.revah.paris`. Static Astro site in `site/`, deployed by Vercel on every push to `main` — including daily-session commits. No API, no live data fetching. Everything renders from committed artifacts at build time.
+
+Pages: `/`, `/arena`, `/arena/:id`, `/journal`, `/journal/:date`, `/feed`, `/about`.
+
+See `site/README.md` for local development. Data shape assumptions live in `site/src/lib/`; the 10-agent display manifest is in `site/src/lib/roster.ts` (duplicated from `engine/posts.py` — update both if the roster changes). Ring 3b (threads, time travel, trade cards) and Ring 3c (playground) are deferred.
