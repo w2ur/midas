@@ -1,0 +1,82 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PortfolioTable from "@/components/PortfolioTable.astro";
+import { TRADING_AGENTS, type AgentId, getAgent } from "@/lib/roster";
+import { loadLatest, listDates as listOutputDates } from "@/lib/output";
+import { loadMemory, renderMemoryHtml } from "@/lib/memory";
+
+export function getStaticPaths() {
+  return TRADING_AGENTS.map((a) => ({ params: { agent_id: a.id } }));
+}
+
+const { agent_id } = Astro.params as { agent_id: AgentId };
+const agent = getAgent(agent_id);
+const bundle = loadLatest();
+const daily = bundle.agents[agent.id];
+if (!daily) throw new Error(`Agent ${agent.id} missing from latest bundle`);
+
+const outputDates = listOutputDates();
+const daysLive = outputDates.length;
+
+const pnlRow = bundle.leaderboard.find((r) => r.agent === agent.id);
+const pnl = pnlRow?.return_pct ?? 0;
+const pnlCls = pnl > 0 ? "pos" : pnl < 0 ? "neg" : "";
+const pnlStr = (pnl > 0 ? "+" : "") + pnl.toFixed(2) + "%";
+
+const journalMd = loadMemory(agent.id);
+const journalHtml = renderMemoryHtml(journalMd);
+---
+<BaseLayout title={agent.display_name} current="arena" description={`${agent.display_name} — ${agent.archetype}`}>
+  <article class="page dossier">
+    <header>
+      <p class="eyebrow">Dossier · {bundle.date}</p>
+      <h1>{agent.display_name}</h1>
+      <p class="stance">{agent.archetype}.</p>
+      <p class="meta">{agent.base_currency} base · {agent.universe_summary}</p>
+    </header>
+
+    <section class="perf rule-strong">
+      <dl>
+        <div><dt>Return (EUR)</dt><dd class={`num ${pnlCls}`}>{pnlStr}</dd></div>
+        <div><dt>Starting capital</dt><dd class="num">{agent.base_currency === "USD" ? "USD" : "EUR"} 10,000</dd></div>
+        <div><dt>Days live</dt><dd class="num">{daysLive}</dd></div>
+      </dl>
+    </section>
+
+    <section class="holdings">
+      <h2>Portfolio</h2>
+      <PortfolioTable portfolio={daily.portfolio} />
+    </section>
+
+    <section class="journal">
+      <h2>Journal</h2>
+      <p class="note">First-person. Biased on purpose. Rewritten each session.</p>
+      <div class="prose" set:html={journalHtml}></div>
+    </section>
+
+    <p class="back"><a href="/arena">← All agents</a></p>
+  </article>
+</BaseLayout>
+<style>
+  .dossier header h1 { font-size: var(--fs-3xl); margin-bottom: 0.25em; }
+  .stance { font-size: var(--fs-lg); color: var(--ink); margin: 0 0 0.35rem; }
+  .meta { color: var(--ink-muted); font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
+  .perf dl {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin: 0 0 2rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .perf dl div { padding: 0.75rem 1rem; border-right: 1px solid var(--rule); }
+  .perf dl div:last-child { border-right: 0; }
+  .perf dt { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin: 0 0 0.25rem; }
+  .perf dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
+  .holdings, .journal { margin-top: 2.5rem; }
+  .journal .note { color: var(--ink-muted); font-style: italic; margin-bottom: 1.5rem; }
+  .prose { max-width: var(--measure); }
+  .prose :global(h2) { margin-top: 2rem; }
+  .prose :global(blockquote) { border-left: 2px solid var(--accent); padding-left: 1rem; color: var(--ink-muted); }
+  .back { margin-top: 3rem; }
+  @media (max-width: 32rem) { .perf dl { grid-template-columns: 1fr; } .perf dl div { border-right: 0; border-bottom: 1px solid var(--rule); } .perf dl div:last-child { border-bottom: 0; } }
+</style>
