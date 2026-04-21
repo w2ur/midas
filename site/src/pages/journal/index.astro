@@ -1,0 +1,37 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { listBlogDates, loadBlogByDate, excerpt } from "@/lib/blog";
+
+const dates = listBlogDates().slice().reverse();
+const entries = dates.map((d) => {
+  const p = loadBlogByDate(d);
+  return { date: d, title: p.title, slug: p.slug, excerpt: excerpt(p.body, 220) };
+});
+
+function humanDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+    day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+  });
+}
+---
+<BaseLayout title="The Oracle" current="journal" description="The Oracle's daily column on the Midas experiment.">
+  <section class="page">
+    <p class="eyebrow">Daily dispatches</p>
+    <h1>The Oracle</h1>
+    <p class="lede">A daily column on what the agents did and what it means.</p>
+
+    <ul class="entry-list">
+      {entries.map((e) => (
+        <li>
+          <div class="meta">{humanDate(e.date)}</div>
+          <div class="title"><a href={`/journal/${e.date}`}>{e.title}</a></div>
+          <div class="excerpt">{e.excerpt}</div>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+<style>
+  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 2rem; }
+</style>
