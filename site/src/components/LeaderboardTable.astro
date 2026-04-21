@@ -1,0 +1,38 @@
+---
+import type { LeaderboardRow } from "@/lib/output";
+import { getAgent, isTradingAgent } from "@/lib/roster";
+
+interface Props { rows: LeaderboardRow[] }
+const { rows } = Astro.props;
+
+function fmtPct(n: number): string {
+  const sign = n > 0 ? "+" : n < 0 ? "" : "";
+  return `${sign}${n.toFixed(2)}%`;
+}
+---
+<table class="leaderboard">
+  <thead>
+    <tr>
+      <th style="width:3rem">#</th>
+      <th>Agent</th>
+      <th>Archetype</th>
+      <th class="num">Return (EUR)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows.map((row) => {
+      const tradingAgent = isTradingAgent(row.agent) ? getAgent(row.agent) : null;
+      const display = tradingAgent?.display_name ?? row.agent;
+      const arch = tradingAgent?.archetype ?? "";
+      const cls = row.return_pct > 0 ? "pos" : row.return_pct < 0 ? "neg" : "";
+      return (
+        <tr>
+          <td class="num">{row.rank}</td>
+          <td><a href={`/arena/${row.agent}`}>{display}</a></td>
+          <td>{arch}</td>
+          <td class={`num ${cls}`}>{fmtPct(row.return_pct)}</td>
+        </tr>
+      );
+    })}
+  </tbody>
+</table>

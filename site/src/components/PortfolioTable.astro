@@ -1,0 +1,53 @@
+---
+import type { AgentPortfolio } from "@/lib/output";
+
+interface Props { portfolio: AgentPortfolio }
+const { portfolio } = Astro.props;
+const total = portfolio.cash + portfolio.deployed;
+const cur = portfolio.currency;
+const fmt = (n: number) => new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(n);
+---
+<section class="portfolio">
+  <dl class="money">
+    <div><dt>Cash</dt><dd class="num">{cur} {fmt(portfolio.cash)}</dd></div>
+    <div><dt>Deployed</dt><dd class="num">{cur} {fmt(portfolio.deployed)}</dd></div>
+    <div><dt>Total</dt><dd class="num">{cur} {fmt(total)}</dd></div>
+  </dl>
+
+  {portfolio.positions.length === 0 ? (
+    <p class="empty">No open positions.</p>
+  ) : (
+    <table>
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          <th class="num">Shares</th>
+        </tr>
+      </thead>
+      <tbody>
+        {portfolio.positions.map((p) => (
+          <tr>
+            <td><code>{p.ticker}</code></td>
+            <td class="num">{p.shares}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+</section>
+<style>
+  .money {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin: 0 0 1rem;
+    border-top: 2px solid var(--rule-strong);
+    border-bottom: 1px solid var(--rule);
+  }
+  .money div { padding: 0.75rem 1rem; border-right: 1px solid var(--rule); }
+  .money div:last-child { border-right: 0; }
+  .money dt { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin: 0 0 0.25rem; }
+  .money dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
+  .empty { color: var(--ink-muted); font-style: italic; }
+  @media (max-width: 32rem) { .money { grid-template-columns: 1fr; } .money div { border-right: 0; border-bottom: 1px solid var(--rule); } .money div:last-child { border-bottom: 0; } }
+</style>

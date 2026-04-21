@@ -1,0 +1,16 @@
+---
+import type { Post } from "@/lib/posts";
+import { isTradingAgent, getAgent } from "@/lib/roster";
+
+interface Props { post: Post }
+const { post } = Astro.props;
+const display = isTradingAgent(post.agent_id) ? getAgent(post.agent_id).display_name : post.agent_id;
+---
+<article class="feed-post" data-agent={post.agent_id}>
+  <div class="head">
+    <a class="name" href={`/arena/${post.agent_id}`}>{display}</a>
+    <span class="when">{post.post_at}</span>
+    <span class="kind">{post.kind}</span>
+  </div>
+  <div class="body">{post.text}</div>
+</article>
