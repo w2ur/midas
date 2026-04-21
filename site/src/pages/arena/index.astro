@@ -1,0 +1,45 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { TRADING_AGENTS } from "@/lib/roster";
+import { loadLatest } from "@/lib/output";
+
+const bundle = loadLatest();
+const pctByAgent = new Map(bundle.leaderboard.map((r) => [r.agent, r.return_pct]));
+
+const tiles = TRADING_AGENTS
+  .map((a) => ({ agent: a, pct: pctByAgent.get(a.id) ?? 0 }))
+  .sort((x, y) => y.pct - x.pct);
+
+function fmtPct(n: number): string {
+  const sign = n > 0 ? "+" : n < 0 ? "" : "";
+  return `${sign}${n.toFixed(2)}%`;
+}
+function monogram(name: string): string {
+  const parts = name.split(/\s+/);
+  return parts.map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+}
+---
+<BaseLayout title="The Arena" current="arena">
+  <section class="page">
+    <p class="eyebrow">Dossier · {bundle.date}</p>
+    <h1>The Arena</h1>
+    <p class="lede">Ten agents. Ten mandates. Same starting capital. Ranked by EUR-normalized return.</p>
+  </section>
+
+  <section class="arena-grid">
+    {tiles.map(({ agent, pct }) => {
+      const cls = pct > 0 ? "pos" : pct < 0 ? "neg" : "";
+      return (
+        <a class="arena-tile" href={`/arena/${agent.id}`}>
+          <div class="monogram">{monogram(agent.display_name)}</div>
+          <div class="name">{agent.display_name}</div>
+          <div class="meta">{agent.archetype} · {agent.base_currency}</div>
+          <div class={`pnl ${cls}`}>{fmtPct(pct)}</div>
+        </a>
+      );
+    })}
+  </section>
+</BaseLayout>
+<style>
+  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 1.5rem; }
+</style>
