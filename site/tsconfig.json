@@ -3,7 +3,11 @@
   "compilerOptions": {
     "types": ["node"],
     "allowJs": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src/**/*", "tests/**/*", "astro.config.mjs", "vitest.config.ts"],
   "exclude": ["dist", ".astro", "node_modules"]

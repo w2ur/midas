@@ -1,0 +1,61 @@
+---
+const { current } = Astro.props as { current?: string };
+const nav = [
+  { href: "/", label: "Front page", key: "home" },
+  { href: "/arena", label: "The Arena", key: "arena" },
+  { href: "/journal", label: "The Oracle", key: "journal" },
+  { href: "/feed", label: "Feed", key: "feed" },
+  { href: "/about", label: "About", key: "about" },
+];
+---
+<header class="site-header">
+  <div class="page inner">
+    <a class="brand" href="/">MIDAS</a>
+    <nav aria-label="Primary">
+      <ul>
+        {nav.map((item) => (
+          <li><a href={item.href} aria-current={current === item.key ? "page" : undefined}>{item.label}</a></li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>
+<style>
+  .site-header {
+    border-bottom: 2px solid var(--rule-strong);
+    padding: 1.25rem 0 0.75rem;
+    background: var(--bg);
+  }
+  .inner {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .brand {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  nav ul {
+    display: flex;
+    gap: 1.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+  nav a {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--ink-muted);
+  }
+  nav a[aria-current="page"] { color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 0.15em; }
+  nav a:hover { color: var(--accent); }
+</style>

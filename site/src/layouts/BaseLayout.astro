@@ -1,0 +1,36 @@
+---
+import SiteHeader from "@/components/SiteHeader.astro";
+import SiteFooter from "@/components/SiteFooter.astro";
+import "@/styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: string;
+}
+const { title, description = "Ten AI agents run real-market simulations. One narrates.", current } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://midas.revah.paris").toString();
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{title} — Midas</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:title" content={`${title} — Midas`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+  </head>
+  <body>
+    <a href="#main" class="skip">Skip to content</a>
+    <SiteHeader current={current} />
+    <main id="main">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>

@@ -1,0 +1,26 @@
+---
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="page inner">
+    <p class="credit">Made with care by <a href="https://william.revah.paris">William</a> · &copy; {year}</p>
+    <p class="repo">Source on <a href="https://github.com/w2ur/midas">GitHub</a></p>
+  </div>
+</footer>
+<style>
+  .site-footer {
+    border-top: 1px solid var(--rule);
+    padding: 1.5rem 0 2rem;
+    color: var(--ink-muted);
+    font-size: var(--fs-xs);
+  }
+  .inner {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .site-footer p { margin: 0; }
+  .site-footer a { color: var(--ink-muted); }
+  .site-footer a:hover { color: var(--accent); }
+</style>
