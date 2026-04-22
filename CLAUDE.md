@@ -90,7 +90,8 @@ Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_
 ## Session Cadence (RemoteTriggers)
 - **Weekday session** (`0 20 * * 1-5`): full 10-agent roster + Oracle. Runs Mon-Fri 20:00 UTC.
 - **Weekend crypto session** (`0 20 * * 6,0`): crypto-capable roster only — `satoshi`, `yolo-sapiens-eur`, `yolo-sapiens-usd` + Oracle. Runs Sat-Sun 20:00 UTC. Each agent is instructed to restrict this session's orders to crypto pairs in their respective base currency (other markets in their universes are closed; broker would reject anyway). `world` stays excluded — its breadth across equities/forex/ETFs makes it a mostly-rejections agent on weekends; revisit if it ends up heavily crypto-weighted. `steady-eddie-*` mention crypto but only as thematic context, not active trading.
-- Both triggers author orders via the outbox, call the paper broker for fills, write daily log + posts + blog + output bundle, then commit and push. Same engine, different roster.
+- Both triggers follow the same pipeline: author orders via the outbox → paper broker fills → daily log → snapshots → agent posts → Oracle blog + posts → save content → **Ring 2 journal rewrite** (every participating agent + The Oracle rewrite `data/agent_memory/{agent_id}.md` in first person) → commit `data/` and push. Same engine, different roster.
+- The journal rewrite step is load-bearing: if a session's commit touches `data/posts/`, `data/blog/`, `data/output/` but NOT `data/agent_memory/*.md`, Step 9 was skipped. Sessions 2026-04-20..22 hit this bug — weekday trigger fixed on 2026-04-22.
 
 ## Site (Ring 3a)
 
