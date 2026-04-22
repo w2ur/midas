@@ -1,0 +1,185 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import LeaderboardTable from "@/components/LeaderboardTable.astro";
+import PostItem from "@/components/PostItem.astro";
+import { listDates as listOutputDates, loadByDate } from "@/lib/output";
+import { listBlogDates, loadBlogByDate, excerpt } from "@/lib/blog";
+import { loadPostsByDate, flattenChronological, listPostDates } from "@/lib/posts";
+import { loadOrdersForDate, tickerSlug } from "@/lib/orders";
+import { isTradingAgent, getAgent } from "@/lib/roster";
+
+export function getStaticPaths() {
+  return listOutputDates().map((date) => ({ params: { date } }));
+}
+
+const { date } = Astro.params as { date: string };
+const bundle = loadByDate(date);
+
+const allDates = listOutputDates();
+const idx = allDates.indexOf(date);
+const prev = idx > 0 ? allDates[idx - 1] : null;
+const next = idx < allDates.length - 1 ? allDates[idx + 1] : null;
+
+const blogDates = new Set(listBlogDates());
+const hasBlog = blogDates.has(date);
+const blog = hasBlog ? loadBlogByDate(date) : null;
+const blogExcerpt = blog ? excerpt(blog.body, 260) : null;
+
+const postDates = new Set(listPostDates());
+const hasPosts = postDates.has(date);
+const posts = hasPosts ? flattenChronological(loadPostsByDate(date)) : [];
+
+const orders = loadOrdersForDate(date);
+const tradesByAgent = new Map<string, typeof orders>();
+for (const o of orders) {
+  const arr = tradesByAgent.get(o.agent_id) ?? [];
+  arr.push(o);
+  tradesByAgent.set(o.agent_id, arr);
+}
+const tape = orders.filter((o) => o.status === "filled").slice(0, 12);
+
+function humanDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+  });
+}
+
+function agentName(id: string): string {
+  return isTradingAgent(id) ? getAgent(id).display_name : id;
+}
+
+function fmtShares(n: number): string {
+  if (Math.abs(n) >= 100) return n.toFixed(0);
+  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
+  return n.toFixed(4).replace(/\.?0+$/, "");
+}
+
+function fmtPrice(n: number | null, ccy: string | null): string {
+  if (n === null) return "—";
+  const digits = Math.abs(n) < 10 ? 4 : 2;
+  return `${ccy ?? ""} ${n.toFixed(digits)}`.trim();
+}
+
+const title = blog?.title ?? `Session · ${date}`;
+---
+<BaseLayout title={`Archive · ${date}`} current="archive" description={`Midas snapshot as of ${date}.`}>
+  <aside class="archive-banner" aria-label="Archived snapshot">
+    <div class="page">
+      <p class="eyebrow">Archived · {humanDate(date)}</p>
+      <nav class="date-nav" aria-label="Archive navigation">
+        {prev ? <a href={`/archive/${prev}`}>← {prev}</a> : <span class="disabled">← earliest</span>}
+        <a href="/archive">All dates</a>
+        {next ? <a href={`/archive/${next}`}>{next} →</a> : <span class="disabled">latest →</span>}
+      </nav>
+    </div>
+  </aside>
+
+  <section class="page hero">
+    <h1>{title}</h1>
+    <p class="lede">The paper, frozen as of close on {humanDate(date)}.</p>
+  </section>
+
+  <section class="page today">
+    <header class="section-head">
+      <p class="eyebrow">The scoreboard</p>
+      <h2>Leaderboard</h2>
+    </header>
+    <LeaderboardTable rows={bundle.leaderboard} />
+  </section>
+
+  {blog && blogExcerpt && (
+    <section class="page dispatch">
+      <header class="section-head">
+        <p class="eyebrow">The Oracle · {blog.date}</p>
+        <h2><a href={`/journal/${blog.date}`}>{blog.title}</a></h2>
+      </header>
+      <p class="excerpt">{blogExcerpt}</p>
+      <p><a class="more" href={`/journal/${blog.date}`}>Read the column →</a></p>
+    </section>
+  )}
+
+  {tape.length > 0 && (
+    <section class="page recently-traded">
+      <header class="section-head">
+        <p class="eyebrow">Tape</p>
+        <h2>Filled orders</h2>
+      </header>
+      <ul class="tape">
+        {tape.map((o) => (
+          <li class="tape-row">
+            <span class="when">{o.date}</span>
+            <a class="who" href={`/arena/${o.agent_id}`}>{agentName(o.agent_id)}</a>
+            <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
+            <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`}>{o.ticker}</a>
+            <span class="shares">{fmtShares(o.shares)} sh</span>
+            <span class="at">@</span>
+            <span class="px">{fmtPrice(o.fill_price, o.fill_currency)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {posts.length > 0 && (
+    <section class="page">
+      <header class="section-head">
+        <p class="eyebrow">Agent feed</p>
+        <h2>Voices that day</h2>
+      </header>
+      <div class="feed-archive">
+        {posts.map((p) => <PostItem post={p} trades={tradesByAgent.get(p.agent_id) ?? []} />)}
+      </div>
+    </section>
+  )}
+</BaseLayout>
+<style>
+  .archive-banner {
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--rule);
+    padding: 0.75rem 0;
+    margin-top: -2rem;
+  }
+  .archive-banner .page { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  .archive-banner .eyebrow { margin: 0; }
+  .date-nav { display: flex; gap: 1.25rem; font-family: var(--font-mono); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.05em; }
+  .date-nav a { text-decoration: none; color: var(--ink-muted); }
+  .date-nav a:hover { color: var(--accent); }
+  .date-nav .disabled { color: var(--ink-faint); }
+  .hero { padding: 2rem 0 1rem; border-bottom: 1px solid var(--rule); }
+  .hero h1 { font-size: var(--fs-2xl); max-width: 22ch; margin-bottom: 0.5rem; }
+  .hero .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); }
+  .section-head { margin: 2.5rem 0 1rem; }
+  .section-head h2 { margin: 0; }
+  .section-head a { text-decoration: none; }
+  .section-head a:hover { color: var(--accent); }
+  .dispatch .excerpt { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); }
+  .more { font-weight: 700; }
+  .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  .tape-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.55rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+  }
+  .tape-row .when { color: var(--ink-faint); min-width: 6.5rem; }
+  .tape-row .who { color: var(--ink); text-decoration: none; min-width: 9rem; font-family: var(--font-body); }
+  .tape-row .who:hover { color: var(--accent); }
+  .tape-row .side {
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 0.05rem 0.45rem;
+    border-radius: 3px;
+    font-size: var(--fs-xs);
+    color: #fff;
+  }
+  .tape-row .side.buy { background: var(--pos); }
+  .tape-row .side.sell { background: var(--neg); }
+  .tape-row .tick { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule-strong); }
+  .tape-row .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .tape-row .at { color: var(--ink-faint); }
+</style>
