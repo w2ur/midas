@@ -1,11 +1,57 @@
 ---
 import type { AgentPortfolio } from "@/lib/output";
+import { loadLastClose, inferCurrency } from "@/lib/ohlcv";
+import { tickerSlug } from "@/lib/orders";
 
-interface Props { portfolio: AgentPortfolio }
-const { portfolio } = Astro.props;
+interface Props {
+  portfolio: AgentPortfolio;
+  asOf: string;
+}
+const { portfolio, asOf } = Astro.props;
 const total = portfolio.cash + portfolio.deployed;
 const cur = portfolio.currency;
 const fmt = (n: number) => new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(n);
+
+type Row = {
+  ticker: string;
+  shares: number;
+  close: number | null;
+  closeDate: string | null;
+  value: number | null;
+  currency: string | null;
+};
+
+const rows: Row[] = portfolio.positions.map((p) => {
+  const quote = loadLastClose(p.ticker, asOf);
+  const currency = inferCurrency(p.ticker);
+  return {
+    ticker: p.ticker,
+    shares: p.shares,
+    close: quote?.close ?? null,
+    closeDate: quote?.date ?? null,
+    value: quote ? quote.close * p.shares : null,
+    currency,
+  };
+});
+
+rows.sort((a, b) => {
+  const av = a.value ?? -1;
+  const bv = b.value ?? -1;
+  return bv - av;
+});
+
+const valuedTotal = rows.reduce((acc, r) => acc + (r.value ?? 0), 0);
+
+function fmtPrice(n: number): string {
+  const digits = Math.abs(n) < 10 ? 4 : 2;
+  return n.toFixed(digits);
+}
+
+function fmtShares(n: number): string {
+  if (Math.abs(n) >= 100) return n.toFixed(0);
+  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
+  return n.toFixed(4).replace(/\.?0+$/, "");
+}
 ---
 <section class="portfolio">
   <dl class="money">
@@ -14,26 +60,61 @@ const fmt = (n: number) => new Intl.NumberFormat("en-GB", { maximumFractionDigit
     <div><dt>Total</dt><dd class="num">{cur} {fmt(total)}</dd></div>
   </dl>
 
-  {portfolio.positions.length === 0 ? (
+  {rows.length === 0 ? (
     <p class="empty">No open positions.</p>
   ) : (
-    <table>
+    <table class="positions">
       <thead>
         <tr>
           <th>Ticker</th>
           <th class="num">Shares</th>
+          <th class="num">Last close</th>
+          <th class="num">Value</th>
+          <th class="num">Weight</th>
         </tr>
       </thead>
       <tbody>
-        {portfolio.positions.map((p) => (
-          <tr>
-            <td><code>{p.ticker}</code></td>
-            <td class="num">{p.shares}</td>
-          </tr>
-        ))}
+        {rows.map((r) => {
+          const weight = r.value !== null && valuedTotal > 0 ? (r.value / valuedTotal) * 100 : null;
+          return (
+            <tr>
+              <td><a class="tick" href={`/ticker/${tickerSlug(r.ticker)}`}>{r.ticker}</a></td>
+              <td class="num">{fmtShares(r.shares)}</td>
+              <td class="num">
+                {r.close !== null ? (
+                  <>
+                    <span class="ccy">{r.currency ?? ""}</span> {fmtPrice(r.close)}
+                  </>
+                ) : (
+                  <span class="dash">—</span>
+                )}
+              </td>
+              <td class="num">
+                {r.value !== null ? (
+                  <>
+                    <span class="ccy">{r.currency ?? ""}</span> {fmt(r.value)}
+                  </>
+                ) : (
+                  <span class="dash">—</span>
+                )}
+              </td>
+              <td class="num">
+                {weight !== null ? (
+                  <div class="bar-wrap" aria-label={`${weight.toFixed(1)}% of deployed`}>
+                    <span class="bar" style={`width:${weight.toFixed(1)}%`}></span>
+                    <span class="bar-label">{weight.toFixed(1)}%</span>
+                  </div>
+                ) : (
+                  <span class="dash">—</span>
+                )}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   )}
+  <p class="note">Last close per ticker; foreign positions shown in native currency. Cash/deployed/total are base-currency ({cur}).</p>
 </section>
 <style>
   .money {
@@ -49,5 +130,33 @@ const fmt = (n: number) => new Intl.NumberFormat("en-GB", { maximumFractionDigit
   .money dt { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin: 0 0 0.25rem; }
   .money dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
   .empty { color: var(--ink-muted); font-style: italic; }
+  .note { margin-top: 0.75rem; color: var(--ink-faint); font-size: var(--fs-xs); font-style: italic; }
+  .positions .tick { font-family: var(--font-mono); color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule-strong); }
+  .positions .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .positions .ccy { color: var(--ink-faint); }
+  .positions .dash { color: var(--ink-faint); }
+  .bar-wrap {
+    position: relative;
+    display: inline-block;
+    width: 6rem;
+    height: 1rem;
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    vertical-align: middle;
+  }
+  .bar {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: var(--accent);
+    opacity: 0.35;
+  }
+  .bar-label {
+    position: relative;
+    z-index: 1;
+    padding: 0 0.35rem;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink);
+  }
   @media (max-width: 32rem) { .money { grid-template-columns: 1fr; } .money div { border-right: 0; border-bottom: 1px solid var(--rule); } .money div:last-child { border-bottom: 0; } }
 </style>

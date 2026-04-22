@@ -58,7 +58,7 @@ const recentDateGroups = Array.from(recentOrdersByDate.entries()).slice(0, 5);
 
     <section class="holdings">
       <h2>Portfolio</h2>
-      <PortfolioTable portfolio={daily.portfolio} />
+      <PortfolioTable portfolio={daily.portfolio} asOf={bundle.date} />
     </section>
 
     {recentDateGroups.length > 0 && (
