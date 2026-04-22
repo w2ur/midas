@@ -44,8 +44,22 @@
   --page-max: 64rem;
 }
 
+:root[data-theme="dark"] {
+  --bg: #15130f;
+  --bg-elev: #1c1a15;
+  --ink: #ece3cf;
+  --ink-muted: #a9a090;
+  --ink-faint: #746c60;
+  --rule: #3a342a;
+  --rule-strong: #a9a090;
+  --accent: #d68c7e;
+  --accent-ink: #15130f;
+  --pos: #7bb488;
+  --neg: #d68c7e;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #15130f;
     --bg-elev: #1c1a15;
     --ink: #ece3cf;

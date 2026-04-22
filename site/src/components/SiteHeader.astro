@@ -18,8 +18,39 @@ const nav = [
         ))}
       </ul>
     </nav>
+    <button
+      id="theme-toggle"
+      type="button"
+      class="theme-toggle"
+      aria-label="Toggle dark mode"
+      title="Toggle dark mode"
+    >
+      <span class="theme-icon theme-icon-sun" aria-hidden="true">☀</span>
+      <span class="theme-icon theme-icon-moon" aria-hidden="true">☾</span>
+    </button>
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var btn = document.getElementById("theme-toggle");
+    if (!btn) return;
+    function current() {
+      var set = document.documentElement.getAttribute("data-theme");
+      if (set === "dark" || set === "light") return set;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    function apply() {
+      btn.setAttribute("data-theme-state", current());
+    }
+    btn.addEventListener("click", function () {
+      var next = current() === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      try { localStorage.setItem("midas-theme", next); } catch (_) {}
+      apply();
+    });
+    apply();
+  })();
+</script>
 <style>
   .site-header {
     border-bottom: 2px solid var(--rule-strong);
@@ -58,4 +89,25 @@ const nav = [
   }
   nav a[aria-current="page"] { color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 0.15em; }
   nav a:hover { color: var(--accent); }
+  .theme-toggle {
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    align-self: center;
+  }
+  .theme-toggle:hover { border-color: var(--rule-strong); color: var(--ink); }
+  .theme-icon { display: none; }
+  .theme-toggle[data-theme-state="light"] .theme-icon-moon { display: inline; }
+  .theme-toggle[data-theme-state="dark"] .theme-icon-sun { display: inline; }
 </style>

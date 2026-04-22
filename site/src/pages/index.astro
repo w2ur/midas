@@ -3,16 +3,39 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import LeaderboardTable from "@/components/LeaderboardTable.astro";
 import { loadLatest } from "@/lib/output";
 import { loadBlogLatest, excerpt } from "@/lib/blog";
+import { loadAllOrders, tickerSlug } from "@/lib/orders";
+import { isTradingAgent, getAgent } from "@/lib/roster";
 
 const bundle = loadLatest();
 const latestBlog = loadBlogLatest();
 const blogExcerpt = excerpt(latestBlog.body, 280);
+
+const recentTrades = loadAllOrders()
+  .filter((o) => o.status === "filled")
+  .sort((a, b) => (a.date === b.date ? b.order_id.localeCompare(a.order_id) : b.date.localeCompare(a.date)))
+  .slice(0, 8);
 
 function humanDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
     weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
   });
+}
+
+function agentName(id: string): string {
+  return isTradingAgent(id) ? getAgent(id).display_name : id;
+}
+
+function fmtShares(n: number): string {
+  if (Math.abs(n) >= 100) return n.toFixed(0);
+  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
+  return n.toFixed(4).replace(/\.?0+$/, "");
+}
+
+function fmtPrice(n: number | null, ccy: string | null): string {
+  if (n === null) return "—";
+  const digits = Math.abs(n) < 10 ? 4 : 2;
+  return `${ccy ?? ""} ${n.toFixed(digits)}`.trim();
 }
 ---
 <BaseLayout title="Front page" current="home">
@@ -33,6 +56,28 @@ function humanDate(iso: string): string {
     <LeaderboardTable rows={bundle.leaderboard} />
   </section>
 
+  {recentTrades.length > 0 && (
+    <section class="page recently-traded">
+      <header class="section-head">
+        <p class="eyebrow">Tape</p>
+        <h2>Recently traded</h2>
+      </header>
+      <ul class="tape">
+        {recentTrades.map((o) => (
+          <li class="tape-row">
+            <span class="when">{o.date}</span>
+            <a class="who" href={`/arena/${o.agent_id}`}>{agentName(o.agent_id)}</a>
+            <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
+            <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`}>{o.ticker}</a>
+            <span class="shares">{fmtShares(o.shares)} sh</span>
+            <span class="at">@</span>
+            <span class="px">{fmtPrice(o.fill_price, o.fill_currency)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
   <section class="page dispatch">
     <header class="section-head">
       <p class="eyebrow">The Oracle · {latestBlog.date}</p>
@@ -52,4 +97,31 @@ function humanDate(iso: string): string {
   .section-head a:hover { color: var(--accent); }
   .dispatch .excerpt { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); }
   .more { font-weight: 700; }
+  .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  .tape-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.55rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+  }
+  .tape-row .when { color: var(--ink-faint); min-width: 6.5rem; }
+  .tape-row .who { color: var(--ink); text-decoration: none; min-width: 9rem; font-family: var(--font-body); }
+  .tape-row .who:hover { color: var(--accent); }
+  .tape-row .side {
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 0.05rem 0.45rem;
+    border-radius: 3px;
+    font-size: var(--fs-xs);
+    color: #fff;
+  }
+  .tape-row .side.buy { background: var(--pos); }
+  .tape-row .side.sell { background: var(--neg); }
+  .tape-row .tick { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule-strong); }
+  .tape-row .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .tape-row .at { color: var(--ink-faint); }
 </style>

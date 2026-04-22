@@ -24,6 +24,16 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://midas.revah
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem("midas-theme");
+          if (t === "dark" || t === "light") {
+            document.documentElement.setAttribute("data-theme", t);
+          }
+        } catch (_) {}
+      })();
+    </script>
   </head>
   <body>
     <a href="#main" class="skip">Skip to content</a>
