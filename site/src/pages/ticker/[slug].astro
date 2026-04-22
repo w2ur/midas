@@ -1,0 +1,123 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { buildTickerIndex, loadAllOrders, tickerSlug, type Order } from "@/lib/orders";
+import { isTradingAgent, getAgent } from "@/lib/roster";
+
+export function getStaticPaths() {
+  const idx = buildTickerIndex();
+  return Array.from(idx.entries()).map(([slug, ticker]) => ({
+    params: { slug },
+    props: { ticker },
+  }));
+}
+
+interface Props { ticker: string }
+const { ticker } = Astro.props;
+const { slug } = Astro.params as { slug: string };
+
+const all = loadAllOrders().filter((o) => o.ticker === ticker);
+all.sort((a, b) => (a.date === b.date ? a.order_id.localeCompare(b.order_id) : b.date.localeCompare(a.date)));
+
+const byAgent = new Map<string, Order[]>();
+for (const o of all) {
+  const arr = byAgent.get(o.agent_id) ?? [];
+  arr.push(o);
+  byAgent.set(o.agent_id, arr);
+}
+const agentsTouched = Array.from(byAgent.keys());
+
+const filledCount = all.filter((o) => o.status === "filled").length;
+const rejectedCount = all.filter((o) => o.status === "rejected").length;
+
+function displayName(id: string): string {
+  return isTradingAgent(id) ? getAgent(id).display_name : id;
+}
+
+function fmtShares(n: number): string {
+  if (Math.abs(n) >= 100) return n.toFixed(0);
+  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
+  return n.toFixed(4).replace(/\.?0+$/, "");
+}
+
+function fmtPrice(n: number | null, ccy: string | null): string {
+  if (n === null) return "—";
+  const digits = Math.abs(n) < 10 ? 4 : 2;
+  return `${ccy ?? ""} ${n.toFixed(digits)}`.trim();
+}
+---
+<BaseLayout title={ticker} current="arena" description={`Trade history across agents for ${ticker}.`}>
+  <article class="page ticker-page">
+    <header>
+      <p class="eyebrow">Ticker · {slug}</p>
+      <h1>{ticker}</h1>
+      <p class="lede">
+        Every order any agent wrote for this ticker, filled or rejected. One row per order.
+      </p>
+    </header>
+
+    <section class="stats rule-strong">
+      <dl>
+        <div><dt>Agents</dt><dd class="num">{agentsTouched.length}</dd></div>
+        <div><dt>Fills</dt><dd class="num">{filledCount}</dd></div>
+        <div><dt>Rejected</dt><dd class="num">{rejectedCount}</dd></div>
+      </dl>
+    </section>
+
+    <section class="history">
+      <h2>Orders</h2>
+      <table class="trade-history">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Agent</th>
+            <th>Action</th>
+            <th class="num">Shares</th>
+            <th class="num">Fill</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {all.map((o) => (
+            <tr class={o.status}>
+              <td class="mono">{o.date}</td>
+              <td><a href={`/arena/${o.agent_id}`}>{displayName(o.agent_id)}</a></td>
+              <td><span class={`side ${o.action.toLowerCase()}`}>{o.action}</span></td>
+              <td class="num">{fmtShares(o.shares)}</td>
+              <td class="num">{fmtPrice(o.fill_price, o.fill_currency)}</td>
+              <td>
+                {o.status === "filled" && <span class="badge fil">filled</span>}
+                {o.status === "rejected" && <span class="badge rej" title={o.reject_reason ?? ""}>rejected</span>}
+                {o.status === "pending" && <span class="badge pen">pending</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+
+    <p class="back"><a href="/feed">← Today&rsquo;s feed</a></p>
+  </article>
+</BaseLayout>
+<style>
+  .ticker-page h1 { font-family: var(--font-mono); font-size: var(--fs-3xl); margin-bottom: 0.25em; }
+  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 2rem; }
+  .stats dl {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 0 0 2rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .stats dl div { padding: 0.75rem 1rem; border-right: 1px solid var(--rule); }
+  .stats dl div:last-child { border-right: 0; }
+  .stats dt { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin: 0 0 0.25rem; }
+  .stats dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
+  .history { margin-top: 2.5rem; }
+  .trade-history { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  .trade-history th, .trade-history td { padding: 0.6rem 0.75rem; text-align: left; border-bottom: 1px solid var(--rule); }
+  .trade-history th { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); font-weight: 500; }
+  .trade-history .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .trade-history .mono { font-family: var(--font-mono); }
+  .trade-history tr.rejected td { color: var(--ink-muted); }
+  .back { margin-top: 3rem; }
+  @media (max-width: 40rem) { .stats dl { grid-template-columns: 1fr; } .stats dl div { border-right: 0; border-bottom: 1px solid var(--rule); } .stats dl div:last-child { border-bottom: 0; } }
+</style>

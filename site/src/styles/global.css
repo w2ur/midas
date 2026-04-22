@@ -280,3 +280,85 @@ th {
   color: var(--accent);
 }
 .feed-post .body { font-size: var(--fs-base); }
+
+/* Mentions */
+.mentions {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.mention {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.mention:hover { border-color: var(--rule-strong); color: var(--ink); }
+
+/* Trade card */
+.trade-card {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-left: 2px solid var(--accent);
+  background: var(--bg-elev);
+}
+.trade-card .row { padding: 0.4rem 0; border-bottom: 1px dashed var(--rule); }
+.trade-card .row:last-child { border-bottom: 0; }
+.trade-card .row.rejected { opacity: 0.7; }
+.trade-card .line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+.trade-card .side {
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  padding: 0.05rem 0.45rem;
+  border-radius: 3px;
+  font-size: var(--fs-xs);
+}
+.trade-card .side.buy { background: var(--pos); color: #fff; }
+.trade-card .side.sell { background: var(--neg); color: #fff; }
+.trade-card .tick { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule-strong); }
+.trade-card .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.trade-card .shares, .trade-card .px { color: var(--ink); }
+.trade-card .at { color: var(--ink-faint); }
+.trade-card .why {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  line-height: var(--lh-body);
+}
+.trade-card .why.rej-why { color: var(--neg); font-style: italic; }
+
+/* Status badges */
+.badge {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  padding: 0.05rem 0.45rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.badge.fil { background: var(--pos); color: #fff; }
+.badge.rej { background: var(--neg); color: #fff; }
+.badge.pen { background: var(--ink-faint); color: #fff; }
+
+/* Ticker history side badge (reused shape outside trade-card) */
+.trade-history .side {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  padding: 0.05rem 0.45rem;
+  border-radius: 3px;
+  letter-spacing: 0.06em;
+}
+.trade-history .side.buy { background: var(--pos); color: #fff; }
+.trade-history .side.sell { background: var(--neg); color: #fff; }

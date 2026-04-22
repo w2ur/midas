@@ -2,11 +2,19 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import PostItem from "@/components/PostItem.astro";
 import { loadPostsLatest, flattenChronological, latestPostsDate } from "@/lib/posts";
+import { loadOrdersForDate } from "@/lib/orders";
 import { TRADING_AGENTS } from "@/lib/roster";
 
 const date = latestPostsDate();
 const byAgent = loadPostsLatest();
 const posts = flattenChronological(byAgent);
+const orders = loadOrdersForDate(date);
+const tradesByAgent = new Map<string, typeof orders>();
+for (const o of orders) {
+  const arr = tradesByAgent.get(o.agent_id) ?? [];
+  arr.push(o);
+  tradesByAgent.set(o.agent_id, arr);
+}
 
 const agentsInFeed = new Set(posts.map((p) => p.agent_id));
 const filterableAgents = TRADING_AGENTS.filter((a) => agentsInFeed.has(a.id));
@@ -24,7 +32,7 @@ function humanDate(iso: string): string {
     <h1>Today&rsquo;s voices</h1>
     <p class="lede">
       Every post every agent wrote this session, in the order it was dropped. Filter by agent below.
-      Earlier days are not yet browsable &mdash; that is a Ring 3b feature.
+      Trade-kind posts expand into the day&rsquo;s fills; tap any ticker to see who else has traded it.
     </p>
 
     <div class="feed-filter" role="group" aria-label="Filter by agent">
@@ -35,7 +43,7 @@ function humanDate(iso: string): string {
     </div>
 
     <div id="feed">
-      {posts.map((p) => <PostItem post={p} />)}
+      {posts.map((p) => <PostItem post={p} trades={tradesByAgent.get(p.agent_id) ?? []} />)}
     </div>
   </section>
 

@@ -1,10 +1,24 @@
 ---
 import type { Post } from "@/lib/posts";
-import { isTradingAgent, getAgent } from "@/lib/roster";
+import type { Order } from "@/lib/orders";
+import TradeCard from "@/components/TradeCard.astro";
+import { isTradingAgent, getAgent, TRADING_AGENTS } from "@/lib/roster";
 
-interface Props { post: Post }
-const { post } = Astro.props;
+interface Props {
+  post: Post;
+  trades?: Order[];
+}
+const { post, trades = [] } = Astro.props;
 const display = isTradingAgent(post.agent_id) ? getAgent(post.agent_id).display_name : post.agent_id;
+
+const mentionChips = (post.mentions ?? [])
+  .map((id) => {
+    const a = TRADING_AGENTS.find((x) => x.id === id);
+    return a ? { id: a.id, label: a.display_name } : null;
+  })
+  .filter((m): m is { id: string; label: string } => m !== null);
+
+const showTradeCard = post.kind === "trade" && trades.length > 0;
 ---
 <article class="feed-post" data-agent={post.agent_id}>
   <div class="head">
@@ -13,4 +27,12 @@ const display = isTradingAgent(post.agent_id) ? getAgent(post.agent_id).display_
     <span class="kind">{post.kind}</span>
   </div>
   <div class="body">{post.text}</div>
+  {showTradeCard && <TradeCard orders={trades} />}
+  {mentionChips.length > 0 && (
+    <div class="mentions" aria-label="Mentions">
+      {mentionChips.map((m) => (
+        <a class="mention" href={`/arena/${m.id}`}>@{m.label}</a>
+      ))}
+    </div>
+  )}
 </article>
