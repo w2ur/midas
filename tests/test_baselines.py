@@ -78,8 +78,17 @@ def test_passive_benchmark_carries_weekend_close(tmp_ohlcv):
 def test_passive_benchmark_flat_cash_sentinel(tmp_ohlcv):
     spec = BenchmarkSpec("EUR cash", "EUR_CASH_FLAT", "EUR")
     snaps = compute_passive_benchmark(spec, date(2026, 4, 17), date(2026, 4, 20))
-    assert len(snaps) == 4  # inclusive
+    assert len(snaps) == 4
     assert all(s["portfolio_value"] == pytest.approx(INITIAL) for s in snaps)
+    # Shape contract: every snapshot carries the same five fields so the
+    # site can consume them with one loader.
+    assert snaps[0].keys() == {
+        "date",
+        "portfolio_value",
+        "cash",
+        "positions_value",
+        "currency",
+    }
 
 
 def test_passive_benchmark_includes_currency(tmp_ohlcv):

@@ -12,7 +12,12 @@ Ticker choices:
 - URTH (iShares MSCI World ETF, USD-listed) replaces IWDA.L for world / global
   reference. URTH is the same proxy already used for msci_world in
   engine/market_data.py BENCHMARK_TICKERS.
-Currency label is informational only — charts normalize to % return.
+
+Currency is the DISPLAY currency for the series (matches the agent's home
+currency). The price ratio used to compute daily value is currency-invariant,
+so the ETF's actual trading currency (USD for VGK/URTH) is not relevant to
+the comparison. FX-noise over the short observation window is accepted as
+de minimis, matching the existing snapshot-benchmark pattern in the site.
 """
 
 from __future__ import annotations
@@ -42,20 +47,25 @@ class BenchmarkSpec:
 # Single source of truth. Ticker choices must exist in data/market/ohlcv/.
 # "EUR_CASH_FLAT" is a sentinel handled by compute_passive_benchmark —
 # produces a flat €10k series (honest benchmark for monsieur-forex).
+# Currency is the DISPLAY currency for the series (matches the agent's home
+# currency). The price ratio used to compute daily value is currency-invariant,
+# so the ETF's actual trading currency (USD for VGK/URTH) is not relevant to
+# the comparison. FX-noise over the short observation window is accepted as
+# de minimis, matching the existing snapshot-benchmark pattern in the site.
 AGENT_BENCHMARKS: dict[str, BenchmarkSpec] = {
     "satoshi": BenchmarkSpec("BTC-EUR", "BTC-EUR", "EUR"),
-    "yolo-sapiens-eur": BenchmarkSpec("FTSE Europe", "VGK", "USD"),
+    "yolo-sapiens-eur": BenchmarkSpec("FTSE Europe", "VGK", "EUR"),
     "yolo-sapiens-usd": BenchmarkSpec("S&P 500", "SPY", "USD"),
     "goldfinger": BenchmarkSpec("Gold", "4GLD.DE", "EUR"),
     "monsieur-forex": BenchmarkSpec("EUR cash", "EUR_CASH_FLAT", "EUR"),
-    "sharp-shooter-eur": BenchmarkSpec("FTSE Europe", "VGK", "USD"),
+    "sharp-shooter-eur": BenchmarkSpec("FTSE Europe", "VGK", "EUR"),
     "sharp-shooter-usd": BenchmarkSpec("S&P 500", "SPY", "USD"),
-    "steady-eddie-eur": BenchmarkSpec("FTSE Europe", "VGK", "USD"),
+    "steady-eddie-eur": BenchmarkSpec("FTSE Europe", "VGK", "EUR"),
     "steady-eddie-usd": BenchmarkSpec("S&P 500", "SPY", "USD"),
-    "world": BenchmarkSpec("MSCI World", "URTH", "USD"),
+    "world": BenchmarkSpec("MSCI World", "URTH", "EUR"),
 }
 
-GLOBAL_REFERENCE = BenchmarkSpec("MSCI World", "URTH", "USD")
+GLOBAL_REFERENCE = BenchmarkSpec("MSCI World", "URTH", "EUR")
 
 INITIAL = 10000.0
 
