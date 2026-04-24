@@ -90,7 +90,20 @@ _ETF_SECTORS = [
     "XLRE",
     "XLB",
 ]
-_ETF_BROAD = ["VOO", "QQQ", "VEA", "VWO", "GLD", "BND", "TLT", "IWM", "DIA", "HYG"]
+_ETF_BROAD = [
+    "VOO",
+    "QQQ",
+    "VEA",
+    "VWO",
+    "GLD",
+    "BND",
+    "TLT",
+    "IWM",
+    "DIA",
+    "HYG",
+    "URTH",
+    "VGK",
+]
 
 
 def _collect_holdings() -> set[str]:
