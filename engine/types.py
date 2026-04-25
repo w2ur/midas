@@ -54,7 +54,6 @@ VALID_SELECTORS: frozenset[str] = frozenset(
         "data-follow",
         "claude-analysis",
         "random",
-        "random-seeded",
         "buy-and-hold",
     }
 )
@@ -176,7 +175,6 @@ class StrategyRules:
     max_positions: int = 10
     max_position_pct: float = 20.0
     min_hold_days: int = 3
-    seed: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -293,7 +291,6 @@ class StrategySpec:
                 "max_position_pct", StrategyRules.max_position_pct
             ),
             min_hold_days=rules_data.get("min_hold_days", StrategyRules.min_hold_days),
-            seed=rules_data.get("seed", None),
         )
 
         return cls(

@@ -177,12 +177,13 @@ def compute_coin_flip(
 
     Builds the bt pipeline directly to avoid build_bt_strategy's StatTotalReturn
     + SelectN insertion, which would override the seeded picks with return-rank
-    ordering. The seeded selector already limits picks to max_positions so no
-    SelectN step is needed.
+    ordering. The seeded selector already caps picks at max_positions so no
+    SelectN step is needed; LimitWeights stays as a safety valve for days when
+    the available universe (after dropna) is smaller than max_positions, which
+    would otherwise let WeighEqually allocate >1/max_positions to a single name.
     """
     import bt as _bt
 
-    from engine.backtest import BacktestResult
     from engine.selectors.random_seeded import SelectRandomlySeeded, make_seed
 
     price_data = _load_price_frame(tickers, from_date, to_date)

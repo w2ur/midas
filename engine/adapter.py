@@ -113,19 +113,6 @@ def _selector_random(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Al
     return [bt.algos.SelectRandomly(n=spec.rules.max_positions)]
 
 
-@register_selector("random-seeded")
-def _selector_random_seeded(
-    spec: StrategySpec, price_data: pd.DataFrame
-) -> list[bt.Algo]:
-    """Seedable random selector. Requires spec.rules custom field ``seed``."""
-    from engine.selectors.random_seeded import SelectRandomlySeeded
-
-    seed = getattr(spec.rules, "seed", None)
-    if seed is None:
-        raise ValueError("random-seeded selector requires a seed in rules")
-    return [SelectRandomlySeeded(n=spec.rules.max_positions, seed=int(seed))]
-
-
 @register_selector("golden-cross")
 def _selector_golden_cross(
     spec: StrategySpec, price_data: pd.DataFrame
