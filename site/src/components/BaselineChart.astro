@@ -1,0 +1,115 @@
+---
+type Point = { date: string; portfolio_value: number };
+
+export interface Props {
+  agent: Point[];
+  benchmark: Point[];
+  coinflip: Point[];
+  benchmarkLabel: string;
+}
+
+const { agent, benchmark, coinflip, benchmarkLabel } = Astro.props;
+
+function pct(series: Point[]): { date: string; val: number }[] {
+  if (series.length === 0) return [];
+  const base = series[0].portfolio_value;
+  if (base === 0) return [];
+  return series.map((s) => ({ date: s.date, val: ((s.portfolio_value - base) / base) * 100 }));
+}
+
+const a = pct(agent);
+const b = pct(benchmark);
+const c = pct(coinflip);
+const all = [...a, ...b, ...c];
+
+const allDates = Array.from(new Set(all.map((p) => p.date))).sort();
+const n = allDates.length;
+
+const WIDTH = 720;
+const HEIGHT = 280;
+const PAD_L = 44;
+const PAD_R = 16;
+const PAD_T = 16;
+const PAD_B = 28;
+
+const xs = (i: number) =>
+  PAD_L + ((WIDTH - PAD_L - PAD_R) * i) / Math.max(n - 1, 1);
+
+const yMin = all.length ? Math.min(0, ...all.map((p) => p.val)) : -1;
+const yMax = all.length ? Math.max(0, ...all.map((p) => p.val)) :  1;
+const yPad = (yMax - yMin) * 0.08 || 1;
+const ymn = yMin - yPad;
+const ymx = yMax + yPad;
+const ys = (v: number) =>
+  PAD_T + ((HEIGHT - PAD_T - PAD_B) * (ymx - v)) / (ymx - ymn);
+
+function pathFor(series: { date: string; val: number }[]): string {
+  if (series.length === 0) return "";
+  const dateToIdx = new Map(allDates.map((d, i) => [d, i]));
+  const pts = series
+    .map((p) => ({ i: dateToIdx.get(p.date), y: p.val }))
+    .filter((p): p is { i: number; y: number } => p.i !== undefined);
+  if (pts.length === 0) return "";
+  return pts
+    .map((p, k) => `${k === 0 ? "M" : "L"} ${xs(p.i).toFixed(1)} ${ys(p.y).toFixed(1)}`)
+    .join(" ");
+}
+
+const pathAgent = pathFor(a);
+const pathBench = pathFor(b);
+const pathCoin  = pathFor(c);
+
+const firstDate = allDates[0] ?? "";
+const lastDate = allDates[n - 1] ?? "";
+const hasData = n > 0;
+---
+{hasData && (
+  <figure class="baseline-chart">
+    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Agent vs benchmark vs coin flip">
+      <line x1={PAD_L} x2={WIDTH - PAD_R} y1={ys(0)} y2={ys(0)} class="axis" />
+      <text x={PAD_L - 8} y={ys(ymx) + 4} text-anchor="end" class="label">{ymx.toFixed(1)}%</text>
+      <text x={PAD_L - 8} y={ys(0)   + 4} text-anchor="end" class="label">0%</text>
+      <text x={PAD_L - 8} y={ys(ymn) + 4} text-anchor="end" class="label">{ymn.toFixed(1)}%</text>
+      <text x={PAD_L}       y={HEIGHT - 8} text-anchor="start" class="label">{firstDate}</text>
+      <text x={WIDTH - PAD_R} y={HEIGHT - 8} text-anchor="end"   class="label">{lastDate}</text>
+      {pathBench && <path d={pathBench} class="bench" fill="none" />}
+      {pathCoin  && <path d={pathCoin}  class="coin"  fill="none" />}
+      {pathAgent && <path d={pathAgent} class="agent" fill="none" />}
+    </svg>
+    <figcaption>
+      <span><span class="legend agent-swatch"></span> Agent</span>
+      <span><span class="legend bench-swatch"></span> {benchmarkLabel}</span>
+      <span><span class="legend coin-swatch"></span> Coin flip</span>
+      <span class="note">Return since Day 1.</span>
+    </figcaption>
+  </figure>
+)}
+<style>
+  .baseline-chart { margin: 2rem 0; }
+  .baseline-chart svg { width: 100%; height: auto; }
+  .axis { stroke: var(--rule); stroke-width: 1; }
+  .label { font-family: var(--font-mono); font-size: 0.65rem; fill: var(--ink-muted); }
+  .agent { stroke: var(--accent); stroke-width: 2; }
+  .bench { stroke: var(--ink-muted); stroke-width: 1.5; }
+  .coin  { stroke: var(--ink-muted); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  figcaption {
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .legend {
+    display: inline-block;
+    width: 0.9rem;
+    height: 2px;
+    vertical-align: middle;
+    margin-right: 0.3rem;
+  }
+  .agent-swatch { background: var(--accent); }
+  .bench-swatch { background: var(--ink-muted); }
+  .coin-swatch  { background: transparent; border-top: 2px dashed var(--ink-muted); height: 0; margin-top: 4px; }
+  .note { margin-left: auto; font-style: italic; }
+</style>

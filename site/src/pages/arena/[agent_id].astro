@@ -2,11 +2,13 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import PortfolioTable from "@/components/PortfolioTable.astro";
 import TradeCard from "@/components/TradeCard.astro";
+import BaselineChart from "@/components/BaselineChart.astro";
 import { TRADING_AGENTS, type AgentId, getAgent } from "@/lib/roster";
 import { loadLatest, listDates as listOutputDates } from "@/lib/output";
 import { loadMemory, renderMemoryHtml } from "@/lib/memory";
 import { loadAllOrders } from "@/lib/orders";
 import { loadBenchmark, loadCoinFlip, returnPct, AGENT_BENCHMARK_LABELS } from "@/lib/baselines";
+import { loadPortfolioSnapshots } from "@/lib/portfolios";
 
 export function getStaticPaths() {
   return TRADING_AGENTS.map((a) => ({ params: { agent_id: a.id } }));
@@ -28,6 +30,7 @@ const pnlStr = (pnl > 0 ? "+" : "") + pnl.toFixed(2) + "%";
 
 const benchSeries = loadBenchmark(agent.id);
 const coinSeries = loadCoinFlip(agent.id);
+const agentSeries = loadPortfolioSnapshots(agent.id);
 const benchReturnPct = returnPct(benchSeries);
 const coinReturnPct = returnPct(coinSeries);
 
@@ -83,6 +86,13 @@ const recentDateGroups = Array.from(recentOrdersByDate.entries()).slice(0, 5);
         </div>
       </dl>
     </section>
+
+    <BaselineChart
+      agent={agentSeries}
+      benchmark={benchSeries}
+      coinflip={coinSeries}
+      benchmarkLabel={AGENT_BENCHMARK_LABELS[agent.id] ?? "Benchmark"}
+    />
 
     <section class="holdings">
       <h2>Portfolio</h2>
