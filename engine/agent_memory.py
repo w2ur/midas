@@ -147,10 +147,12 @@ TODAY'S POSTS:
 PORTFOLIO VALUE TODAY: {pv:,.2f} {currency}
 
 INSTRUCTIONS: Rewrite your journal in first person, in character, biased.
-Keep it under ~1000 tokens total. You decide what to keep from the past and
-what to add. Reflect on what played out, what failed, how you feel about the
-other agents right now. This is yours — no format required, no audience but
-yourself (and, unavoidably, The Oracle reading over your shoulder).
+Hard ceiling: 250 tokens. Aim shorter. Prune ruthlessly — drop anything
+older than ~3 sessions unless it still drives a decision. Suggested shape:
+1-2 short opening lines on stance, then 4-6 terse bullets (rules of thumb,
+open positions worth noting, gripes about other agents). No headings, no
+ceremony, no padding. If it doesn't change tomorrow's trade or your mood,
+cut it.
 
 Respond with the full rewritten journal as plain markdown. No JSON, no code
 fences, no preamble. Just the journal body.
