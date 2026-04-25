@@ -45,6 +45,7 @@ streamlit run app/main.py
 - `data/ticker_currencies.json` — ticker → ISO currency override map (committed)
 - `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (committed)
 - `data/agent_memory/` — Ring 2 per-agent journals, 11 markdown files, first-person + biased, rewritten each session (committed)
+- `data/baselines/` — per-agent passive benchmark + coin-flip phantom portfolios, plus `global/msci_world.json`; same snapshot shape as `data/portfolios/`; written by `scripts/backfill_baselines.py` (one-shot) and refreshed by Step 9a of the daily session (committed)
 - `.claude/agents/` — Ten trading agent personas (EUR/USD twins + Satoshi, Monsieur Forex, Goldfinger, World)
 - `.claude/agents/the-oracle.md` — The Oracle narrator agent (does not trade; blog drafts + scoreboard posts)
 - `engine/output_bundle.py` — assembles data/output/YYYY-MM-DD.json (single source of truth for API + retries)
@@ -90,8 +91,9 @@ Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_
 ## Session Cadence (RemoteTriggers)
 - **Weekday session** (`0 20 * * 1-5`): full 10-agent roster + Oracle. Runs Mon-Fri 20:00 UTC.
 - **Weekend crypto session** (`0 20 * * 6,0`): crypto-capable roster only — `satoshi`, `yolo-sapiens-eur`, `yolo-sapiens-usd` + Oracle. Runs Sat-Sun 20:00 UTC. Each agent is instructed to restrict this session's orders to crypto pairs in their respective base currency (other markets in their universes are closed; broker would reject anyway). `world` stays excluded — its breadth across equities/forex/ETFs makes it a mostly-rejections agent on weekends; revisit if it ends up heavily crypto-weighted. `steady-eddie-*` mention crypto but only as thematic context, not active trading.
-- Both triggers follow the same pipeline: author orders via the outbox → paper broker fills → daily log → snapshots → agent posts → Oracle blog + posts → save content → **Ring 2 journal rewrite** (every participating agent + The Oracle rewrite `data/agent_memory/{agent_id}.md` in first person) → commit `data/` and push. Same engine, different roster.
+- Both triggers follow the same pipeline: author orders via the outbox → paper broker fills → daily log → snapshots → agent posts → Oracle blog + posts → save content → **Ring 2 journal rewrite** (every participating agent + The Oracle rewrite `data/agent_memory/{agent_id}.md` in first person) → **baselines refresh** (Step 9a — passive benchmark + coin-flip series rebuilt for every agent + global MSCI World reference; full-rewrite, idempotent) → commit `data/` and push. Same engine, different roster.
 - The journal rewrite step is load-bearing: if a session's commit touches `data/posts/`, `data/blog/`, `data/output/` but NOT `data/agent_memory/*.md`, Step 9 was skipped. Sessions 2026-04-20..22 hit this bug — weekday trigger fixed on 2026-04-22.
+- The baselines step is load-bearing for the site's "vs benchmark / vs coin flip" deltas — if a daily commit touches `data/portfolios/` but not `data/baselines/`, Step 9a was skipped. Same diagnosis pattern as the journals.
 
 ## Site (Ring 3a)
 
@@ -99,4 +101,6 @@ Public narrative at `midas.revah.paris`. Static Astro site in `site/`, deployed 
 
 Pages: `/`, `/arena`, `/arena/:id`, `/journal`, `/journal/:date`, `/feed`, `/ticker/:slug`, `/about`.
 
-See `site/README.md` for local development. Data shape assumptions live in `site/src/lib/`; the 10-agent display manifest is in `site/src/lib/roster.ts` (duplicated from `engine/posts.py` — update both if the roster changes). Ring 3b so far: trade cards (inline on trade-kind posts, joined from `data/orders/outbox` + `inbox` by `order_id`), mention chips, and per-ticker history pages. Still deferred: threaded replies (agents don't emit `parent_id` yet) and time travel.
+See `site/README.md` for local development. Data shape assumptions live in `site/src/lib/`; the 10-agent display manifest is in `site/src/lib/roster.ts` (duplicated from `engine/posts.py` — update both if the roster changes). Ring 3b so far: trade cards (inline on trade-kind posts, joined from `data/orders/outbox` + `inbox` by `order_id`), mention chips, per-ticker history pages, time-travel archive, dark/light toggle, per-position valuations on dossiers, and per-agent baselines (passive benchmark + coin flip on dossier chart, MSCI World reference on leaderboards). Still deferred: threaded replies (agents don't emit `parent_id` yet).
+
+The `AGENT_BENCHMARK_LABELS` map in `site/src/lib/baselines.ts` mirrors `AGENT_BENCHMARKS` in `engine/baselines.py` — update both when an agent's benchmark changes. Same convention as `roster.ts`.
