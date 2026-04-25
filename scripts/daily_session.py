@@ -16,6 +16,7 @@ Two modes:
      - step_save_content()                 → data/posts/, data/blog/, data/output/
      - step_build_memory_update_prompts()  → Ring 2 session-end rewrite prompts
      - step_save_memories()                → data/agent_memory/
+     - step_build_baselines()              → data/baselines/ (idempotent recompute)
 
 Usage (snapshot-only):
     python scripts/daily_session.py
@@ -375,6 +376,28 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
     return snapshotted
 
 
+def step_build_baselines() -> None:
+    """Step 9a — Baselines.
+
+    Recomputes data/baselines/ for Day 1 → today, full-rewrite and idempotent.
+    Runs AFTER portfolio mutations so the benchmark window matches the
+    freshly-appended agent snapshots. Uses backfill_baselines constants as
+    the single source of truth for universes + max_positions.
+    """
+    print("\n=== Step 9a: Build baselines ===")
+    from datetime import date as _date
+
+    from engine.baselines import DAY_ONE, build_all_baselines
+    from scripts.backfill_baselines import AGENT_MAX_POSITIONS, AGENT_UNIVERSES
+
+    build_all_baselines(
+        universes_by_agent=AGENT_UNIVERSES,
+        from_date=DAY_ONE,
+        to_date=_date.today(),
+        max_positions_by_agent=AGENT_MAX_POSITIONS,
+    )
+
+
 def step_git_commit_push(dry_run: bool = False) -> None:
     """Step 5 — Git commit and push data changes."""
     print("\n=== Step 5: Git commit and push ===")
@@ -430,6 +453,7 @@ def run_daily_session(dry_run: bool = False) -> None:
 
     market_payload = step_fetch_market_data()
     step_update_snapshots(market_payload)
+    step_build_baselines()
     step_git_commit_push(dry_run=dry_run)
 
     print("\n=== Snapshot complete ===")
