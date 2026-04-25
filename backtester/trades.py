@@ -35,9 +35,22 @@ def extract_top_trades(
     rows: list[TradeEntry] = []
     open_lots: dict[str, deque[tuple[float, float]]] = defaultdict(deque)
 
-    for _, row in transactions.sort_values("Date").iterrows():
-        date_str = pd.Timestamp(row["Date"]).date().isoformat()
-        ticker = str(row["Security"])
+    # bt produces a MultiIndex (Date, Security) DataFrame; unit tests use a flat
+    # DataFrame with Date/Security as columns. Handle both shapes.
+    has_multiindex = isinstance(transactions.index, pd.MultiIndex)
+    if has_multiindex:
+        sorted_txns = transactions.sort_index()
+    else:
+        sorted_txns = transactions.sort_values("Date")
+
+    for idx, row in sorted_txns.iterrows():
+        if has_multiindex:
+            ts, security = idx
+            date_str = pd.Timestamp(ts).date().isoformat()
+            ticker = str(security)
+        else:
+            date_str = pd.Timestamp(row["Date"]).date().isoformat()
+            ticker = str(row["Security"])
         quantity = float(row["quantity"])
         price = float(row["price"])
 
