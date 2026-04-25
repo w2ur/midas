@@ -2,9 +2,19 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { TRADING_AGENTS } from "@/lib/roster";
 import { loadLatest } from "@/lib/output";
+import { loadGlobalReference, loadBenchmark, returnPct } from "@/lib/baselines";
 
 const bundle = loadLatest();
 const pctByAgent = new Map(bundle.leaderboard.map((r) => [r.agent, r.return_pct]));
+
+const globalRef = loadGlobalReference();
+const globalRefPct = returnPct(globalRef);
+
+const vsBenchByAgent: Record<string, number | null> = {};
+for (const row of bundle.leaderboard) {
+  const benchPct = returnPct(loadBenchmark(row.agent));
+  vsBenchByAgent[row.agent] = benchPct === null ? null : row.return_pct - benchPct;
+}
 
 const tiles = TRADING_AGENTS
   .map((a) => ({ agent: a, pct: pctByAgent.get(a.id) ?? 0 }))
@@ -29,12 +39,21 @@ function monogram(name: string): string {
   <section class="arena-grid">
     {tiles.map(({ agent, pct }) => {
       const cls = pct > 0 ? "pos" : pct < 0 ? "neg" : "";
+      const vs = vsBenchByAgent[agent.id];
+      const beatsBench = vs !== null && vs !== undefined;
       return (
         <a class="arena-tile" href={`/arena/${agent.id}`}>
           <div class="monogram">{monogram(agent.display_name)}</div>
           <div class="name">{agent.display_name}</div>
           <div class="meta">{agent.archetype} · {agent.base_currency}</div>
-          <div class={`pnl ${cls}`}>{fmtPct(pct)}</div>
+          <div class={`pnl ${cls}`}>
+            {fmtPct(pct)}
+            {beatsBench && (
+              <span class={`bench-badge ${vs! >= 0 ? "yes" : "no"}`}>
+                {vs! >= 0 ? "✓ bench" : "✗ bench"}
+              </span>
+            )}
+          </div>
         </a>
       );
     })}
@@ -42,4 +61,16 @@ function monogram(name: string): string {
 </BaseLayout>
 <style>
   .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 1.5rem; }
+  .bench-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-left: 0.4rem;
+    background: var(--rule);
+    color: var(--ink-muted);
+  }
+  .bench-badge.yes { color: var(--ink); }
+  .bench-badge.no  { color: var(--ink-muted); }
 </style>

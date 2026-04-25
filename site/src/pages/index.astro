@@ -5,10 +5,20 @@ import { loadLatest } from "@/lib/output";
 import { loadBlogLatest, excerpt } from "@/lib/blog";
 import { loadAllOrders, tickerSlug } from "@/lib/orders";
 import { isTradingAgent, getAgent } from "@/lib/roster";
+import { loadGlobalReference, loadBenchmark, returnPct } from "@/lib/baselines";
 
 const bundle = loadLatest();
 const latestBlog = loadBlogLatest();
 const blogExcerpt = excerpt(latestBlog.body, 280);
+
+const globalRef = loadGlobalReference();
+const globalRefPct = returnPct(globalRef);
+
+const vsBenchByAgent: Record<string, number | null> = {};
+for (const row of bundle.leaderboard) {
+  const benchPct = returnPct(loadBenchmark(row.agent));
+  vsBenchByAgent[row.agent] = benchPct === null ? null : row.return_pct - benchPct;
+}
 
 const recentTrades = loadAllOrders()
   .filter((o) => o.status === "filled")
@@ -53,7 +63,12 @@ function fmtPrice(n: number | null, ccy: string | null): string {
       <p class="eyebrow">Today on the scoreboard</p>
       <h2>The leaderboard</h2>
     </header>
-    <LeaderboardTable rows={bundle.leaderboard} />
+    <LeaderboardTable
+      rows={bundle.leaderboard}
+      reference={{ label: "MSCI World (EUR)", return_pct: globalRefPct }}
+      showVsBench
+      vsBenchByAgent={vsBenchByAgent}
+    />
   </section>
 
   {recentTrades.length > 0 && (

@@ -2,12 +2,29 @@
 import type { LeaderboardRow } from "@/lib/output";
 import { getAgent, isTradingAgent } from "@/lib/roster";
 
-interface Props { rows: LeaderboardRow[] }
-const { rows } = Astro.props;
+interface Props {
+  rows: LeaderboardRow[];
+  reference?: { label: string; return_pct: number | null };
+  showVsBench?: boolean;
+  vsBenchByAgent?: Record<string, number | null>;
+}
+
+const { rows, reference, showVsBench, vsBenchByAgent } = Astro.props;
 
 function fmtPct(n: number): string {
   const sign = n > 0 ? "+" : n < 0 ? "" : "";
   return `${sign}${n.toFixed(2)}%`;
+}
+
+function fmtDelta(v: number | null | undefined): string {
+  if (v === null || v === undefined) return "—";
+  const s = v >= 0 ? "+" : "";
+  return `${s}${v.toFixed(2)} pts`;
+}
+
+function deltaCls(v: number | null | undefined): string {
+  if (v === null || v === undefined) return "";
+  return v > 0 ? "pos" : v < 0 ? "neg" : "";
 }
 ---
 <table class="leaderboard">
@@ -17,6 +34,7 @@ function fmtPct(n: number): string {
       <th>Agent</th>
       <th>Archetype</th>
       <th class="num">Return (EUR)</th>
+      {showVsBench && <th class="num">vs Bench</th>}
     </tr>
   </thead>
   <tbody>
@@ -25,14 +43,33 @@ function fmtPct(n: number): string {
       const display = tradingAgent?.display_name ?? row.agent;
       const arch = tradingAgent?.archetype ?? "";
       const cls = row.return_pct > 0 ? "pos" : row.return_pct < 0 ? "neg" : "";
+      const vs = vsBenchByAgent?.[row.agent];
       return (
         <tr>
           <td class="num">{row.rank}</td>
           <td><a href={`/arena/${row.agent}`}>{display}</a></td>
           <td>{arch}</td>
           <td class={`num ${cls}`}>{fmtPct(row.return_pct)}</td>
+          {showVsBench && <td class={`num ${deltaCls(vs)}`}>{fmtDelta(vs)}</td>}
         </tr>
       );
     })}
   </tbody>
+  {reference && (
+    <tfoot>
+      <tr class="reference-row">
+        <td>—</td>
+        <td colspan="2"><em>{reference.label}</em></td>
+        <td class="num muted">
+          {reference.return_pct === null ? "—" : fmtPct(reference.return_pct)}
+        </td>
+        {showVsBench && <td></td>}
+      </tr>
+    </tfoot>
+  )}
 </table>
+<style>
+  .reference-row td { color: var(--ink-muted); border-top: 2px solid var(--rule); }
+  .reference-row em { font-style: italic; }
+  .reference-row .muted { font-style: italic; }
+</style>
