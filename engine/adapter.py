@@ -35,23 +35,28 @@ MANAGER_REGISTRY: dict[str, ManagerFactory] = {}
 
 def register_selector(name: str) -> Callable[[SelectorFactory], SelectorFactory]:
     """Decorator to register a selector factory under *name*."""
+
     def decorator(fn: SelectorFactory) -> SelectorFactory:
         SELECTOR_REGISTRY[name] = fn
         return fn
+
     return decorator
 
 
 def register_manager(name: str) -> Callable[[ManagerFactory], ManagerFactory]:
     """Decorator to register a manager factory under *name*."""
+
     def decorator(fn: ManagerFactory) -> ManagerFactory:
         MANAGER_REGISTRY[name] = fn
         return fn
+
     return decorator
 
 
 # ---------------------------------------------------------------------------
 # Main builder
 # ---------------------------------------------------------------------------
+
 
 def build_bt_strategy(spec: StrategySpec, price_data: pd.DataFrame) -> bt.Strategy:
     """Build a bt.Strategy from a StrategySpec and price data.
@@ -76,7 +81,9 @@ def build_bt_strategy(spec: StrategySpec, price_data: pd.DataFrame) -> bt.Strate
 
     # If the selector doesn't set temp['stat'] (most signal-based ones don't),
     # add StatTotalReturn so SelectN can rank and cap positions.
-    needs_stat = not any(isinstance(a, bt.algos.StatTotalReturn) for a in selector_algos)
+    needs_stat = not any(
+        isinstance(a, bt.algos.StatTotalReturn) for a in selector_algos
+    )
 
     pipeline: list[bt.Algo] = [
         bt.algos.RunDaily(),
@@ -84,12 +91,14 @@ def build_bt_strategy(spec: StrategySpec, price_data: pd.DataFrame) -> bt.Strate
     ]
     if needs_stat:
         pipeline.append(bt.algos.StatTotalReturn(lookback=pd.DateOffset(months=1)))
-    pipeline.extend([
-        bt.algos.SelectN(spec.rules.max_positions),
-        *manager_algos,
-        bt.algos.LimitWeights(max_weight),
-        bt.algos.Rebalance(),
-    ])
+    pipeline.extend(
+        [
+            bt.algos.SelectN(spec.rules.max_positions),
+            *manager_algos,
+            bt.algos.LimitWeights(max_weight),
+            bt.algos.Rebalance(),
+        ]
+    )
 
     return bt.Strategy(spec.id, pipeline)
 
@@ -98,13 +107,29 @@ def build_bt_strategy(spec: StrategySpec, price_data: pd.DataFrame) -> bt.Strate
 # Built-in selectors
 # =========================================================================
 
+
 @register_selector("random")
 def _selector_random(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
     return [bt.algos.SelectRandomly(n=spec.rules.max_positions)]
 
 
+@register_selector("random-seeded")
+def _selector_random_seeded(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
+    """Seedable random selector. Requires spec.rules custom field ``seed``."""
+    from engine.selectors.random_seeded import SelectRandomlySeeded
+
+    seed = getattr(spec.rules, "seed", None)
+    if seed is None:
+        raise ValueError("random-seeded selector requires a seed in rules")
+    return [SelectRandomlySeeded(n=spec.rules.max_positions, seed=int(seed))]
+
+
 @register_selector("golden-cross")
-def _selector_golden_cross(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _selector_golden_cross(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     """50-day MA crosses above 200-day MA."""
     ma_fast = price_data.rolling(50).mean()
     ma_slow = price_data.rolling(200).mean()
@@ -113,7 +138,9 @@ def _selector_golden_cross(spec: StrategySpec, price_data: pd.DataFrame) -> list
 
 
 @register_selector("rsi-oversold")
-def _selector_rsi_oversold(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _selector_rsi_oversold(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     """RSI < 30 signals oversold entry."""
     rsi_frames = {}
     for col in price_data.columns:
@@ -136,25 +163,31 @@ def _selector_dip_entry(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt
 def _selector_fear_greed(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
     """Rolling 20-day volatility > 0.25 (annualized) as fear proxy."""
     daily_returns = price_data.pct_change()
-    rolling_vol = daily_returns.rolling(20).std() * (252 ** 0.5)
+    rolling_vol = daily_returns.rolling(20).std() * (252**0.5)
     signal = rolling_vol > 0.25
     return [bt.algos.SelectWhere(signal)]
 
 
 @register_selector("data-follow")
-def _selector_data_follow(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _selector_data_follow(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     """Placeholder — selects all available securities."""
     return [bt.algos.SelectAll()]
 
 
 @register_selector("buy-and-hold")
-def _selector_buy_and_hold(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _selector_buy_and_hold(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     """Select all tickers — buy and hold everything."""
     return [bt.algos.SelectAll()]
 
 
 @register_selector("earnings-beat")
-def _selector_earnings_beat(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _selector_earnings_beat(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     """Placeholder — momentum proxy using total return ranking."""
     return [
         bt.algos.SelectAll(),
@@ -163,7 +196,9 @@ def _selector_earnings_beat(spec: StrategySpec, price_data: pd.DataFrame) -> lis
 
 
 @register_selector("sector-cycle")
-def _selector_sector_cycle(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _selector_sector_cycle(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     """Sector rotation using 3-month total return ranking."""
     return [
         bt.algos.SelectAll(),
@@ -175,25 +210,34 @@ def _selector_sector_cycle(spec: StrategySpec, price_data: pd.DataFrame) -> list
 # Built-in managers
 # =========================================================================
 
+
 @register_manager("equal-weight")
-def _manager_equal_weight(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _manager_equal_weight(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     return [bt.algos.WeighEqually()]
 
 
 @register_manager("grid-conservative")
-def _manager_grid_conservative(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _manager_grid_conservative(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     """Grid scaling handled by dip-entry selector re-triggering."""
     return [bt.algos.WeighEqually()]
 
 
 @register_manager("grid-aggressive")
-def _manager_grid_aggressive(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _manager_grid_aggressive(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     """Inverse volatility weighting with 1-month lookback."""
     return [bt.algos.WeighInvVol(lookback=pd.DateOffset(months=1))]
 
 
 @register_manager("trailing-stop")
-def _manager_trailing_stop(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _manager_trailing_stop(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     return [bt.algos.WeighEqually()]
 
 
@@ -208,12 +252,16 @@ def _manager_time_boxed(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt
 
 
 @register_manager("rebalance-monthly")
-def _manager_rebalance_monthly(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _manager_rebalance_monthly(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     return [bt.algos.WeighEqually()]
 
 
 @register_manager("volatility-sized")
-def _manager_volatility_sized(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+def _manager_volatility_sized(
+    spec: StrategySpec, price_data: pd.DataFrame
+) -> list[bt.Algo]:
     """Inverse volatility weighting with 3-month lookback."""
     return [bt.algos.WeighInvVol(lookback=pd.DateOffset(months=3))]
 

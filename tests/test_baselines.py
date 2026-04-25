@@ -7,6 +7,7 @@ from engine.baselines import (
     INITIAL,
     BenchmarkSpec,
     compute_passive_benchmark,
+    compute_coin_flip,
 )
 
 
@@ -96,3 +97,51 @@ def test_passive_benchmark_includes_currency(tmp_ohlcv):
     spec = BenchmarkSpec("Test", "TEST", "USD")
     snaps = compute_passive_benchmark(spec, date(2026, 4, 17), date(2026, 4, 17))
     assert snaps[0]["currency"] == "USD"
+
+
+def test_coin_flip_deterministic_same_seed(tmp_ohlcv):
+    for t, rows in [
+        ("A", [("2026-04-17", 10.0), ("2026-04-18", 11.0), ("2026-04-21", 12.0)]),
+        ("B", [("2026-04-17", 20.0), ("2026-04-18", 19.0), ("2026-04-21", 18.0)]),
+        ("C", [("2026-04-17", 50.0), ("2026-04-18", 52.0), ("2026-04-21", 49.0)]),
+    ]:
+        _write_ohlcv(tmp_ohlcv, t, rows)
+
+    a = compute_coin_flip(
+        "test-agent", ["A", "B", "C"], "EUR", 2, date(2026, 4, 17), date(2026, 4, 21)
+    )
+    b = compute_coin_flip(
+        "test-agent", ["A", "B", "C"], "EUR", 2, date(2026, 4, 17), date(2026, 4, 21)
+    )
+    assert [s["portfolio_value"] for s in a] == [s["portfolio_value"] for s in b]
+
+
+def test_coin_flip_different_agents_diverge(tmp_ohlcv):
+    # 5 tickers with distinct price paths; picking 2 from 5 gives enough
+    # outcome space that the two seeds deterministically land on different pairs.
+    for t, rows in [
+        ("A", [("2026-04-17", 10.0), ("2026-04-18", 12.0), ("2026-04-21", 8.0)]),
+        ("B", [("2026-04-17", 20.0), ("2026-04-18", 18.0), ("2026-04-21", 25.0)]),
+        ("C", [("2026-04-17", 50.0), ("2026-04-18", 55.0), ("2026-04-21", 40.0)]),
+        ("D", [("2026-04-17", 30.0), ("2026-04-18", 28.0), ("2026-04-21", 35.0)]),
+        ("E", [("2026-04-17", 15.0), ("2026-04-18", 20.0), ("2026-04-21", 12.0)]),
+    ]:
+        _write_ohlcv(tmp_ohlcv, t, rows)
+
+    tickers = ["A", "B", "C", "D", "E"]
+    a = compute_coin_flip(
+        "agent-alpha", tickers, "EUR", 2, date(2026, 4, 17), date(2026, 4, 21)
+    )
+    b = compute_coin_flip(
+        "agent-beta", tickers, "EUR", 2, date(2026, 4, 17), date(2026, 4, 21)
+    )
+    assert any(ax["portfolio_value"] != bx["portfolio_value"] for ax, bx in zip(a, b))
+
+
+def test_coin_flip_starts_at_ten_thousand(tmp_ohlcv):
+    _write_ohlcv(tmp_ohlcv, "A", [("2026-04-17", 10.0)])
+    snaps = compute_coin_flip(
+        "x", ["A"], "EUR", 1, date(2026, 4, 17), date(2026, 4, 17)
+    )
+    assert snaps[0]["portfolio_value"] == pytest.approx(INITIAL)
+    assert snaps[0]["currency"] == "EUR"

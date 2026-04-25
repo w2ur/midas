@@ -28,6 +28,8 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Iterator, Literal
 
+import pandas as pd
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BASELINES_DIR = PROJECT_ROOT / "data" / "baselines"
 OHLCV_DIR = PROJECT_ROOT / "data" / "market" / "ohlcv"
@@ -140,3 +142,81 @@ def compute_passive_benchmark(
             }
         )
     return out
+
+
+def _load_price_frame(
+    tickers: list[str], from_date: date, to_date: date
+) -> pd.DataFrame:
+    """Build a DataFrame of daily closes over the date range for the given tickers.
+
+    Missing rows are forward-filled; tickers with no file at all are dropped.
+    """
+    series_by_ticker: dict[str, pd.Series] = {}
+    for t in tickers:
+        closes = _load_ohlcv(t)
+        if not closes:
+            continue
+        s = pd.Series({pd.Timestamp(d): v for d, v in closes.items()}).sort_index()
+        series_by_ticker[t] = s
+    if not series_by_ticker:
+        return pd.DataFrame()
+    df = pd.DataFrame(series_by_ticker)
+    idx = pd.date_range(from_date, to_date, freq="D")
+    return df.reindex(idx).ffill()
+
+
+def compute_coin_flip(
+    agent_id: str,
+    tickers: list[str],
+    currency: Currency,
+    max_positions: int,
+    from_date: date,
+    to_date: date,
+) -> list[dict]:
+    """Random-trader-in-same-universe, €10k or $10k start, deterministic per agent.
+
+    Builds the bt pipeline directly to avoid build_bt_strategy's StatTotalReturn
+    + SelectN insertion, which would override the seeded picks with return-rank
+    ordering. The seeded selector already limits picks to max_positions so no
+    SelectN step is needed.
+    """
+    import bt as _bt
+
+    from engine.backtest import BacktestResult
+    from engine.selectors.random_seeded import SelectRandomlySeeded, make_seed
+
+    price_data = _load_price_frame(tickers, from_date, to_date)
+    if price_data.empty:
+        return []
+
+    seed = make_seed(agent_id, from_date.isoformat())
+    strategy_id = f"coinflip-{agent_id}"
+    max_weight = 1.0 / max(max_positions, 1)
+
+    pipeline = [
+        _bt.algos.RunDaily(),
+        SelectRandomlySeeded(n=max_positions, seed=seed),
+        _bt.algos.WeighEqually(),
+        _bt.algos.LimitWeights(max_weight),
+        _bt.algos.Rebalance(),
+    ]
+    strategy = _bt.Strategy(strategy_id, pipeline)
+    backtest = _bt.Backtest(strategy, price_data, initial_capital=INITIAL)
+    bt_result = _bt.run(backtest)
+
+    daily_values: pd.Series = bt_result.backtests[strategy_id].strategy.values
+    snaps = [
+        {"date": idx.date().isoformat(), "portfolioValue": float(val)}
+        for idx, val in daily_values.items()
+    ]
+    return [
+        {
+            "date": s["date"],
+            "portfolio_value": float(s["portfolioValue"]),
+            "cash": 0.0,
+            "positions_value": float(s["portfolioValue"]),
+            "currency": currency,
+        }
+        for s in snaps
+        if from_date.isoformat() <= s["date"] <= to_date.isoformat()
+    ]

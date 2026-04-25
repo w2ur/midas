@@ -12,39 +12,72 @@ from typing import ClassVar
 # Valid value sets for StrategySpec validation
 # ---------------------------------------------------------------------------
 
-VALID_UNIVERSES: frozenset[str] = frozenset({
-    "dow30", "sp500", "nasdaq100", "dividend-aristocrats",
-    "congress", "insiders", "13f-whales", "high-short",
-    "etf-sectors", "etf-broad",
-    "crypto-top20", "crypto-top20-eur",
-    "forex-majors", "metals-commodities", "commodities-eur",
-    "single-voo", "classic-60-40",
-    "bearish-etfs", "bearish-etfs-ucits",
-    # EU indices
-    "cac40", "dax", "ftse100", "stoxx-600",
-})
+VALID_UNIVERSES: frozenset[str] = frozenset(
+    {
+        "dow30",
+        "sp500",
+        "nasdaq100",
+        "dividend-aristocrats",
+        "congress",
+        "insiders",
+        "13f-whales",
+        "high-short",
+        "etf-sectors",
+        "etf-broad",
+        "crypto-top20",
+        "crypto-top20-eur",
+        "forex-majors",
+        "metals-commodities",
+        "commodities-eur",
+        "single-voo",
+        "classic-60-40",
+        "bearish-etfs",
+        "bearish-etfs-ucits",
+        # EU indices
+        "cac40",
+        "dax",
+        "ftse100",
+        "stoxx-600",
+        # Inline — caller supplies price_data directly (used by compute_coin_flip)
+        "inline",
+    }
+)
 
-VALID_SELECTORS: frozenset[str] = frozenset({
-    "golden-cross", "rsi-oversold", "dip-entry",
-    "earnings-beat", "sector-cycle",
-    "fear-greed",
-    "data-follow",
-    "claude-analysis",
-    "random",
-    "buy-and-hold",
-})
+VALID_SELECTORS: frozenset[str] = frozenset(
+    {
+        "golden-cross",
+        "rsi-oversold",
+        "dip-entry",
+        "earnings-beat",
+        "sector-cycle",
+        "fear-greed",
+        "data-follow",
+        "claude-analysis",
+        "random",
+        "random-seeded",
+        "buy-and-hold",
+    }
+)
 
-VALID_MANAGERS: frozenset[str] = frozenset({
-    "equal-weight", "grid-conservative", "grid-aggressive",
-    "scaled-exit", "trailing-stop", "time-boxed",
-    "rebalance-monthly", "volatility-sized",
-    "fixed-60-40",
-})
+VALID_MANAGERS: frozenset[str] = frozenset(
+    {
+        "equal-weight",
+        "grid-conservative",
+        "grid-aggressive",
+        "scaled-exit",
+        "trailing-stop",
+        "time-boxed",
+        "rebalance-monthly",
+        "volatility-sized",
+        "fixed-60-40",
+    }
+)
 
 
 # ---------------------------------------------------------------------------
 # Trade
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Trade:
@@ -52,7 +85,7 @@ class Trade:
 
     id: str
     timestamp: datetime
-    action: str          # "BUY" | "SELL"
+    action: str  # "BUY" | "SELL"
     ticker: str
     shares: float
     price: float
@@ -64,6 +97,7 @@ class Trade:
 # ---------------------------------------------------------------------------
 # Position
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Position:
@@ -89,6 +123,7 @@ class Position:
 # BenchmarkValues
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class BenchmarkValues:
     """Benchmark index/asset values for a given day."""
@@ -102,6 +137,7 @@ class BenchmarkValues:
 # ---------------------------------------------------------------------------
 # DailySnapshot
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DailySnapshot:
@@ -118,6 +154,7 @@ class DailySnapshot:
 # FundingConfig
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class FundingConfig:
     """Capital funding configuration for a strategy."""
@@ -131,6 +168,7 @@ class FundingConfig:
 # StrategyRules
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class StrategyRules:
     """Risk and position management rules for a strategy."""
@@ -138,11 +176,13 @@ class StrategyRules:
     max_positions: int = 10
     max_position_pct: float = 20.0
     min_hold_days: int = 3
+    seed: int | None = None
 
 
 # ---------------------------------------------------------------------------
 # Portfolio
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Portfolio:
@@ -201,6 +241,7 @@ class Portfolio:
 # StrategySpec
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class StrategySpec:
     """Full specification for a trading strategy."""
@@ -211,7 +252,7 @@ class StrategySpec:
     selector: str
     manager: str
     funding: FundingConfig
-    dividends: str           # "reinvest" | "cash"
+    dividends: str  # "reinvest" | "cash"
     rules: StrategyRules
 
     @classmethod
@@ -237,15 +278,22 @@ class StrategySpec:
         funding_data = data.get("funding", {})
         funding = FundingConfig(
             initial=funding_data.get("initial", FundingConfig.initial),
-            monthly_addition=funding_data.get("monthly_addition", FundingConfig.monthly_addition),
-            weekly_addition=funding_data.get("weekly_addition", FundingConfig.weekly_addition),
+            monthly_addition=funding_data.get(
+                "monthly_addition", FundingConfig.monthly_addition
+            ),
+            weekly_addition=funding_data.get(
+                "weekly_addition", FundingConfig.weekly_addition
+            ),
         )
 
         rules_data = data.get("rules", {})
         rules = StrategyRules(
             max_positions=rules_data.get("max_positions", StrategyRules.max_positions),
-            max_position_pct=rules_data.get("max_position_pct", StrategyRules.max_position_pct),
+            max_position_pct=rules_data.get(
+                "max_position_pct", StrategyRules.max_position_pct
+            ),
             min_hold_days=rules_data.get("min_hold_days", StrategyRules.min_hold_days),
+            seed=rules_data.get("seed", None),
         )
 
         return cls(
