@@ -38,8 +38,6 @@ VALID_UNIVERSES: frozenset[str] = frozenset(
         "dax",
         "ftse100",
         "stoxx-600",
-        # Inline — caller supplies price_data directly (used by compute_coin_flip)
-        "inline",
     }
 )
 
