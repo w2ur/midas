@@ -221,3 +221,48 @@ def compute_coin_flip(
         for s in snaps
         if from_date.isoformat() <= s["date"] <= to_date.isoformat()
     ]
+
+
+def compute_global_reference(from_date: date, to_date: date) -> list[dict]:
+    """€10k buy-and-hold of MSCI World, the site's global reference line."""
+    return compute_passive_benchmark(GLOBAL_REFERENCE, from_date, to_date)
+
+
+def _write_json(path: Path, data: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n")
+
+
+def build_all_baselines(
+    universes_by_agent: dict[str, list[str]],
+    from_date: date,
+    to_date: date,
+    max_positions_by_agent: dict[str, int] | None = None,
+) -> None:
+    """Produce all per-agent baseline files + the global reference file.
+
+    Idempotent: always full-rewrites. Missing OHLCV data yields an empty
+    series; callers are expected to surface that as "no line to draw".
+    """
+    max_positions_by_agent = max_positions_by_agent or {}
+    for agent_id, spec in AGENT_BENCHMARKS.items():
+        agent_dir = BASELINES_DIR / agent_id
+        bench = compute_passive_benchmark(spec, from_date, to_date)
+        _write_json(agent_dir / "benchmark.json", bench)
+
+        tickers = universes_by_agent.get(agent_id, [])
+        max_pos = max_positions_by_agent.get(agent_id, 5)
+        coin = compute_coin_flip(
+            agent_id=agent_id,
+            tickers=tickers,
+            currency=spec.currency,
+            max_positions=max_pos,
+            from_date=from_date,
+            to_date=to_date,
+        )
+        _write_json(agent_dir / "coinflip.json", coin)
+
+    _write_json(
+        BASELINES_DIR / "global" / "msci_world.json",
+        compute_global_reference(from_date, to_date),
+    )

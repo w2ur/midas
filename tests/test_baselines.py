@@ -145,3 +145,51 @@ def test_coin_flip_starts_at_ten_thousand(tmp_ohlcv):
     )
     assert snaps[0]["portfolio_value"] == pytest.approx(INITIAL)
     assert snaps[0]["currency"] == "EUR"
+
+
+def test_global_reference_uses_msci_world(tmp_ohlcv):
+    from engine.baselines import GLOBAL_REFERENCE, compute_global_reference
+
+    _write_ohlcv(
+        tmp_ohlcv,
+        GLOBAL_REFERENCE.ticker,
+        [
+            ("2026-04-17", 100.0),
+            ("2026-04-18", 102.0),
+        ],
+    )
+    snaps = compute_global_reference(date(2026, 4, 17), date(2026, 4, 18))
+    assert snaps[0]["portfolio_value"] == pytest.approx(INITIAL)
+    assert snaps[-1]["portfolio_value"] == pytest.approx(INITIAL * 1.02)
+    assert snaps[0]["currency"] == "EUR"
+
+
+def test_build_all_baselines_writes_files(tmp_ohlcv, tmp_path, monkeypatch):
+    """build_all_baselines should produce per-agent + global JSON files."""
+    from engine.baselines import build_all_baselines, AGENT_BENCHMARKS, GLOBAL_REFERENCE
+
+    baselines_dir = tmp_path / "baselines"
+    monkeypatch.setattr("engine.baselines.BASELINES_DIR", baselines_dir)
+
+    # Minimal OHLCV for every referenced ticker
+    for t in {s.ticker for s in AGENT_BENCHMARKS.values()} | {GLOBAL_REFERENCE.ticker}:
+        if t == "EUR_CASH_FLAT":
+            continue
+        _write_ohlcv(tmp_ohlcv, t, [("2026-04-17", 100.0), ("2026-04-18", 105.0)])
+
+    universes_by_agent = {
+        agent_id: ["FAKE-A", "FAKE-B"] for agent_id in AGENT_BENCHMARKS
+    }
+    _write_ohlcv(tmp_ohlcv, "FAKE-A", [("2026-04-17", 10.0), ("2026-04-18", 12.0)])
+    _write_ohlcv(tmp_ohlcv, "FAKE-B", [("2026-04-17", 20.0), ("2026-04-18", 19.0)])
+
+    build_all_baselines(
+        universes_by_agent=universes_by_agent,
+        from_date=date(2026, 4, 17),
+        to_date=date(2026, 4, 18),
+    )
+
+    for agent_id in AGENT_BENCHMARKS:
+        assert (baselines_dir / agent_id / "benchmark.json").exists()
+        assert (baselines_dir / agent_id / "coinflip.json").exists()
+    assert (baselines_dir / "global" / "msci_world.json").exists()
