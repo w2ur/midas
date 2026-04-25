@@ -6,6 +6,7 @@ import { TRADING_AGENTS, type AgentId, getAgent } from "@/lib/roster";
 import { loadLatest, listDates as listOutputDates } from "@/lib/output";
 import { loadMemory, renderMemoryHtml } from "@/lib/memory";
 import { loadAllOrders } from "@/lib/orders";
+import { loadBenchmark, loadCoinFlip, returnPct, AGENT_BENCHMARK_LABELS } from "@/lib/baselines";
 
 export function getStaticPaths() {
   return TRADING_AGENTS.map((a) => ({ params: { agent_id: a.id } }));
@@ -24,6 +25,25 @@ const pnlRow = bundle.leaderboard.find((r) => r.agent === agent.id);
 const pnl = pnlRow?.return_pct ?? 0;
 const pnlCls = pnl > 0 ? "pos" : pnl < 0 ? "neg" : "";
 const pnlStr = (pnl > 0 ? "+" : "") + pnl.toFixed(2) + "%";
+
+const benchSeries = loadBenchmark(agent.id);
+const coinSeries = loadCoinFlip(agent.id);
+const benchReturnPct = returnPct(benchSeries);
+const coinReturnPct = returnPct(coinSeries);
+
+// Delta in percentage points = agent return - reference return
+const vsBench = benchReturnPct !== null ? pnl - benchReturnPct : null;
+const vsCoin = coinReturnPct !== null ? pnl - coinReturnPct : null;
+
+function fmtDelta(v: number | null): string {
+  if (v === null) return "—";
+  const s = v >= 0 ? "+" : "";
+  return `${s}${v.toFixed(2)} pts`;
+}
+function deltaCls(v: number | null): string {
+  if (v === null) return "";
+  return v > 0 ? "pos" : v < 0 ? "neg" : "";
+}
 
 const journalMd = loadMemory(agent.id);
 const journalHtml = renderMemoryHtml(journalMd);
@@ -53,6 +73,14 @@ const recentDateGroups = Array.from(recentOrdersByDate.entries()).slice(0, 5);
         <div><dt>Return (EUR)</dt><dd class={`num ${pnlCls}`}>{pnlStr}</dd></div>
         <div><dt>Starting capital</dt><dd class="num">{agent.base_currency === "USD" ? "USD" : "EUR"} 10,000</dd></div>
         <div><dt>Days live</dt><dd class="num">{daysLive}</dd></div>
+        <div>
+          <dt>vs {AGENT_BENCHMARK_LABELS[agent.id] ?? "benchmark"}</dt>
+          <dd class={`num ${deltaCls(vsBench)}`}>{fmtDelta(vsBench)}</dd>
+        </div>
+        <div>
+          <dt>vs coin flip</dt>
+          <dd class={`num ${deltaCls(vsCoin)}`}>{fmtDelta(vsCoin)}</dd>
+        </div>
       </dl>
     </section>
 
@@ -88,7 +116,7 @@ const recentDateGroups = Array.from(recentOrdersByDate.entries()).slice(0, 5);
   .meta { color: var(--ink-muted); font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2rem; }
   .perf dl {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 0;
     margin: 0 0 2rem;
     border-bottom: 1px solid var(--rule);

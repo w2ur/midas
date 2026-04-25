@@ -37,3 +37,17 @@ export function returnPct(series: BaselineSnapshot[]): number | null {
   if (first === 0) return null;
   return ((last - first) / first) * 100;
 }
+
+// Mirrors engine/baselines.py AGENT_BENCHMARKS — must stay in sync manually.
+export const AGENT_BENCHMARK_LABELS: Record<string, string> = {
+  "satoshi": "BTC-EUR",
+  "yolo-sapiens-eur": "FTSE Europe",
+  "yolo-sapiens-usd": "S&P 500",
+  "goldfinger": "Gold",
+  "monsieur-forex": "EUR cash",
+  "sharp-shooter-eur": "FTSE Europe",
+  "sharp-shooter-usd": "S&P 500",
+  "steady-eddie-eur": "FTSE Europe",
+  "steady-eddie-usd": "S&P 500",
+  "world": "MSCI World",
+};
