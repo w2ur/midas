@@ -4,91 +4,159 @@
 ---
 
 <form id="simulate-form" class="simulate-form">
-  <fieldset>
-    <legend>Universe</legend>
-    <select name="universe" required>
-      <option value="sp500">S&amp;P 500</option>
-      <option value="dow30">Dow 30</option>
-      <option value="nasdaq100">NASDAQ 100</option>
-      <option value="cac40">CAC 40</option>
-      <option value="dax">DAX</option>
-      <option value="ftse100">FTSE 100</option>
-      <option value="stoxx-600">STOXX 600</option>
-      <option value="crypto-top20-eur">Crypto top 20 (EUR)</option>
-      <option value="crypto-top20">Crypto top 20 (USD)</option>
-      <option value="forex-majors">Forex majors</option>
-      <option value="metals-commodities">Metals + commodities</option>
-      <option value="bearish-etfs">Bearish ETFs</option>
-      <option value="bearish-etfs-ucits">Bearish ETFs (UCITS)</option>
-      <option value="commodities-eur">Commodities (EUR)</option>
-      <option value="single-voo">VOO only</option>
-      <option value="classic-60-40" selected>Classic 60/40</option>
-    </select>
-  </fieldset>
+  <div class="grid">
+    <label class="ctl">
+      <span>Universe</span>
+      <select name="universe" required>
+        <option value="sp500">S&amp;P 500</option>
+        <option value="dow30">Dow 30</option>
+        <option value="nasdaq100">NASDAQ 100</option>
+        <option value="cac40">CAC 40</option>
+        <option value="dax">DAX</option>
+        <option value="ftse100">FTSE 100</option>
+        <option value="stoxx-600">STOXX 600</option>
+        <option value="crypto-top20-eur">Crypto top 20 (EUR)</option>
+        <option value="crypto-top20">Crypto top 20 (USD)</option>
+        <option value="forex-majors">Forex majors</option>
+        <option value="metals-commodities">Metals + commodities</option>
+        <option value="bearish-etfs">Bearish ETFs</option>
+        <option value="bearish-etfs-ucits">Bearish ETFs (UCITS)</option>
+        <option value="commodities-eur">Commodities (EUR)</option>
+        <option value="single-voo">VOO only</option>
+        <option value="classic-60-40" selected>Classic 60/40</option>
+      </select>
+    </label>
 
-  <fieldset>
-    <legend>Selector</legend>
-    <select name="selector" required>
-      <option value="random">Random</option>
-      <option value="golden-cross">Golden cross</option>
-      <option value="rsi-oversold">RSI oversold</option>
-      <option value="dip-entry">Dip entry</option>
-      <option value="fear-greed">Fear and greed</option>
-      <option value="data-follow">Data follow</option>
-      <option value="buy-and-hold" selected>Buy and hold</option>
-      <option value="earnings-beat">Earnings beat</option>
-      <option value="sector-cycle">Sector cycle</option>
-    </select>
-  </fieldset>
+    <label class="ctl">
+      <span>Selector</span>
+      <select name="selector" required>
+        <option value="random">Random</option>
+        <option value="golden-cross">Golden cross</option>
+        <option value="rsi-oversold">RSI oversold</option>
+        <option value="dip-entry">Dip entry</option>
+        <option value="fear-greed">Fear and greed</option>
+        <option value="data-follow">Data follow</option>
+        <option value="buy-and-hold" selected>Buy and hold</option>
+        <option value="earnings-beat">Earnings beat</option>
+        <option value="sector-cycle">Sector cycle</option>
+      </select>
+    </label>
 
-  <fieldset>
-    <legend>Manager</legend>
-    <select name="manager" required>
-      <option value="equal-weight">Equal weight</option>
-      <option value="grid-conservative">Grid (conservative)</option>
-      <option value="grid-aggressive">Grid (aggressive)</option>
-      <option value="trailing-stop">Trailing stop</option>
-      <option value="scaled-exit">Scaled exit</option>
-      <option value="time-boxed">Time boxed</option>
-      <option value="rebalance-monthly">Monthly rebalance</option>
-      <option value="volatility-sized">Volatility sized</option>
-      <option value="fixed-60-40" selected>Fixed 60/40</option>
-    </select>
-  </fieldset>
+    <label class="ctl">
+      <span>Manager</span>
+      <select name="manager" required>
+        <option value="equal-weight">Equal weight</option>
+        <option value="grid-conservative">Grid (conservative)</option>
+        <option value="grid-aggressive">Grid (aggressive)</option>
+        <option value="trailing-stop">Trailing stop</option>
+        <option value="scaled-exit">Scaled exit</option>
+        <option value="time-boxed">Time boxed</option>
+        <option value="rebalance-monthly">Monthly rebalance</option>
+        <option value="volatility-sized">Volatility sized</option>
+        <option value="fixed-60-40" selected>Fixed 60/40</option>
+      </select>
+    </label>
 
-  <fieldset>
-    <legend>Rules</legend>
-    <label>Max positions <input type="number" name="max_positions" min="1" max="100" value="20" required /></label>
-    <label>Max position % <input type="number" name="max_position_pct" min="0.1" max="100" step="0.1" value="100" required /></label>
-    <label>Min hold days <input type="number" name="min_hold_days" min="0" max="365" value="0" required /></label>
-  </fieldset>
+    <label class="ctl">
+      <span>Start</span>
+      <input type="date" name="start_date" value="2024-05-01" required />
+    </label>
 
-  <fieldset>
-    <legend>Window</legend>
-    <label>Start <input type="date" name="start_date" value="2024-05-01" required /></label>
-    <label>End <input type="date" name="end_date" value="2024-12-31" required /></label>
-    <label>Capital <input type="number" name="capital" min="100" value="10000" required /></label>
-    <label>Currency
+    <label class="ctl">
+      <span>End</span>
+      <input type="date" name="end_date" value="2024-12-31" required />
+    </label>
+
+    <label class="ctl">
+      <span>Capital</span>
+      <input type="number" name="capital" min="100" value="10000" required />
+    </label>
+
+    <label class="ctl">
+      <span>Currency</span>
       <select name="currency">
         <option value="EUR">EUR</option>
         <option value="USD">USD</option>
       </select>
     </label>
-  </fieldset>
 
-  <button type="submit">Run backtest</button>
-  <p class="hint" id="simulate-hint" hidden>
-    Warming up the backtester — first run takes a few seconds&hellip;
-  </p>
+    <label class="ctl">
+      <span>Max positions</span>
+      <input type="number" name="max_positions" min="1" max="100" value="20" required />
+    </label>
+
+    <label class="ctl">
+      <span>Max position %</span>
+      <input type="number" name="max_position_pct" min="0.1" max="100" step="0.1" value="100" required />
+    </label>
+
+    <label class="ctl">
+      <span>Min hold days</span>
+      <input type="number" name="min_hold_days" min="0" max="365" value="0" required />
+    </label>
+  </div>
+
+  <div class="actions">
+    <button type="submit">Run backtest</button>
+    <p class="hint" id="simulate-hint" hidden>
+      Warming up the backtester — first run takes a few seconds&hellip;
+    </p>
+  </div>
 </form>
 
 <style>
-  .simulate-form fieldset { border: 1px solid var(--rule); padding: 1rem; margin: 1rem 0; }
-  .simulate-form legend { padding: 0 .5rem; font-weight: 600; }
-  .simulate-form label { display: inline-flex; gap: .5rem; align-items: center; margin-right: 1rem; margin-bottom: .5rem; }
-  .simulate-form select, .simulate-form input { font: inherit; padding: .25rem .5rem; }
-  .simulate-form button { margin-top: 1rem; padding: .5rem 1rem; font: inherit; cursor: pointer; }
-  .simulate-form .hint { color: var(--ink-muted); }
+  .simulate-form { margin: 1.5rem 0; }
+  .simulate-form .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: .75rem 1rem;
+  }
+  .simulate-form .ctl {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    font-size: var(--fs-xs);
+  }
+  .simulate-form .ctl > span {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .simulate-form select,
+  .simulate-form input {
+    font: inherit;
+    padding: .35rem .5rem;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .simulate-form select:focus,
+  .simulate-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .simulate-form .actions {
+    margin-top: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .simulate-form button {
+    padding: .5rem 1.25rem;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: var(--fs-xs);
+  }
+  .simulate-form button:hover { background: var(--accent); border-color: var(--accent); }
+  .simulate-form .hint { margin: 0; color: var(--ink-muted); font-size: var(--fs-xs); }
 </style>
 
 <script>
