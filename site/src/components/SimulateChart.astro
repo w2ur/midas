@@ -44,8 +44,9 @@
   ];
 
   let chart: uPlot | null = null;
+  let pendingResults: RunResponse[] | null = null;
 
-  window.__renderSimulateCharts = (results: RunResponse[]) => {
+  function render(results: RunResponse[]) {
     const el = document.getElementById("simulate-chart-canvas");
     if (!el || results.length === 0) return;
 
@@ -101,5 +102,26 @@
       seriesData as uPlot.AlignedData,
       el,
     );
+  }
+
+  window.__renderSimulateCharts = (results: RunResponse[]) => {
+    if (document.readyState === "loading") {
+      pendingResults = results;
+    } else {
+      render(results);
+    }
   };
+
+  // Drain any pending render once the DOM is ready (handles the case where
+  // SimulateForm's bootstrap fires before SimulateChart's module loads).
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      if (pendingResults) {
+        render(pendingResults);
+        pendingResults = null;
+      }
+    });
+  }
+
+  window.dispatchEvent(new Event("simulate-chart-ready"));
 </script>

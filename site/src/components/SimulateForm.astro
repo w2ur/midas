@@ -263,6 +263,18 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
     return document.getElementById("simulate-form") as HTMLFormElement;
   }
 
+  function callChart(results: RunResponse[]): void {
+    if (window.__renderSimulateCharts) {
+      window.__renderSimulateCharts(results);
+    } else {
+      window.addEventListener(
+        "simulate-chart-ready",
+        () => window.__renderSimulateCharts?.(results),
+        { once: true },
+      );
+    }
+  }
+
   function slotEl(slot: Slot): HTMLFieldSetElement | null {
     return document.querySelector(`fieldset[data-slot="${slot}"]`);
   }
@@ -373,7 +385,7 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
     const successes = pairs
       .filter((p) => p.result)
       .map((p) => p.result as RunResponse);
-    window.__renderSimulateCharts?.(successes);
+    callChart(successes);
 
     const mount = document.getElementById("result-mount");
     if (!mount) return;
@@ -440,7 +452,7 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
 
     if (decoded.length === 0) {
       // No URL state — render the static example as Strategy A.
-      window.__renderSimulateCharts?.([EXAMPLE_RESULT]);
+      callChart([EXAMPLE_RESULT]);
       const mount = document.getElementById("result-mount");
       if (mount) {
         const exampleConfig: SimulateConfig = {
