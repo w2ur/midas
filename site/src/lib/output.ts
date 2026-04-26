@@ -16,7 +16,9 @@ export type AgentPortfolio = {
 };
 
 export type AgentDailyData = {
-  commentary: string;
+  // null when the agent didn't run this session (e.g. weekend cadence skips
+  // the equity-only roster). Bundle still contains every agent every day.
+  commentary: string | null;
   trades: unknown[];
   portfolio: AgentPortfolio;
   posts: unknown[];

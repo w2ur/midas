@@ -20,6 +20,11 @@ const bundle = loadLatest();
 const daily = bundle.agents[agent.id];
 if (!daily) throw new Error(`Agent ${agent.id} missing from latest bundle`);
 
+// Bundle invariant: every agent appears every day. `commentary === null`
+// means the agent didn't run this session (weekend cadence, etc.) — render
+// a "Holding" banner with the date of their last activity.
+const didRunToday = daily.commentary !== null;
+
 const outputDates = listOutputDates();
 const daysLive = outputDates.length;
 
@@ -61,6 +66,9 @@ for (const o of agentOrders) {
   recentOrdersByDate.set(o.date, list);
 }
 const recentDateGroups = Array.from(recentOrdersByDate.entries()).slice(0, 5);
+
+// Last date this agent actually traded (any fill or attempt).
+const lastActiveDate = agentOrders.length > 0 ? agentOrders[0].date : null;
 ---
 <BaseLayout title={agent.display_name} current="arena" description={`${agent.display_name} — ${agent.archetype}`}>
   <article class="page dossier">
@@ -93,6 +101,12 @@ const recentDateGroups = Array.from(recentOrdersByDate.entries()).slice(0, 5);
       coinflip={coinSeries}
       benchmarkLabel={AGENT_BENCHMARK_LABELS[agent.id] ?? "Benchmark"}
     />
+
+    {!didRunToday && (
+      <p class="holding-banner">
+        Holding · no session today{lastActiveDate ? ` · last activity ${lastActiveDate}` : ""}
+      </p>
+    )}
 
     <section class="holdings">
       <h2>Portfolio</h2>
@@ -135,6 +149,16 @@ const recentDateGroups = Array.from(recentOrdersByDate.entries()).slice(0, 5);
   .perf dl div:last-child { border-right: 0; }
   .perf dt { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin: 0 0 0.25rem; }
   .perf dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
+  .holding-banner {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    color: var(--ink-muted);
+    border: 1px dashed var(--rule);
+    padding: 0.6rem 0.9rem;
+    margin: 0 0 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
   .holdings, .journal, .recent-trades { margin-top: 2.5rem; }
   .recent-trades .trade-group { margin-bottom: 1.5rem; }
   .recent-trades .date-head {

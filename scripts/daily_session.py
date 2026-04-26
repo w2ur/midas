@@ -13,6 +13,7 @@ Two modes:
      - step_build_post_prompts()           → prompts for the orchestrator
      - step_load_memories()                → dict[agent_id, str]
      - step_build_oracle_prompt()          → Oracle prompt (optionally with journals)
+     - build_portfolio_summaries()         → dict for ALL 10 agents (carry-forward)
      - step_save_content()                 → data/posts/, data/blog/, data/output/
      - step_build_memory_update_prompts()  → Ring 2 session-end rewrite prompts
      - step_save_memories()                → data/agent_memory/
@@ -246,6 +247,40 @@ def step_save_memories(new_journals: dict[str, str]) -> int:
         written += 1
     print(f"  Saved {written}/{len(new_journals)} journals")
     return written
+
+
+def build_portfolio_summaries() -> dict[str, dict]:
+    """Build the canonical per-agent portfolio summary dict for ALL 10 trading
+    agents. Use this output as the `portfolio_summaries` argument to
+    `step_save_content` so the bundle's agents map carries forward last-known
+    portfolio state for non-running agents (weekend cadence, etc.).
+
+    Reads `data/portfolios/{agent_id}/portfolio.json` via PortfolioManager.
+    Agents with no portfolio.json on disk are skipped (defensive — should not
+    happen in production after Day 1).
+
+    Summary shape: {cash, deployed, positions, currency}
+    where `positions` is the Portfolio.to_dict() position list and
+    `deployed` is `portfolio.cost_basis`.
+    """
+    from engine.posts import AGENT_POST_TIMES
+
+    portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
+    manager = PortfolioManager(base_dir=portfolios_dir)
+
+    summaries: dict[str, dict] = {}
+    for agent_id in AGENT_POST_TIMES.keys():
+        if not (portfolios_dir / agent_id / "portfolio.json").exists():
+            continue
+        portfolio = manager.load(agent_id)
+        d = portfolio.to_dict()
+        summaries[agent_id] = {
+            "cash": d["cash"],
+            "deployed": portfolio.cost_basis,
+            "positions": d["positions"],
+            "currency": d["currency"],
+        }
+    return summaries
 
 
 def step_save_content(

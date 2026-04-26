@@ -11,9 +11,13 @@ from datetime import date
 from pathlib import Path
 
 from engine.blog import BlogDraft
-from engine.posts import PostPayload
+from engine.posts import AGENT_POST_TIMES, PostPayload
 
 OUTPUT_DIR = Path(__file__).parent.parent / "data" / "output"
+
+# Canonical 10-agent trading roster. Source of truth: engine.posts.AGENT_POST_TIMES.
+# Oracle is a narrator and lives under bundle["narrator"], not bundle["agents"].
+ROSTER: tuple[str, ...] = tuple(AGENT_POST_TIMES.keys())
 
 
 def get_day_number(for_date: date | None = None) -> int:
@@ -48,15 +52,30 @@ def assemble_output_bundle(
     Layout:
         { "date", "market_snapshot", "agents": {id: {commentary, trades, portfolio, posts}},
           "narrator": {"blog_draft", "posts"}, "leaderboard" }
+
+    The agents map always contains the full 10-agent ROSTER, regardless of which
+    agents ran this session. Non-running agents get commentary=None, empty
+    trades/posts, and their carry-forward portfolio from `portfolio_summaries`.
+    This keeps the bundle shape invariant across cadences (weekday/weekend/holiday)
+    so the site can always render every dossier.
     """
     agents = {}
-    for aid, result in agent_results.items():
-        agents[aid] = {
-            "commentary": result.get("commentary", ""),
-            "trades": result.get("trades", []),
-            "portfolio": portfolio_summaries.get(aid, {}),
-            "posts": [p.to_dict() for p in agent_posts.get(aid, [])],
-        }
+    for aid in ROSTER:
+        result = agent_results.get(aid)
+        if result is None:
+            agents[aid] = {
+                "commentary": None,
+                "trades": [],
+                "portfolio": portfolio_summaries.get(aid, {}),
+                "posts": [],
+            }
+        else:
+            agents[aid] = {
+                "commentary": result.get("commentary", ""),
+                "trades": result.get("trades", []),
+                "portfolio": portfolio_summaries.get(aid, {}),
+                "posts": [p.to_dict() for p in agent_posts.get(aid, [])],
+            }
     return {
         "date": bundle_date.isoformat(),
         "market_snapshot": market_data,

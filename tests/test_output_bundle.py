@@ -6,6 +6,7 @@ from pathlib import Path
 
 from engine.blog import BlogDraft
 from engine.output_bundle import (
+    ROSTER,
     assemble_output_bundle,
     get_day_number,
     save_output_bundle,
@@ -53,17 +54,30 @@ class TestAssembleOutputBundle:
         agent_results = {
             "satoshi": {
                 "commentary": "Loading the dip.",
-                "trades": [{"action": "BUY", "ticker": "BTC-EUR", "shares": 0.01, "reasoning": "F&G 12"}],
+                "trades": [
+                    {
+                        "action": "BUY",
+                        "ticker": "BTC-EUR",
+                        "shares": 0.01,
+                        "reasoning": "F&G 12",
+                    }
+                ],
             },
         }
         agent_posts = {
-            "satoshi": [PostPayload("satoshi", "Loaded BTC.", [], "trade", None, {}, "23:00")],
+            "satoshi": [
+                PostPayload("satoshi", "Loaded BTC.", [], "trade", None, {}, "23:00")
+            ],
         }
         portfolio_summaries = {"satoshi": {"cash": 9356.8, "positions": ["BTC-EUR"]}}
         leaderboard = [{"agent": "satoshi", "return_pct": 1.2, "rank": 1}]
         market_data = {"sp500": 7000.0, "eur_usd": 1.18}
         blog = BlogDraft(title="Day 1", body_md="Body.", slug="day-1")
-        oracle_posts = [PostPayload("the-oracle", "Scoreboard.", [], "scoreboard", None, {}, "12:00")]
+        oracle_posts = [
+            PostPayload(
+                "the-oracle", "Scoreboard.", [], "scoreboard", None, {}, "12:00"
+            )
+        ]
 
         bundle = assemble_output_bundle(
             bundle_date=date(2026, 4, 17),
@@ -81,17 +95,87 @@ class TestAssembleOutputBundle:
         assert bundle["agents"]["satoshi"]["commentary"] == "Loading the dip."
         assert len(bundle["agents"]["satoshi"]["posts"]) == 1
         assert bundle["agents"]["satoshi"]["posts"][0]["kind"] == "trade"
-        assert bundle["agents"]["satoshi"]["portfolio"] == {"cash": 9356.8, "positions": ["BTC-EUR"]}
+        assert bundle["agents"]["satoshi"]["portfolio"] == {
+            "cash": 9356.8,
+            "positions": ["BTC-EUR"],
+        }
         assert bundle["narrator"]["blog_draft"]["title"] == "Day 1"
         assert len(bundle["narrator"]["posts"]) == 1
         assert bundle["narrator"]["posts"][0]["kind"] == "scoreboard"
         assert bundle["leaderboard"] == leaderboard
 
+    def test_bundle_always_contains_full_roster(self) -> None:
+        """Even when only one agent ran (weekend cadence), every agent in
+        ROSTER appears in the bundle. Non-runners get null commentary, empty
+        trades/posts, and their carry-forward portfolio summary.
+        """
+        agent_results = {
+            "satoshi": {
+                "commentary": "Holding.",
+                "trades": [],
+            },
+        }
+        agent_posts = {"satoshi": []}
+        portfolio_summaries = {
+            aid: {"cash": 1000.0, "deployed": 0.0, "positions": [], "currency": "EUR"}
+            for aid in ROSTER
+        }
+        blog = BlogDraft(title="Day N", body_md="...", slug="day-n")
+
+        bundle = assemble_output_bundle(
+            bundle_date=date(2026, 4, 26),
+            market_data={},
+            agent_results=agent_results,
+            agent_posts=agent_posts,
+            portfolio_summaries=portfolio_summaries,
+            leaderboard=[],
+            blog_draft=blog,
+            oracle_posts=[],
+        )
+
+        assert set(bundle["agents"].keys()) == set(ROSTER)
+        # Running agent: full entry.
+        assert bundle["agents"]["satoshi"]["commentary"] == "Holding."
+        # Non-running agent: null commentary, empty trades/posts, carry-forward portfolio.
+        non_runner = next(aid for aid in ROSTER if aid != "satoshi")
+        assert bundle["agents"][non_runner]["commentary"] is None
+        assert bundle["agents"][non_runner]["trades"] == []
+        assert bundle["agents"][non_runner]["posts"] == []
+        assert (
+            bundle["agents"][non_runner]["portfolio"] == portfolio_summaries[non_runner]
+        )
+
+    def test_non_running_agent_with_no_summary_gets_empty_portfolio(self) -> None:
+        """Defensive: if portfolio_summaries is missing an agent entirely, the
+        bundle entry uses {} rather than crashing. Real orchestrator should
+        always pass summaries for all 10, but this guards against regression."""
+        blog = BlogDraft(title="X", body_md="x", slug="x")
+        bundle = assemble_output_bundle(
+            bundle_date=date(2026, 4, 26),
+            market_data={},
+            agent_results={},
+            agent_posts={},
+            portfolio_summaries={},
+            leaderboard=[],
+            blog_draft=blog,
+            oracle_posts=[],
+        )
+        assert set(bundle["agents"].keys()) == set(ROSTER)
+        for aid in ROSTER:
+            assert bundle["agents"][aid]["commentary"] is None
+            assert bundle["agents"][aid]["portfolio"] == {}
+
 
 class TestSaveOutputBundle:
     def test_save_and_read(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", tmp_path)
-        bundle = {"date": "2026-04-17", "market_snapshot": {}, "agents": {}, "narrator": {"blog_draft": {}, "posts": []}, "leaderboard": []}
+        bundle = {
+            "date": "2026-04-17",
+            "market_snapshot": {},
+            "agents": {},
+            "narrator": {"blog_draft": {}, "posts": []},
+            "leaderboard": [],
+        }
         path = save_output_bundle(date(2026, 4, 17), bundle)
         assert path.name == "2026-04-17.json"
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -107,7 +191,13 @@ class TestSaveOutputBundle:
         today = date(2026, 4, 17)
         assert get_day_number(for_date=today) == 3
 
-        bundle = {"date": "2026-04-17", "market_snapshot": {}, "agents": {}, "narrator": {"blog_draft": {}, "posts": []}, "leaderboard": []}
+        bundle = {
+            "date": "2026-04-17",
+            "market_snapshot": {},
+            "agents": {},
+            "narrator": {"blog_draft": {}, "posts": []},
+            "leaderboard": [],
+        }
         save_output_bundle(today, bundle)
 
         # Re-derive — must still be 3 (not 4).

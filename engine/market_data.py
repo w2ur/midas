@@ -36,6 +36,7 @@ BENCHMARK_TICKERS: dict[str, str] = {
 # Committed OHLCV store (data/market/ohlcv/{SYMBOL}.jsonl)
 # ---------------------------------------------------------------------------
 
+
 def _read_store_file(ticker: str) -> list[dict] | None:
     """Load all rows for a ticker from the committed JSONL store, or None."""
     path = _OHLCV_STORE / f"{ticker}.jsonl"
@@ -66,20 +67,26 @@ def _load_prices_from_store(
     for ticker in tickers:
         rows = _read_store_file(ticker)
         if rows is None:
-            return None  # Missing entirely — fall back to yfinance for the whole request
+            return (
+                None  # Missing entirely — fall back to yfinance for the whole request
+            )
         earliest = min(r["date"] for r in rows)
         if earliest > start.isoformat():
             return None  # Store doesn't cover the requested range
         # Use adj_close when present; fall back to close for instruments without splits/divs.
         series_data = {
-            r["date"]: (r.get("adj_close") if r.get("adj_close") is not None else r.get("close"))
+            r["date"]: (
+                r.get("adj_close") if r.get("adj_close") is not None else r.get("close")
+            )
             for r in rows
             if start.isoformat() <= r["date"] <= end.isoformat()
         }
         if not series_data:
             return None
         idx = pd.to_datetime(sorted(series_data.keys()))
-        columns[ticker] = pd.Series([series_data[d.strftime("%Y-%m-%d")] for d in idx], index=idx)
+        columns[ticker] = pd.Series(
+            [series_data[d.strftime("%Y-%m-%d")] for d in idx], index=idx
+        )
 
     df = pd.DataFrame(columns)
     df.index.name = "Date"
@@ -96,6 +103,22 @@ def _latest_close_from_store(ticker: str) -> float | None:
     if val is None:
         val = latest.get("close")
     return float(val) if val is not None else None
+
+
+def latest_close_and_date_from_store(ticker: str) -> tuple[float, str] | None:
+    """Return (close, ISO-date) of the most recent row for a ticker, or None."""
+    rows = _read_store_file(ticker)
+    if not rows:
+        return None
+    latest = max(rows, key=lambda r: r["date"])
+    val = (
+        latest.get("adj_close")
+        if latest.get("adj_close") is not None
+        else latest.get("close")
+    )
+    if val is None:
+        return None
+    return (float(val), str(latest["date"]))
 
 
 class MarketDataFetcher:
@@ -129,7 +152,9 @@ class MarketDataFetcher:
         Serves from the committed OHLCV store when it covers the range;
         otherwise falls back to yfinance.
         """
-        cache_key = self._make_cache_key("prices", tickers=sorted(tickers), start=str(start), end=str(end))
+        cache_key = self._make_cache_key(
+            "prices", tickers=sorted(tickers), start=str(start), end=str(end)
+        )
         cached = self._load_cache(cache_key)
         if cached is not None:
             return cached
@@ -170,7 +195,9 @@ class MarketDataFetcher:
         store_df = _load_prices_from_store(tickers, start, end)
         if store_df is not None:
             reverse_map = {v: k for k, v in BENCHMARK_TICKERS.items()}
-            renamed = store_df.rename(columns=reverse_map)[list(BENCHMARK_TICKERS.keys())]
+            renamed = store_df.rename(columns=reverse_map)[
+                list(BENCHMARK_TICKERS.keys())
+            ]
             renamed = self._normalize_index(renamed)
             self._save_cache(cache_key, renamed)
             return renamed
