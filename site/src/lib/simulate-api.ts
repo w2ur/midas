@@ -22,6 +22,8 @@ export type TradeEntry = {
 
 export type RunResponse = {
   equity_curve: EquityPoint[];
+  benchmark_curve: EquityPoint[];
+  benchmark_label: string;
   metrics: MetricsBlock;
   trades: TradeEntry[];
   config_hash: string;

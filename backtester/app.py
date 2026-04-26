@@ -102,6 +102,13 @@ def run(request: RunRequest) -> RunResponse:
         EquityPoint(date=idx.date().isoformat(), value=float(val))
         for idx, val in result.daily_values.items()
     ]
+    benchmark_curve: list[EquityPoint] = []
+    if benchmark is not None and not benchmark.empty:
+        scaled = (benchmark / float(benchmark.iloc[0])) * float(request.capital)
+        benchmark_curve = [
+            EquityPoint(date=idx.date().isoformat(), value=float(val))
+            for idx, val in scaled.items()
+        ]
     metrics = MetricsBlock(
         total_return_pct=result.total_return * 100.0,
         cagr_pct=result.cagr * 100.0,
@@ -114,6 +121,8 @@ def run(request: RunRequest) -> RunResponse:
 
     return RunResponse(
         equity_curve=equity_curve,
+        benchmark_curve=benchmark_curve,
+        benchmark_label="MSCI World",
         metrics=metrics,
         trades=trades,
         config_hash=_config_hash(request),

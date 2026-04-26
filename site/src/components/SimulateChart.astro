@@ -47,7 +47,30 @@
     const xs = result.equity_curve.map((p) =>
       Math.floor(new Date(p.date).getTime() / 1000),
     );
-    const ys = result.equity_curve.map((p) => p.value);
+    const strategyYs = result.equity_curve.map((p) => p.value);
+
+    const benchByDate = new Map(
+      (result.benchmark_curve ?? []).map((p) => [p.date, p.value]),
+    );
+    const benchmarkYs: (number | null)[] = result.equity_curve.map(
+      (p) => benchByDate.get(p.date) ?? null,
+    );
+    const hasBenchmark = (result.benchmark_curve ?? []).length > 0;
+
+    const series: uPlot.Series[] = [
+      {},
+      { label: "Strategy", stroke: "#0a6", width: 2, fill: "rgba(0,170,102,0.10)" },
+    ];
+    const data: (number[] | (number | null)[])[] = [xs, strategyYs];
+    if (hasBenchmark) {
+      series.push({
+        label: result.benchmark_label || "Benchmark",
+        stroke: "#888",
+        width: 1.5,
+        dash: [5, 4],
+      });
+      data.push(benchmarkYs);
+    }
 
     if (chart) chart.destroy();
     chart = new uPlot(
@@ -56,13 +79,10 @@
         width: el.clientWidth || 880,
         height: 320,
         scales: { x: { time: true } },
-        series: [
-          {},
-          { label: "Equity", stroke: "#0a6", width: 2, fill: "rgba(0,170,102,0.10)" },
-        ],
+        series,
         legend: { show: true },
       },
-      [xs, ys],
+      data as uPlot.AlignedData,
       el,
     );
   };

@@ -57,6 +57,8 @@ class TradeEntry(BaseModel):
 
 class RunResponse(BaseModel):
     equity_curve: list[EquityPoint]
+    benchmark_curve: list[EquityPoint] = Field(default_factory=list)
+    benchmark_label: str = "MSCI World"
     metrics: MetricsBlock
     trades: list[TradeEntry]
     config_hash: str
