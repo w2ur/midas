@@ -27,14 +27,27 @@ import SimulateChart from "../../components/SimulateChart.astro";
       color: var(--ink-muted);
       max-width: 60ch;
     }
+    .strategy-block {
+      margin: 1.5rem 0;
+    }
+    .strategy-label {
+      margin: 0 0 .5rem;
+      font-size: var(--fs-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }
+    .strategy-label.label-a { color: #0a6; }
+    .strategy-label.label-b { color: #36c; }
     .simulate-metrics {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 1rem;
-      margin: 1.5rem 0;
+      margin: 0;
     }
     .simulate-metrics > div { padding: .75rem; border: 1px solid var(--rule); }
     .simulate-metrics dt { font-size: .85rem; color: var(--ink-muted); }
     .simulate-metrics dd { margin: 0; font-size: 1.5rem; font-weight: 600; }
+    .error { color: #c33; padding: .75rem; border: 1px solid #c33; margin: 1rem 0; }
   </style>
 </BaseLayout>
