@@ -8,17 +8,21 @@ from datetime import date
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, TypeAdapter
 
+from backtester.allocation import AllocationError, run_allocation_backtest
 from backtester.comparisons import compute_comparison_deltas
 from backtester.runner import (
     UnknownUniverseError,
     run_signal_backtest,
 )
 from backtester.schemas import (
+    AllocationRunRequest,
     EquityPoint,
     MetricsBlock,
     RunRequest,
     RunResponse,
+    SignalRunRequest,
 )
 from backtester.trades import extract_top_trades
 
@@ -34,13 +38,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_run_request_adapter: TypeAdapter[RunRequest] = TypeAdapter(RunRequest)
+
 
 @app.get("/healthz")
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
-def _config_hash(request: RunRequest) -> str:
+def _config_hash(request: BaseModel) -> str:
     payload = request.model_dump(mode="json")
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(canonical.encode()).hexdigest()
@@ -76,48 +82,46 @@ def _load_coin_flip_series(start: date, end: date):
     return None
 
 
-@app.post("/run", response_model=RunResponse)
-def run(request: RunRequest) -> RunResponse:
-    try:
-        result = run_signal_backtest(
-            request.config,
-            start=request.start_date,
-            end=request.end_date,
-            capital=request.capital,
-        )
-    except UnknownUniverseError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Backtest failed: {exc}")
-
-    benchmark = _load_msci_world_series(request.start_date, request.end_date)
-    coin_flip = _load_coin_flip_series(request.start_date, request.end_date)
+def _build_response(
+    request: BaseModel,
+    daily_values,
+    transactions,
+    total_return: float,
+    cagr: float,
+    sharpe: float,
+    max_drawdown: float,
+    capital: float,
+    start: date,
+    end: date,
+) -> RunResponse:
+    benchmark = _load_msci_world_series(start, end)
+    coin_flip = _load_coin_flip_series(start, end)
     deltas = compute_comparison_deltas(
-        result.daily_values,
+        daily_values,
         benchmark_curve=benchmark,
         coin_flip_curve=coin_flip,
     )
 
     equity_curve = [
         EquityPoint(date=idx.date().isoformat(), value=float(val))
-        for idx, val in result.daily_values.items()
+        for idx, val in daily_values.items()
     ]
     benchmark_curve: list[EquityPoint] = []
     if benchmark is not None and not benchmark.empty:
-        scaled = (benchmark / float(benchmark.iloc[0])) * float(request.capital)
+        scaled = (benchmark / float(benchmark.iloc[0])) * float(capital)
         benchmark_curve = [
             EquityPoint(date=idx.date().isoformat(), value=float(val))
             for idx, val in scaled.items()
         ]
     metrics = MetricsBlock(
-        total_return_pct=result.total_return * 100.0,
-        cagr_pct=result.cagr * 100.0,
-        sharpe=result.sharpe,
-        max_drawdown_pct=result.max_drawdown * 100.0,
+        total_return_pct=total_return * 100.0,
+        cagr_pct=cagr * 100.0,
+        sharpe=sharpe,
+        max_drawdown_pct=max_drawdown * 100.0,
         vs_msci_world_pct=deltas.vs_msci_world_pct,
         vs_coin_flip_pct=deltas.vs_coin_flip_pct,
     )
-    trades = extract_top_trades(result.transactions, n=20)
+    trades = extract_top_trades(transactions, n=20)
 
     return RunResponse(
         equity_curve=equity_curve,
@@ -127,4 +131,42 @@ def run(request: RunRequest) -> RunResponse:
         trades=trades,
         config_hash=_config_hash(request),
         warnings=deltas.warnings,
+    )
+
+
+@app.post("/run", response_model=RunResponse)
+def run(request: SignalRunRequest | AllocationRunRequest) -> RunResponse:
+    try:
+        if request.kind == "signal":
+            result = run_signal_backtest(
+                request.config,
+                start=request.start_date,
+                end=request.end_date,
+                capital=request.capital,
+            )
+        else:
+            result = run_allocation_backtest(
+                request.config,
+                start=request.start_date,
+                end=request.end_date,
+                capital=request.capital,
+            )
+    except UnknownUniverseError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except AllocationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Backtest failed: {exc}")
+
+    return _build_response(
+        request,
+        daily_values=result.daily_values,
+        transactions=result.transactions,
+        total_return=result.total_return,
+        cagr=result.cagr,
+        sharpe=result.sharpe,
+        max_drawdown=result.max_drawdown,
+        capital=request.capital,
+        start=request.start_date,
+        end=request.end_date,
     )

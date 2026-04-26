@@ -1,13 +1,13 @@
 """Pydantic schemas for the backtester API.
 
-v1 supports only the `signal` strategy kind. `mirror` and `allocation` are
-rejected at the schema layer; they are introduced in later plans.
+Supported kinds: `signal` (universe + selector + manager) and `allocation`
+(fixed weights + rebalance cadence). `mirror` is introduced in a later plan.
 """
 
 from __future__ import annotations
 
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field
 
@@ -23,13 +23,43 @@ class SignalConfig(BaseModel):
     min_hold_days: int = Field(ge=0, le=365)
 
 
-class RunRequest(BaseModel):
+class AllocationWeight(BaseModel):
+    ticker: str = Field(min_length=1)
+    weight: float = Field(gt=0.0, le=100.0)
+
+
+RebalanceCadence = Literal["daily", "weekly", "monthly", "quarterly", "yearly"]
+
+
+class AllocationConfig(BaseModel):
+    """Form fields for a static-allocation strategy."""
+
+    weights: list[AllocationWeight] = Field(min_length=1, max_length=20)
+    rebalance_cadence: RebalanceCadence = "monthly"
+
+
+class SignalRunRequest(BaseModel):
     kind: Literal["signal"]
     config: SignalConfig
     start_date: date
     end_date: date
     capital: float = Field(gt=0.0)
     currency: Literal["EUR", "USD"] = "EUR"
+
+
+class AllocationRunRequest(BaseModel):
+    kind: Literal["allocation"]
+    config: AllocationConfig
+    start_date: date
+    end_date: date
+    capital: float = Field(gt=0.0)
+    currency: Literal["EUR", "USD"] = "EUR"
+
+
+RunRequest = Annotated[
+    Union[SignalRunRequest, AllocationRunRequest],
+    Field(discriminator="kind"),
+]
 
 
 class EquityPoint(BaseModel):
