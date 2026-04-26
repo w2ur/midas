@@ -1,0 +1,28 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Simulate · Midas" current="simulate">
+  <main class="simulate-shell">
+    <h1>Strategy backtester</h1>
+    <p class="lede">
+      Compose a strategy, pick a universe, set the dates and capital, and
+      run a real backtest. Results are shareable by URL.
+    </p>
+
+    <section id="form-mount" data-component="simulate-form"></section>
+    <section id="result-mount" data-component="simulate-result"></section>
+  </main>
+
+  <style>
+    .simulate-shell {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    .lede {
+      color: var(--ink-muted);
+      max-width: 60ch;
+    }
+  </style>
+</BaseLayout>
