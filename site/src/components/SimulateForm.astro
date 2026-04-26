@@ -42,8 +42,16 @@ const managerOptions = [
   { value: "fixed-60-40", label: "Fixed 60/40" },
 ];
 
+const cadenceOptions = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "yearly", label: "Yearly" },
+];
+
 type Slot = "a" | "b";
-const slotDefaults: Record<Slot, Record<string, string>> = {
+const slotDefaults: Record<Slot, { universe: string; selector: string; manager: string }> = {
   a: { universe: "classic-60-40", selector: "buy-and-hold", manager: "fixed-60-40" },
   b: { universe: "classic-60-40", selector: "golden-cross", manager: "trailing-stop" },
 };
@@ -53,75 +61,124 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
   {(["a", "b"] as Slot[]).map((slot) => (
     <fieldset class="strategy-slot" data-slot={slot} hidden={slot === "b"}>
       <legend class="slot-header">
-        <span>Strategy {slot.toUpperCase()}</span>
+        <span class="slot-name">Strategy {slot.toUpperCase()}</span>
+        <span class="kind-tabs" data-slot={slot}>
+          <button type="button" class="kind-tab active" data-kind="signal" data-slot={slot}>Signal</button>
+          <button type="button" class="kind-tab" data-kind="allocation" data-slot={slot}>Allocation</button>
+        </span>
         {slot === "b" && (
           <button type="button" class="slot-remove" data-action="remove-b">× Remove</button>
         )}
       </legend>
-      <div class="grid">
-        <label class="ctl">
-          <span>Universe</span>
-          <select name={`universe_${slot}`} required>
-            {universeOptions.map((o) => (
-              <option value={o.value} selected={o.value === slotDefaults[slot].universe}>{o.label}</option>
-            ))}
-          </select>
-        </label>
 
-        <label class="ctl">
-          <span>Selector</span>
-          <select name={`selector_${slot}`} required>
-            {selectorOptions.map((o) => (
-              <option value={o.value} selected={o.value === slotDefaults[slot].selector}>{o.label}</option>
-            ))}
-          </select>
-        </label>
+      {/* Signal-shape fields */}
+      <div class="kind-content" data-kind="signal" data-slot={slot}>
+        <div class="grid">
+          <label class="ctl">
+            <span>Universe</span>
+            <select name={`universe_${slot}`}>
+              {universeOptions.map((o) => (
+                <option value={o.value} selected={o.value === slotDefaults[slot].universe}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          <label class="ctl">
+            <span>Selector</span>
+            <select name={`selector_${slot}`}>
+              {selectorOptions.map((o) => (
+                <option value={o.value} selected={o.value === slotDefaults[slot].selector}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          <label class="ctl">
+            <span>Manager</span>
+            <select name={`manager_${slot}`}>
+              {managerOptions.map((o) => (
+                <option value={o.value} selected={o.value === slotDefaults[slot].manager}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          <label class="ctl">
+            <span>Max positions</span>
+            <input type="number" name={`max_positions_${slot}`} min="1" max="100" value="20" />
+          </label>
+          <label class="ctl">
+            <span>Max position %</span>
+            <input type="number" name={`max_position_pct_${slot}`} min="0.1" max="100" step="0.1" value="100" />
+          </label>
+          <label class="ctl">
+            <span>Min hold days</span>
+            <input type="number" name={`min_hold_days_${slot}`} min="0" max="365" value="0" />
+          </label>
+        </div>
+      </div>
 
-        <label class="ctl">
-          <span>Manager</span>
-          <select name={`manager_${slot}`} required>
-            {managerOptions.map((o) => (
-              <option value={o.value} selected={o.value === slotDefaults[slot].manager}>{o.label}</option>
-            ))}
-          </select>
-        </label>
+      {/* Allocation-shape fields */}
+      <div class="kind-content" data-kind="allocation" data-slot={slot} hidden>
+        <div class="grid">
+          <label class="ctl">
+            <span>Rebalance cadence</span>
+            <select name={`rebalance_cadence_${slot}`}>
+              {cadenceOptions.map((o) => (
+                <option value={o.value} selected={o.value === "monthly"}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
 
+        <div class="weights" data-slot={slot}>
+          <div class="weights-header">
+            <span>Ticker</span>
+            <span>Weight %</span>
+            <span></span>
+          </div>
+          {/* Default rows: 60/40 */}
+          <div class="weight-row">
+            <input type="text" data-role="ticker" value="VOO" placeholder="e.g. VOO" />
+            <input type="number" data-role="weight" value="60" min="0.1" max="100" step="0.1" />
+            <button type="button" data-role="remove" aria-label="Remove">×</button>
+          </div>
+          <div class="weight-row">
+            <input type="text" data-role="ticker" value="BND" placeholder="e.g. BND" />
+            <input type="number" data-role="weight" value="40" min="0.1" max="100" step="0.1" />
+            <button type="button" data-role="remove" aria-label="Remove">×</button>
+          </div>
+        </div>
+
+        <div class="weights-actions">
+          <button type="button" data-action="add-weight" data-slot={slot}>+ Add ticker</button>
+          <p class="total-weight" data-slot={slot}>Total: 100%</p>
+        </div>
+
+        <div class="presets">
+          <span class="presets-label">Presets:</span>
+          <button type="button" data-preset="60-40" data-slot={slot}>60/40</button>
+          <button type="button" data-preset="equal-weight" data-slot={slot}>Equal weight (5)</button>
+          <button type="button" data-preset="all-voo" data-slot={slot}>All-VOO</button>
+          <button type="button" data-preset="permanent" data-slot={slot}>Permanent portfolio</button>
+        </div>
+      </div>
+
+      {/* Common fields */}
+      <div class="grid common">
         <label class="ctl">
           <span>Start</span>
-          <input type="date" name={`start_date_${slot}`} value="2018-01-01" required />
+          <input type="date" name={`start_date_${slot}`} value="2018-01-01" />
         </label>
-
         <label class="ctl">
           <span>End</span>
-          <input type="date" name={`end_date_${slot}`} value="2024-12-31" required />
+          <input type="date" name={`end_date_${slot}`} value="2024-12-31" />
         </label>
-
         <label class="ctl">
           <span>Capital</span>
-          <input type="number" name={`capital_${slot}`} min="100" value="10000" required />
+          <input type="number" name={`capital_${slot}`} min="100" value="10000" />
         </label>
-
         <label class="ctl">
           <span>Currency</span>
           <select name={`currency_${slot}`}>
             <option value="EUR">EUR</option>
             <option value="USD">USD</option>
           </select>
-        </label>
-
-        <label class="ctl">
-          <span>Max positions</span>
-          <input type="number" name={`max_positions_${slot}`} min="1" max="100" value="20" required />
-        </label>
-
-        <label class="ctl">
-          <span>Max position %</span>
-          <input type="number" name={`max_position_pct_${slot}`} min="0.1" max="100" step="0.1" value="100" required />
-        </label>
-
-        <label class="ctl">
-          <span>Min hold days</span>
-          <input type="number" name={`min_hold_days_${slot}`} min="0" max="365" value="0" required />
         </label>
       </div>
     </fieldset>
@@ -148,15 +205,34 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
     display: flex;
     align-items: center;
     gap: .75rem;
+    flex-wrap: wrap;
     padding: 0 .5rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-weight: 700;
     font-size: var(--fs-xs);
-    color: var(--ink-muted);
   }
-  .simulate-form .strategy-slot[data-slot="a"] .slot-header { color: #0a6; }
-  .simulate-form .strategy-slot[data-slot="b"] .slot-header { color: #36c; }
+  .simulate-form .strategy-slot[data-slot="a"] .slot-name { color: #0a6; }
+  .simulate-form .strategy-slot[data-slot="b"] .slot-name { color: #36c; }
+  .simulate-form .kind-tabs {
+    display: inline-flex;
+    border: 1px solid var(--rule);
+  }
+  .simulate-form .kind-tab {
+    background: transparent;
+    border: 0;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: .25rem .75rem;
+    cursor: pointer;
+  }
+  .simulate-form .kind-tab.active {
+    background: var(--ink);
+    color: var(--bg);
+  }
   .simulate-form .slot-remove {
     margin-left: auto;
     background: transparent;
@@ -199,6 +275,93 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
     outline: none;
     border-color: var(--accent);
   }
+  .simulate-form .common {
+    border-top: 1px solid var(--rule);
+    padding-top: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  /* Allocation-specific */
+  .simulate-form .weights {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: .35rem .5rem;
+    margin: 1rem 0 .5rem;
+  }
+  .simulate-form .weights-header {
+    display: contents;
+  }
+  .simulate-form .weights-header > span {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .simulate-form .weight-row {
+    display: contents;
+  }
+  .simulate-form .weight-row [data-role="remove"] {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-muted);
+    cursor: pointer;
+    font: inherit;
+    width: 2rem;
+    padding: 0;
+  }
+  .simulate-form .weight-row [data-role="remove"]:hover {
+    border-color: #c33;
+    color: #c33;
+  }
+  .simulate-form .weights-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: .5rem 0 1rem;
+  }
+  .simulate-form [data-action="add-weight"] {
+    background: transparent;
+    border: 1px dashed var(--rule);
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: .35rem .75rem;
+    cursor: pointer;
+  }
+  .simulate-form [data-action="add-weight"]:hover { border-color: var(--ink); color: var(--ink); }
+  .simulate-form .total-weight {
+    margin: 0;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
+  .simulate-form .total-weight.invalid { color: #c33; }
+  .simulate-form .presets {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin: .5rem 0;
+  }
+  .simulate-form .presets-label {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+  }
+  .simulate-form [data-preset] {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--fs-xs);
+    padding: .25rem .65rem;
+    cursor: pointer;
+  }
+  .simulate-form [data-preset]:hover { border-color: var(--ink); color: var(--ink); }
+
   .simulate-form .add-strategy {
     background: transparent;
     border: 1px dashed var(--rule);
@@ -242,6 +405,10 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
   import {
     decodeConfig,
     encodeConfig,
+    type AllocationConfigShape,
+    type AllocationWeight,
+    type RebalanceCadence,
+    type SignalConfigShape,
     type SimulateConfig,
   } from "../lib/simulate-config";
   import {
@@ -252,6 +419,28 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
   import { EXAMPLE_RESULT } from "../lib/simulate-example";
 
   type Slot = "a" | "b";
+  type Kind = "signal" | "allocation";
+
+  const PRESETS: Record<string, AllocationWeight[]> = {
+    "60-40": [
+      { ticker: "VOO", weight: 60 },
+      { ticker: "BND", weight: 40 },
+    ],
+    "equal-weight": [
+      { ticker: "VOO", weight: 20 },
+      { ticker: "VEA", weight: 20 },
+      { ticker: "VWO", weight: 20 },
+      { ticker: "BND", weight: 20 },
+      { ticker: "GLD", weight: 20 },
+    ],
+    "all-voo": [{ ticker: "VOO", weight: 100 }],
+    permanent: [
+      { ticker: "VOO", weight: 25 },
+      { ticker: "TLT", weight: 25 },
+      { ticker: "GLD", weight: 25 },
+      { ticker: "BND", weight: 25 },
+    ],
+  };
 
   declare global {
     interface Window {
@@ -284,45 +473,160 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
     return !!el && !el.hidden;
   }
 
-  function readSlot(slot: Slot): SimulateConfig {
-    const form = getForm();
-    const data = new FormData(form);
-    const get = (name: string) => String(data.get(`${name}_${slot}`));
-    const num = (name: string) => Number(data.get(`${name}_${slot}`));
+  function activeKind(slot: Slot): Kind {
+    const tab = document.querySelector(
+      `.kind-tab.active[data-slot="${slot}"]`,
+    ) as HTMLElement | null;
+    return (tab?.dataset.kind as Kind) ?? "signal";
+  }
+
+  function setActiveKind(slot: Slot, kind: Kind): void {
+    document
+      .querySelectorAll<HTMLElement>(`.kind-tab[data-slot="${slot}"]`)
+      .forEach((b) => b.classList.toggle("active", b.dataset.kind === kind));
+    document
+      .querySelectorAll<HTMLElement>(`.kind-content[data-slot="${slot}"]`)
+      .forEach((c) => (c.hidden = c.dataset.kind !== kind));
+  }
+
+  function readCommon(slot: Slot): {
+    start_date: string;
+    end_date: string;
+    capital: number;
+    currency: "EUR" | "USD";
+  } {
+    const data = new FormData(getForm());
     const cur = data.get(`currency_${slot}`);
     return {
-      kind: "signal",
-      config: {
-        universe: get("universe"),
-        selector: get("selector"),
-        manager: get("manager"),
-        max_positions: num("max_positions"),
-        max_position_pct: num("max_position_pct"),
-        min_hold_days: num("min_hold_days"),
-      },
-      start_date: get("start_date"),
-      end_date: get("end_date"),
-      capital: num("capital"),
+      start_date: String(data.get(`start_date_${slot}`)),
+      end_date: String(data.get(`end_date_${slot}`)),
+      capital: Number(data.get(`capital_${slot}`)),
       currency: cur === "USD" ? "USD" : "EUR",
     };
   }
 
-  function writeSlot(slot: Slot, config: SimulateConfig): void {
+  function readSignal(slot: Slot): SignalConfigShape {
+    const data = new FormData(getForm());
+    const get = (name: string) => String(data.get(`${name}_${slot}`));
+    const num = (name: string) => Number(data.get(`${name}_${slot}`));
+    return {
+      universe: get("universe"),
+      selector: get("selector"),
+      manager: get("manager"),
+      max_positions: num("max_positions"),
+      max_position_pct: num("max_position_pct"),
+      min_hold_days: num("min_hold_days"),
+    };
+  }
+
+  function readAllocation(slot: Slot): AllocationConfigShape {
+    const data = new FormData(getForm());
+    const cadence = (data.get(`rebalance_cadence_${slot}`) ?? "monthly") as RebalanceCadence;
+    const rows = document.querySelectorAll<HTMLDivElement>(
+      `.weights[data-slot="${slot}"] .weight-row`,
+    );
+    const weights: AllocationWeight[] = [];
+    rows.forEach((row) => {
+      const ticker = (row.querySelector('[data-role="ticker"]') as HTMLInputElement | null)?.value.trim() ?? "";
+      const weightStr = (row.querySelector('[data-role="weight"]') as HTMLInputElement | null)?.value ?? "";
+      const weight = Number(weightStr);
+      if (ticker && weight > 0) weights.push({ ticker: ticker.toUpperCase(), weight });
+    });
+    return { weights, rebalance_cadence: cadence };
+  }
+
+  function readSlot(slot: Slot): SimulateConfig {
+    const common = readCommon(slot);
+    const kind = activeKind(slot);
+    if (kind === "signal") {
+      return { kind: "signal", config: readSignal(slot), ...common };
+    }
+    return { kind: "allocation", config: readAllocation(slot), ...common };
+  }
+
+  function writeCommon(slot: Slot, common: { start_date: string; end_date: string; capital: number; currency: string }): void {
     const form = getForm();
     const set = (name: string, value: string | number) => {
       const el = form.elements.namedItem(`${name}_${slot}`) as HTMLInputElement | HTMLSelectElement | null;
       if (el) el.value = String(value);
     };
-    set("universe", config.config.universe);
-    set("selector", config.config.selector);
-    set("manager", config.config.manager);
-    set("max_positions", config.config.max_positions);
-    set("max_position_pct", config.config.max_position_pct);
-    set("min_hold_days", config.config.min_hold_days);
-    set("start_date", config.start_date);
-    set("end_date", config.end_date);
-    set("capital", config.capital);
-    set("currency", config.currency);
+    set("start_date", common.start_date);
+    set("end_date", common.end_date);
+    set("capital", common.capital);
+    set("currency", common.currency);
+  }
+
+  function writeSignal(slot: Slot, config: SignalConfigShape): void {
+    const form = getForm();
+    const set = (name: string, value: string | number) => {
+      const el = form.elements.namedItem(`${name}_${slot}`) as HTMLInputElement | HTMLSelectElement | null;
+      if (el) el.value = String(value);
+    };
+    set("universe", config.universe);
+    set("selector", config.selector);
+    set("manager", config.manager);
+    set("max_positions", config.max_positions);
+    set("max_position_pct", config.max_position_pct);
+    set("min_hold_days", config.min_hold_days);
+  }
+
+  function setWeights(slot: Slot, weights: AllocationWeight[]): void {
+    const container = document.querySelector(`.weights[data-slot="${slot}"]`);
+    if (!container) return;
+    // Preserve the header row, replace data rows.
+    const header = container.querySelector(".weights-header");
+    container.innerHTML = "";
+    if (header) container.appendChild(header);
+    weights.forEach((w) => container.appendChild(makeWeightRow(w.ticker, w.weight)));
+    updateTotal(slot);
+  }
+
+  function makeWeightRow(ticker: string, weight: number): HTMLDivElement {
+    const row = document.createElement("div");
+    row.className = "weight-row";
+    row.innerHTML = `
+      <input type="text" data-role="ticker" value="${escape(ticker)}" placeholder="e.g. VOO" />
+      <input type="number" data-role="weight" value="${weight}" min="0.1" max="100" step="0.1" />
+      <button type="button" data-role="remove" aria-label="Remove">×</button>
+    `;
+    return row;
+  }
+
+  function escape(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
+  }
+
+  function writeAllocation(slot: Slot, config: AllocationConfigShape): void {
+    const form = getForm();
+    const cad = form.elements.namedItem(`rebalance_cadence_${slot}`) as HTMLSelectElement | null;
+    if (cad) cad.value = config.rebalance_cadence;
+    setWeights(slot, config.weights);
+  }
+
+  function writeSlot(slot: Slot, config: SimulateConfig): void {
+    setActiveKind(slot, config.kind);
+    writeCommon(slot, config);
+    if (config.kind === "signal") {
+      writeSignal(slot, config.config);
+    } else {
+      writeAllocation(slot, config.config);
+    }
+  }
+
+  function updateTotal(slot: Slot): void {
+    const rows = document.querySelectorAll<HTMLDivElement>(
+      `.weights[data-slot="${slot}"] .weight-row`,
+    );
+    let total = 0;
+    rows.forEach((row) => {
+      const w = Number((row.querySelector('[data-role="weight"]') as HTMLInputElement | null)?.value ?? 0);
+      if (Number.isFinite(w)) total += w;
+    });
+    const el = document.querySelector<HTMLElement>(`.total-weight[data-slot="${slot}"]`);
+    if (el) {
+      el.textContent = `Total: ${total.toFixed(1)}%`;
+      el.classList.toggle("invalid", Math.abs(total - 100) > 0.01);
+    }
   }
 
   function showSlotB(): void {
@@ -353,8 +657,15 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
   }
 
   function strategyLabel(slot: Slot, config: SimulateConfig): string {
-    const c = config.config;
-    return `Strategy ${slot.toUpperCase()} — ${c.universe} / ${c.selector} / ${c.manager}`;
+    const prefix = `Strategy ${slot.toUpperCase()}`;
+    if (config.kind === "signal") {
+      const c = config.config;
+      return `${prefix} — ${c.universe} / ${c.selector} / ${c.manager}`;
+    }
+    const tickers = config.config.weights
+      .map((w) => `${w.ticker} ${w.weight}%`)
+      .join(" + ");
+    return `${prefix} (allocation, ${config.config.rebalance_cadence}) — ${tickers}`;
   }
 
   function metricsHtml(slot: Slot, config: SimulateConfig, result: RunResponse): string {
@@ -382,9 +693,7 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
   function renderResults(
     pairs: Array<{ slot: Slot; config: SimulateConfig; result?: RunResponse; error?: string }>,
   ): void {
-    const successes = pairs
-      .filter((p) => p.result)
-      .map((p) => p.result as RunResponse);
+    const successes = pairs.filter((p) => p.result).map((p) => p.result as RunResponse);
     callChart(successes);
 
     const mount = document.getElementById("result-mount");
@@ -431,27 +740,76 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
     }
   }
 
+  function handleClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target) return;
+
+    if (target.matches(".kind-tab")) {
+      const slot = target.dataset.slot as Slot | undefined;
+      const kind = target.dataset.kind as Kind | undefined;
+      if (slot && kind) setActiveKind(slot, kind);
+      return;
+    }
+
+    if (target.dataset.action === "remove-b") {
+      hideSlotB();
+      return;
+    }
+
+    if (target.dataset.action === "add-weight") {
+      const slot = target.dataset.slot as Slot | undefined;
+      if (!slot) return;
+      const container = document.querySelector(`.weights[data-slot="${slot}"]`);
+      container?.appendChild(makeWeightRow("", 0));
+      updateTotal(slot);
+      return;
+    }
+
+    if (target.dataset.role === "remove") {
+      const row = target.closest(".weight-row");
+      const slot = (target.closest(".weights") as HTMLElement | null)?.dataset.slot as Slot | undefined;
+      row?.remove();
+      if (slot) updateTotal(slot);
+      return;
+    }
+
+    if (target.dataset.preset) {
+      const slot = target.dataset.slot as Slot | undefined;
+      const preset = target.dataset.preset;
+      if (slot && PRESETS[preset]) setWeights(slot, PRESETS[preset]);
+      return;
+    }
+  }
+
+  function handleInput(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (target?.dataset.role === "weight") {
+      const slot = (target.closest(".weights") as HTMLElement | null)?.dataset.slot as Slot | undefined;
+      if (slot) updateTotal(slot);
+    }
+  }
+
   function bootstrap(): void {
     const form = getForm();
     if (!form) return;
     form.addEventListener("submit", handleSubmit);
+    form.addEventListener("click", handleClick);
+    form.addEventListener("input", handleInput);
 
     const addBtn = document.getElementById("add-strategy-b");
     addBtn?.addEventListener("click", showSlotB);
 
-    form.addEventListener("click", (event) => {
-      const target = event.target as HTMLElement;
-      if (target?.dataset?.action === "remove-b") {
-        hideSlotB();
-      }
-    });
+    // Initialise totals for default rows.
+    updateTotal("a");
+    updateTotal("b");
 
     const params = new URLSearchParams(window.location.search);
     const encoded = params.getAll("s");
-    const decoded = encoded.map(decodeConfig).filter((c): c is SimulateConfig => c !== null);
+    const decoded = encoded
+      .map(decodeConfig)
+      .filter((c): c is SimulateConfig => c !== null);
 
     if (decoded.length === 0) {
-      // No URL state — render the static example as Strategy A.
       callChart([EXAMPLE_RESULT]);
       const mount = document.getElementById("result-mount");
       if (mount) {
@@ -478,11 +836,8 @@ const slotDefaults: Record<Slot, Record<string, string>> = {
         showSlotB();
         writeSlot("b", decoded[1]);
       }
-      void Promise.all(
-        (decoded.length === 1 ? (["a"] as Slot[]) : (["a", "b"] as Slot[])).map((s, i) =>
-          runOne(s, decoded[i]),
-        ),
-      ).then(renderResults);
+      const slots = decoded.length === 1 ? (["a"] as Slot[]) : (["a", "b"] as Slot[]);
+      void Promise.all(slots.map((s, i) => runOne(s, decoded[i]))).then(renderResults);
     }
 
     void pingBacktester();

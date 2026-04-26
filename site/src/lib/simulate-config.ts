@@ -7,14 +7,41 @@ export type SignalConfigShape = {
   min_hold_days: number;
 };
 
-export type SimulateConfig = {
-  kind: "signal";
-  config: SignalConfigShape;
+export type AllocationWeight = {
+  ticker: string;
+  weight: number;
+};
+
+export type RebalanceCadence =
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "quarterly"
+  | "yearly";
+
+export type AllocationConfigShape = {
+  weights: AllocationWeight[];
+  rebalance_cadence: RebalanceCadence;
+};
+
+type CommonFields = {
   start_date: string;
   end_date: string;
   capital: number;
   currency: "EUR" | "USD";
 };
+
+export type SignalSimulateConfig = CommonFields & {
+  kind: "signal";
+  config: SignalConfigShape;
+};
+
+export type AllocationSimulateConfig = CommonFields & {
+  kind: "allocation";
+  config: AllocationConfigShape;
+};
+
+export type SimulateConfig = SignalSimulateConfig | AllocationSimulateConfig;
 
 function toUrlSafe(b64: string): string {
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -43,7 +70,7 @@ export function decodeConfig(encoded: string): SimulateConfig | null {
         ? decodeURIComponent(escape(atob(restored)))
         : Buffer.from(restored, "base64").toString("utf-8");
     const parsed = JSON.parse(json);
-    if (parsed?.kind !== "signal") return null;
+    if (parsed?.kind !== "signal" && parsed?.kind !== "allocation") return null;
     return parsed as SimulateConfig;
   } catch {
     return null;
