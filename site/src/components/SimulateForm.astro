@@ -1,0 +1,217 @@
+---
+// Form for signal-shape backtests. Fully client-side; reads + writes
+// querystring; calls the backtester service on submit.
+---
+
+<form id="simulate-form" class="simulate-form">
+  <fieldset>
+    <legend>Universe</legend>
+    <select name="universe" required>
+      <option value="sp500">S&amp;P 500</option>
+      <option value="dow30">Dow 30</option>
+      <option value="nasdaq100">NASDAQ 100</option>
+      <option value="cac40">CAC 40</option>
+      <option value="dax">DAX</option>
+      <option value="ftse100">FTSE 100</option>
+      <option value="stoxx-600">STOXX 600</option>
+      <option value="crypto-top20-eur">Crypto top 20 (EUR)</option>
+      <option value="crypto-top20">Crypto top 20 (USD)</option>
+      <option value="forex-majors">Forex majors</option>
+      <option value="metals-commodities">Metals + commodities</option>
+      <option value="bearish-etfs">Bearish ETFs</option>
+      <option value="bearish-etfs-ucits">Bearish ETFs (UCITS)</option>
+      <option value="commodities-eur">Commodities (EUR)</option>
+      <option value="single-voo">VOO only</option>
+      <option value="classic-60-40" selected>Classic 60/40</option>
+    </select>
+  </fieldset>
+
+  <fieldset>
+    <legend>Selector</legend>
+    <select name="selector" required>
+      <option value="random">Random</option>
+      <option value="golden-cross">Golden cross</option>
+      <option value="rsi-oversold">RSI oversold</option>
+      <option value="dip-entry">Dip entry</option>
+      <option value="fear-greed">Fear and greed</option>
+      <option value="data-follow">Data follow</option>
+      <option value="buy-and-hold" selected>Buy and hold</option>
+      <option value="earnings-beat">Earnings beat</option>
+      <option value="sector-cycle">Sector cycle</option>
+    </select>
+  </fieldset>
+
+  <fieldset>
+    <legend>Manager</legend>
+    <select name="manager" required>
+      <option value="equal-weight">Equal weight</option>
+      <option value="grid-conservative">Grid (conservative)</option>
+      <option value="grid-aggressive">Grid (aggressive)</option>
+      <option value="trailing-stop">Trailing stop</option>
+      <option value="scaled-exit">Scaled exit</option>
+      <option value="time-boxed">Time boxed</option>
+      <option value="rebalance-monthly">Monthly rebalance</option>
+      <option value="volatility-sized">Volatility sized</option>
+      <option value="fixed-60-40" selected>Fixed 60/40</option>
+    </select>
+  </fieldset>
+
+  <fieldset>
+    <legend>Rules</legend>
+    <label>Max positions <input type="number" name="max_positions" min="1" max="100" value="20" required /></label>
+    <label>Max position % <input type="number" name="max_position_pct" min="0.1" max="100" step="0.1" value="100" required /></label>
+    <label>Min hold days <input type="number" name="min_hold_days" min="0" max="365" value="0" required /></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Window</legend>
+    <label>Start <input type="date" name="start_date" value="2024-05-01" required /></label>
+    <label>End <input type="date" name="end_date" value="2024-12-31" required /></label>
+    <label>Capital <input type="number" name="capital" min="100" value="10000" required /></label>
+    <label>Currency
+      <select name="currency">
+        <option value="EUR">EUR</option>
+        <option value="USD">USD</option>
+      </select>
+    </label>
+  </fieldset>
+
+  <button type="submit">Run backtest</button>
+  <p class="hint" id="simulate-hint" hidden>
+    Warming up the backtester — first run takes a few seconds&hellip;
+  </p>
+</form>
+
+<style>
+  .simulate-form fieldset { border: 1px solid var(--rule); padding: 1rem; margin: 1rem 0; }
+  .simulate-form legend { padding: 0 .5rem; font-weight: 600; }
+  .simulate-form label { display: inline-flex; gap: .5rem; align-items: center; margin-right: 1rem; margin-bottom: .5rem; }
+  .simulate-form select, .simulate-form input { font: inherit; padding: .25rem .5rem; }
+  .simulate-form button { margin-top: 1rem; padding: .5rem 1rem; font: inherit; cursor: pointer; }
+  .simulate-form .hint { color: var(--ink-muted); }
+</style>
+
+<script>
+  import {
+    decodeConfig,
+    encodeConfig,
+    type SimulateConfig,
+  } from "../lib/simulate-config";
+  import {
+    pingBacktester,
+    runBacktest,
+    type RunResponse,
+  } from "../lib/simulate-api";
+  import { EXAMPLE_RESULT } from "../lib/simulate-example";
+
+  function readForm(): SimulateConfig {
+    const form = document.getElementById("simulate-form") as HTMLFormElement;
+    const data = new FormData(form);
+    return {
+      kind: "signal",
+      config: {
+        universe: String(data.get("universe")),
+        selector: String(data.get("selector")),
+        manager: String(data.get("manager")),
+        max_positions: Number(data.get("max_positions")),
+        max_position_pct: Number(data.get("max_position_pct")),
+        min_hold_days: Number(data.get("min_hold_days")),
+      },
+      start_date: String(data.get("start_date")),
+      end_date: String(data.get("end_date")),
+      capital: Number(data.get("capital")),
+      currency: data.get("currency") === "USD" ? "USD" : "EUR",
+    };
+  }
+
+  function writeForm(config: SimulateConfig): void {
+    const form = document.getElementById("simulate-form") as HTMLFormElement;
+    const set = (name: string, value: string | number) => {
+      const el = form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
+      if (el) el.value = String(value);
+    };
+    set("universe", config.config.universe);
+    set("selector", config.config.selector);
+    set("manager", config.config.manager);
+    set("max_positions", config.config.max_positions);
+    set("max_position_pct", config.config.max_position_pct);
+    set("min_hold_days", config.config.min_hold_days);
+    set("start_date", config.start_date);
+    set("end_date", config.end_date);
+    set("capital", config.capital);
+    set("currency", config.currency);
+  }
+
+  function updateUrl(config: SimulateConfig): void {
+    const url = new URL(window.location.href);
+    url.searchParams.set("s", encodeConfig(config));
+    history.replaceState(null, "", url.toString());
+  }
+
+  function renderResult(result: RunResponse): void {
+    window.__renderSimulateChart?.(result);
+    const mount = document.getElementById("result-mount");
+    if (!mount) return;
+    const m = result.metrics;
+    mount.innerHTML = `
+      <dl class="simulate-metrics">
+        <div><dt>Total return</dt><dd>${m.total_return_pct.toFixed(1)}%</dd></div>
+        <div><dt>CAGR</dt><dd>${m.cagr_pct.toFixed(1)}%</dd></div>
+        <div><dt>Sharpe</dt><dd>${m.sharpe.toFixed(2)}</dd></div>
+        <div><dt>Max drawdown</dt><dd>${m.max_drawdown_pct.toFixed(1)}%</dd></div>
+        <div><dt>vs MSCI World</dt><dd>${m.vs_msci_world_pct.toFixed(1)} pp</dd></div>
+        <div><dt>vs Coin flip</dt><dd>${m.vs_coin_flip_pct.toFixed(1)} pp</dd></div>
+      </dl>
+    `;
+  }
+
+  function showWarming(): void {
+    const hint = document.getElementById("simulate-hint");
+    if (hint) hint.hidden = false;
+  }
+
+  function hideWarming(): void {
+    const hint = document.getElementById("simulate-hint");
+    if (hint) hint.hidden = true;
+  }
+
+  async function handleSubmit(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    const config = readForm();
+    updateUrl(config);
+    showWarming();
+    try {
+      const result = await runBacktest(config);
+      renderResult(result);
+    } catch (err) {
+      const mount = document.getElementById("result-mount");
+      if (mount) mount.innerHTML = `<p class="error">Backtest failed: ${(err as Error).message}</p>`;
+    } finally {
+      hideWarming();
+    }
+  }
+
+  function bootstrap(): void {
+    const form = document.getElementById("simulate-form") as HTMLFormElement | null;
+    if (!form) return;
+    form.addEventListener("submit", handleSubmit);
+
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get("s");
+    const decoded = encoded ? decodeConfig(encoded) : null;
+    if (decoded) {
+      writeForm(decoded);
+      void runBacktest(decoded).then(renderResult).catch(() => {});
+    } else {
+      renderResult(EXAMPLE_RESULT);
+    }
+
+    void pingBacktester();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrap);
+  } else {
+    bootstrap();
+  }
+</script>

@@ -1,5 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import SimulateForm from "../../components/SimulateForm.astro";
+import SimulateChart from "../../components/SimulateChart.astro";
 ---
 
 <BaseLayout title="Simulate · Midas" current="simulate">
@@ -10,8 +12,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       run a real backtest. Results are shareable by URL.
     </p>
 
-    <section id="form-mount" data-component="simulate-form"></section>
-    <section id="result-mount" data-component="simulate-result"></section>
+    <SimulateForm />
+    <SimulateChart />
+    <section id="result-mount"></section>
   </main>
 
   <style>
@@ -24,5 +27,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       color: var(--ink-muted);
       max-width: 60ch;
     }
+    .simulate-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .simulate-metrics > div { padding: .75rem; border: 1px solid var(--rule); }
+    .simulate-metrics dt { font-size: .85rem; color: var(--ink-muted); }
+    .simulate-metrics dd { margin: 0; font-size: 1.5rem; font-weight: 600; }
   </style>
 </BaseLayout>
