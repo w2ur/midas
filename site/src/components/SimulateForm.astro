@@ -65,6 +65,7 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
         <span class="kind-tabs" data-slot={slot}>
           <button type="button" class="kind-tab active" data-kind="signal" data-slot={slot}>Signal</button>
           <button type="button" class="kind-tab" data-kind="allocation" data-slot={slot}>Allocation</button>
+          <button type="button" class="kind-tab" data-kind="mirror" data-slot={slot}>Mirror</button>
         </span>
         {slot === "b" && (
           <button type="button" class="slot-remove" data-action="remove-b">× Remove</button>
@@ -157,6 +158,31 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
           <button type="button" data-preset="all-voo" data-slot={slot}>All-VOO</button>
           <button type="button" data-preset="permanent" data-slot={slot}>Permanent portfolio</button>
         </div>
+      </div>
+
+      {/* Mirror-shape fields */}
+      <div class="kind-content" data-kind="mirror" data-slot={slot} hidden>
+        <div class="grid">
+          <label class="ctl">
+            <span>Mirror source</span>
+            <select name={`mirror_source_${slot}`}>
+              <option value="agent:satoshi">Agent — Satoshi</option>
+              <option value="agent:yolo-sapiens-eur" selected>Agent — YOLO Sapiens (EUR)</option>
+              <option value="agent:yolo-sapiens-usd">Agent — YOLO Sapiens (USD)</option>
+              <option value="agent:goldfinger">Agent — Goldfinger</option>
+              <option value="agent:monsieur-forex">Agent — Monsieur Forex</option>
+              <option value="agent:sharp-shooter-eur">Agent — Sharp Shooter (EUR)</option>
+              <option value="agent:sharp-shooter-usd">Agent — Sharp Shooter (USD)</option>
+              <option value="agent:steady-eddie-eur">Agent — Steady Eddie (EUR)</option>
+              <option value="agent:steady-eddie-usd">Agent — Steady Eddie (USD)</option>
+              <option value="agent:world">Agent — World</option>
+            </select>
+          </label>
+        </div>
+        <p class="mirror-note">
+          Mirror replays the agent's actual portfolio scaled to your capital.
+          Available window starts 2026-04-17 (Day 1 of the experiment).
+        </p>
       </div>
 
       {/* Common fields */}
@@ -361,6 +387,11 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
     cursor: pointer;
   }
   .simulate-form [data-preset]:hover { border-color: var(--ink); color: var(--ink); }
+  .simulate-form .mirror-note {
+    margin: .75rem 0 0;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
 
   .simulate-form .add-strategy {
     background: transparent;
@@ -407,6 +438,7 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
     encodeConfig,
     type AllocationConfigShape,
     type AllocationWeight,
+    type MirrorConfigShape,
     type RebalanceCadence,
     type SignalConfigShape,
     type SimulateConfig,
@@ -419,7 +451,8 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
   import { EXAMPLE_RESULT } from "../lib/simulate-example";
 
   type Slot = "a" | "b";
-  type Kind = "signal" | "allocation";
+  type Kind = "signal" | "allocation" | "mirror";
+  const AGENT_DAY_ONE = "2026-04-17";
 
   const PRESETS: Record<string, AllocationWeight[]> = {
     "60-40": [
@@ -519,6 +552,11 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
     };
   }
 
+  function readMirror(slot: Slot): MirrorConfigShape {
+    const data = new FormData(getForm());
+    return { source: String(data.get(`mirror_source_${slot}`) ?? "agent:yolo-sapiens-eur") };
+  }
+
   function readAllocation(slot: Slot): AllocationConfigShape {
     const data = new FormData(getForm());
     const cadence = (data.get(`rebalance_cadence_${slot}`) ?? "monthly") as RebalanceCadence;
@@ -541,7 +579,10 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
     if (kind === "signal") {
       return { kind: "signal", config: readSignal(slot), ...common };
     }
-    return { kind: "allocation", config: readAllocation(slot), ...common };
+    if (kind === "allocation") {
+      return { kind: "allocation", config: readAllocation(slot), ...common };
+    }
+    return { kind: "mirror", config: readMirror(slot), ...common };
   }
 
   function writeCommon(slot: Slot, common: { start_date: string; end_date: string; capital: number; currency: string }): void {
@@ -603,13 +644,21 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
     setWeights(slot, config.weights);
   }
 
+  function writeMirror(slot: Slot, config: MirrorConfigShape): void {
+    const form = getForm();
+    const src = form.elements.namedItem(`mirror_source_${slot}`) as HTMLSelectElement | null;
+    if (src) src.value = config.source;
+  }
+
   function writeSlot(slot: Slot, config: SimulateConfig): void {
     setActiveKind(slot, config.kind);
     writeCommon(slot, config);
     if (config.kind === "signal") {
       writeSignal(slot, config.config);
-    } else {
+    } else if (config.kind === "allocation") {
       writeAllocation(slot, config.config);
+    } else {
+      writeMirror(slot, config.config);
     }
   }
 
@@ -662,10 +711,13 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
       const c = config.config;
       return `${prefix} — ${c.universe} / ${c.selector} / ${c.manager}`;
     }
-    const tickers = config.config.weights
-      .map((w) => `${w.ticker} ${w.weight}%`)
-      .join(" + ");
-    return `${prefix} (allocation, ${config.config.rebalance_cadence}) — ${tickers}`;
+    if (config.kind === "allocation") {
+      const tickers = config.config.weights
+        .map((w) => `${w.ticker} ${w.weight}%`)
+        .join(" + ");
+      return `${prefix} (allocation, ${config.config.rebalance_cadence}) — ${tickers}`;
+    }
+    return `${prefix} (mirror) — ${config.config.source}`;
   }
 
   function metricsHtml(slot: Slot, config: SimulateConfig, result: RunResponse): string {
@@ -747,7 +799,21 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
     if (target.matches(".kind-tab")) {
       const slot = target.dataset.slot as Slot | undefined;
       const kind = target.dataset.kind as Kind | undefined;
-      if (slot && kind) setActiveKind(slot, kind);
+      if (slot && kind) {
+        setActiveKind(slot, kind);
+        // When switching to Mirror, clamp Start to Day 1 (agents have no
+        // data before then) and bump End to today so the window is valid.
+        if (kind === "mirror") {
+          const form = getForm();
+          const startEl = form.elements.namedItem(`start_date_${slot}`) as HTMLInputElement | null;
+          const endEl = form.elements.namedItem(`end_date_${slot}`) as HTMLInputElement | null;
+          if (startEl && startEl.value < AGENT_DAY_ONE) startEl.value = AGENT_DAY_ONE;
+          const today = new Date().toISOString().slice(0, 10);
+          if (endEl && (endEl.value < AGENT_DAY_ONE || endEl.value < (startEl?.value ?? AGENT_DAY_ONE))) {
+            endEl.value = today;
+          }
+        }
+      }
       return;
     }
 

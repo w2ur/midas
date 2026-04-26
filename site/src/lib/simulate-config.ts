@@ -24,6 +24,10 @@ export type AllocationConfigShape = {
   rebalance_cadence: RebalanceCadence;
 };
 
+export type MirrorConfigShape = {
+  source: string;
+};
+
 type CommonFields = {
   start_date: string;
   end_date: string;
@@ -41,7 +45,15 @@ export type AllocationSimulateConfig = CommonFields & {
   config: AllocationConfigShape;
 };
 
-export type SimulateConfig = SignalSimulateConfig | AllocationSimulateConfig;
+export type MirrorSimulateConfig = CommonFields & {
+  kind: "mirror";
+  config: MirrorConfigShape;
+};
+
+export type SimulateConfig =
+  | SignalSimulateConfig
+  | AllocationSimulateConfig
+  | MirrorSimulateConfig;
 
 function toUrlSafe(b64: string): string {
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -70,7 +82,12 @@ export function decodeConfig(encoded: string): SimulateConfig | null {
         ? decodeURIComponent(escape(atob(restored)))
         : Buffer.from(restored, "base64").toString("utf-8");
     const parsed = JSON.parse(json);
-    if (parsed?.kind !== "signal" && parsed?.kind !== "allocation") return null;
+    if (
+      parsed?.kind !== "signal" &&
+      parsed?.kind !== "allocation" &&
+      parsed?.kind !== "mirror"
+    )
+      return null;
     return parsed as SimulateConfig;
   } catch {
     return null;

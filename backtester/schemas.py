@@ -38,6 +38,16 @@ class AllocationConfig(BaseModel):
     rebalance_cadence: RebalanceCadence = "monthly"
 
 
+class MirrorConfig(BaseModel):
+    """Form fields for a mirror strategy.
+
+    `source` is a string of the form "agent:<id>" in v1. Future plans add
+    "pelosi", "13f-berkshire", etc.
+    """
+
+    source: str = Field(min_length=1)
+
+
 class SignalRunRequest(BaseModel):
     kind: Literal["signal"]
     config: SignalConfig
@@ -56,8 +66,17 @@ class AllocationRunRequest(BaseModel):
     currency: Literal["EUR", "USD"] = "EUR"
 
 
+class MirrorRunRequest(BaseModel):
+    kind: Literal["mirror"]
+    config: MirrorConfig
+    start_date: date
+    end_date: date
+    capital: float = Field(gt=0.0)
+    currency: Literal["EUR", "USD"] = "EUR"
+
+
 RunRequest = Annotated[
-    Union[SignalRunRequest, AllocationRunRequest],
+    Union[SignalRunRequest, AllocationRunRequest, MirrorRunRequest],
     Field(discriminator="kind"),
 ]
 

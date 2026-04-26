@@ -12,6 +12,7 @@ from pydantic import BaseModel, TypeAdapter
 
 from backtester.allocation import AllocationError, run_allocation_backtest
 from backtester.comparisons import compute_comparison_deltas
+from backtester.mirror import MirrorError, run_mirror_backtest
 from backtester.runner import (
     UnknownUniverseError,
     run_signal_backtest,
@@ -20,6 +21,7 @@ from backtester.schemas import (
     AllocationRunRequest,
     EquityPoint,
     MetricsBlock,
+    MirrorRunRequest,
     RunRequest,
     RunResponse,
     SignalRunRequest,
@@ -135,7 +137,9 @@ def _build_response(
 
 
 @app.post("/run", response_model=RunResponse)
-def run(request: SignalRunRequest | AllocationRunRequest) -> RunResponse:
+def run(
+    request: SignalRunRequest | AllocationRunRequest | MirrorRunRequest,
+) -> RunResponse:
     try:
         if request.kind == "signal":
             result = run_signal_backtest(
@@ -144,8 +148,15 @@ def run(request: SignalRunRequest | AllocationRunRequest) -> RunResponse:
                 end=request.end_date,
                 capital=request.capital,
             )
-        else:
+        elif request.kind == "allocation":
             result = run_allocation_backtest(
+                request.config,
+                start=request.start_date,
+                end=request.end_date,
+                capital=request.capital,
+            )
+        else:
+            result = run_mirror_backtest(
                 request.config,
                 start=request.start_date,
                 end=request.end_date,
@@ -153,7 +164,7 @@ def run(request: SignalRunRequest | AllocationRunRequest) -> RunResponse:
             )
     except UnknownUniverseError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    except AllocationError as exc:
+    except (AllocationError, MirrorError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Backtest failed: {exc}")
