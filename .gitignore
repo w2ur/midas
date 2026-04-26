@@ -32,6 +32,12 @@ site/dist/
 site/.astro/
 site/.vercel/
 
+# Stray node_modules at the worktree root (vitest cache occasionally resolves here)
+node_modules/
+
+# Sub-agent scratch memory (per-session, not portfolio knowledge)
+.claude/agent-memory/
+
 # Playwright MCP verification artifacts (transient screenshots + snapshots)
 .playwright-mcp/
 /feed-with-tradecards.png
