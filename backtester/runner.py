@@ -10,6 +10,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
+import pandas as pd  # noqa: E402
+
 from engine.backtest import BacktestResult, run_backtest  # noqa: E402
 from engine.market_data import MarketDataFetcher  # noqa: E402
 from engine.universes.assets import (  # noqa: E402
@@ -104,5 +106,17 @@ def run_signal_backtest(
     tickers = resolve_universe(config.universe)
     fetcher = MarketDataFetcher(cache_dir=_CACHE_DIR)
     price_data = fetcher.fetch_prices(tickers, start, end)
+    # Multi-market universes mix exchanges with different holiday calendars
+    # (e.g. CON.DE has no row on 2018-05-01 / German Labour Day, but US
+    # tickers do). bt requires a price for every position every day, so we
+    # forward-fill across the full daily index — same pattern as
+    # engine.baselines._load_price_frame.
+    if not price_data.empty:
+        idx = pd.date_range(price_data.index.min(), price_data.index.max(), freq="D")
+        price_data = price_data.reindex(idx).ffill()
+        # Drop tickers whose first known close is still NaN after ffill —
+        # they had no price anywhere in the window (e.g. a crypto whose
+        # series started after `end`). Otherwise bt fails the same way.
+        price_data = price_data.dropna(axis=1, how="all")
     spec_dict = build_spec_dict(config, capital=capital)
     return run_backtest(spec_dict, price_data, initial_capital=capital)
