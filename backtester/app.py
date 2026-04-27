@@ -36,6 +36,7 @@ app.add_middleware(
         "https://midas.revah.paris",
         "http://localhost:4321",
     ],
+    allow_origin_regex=r"https://midas-.*\.vercel\.app",
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )

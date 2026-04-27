@@ -35,7 +35,7 @@ const BACKTESTER_URL =
 
 export async function pingBacktester(): Promise<void> {
   try {
-    await fetch(`${BACKTESTER_URL}/healthz`, { mode: "cors" });
+    await fetch(`${BACKTESTER_URL}/openapi.json`, { mode: "cors" });
   } catch {
     /* warming up; submit will retry */
   }
