@@ -213,10 +213,10 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
   <button type="button" id="add-strategy-b" class="add-strategy">+ Add Strategy B to compare</button>
 
   <div class="actions">
-    <button type="submit">Run backtest</button>
-    <p class="hint" id="simulate-hint" hidden>
-      Warming up the backtester — first run takes a few seconds&hellip;
-    </p>
+    <button type="submit" id="simulate-submit">
+      <span class="spinner" aria-hidden="true" hidden></span>
+      <span class="submit-label">Run backtest</span>
+    </button>
   </div>
 </form>
 
@@ -429,7 +429,28 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
     font-size: var(--fs-xs);
   }
   .simulate-form button[type="submit"]:hover { background: var(--accent); border-color: var(--accent); }
-  .simulate-form .hint { margin: 0; color: var(--ink-muted); font-size: var(--fs-xs); }
+  .simulate-form button[type="submit"][disabled] {
+    opacity: 0.7;
+    cursor: progress;
+  }
+  .simulate-form button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .simulate-form .spinner {
+    display: inline-block;
+    width: 0.85em;
+    height: 0.85em;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: simulate-spin 0.7s linear infinite;
+  }
+  .simulate-form .spinner[hidden] { display: none; }
+  @keyframes simulate-spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
 
 <script>
@@ -739,7 +760,18 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
   }
 
   function errorHtml(slot: Slot, message: string): string {
-    return `<p class="error">Strategy ${slot.toUpperCase()} failed: ${message}</p>`;
+    const clean = cleanErrorMessage(message);
+    return `<p class="error"><strong>Strategy ${slot.toUpperCase()} failed.</strong> ${clean} Try a different configuration.</p>`;
+  }
+
+  function cleanErrorMessage(raw: string): string {
+    let msg = raw.trim();
+    msg = msg.replace(/^Backtest failed \(\d+\):\s*/, "");
+    const detailMatch = msg.match(/"detail"\s*:\s*"([^"]+)"/);
+    if (detailMatch) msg = detailMatch[1];
+    msg = msg.replace(/^Backtest failed:\s*/, "");
+    if (!/[.!?]$/.test(msg)) msg += ".";
+    return msg;
   }
 
   function renderResults(
@@ -759,14 +791,14 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
       .join("");
   }
 
-  function showWarming(): void {
-    const hint = document.getElementById("simulate-hint");
-    if (hint) hint.hidden = false;
-  }
-
-  function hideWarming(): void {
-    const hint = document.getElementById("simulate-hint");
-    if (hint) hint.hidden = true;
+  function setLoading(loading: boolean): void {
+    const btn = document.getElementById("simulate-submit") as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.disabled = loading;
+    const spinner = btn.querySelector<HTMLElement>(".spinner");
+    const label = btn.querySelector<HTMLElement>(".submit-label");
+    if (spinner) spinner.hidden = !loading;
+    if (label) label.textContent = loading ? "Running…" : "Run backtest";
   }
 
   async function runOne(slot: Slot, config: SimulateConfig) {
@@ -783,12 +815,12 @@ const slotDefaults: Record<Slot, { universe: string; selector: string; manager: 
     const slots = visibleSlots();
     const configs = slots.map((s) => readSlot(s));
     updateUrl(configs);
-    showWarming();
+    setLoading(true);
     try {
       const pairs = await Promise.all(slots.map((s, i) => runOne(s, configs[i])));
       renderResults(pairs);
     } finally {
-      hideWarming();
+      setLoading(false);
     }
   }
 
