@@ -1,0 +1,949 @@
+---
+const universeOptions = [
+  { value: "sp500", label: "S&P 500" },
+  { value: "dow30", label: "Dow 30" },
+  { value: "nasdaq100", label: "NASDAQ 100" },
+  { value: "cac40", label: "CAC 40" },
+  { value: "dax", label: "DAX" },
+  { value: "ftse100", label: "FTSE 100" },
+  { value: "stoxx-600", label: "STOXX 600" },
+  { value: "crypto-top20-eur", label: "Crypto top 20 (EUR)" },
+  { value: "crypto-top20", label: "Crypto top 20 (USD)" },
+  { value: "forex-majors", label: "Forex majors" },
+  { value: "metals-commodities", label: "Metals + commodities" },
+  { value: "bearish-etfs", label: "Bearish ETFs" },
+  { value: "bearish-etfs-ucits", label: "Bearish ETFs (UCITS)" },
+  { value: "commodities-eur", label: "Commodities (EUR)" },
+  { value: "single-voo", label: "VOO only" },
+  { value: "classic-60-40", label: "Classic 60/40" },
+];
+
+const selectorOptions = [
+  { value: "random", label: "Random" },
+  { value: "golden-cross", label: "Golden cross" },
+  { value: "rsi-oversold", label: "RSI oversold" },
+  { value: "dip-entry", label: "Dip entry" },
+  { value: "fear-greed", label: "Fear and greed" },
+  { value: "data-follow", label: "Data follow" },
+  { value: "buy-and-hold", label: "Buy and hold" },
+  { value: "earnings-beat", label: "Earnings beat" },
+  { value: "sector-cycle", label: "Sector cycle" },
+];
+
+const managerOptions = [
+  { value: "equal-weight", label: "Equal weight" },
+  { value: "grid-conservative", label: "Grid (conservative)" },
+  { value: "grid-aggressive", label: "Grid (aggressive)" },
+  { value: "trailing-stop", label: "Trailing stop" },
+  { value: "scaled-exit", label: "Scaled exit" },
+  { value: "time-boxed", label: "Time boxed" },
+  { value: "rebalance-monthly", label: "Monthly rebalance" },
+  { value: "volatility-sized", label: "Volatility sized" },
+  { value: "fixed-60-40", label: "Fixed 60/40" },
+];
+
+const cadenceOptions = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "yearly", label: "Yearly" },
+];
+
+type Slot = "a" | "b";
+const slotDefaults: Record<Slot, { universe: string; selector: string; manager: string }> = {
+  a: { universe: "classic-60-40", selector: "buy-and-hold", manager: "fixed-60-40" },
+  b: { universe: "classic-60-40", selector: "golden-cross", manager: "trailing-stop" },
+};
+---
+
+<form id="simulate-form" class="simulate-form">
+  {(["a", "b"] as Slot[]).map((slot) => (
+    <fieldset class="strategy-slot" data-slot={slot} hidden={slot === "b"}>
+      <legend class="slot-header">
+        <span class="slot-name">Strategy {slot.toUpperCase()}</span>
+        <span class="kind-tabs" data-slot={slot}>
+          <button type="button" class="kind-tab active" data-kind="signal" data-slot={slot}>Signal</button>
+          <button type="button" class="kind-tab" data-kind="allocation" data-slot={slot}>Allocation</button>
+          <button type="button" class="kind-tab" data-kind="mirror" data-slot={slot}>Mirror</button>
+        </span>
+        {slot === "b" && (
+          <button type="button" class="slot-remove" data-action="remove-b">× Remove</button>
+        )}
+      </legend>
+
+      {/* Signal-shape fields */}
+      <div class="kind-content" data-kind="signal" data-slot={slot}>
+        <div class="grid">
+          <label class="ctl">
+            <span>Universe</span>
+            <select name={`universe_${slot}`}>
+              {universeOptions.map((o) => (
+                <option value={o.value} selected={o.value === slotDefaults[slot].universe}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          <label class="ctl">
+            <span>Selector</span>
+            <select name={`selector_${slot}`}>
+              {selectorOptions.map((o) => (
+                <option value={o.value} selected={o.value === slotDefaults[slot].selector}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          <label class="ctl">
+            <span>Manager</span>
+            <select name={`manager_${slot}`}>
+              {managerOptions.map((o) => (
+                <option value={o.value} selected={o.value === slotDefaults[slot].manager}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          <label class="ctl">
+            <span>Max positions</span>
+            <input type="number" name={`max_positions_${slot}`} min="1" max="100" value="20" />
+          </label>
+          <label class="ctl">
+            <span>Max position %</span>
+            <input type="number" name={`max_position_pct_${slot}`} min="0.1" max="100" step="0.1" value="100" />
+          </label>
+          <label class="ctl">
+            <span>Min hold days</span>
+            <input type="number" name={`min_hold_days_${slot}`} min="0" max="365" value="0" />
+          </label>
+        </div>
+      </div>
+
+      {/* Allocation-shape fields */}
+      <div class="kind-content" data-kind="allocation" data-slot={slot} hidden>
+        <div class="grid">
+          <label class="ctl">
+            <span>Rebalance cadence</span>
+            <select name={`rebalance_cadence_${slot}`}>
+              {cadenceOptions.map((o) => (
+                <option value={o.value} selected={o.value === "monthly"}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div class="weights" data-slot={slot}>
+          <div class="weights-header">
+            <span>Ticker</span>
+            <span>Weight %</span>
+            <span></span>
+          </div>
+          {/* Default rows: 60/40 */}
+          <div class="weight-row">
+            <input type="text" data-role="ticker" value="VOO" placeholder="e.g. VOO" />
+            <input type="number" data-role="weight" value="60" min="0.1" max="100" step="0.1" />
+            <button type="button" data-role="remove" aria-label="Remove">×</button>
+          </div>
+          <div class="weight-row">
+            <input type="text" data-role="ticker" value="BND" placeholder="e.g. BND" />
+            <input type="number" data-role="weight" value="40" min="0.1" max="100" step="0.1" />
+            <button type="button" data-role="remove" aria-label="Remove">×</button>
+          </div>
+        </div>
+
+        <div class="weights-actions">
+          <button type="button" data-action="add-weight" data-slot={slot}>+ Add ticker</button>
+          <p class="total-weight" data-slot={slot}>Total: 100%</p>
+        </div>
+
+        <div class="presets">
+          <span class="presets-label">Presets:</span>
+          <button type="button" data-preset="60-40" data-slot={slot}>60/40</button>
+          <button type="button" data-preset="equal-weight" data-slot={slot}>Equal weight (5)</button>
+          <button type="button" data-preset="all-voo" data-slot={slot}>All-VOO</button>
+          <button type="button" data-preset="permanent" data-slot={slot}>Permanent portfolio</button>
+        </div>
+      </div>
+
+      {/* Mirror-shape fields */}
+      <div class="kind-content" data-kind="mirror" data-slot={slot} hidden>
+        <div class="grid">
+          <label class="ctl">
+            <span>Mirror source</span>
+            <select name={`mirror_source_${slot}`}>
+              <option value="agent:satoshi">Agent — Satoshi</option>
+              <option value="agent:yolo-sapiens-eur" selected>Agent — YOLO Sapiens (EUR)</option>
+              <option value="agent:yolo-sapiens-usd">Agent — YOLO Sapiens (USD)</option>
+              <option value="agent:goldfinger">Agent — Goldfinger</option>
+              <option value="agent:monsieur-forex">Agent — Monsieur Forex</option>
+              <option value="agent:sharp-shooter-eur">Agent — Sharp Shooter (EUR)</option>
+              <option value="agent:sharp-shooter-usd">Agent — Sharp Shooter (USD)</option>
+              <option value="agent:steady-eddie-eur">Agent — Steady Eddie (EUR)</option>
+              <option value="agent:steady-eddie-usd">Agent — Steady Eddie (USD)</option>
+              <option value="agent:world">Agent — World</option>
+            </select>
+          </label>
+        </div>
+        <p class="mirror-note">
+          Mirror replays the agent's actual portfolio scaled to your capital.
+          Available window starts 2026-04-17 (Day 1 of the experiment).
+        </p>
+      </div>
+
+      {/* Common fields */}
+      <div class="grid common">
+        <label class="ctl">
+          <span>Start</span>
+          <input type="date" name={`start_date_${slot}`} value="2018-01-01" />
+        </label>
+        <label class="ctl">
+          <span>End</span>
+          <input type="date" name={`end_date_${slot}`} value="2024-12-31" />
+        </label>
+        <label class="ctl">
+          <span>Capital</span>
+          <input type="number" name={`capital_${slot}`} min="100" value="10000" />
+        </label>
+        <label class="ctl">
+          <span>Currency</span>
+          <select name={`currency_${slot}`}>
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+          </select>
+        </label>
+      </div>
+    </fieldset>
+  ))}
+
+  <button type="button" id="add-strategy-b" class="add-strategy">+ Add Strategy B to compare</button>
+
+  <div class="actions">
+    <button type="submit" id="simulate-submit">
+      <span class="spinner" aria-hidden="true" hidden></span>
+      <span class="submit-label">Run backtest</span>
+    </button>
+  </div>
+</form>
+
+<style>
+  .simulate-form { margin: 1.5rem 0; }
+  .simulate-form .strategy-slot {
+    border: 1px solid var(--rule);
+    padding: 1rem 1.25rem 1.25rem;
+    margin: 1.25rem 0;
+  }
+  .simulate-form .slot-header {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-wrap: wrap;
+    padding: 0 .5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    font-size: var(--fs-xs);
+  }
+  .simulate-form .strategy-slot[data-slot="a"] .slot-name { color: #0a6; }
+  .simulate-form .strategy-slot[data-slot="b"] .slot-name { color: #36c; }
+  .simulate-form .kind-tabs {
+    display: inline-flex;
+    border: 1px solid var(--rule);
+  }
+  .simulate-form .kind-tab {
+    background: transparent;
+    border: 0;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: .25rem .75rem;
+    cursor: pointer;
+  }
+  .simulate-form .kind-tab.active {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .simulate-form .slot-remove {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--fs-xs);
+    padding: .15rem .5rem;
+    cursor: pointer;
+  }
+  .simulate-form .slot-remove:hover { border-color: var(--ink); color: var(--ink); }
+  .simulate-form .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: .75rem 1rem;
+    margin-top: 1rem;
+  }
+  .simulate-form .ctl {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    font-size: var(--fs-xs);
+  }
+  .simulate-form .ctl > span {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .simulate-form select,
+  .simulate-form input {
+    font: inherit;
+    padding: .35rem .5rem;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .simulate-form select:focus,
+  .simulate-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .simulate-form .common {
+    border-top: 1px solid var(--rule);
+    padding-top: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  /* Allocation-specific */
+  .simulate-form .weights {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: .35rem .5rem;
+    margin: 1rem 0 .5rem;
+  }
+  .simulate-form .weights-header {
+    display: contents;
+  }
+  .simulate-form .weights-header > span {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .simulate-form .weight-row {
+    display: contents;
+  }
+  .simulate-form .weight-row [data-role="remove"] {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-muted);
+    cursor: pointer;
+    font: inherit;
+    width: 2rem;
+    padding: 0;
+  }
+  .simulate-form .weight-row [data-role="remove"]:hover {
+    border-color: #c33;
+    color: #c33;
+  }
+  .simulate-form .weights-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: .5rem 0 1rem;
+  }
+  .simulate-form [data-action="add-weight"] {
+    background: transparent;
+    border: 1px dashed var(--rule);
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: .35rem .75rem;
+    cursor: pointer;
+  }
+  .simulate-form [data-action="add-weight"]:hover { border-color: var(--ink); color: var(--ink); }
+  .simulate-form .total-weight {
+    margin: 0;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
+  .simulate-form .total-weight.invalid { color: #c33; }
+  .simulate-form .presets {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin: .5rem 0;
+  }
+  .simulate-form .presets-label {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+  }
+  .simulate-form [data-preset] {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--fs-xs);
+    padding: .25rem .65rem;
+    cursor: pointer;
+  }
+  .simulate-form [data-preset]:hover { border-color: var(--ink); color: var(--ink); }
+  .simulate-form .mirror-note {
+    margin: .75rem 0 0;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
+
+  .simulate-form .add-strategy {
+    background: transparent;
+    border: 1px dashed var(--rule);
+    color: var(--ink-muted);
+    font: inherit;
+    font-weight: 600;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: .5rem 1rem;
+    cursor: pointer;
+    width: 100%;
+    margin: .5rem 0 1rem;
+  }
+  .simulate-form .add-strategy:hover { border-color: var(--ink); color: var(--ink); }
+  .simulate-form .add-strategy[hidden] { display: none; }
+  .simulate-form .actions {
+    margin-top: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .simulate-form button[type="submit"] {
+    padding: .5rem 1.25rem;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: var(--fs-xs);
+  }
+  .simulate-form button[type="submit"]:hover { background: var(--accent); border-color: var(--accent); }
+  .simulate-form button[type="submit"][disabled] {
+    opacity: 0.7;
+    cursor: progress;
+  }
+  .simulate-form button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .simulate-form .spinner {
+    display: inline-block;
+    width: 0.85em;
+    height: 0.85em;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: simulate-spin 0.7s linear infinite;
+  }
+  .simulate-form .spinner[hidden] { display: none; }
+  @keyframes simulate-spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<script>
+  import {
+    decodeConfig,
+    encodeConfig,
+    type AllocationConfigShape,
+    type AllocationWeight,
+    type MirrorConfigShape,
+    type RebalanceCadence,
+    type SignalConfigShape,
+    type SimulateConfig,
+  } from "../lib/simulate-config";
+  import {
+    pingBacktester,
+    runBacktest,
+    type RunResponse,
+  } from "../lib/simulate-api";
+  import { EXAMPLE_RESULT } from "../lib/simulate-example";
+
+  type Slot = "a" | "b";
+  type Kind = "signal" | "allocation" | "mirror";
+  const AGENT_DAY_ONE = "2026-04-17";
+
+  const PRESETS: Record<string, AllocationWeight[]> = {
+    "60-40": [
+      { ticker: "VOO", weight: 60 },
+      { ticker: "BND", weight: 40 },
+    ],
+    "equal-weight": [
+      { ticker: "VOO", weight: 20 },
+      { ticker: "VEA", weight: 20 },
+      { ticker: "VWO", weight: 20 },
+      { ticker: "BND", weight: 20 },
+      { ticker: "GLD", weight: 20 },
+    ],
+    "all-voo": [{ ticker: "VOO", weight: 100 }],
+    permanent: [
+      { ticker: "VOO", weight: 25 },
+      { ticker: "TLT", weight: 25 },
+      { ticker: "GLD", weight: 25 },
+      { ticker: "BND", weight: 25 },
+    ],
+  };
+
+  declare global {
+    interface Window {
+      __renderSimulateCharts?: (results: RunResponse[]) => void;
+    }
+  }
+
+  function getForm(): HTMLFormElement {
+    return document.getElementById("simulate-form") as HTMLFormElement;
+  }
+
+  function callChart(results: RunResponse[]): void {
+    if (window.__renderSimulateCharts) {
+      window.__renderSimulateCharts(results);
+    } else {
+      window.addEventListener(
+        "simulate-chart-ready",
+        () => window.__renderSimulateCharts?.(results),
+        { once: true },
+      );
+    }
+  }
+
+  function slotEl(slot: Slot): HTMLFieldSetElement | null {
+    return document.querySelector(`fieldset[data-slot="${slot}"]`);
+  }
+
+  function isSlotVisible(slot: Slot): boolean {
+    const el = slotEl(slot);
+    return !!el && !el.hidden;
+  }
+
+  function activeKind(slot: Slot): Kind {
+    const tab = document.querySelector(
+      `.kind-tab.active[data-slot="${slot}"]`,
+    ) as HTMLElement | null;
+    return (tab?.dataset.kind as Kind) ?? "signal";
+  }
+
+  function setActiveKind(slot: Slot, kind: Kind): void {
+    document
+      .querySelectorAll<HTMLElement>(`.kind-tab[data-slot="${slot}"]`)
+      .forEach((b) => b.classList.toggle("active", b.dataset.kind === kind));
+    document
+      .querySelectorAll<HTMLElement>(`.kind-content[data-slot="${slot}"]`)
+      .forEach((c) => (c.hidden = c.dataset.kind !== kind));
+  }
+
+  function readCommon(slot: Slot): {
+    start_date: string;
+    end_date: string;
+    capital: number;
+    currency: "EUR" | "USD";
+  } {
+    const data = new FormData(getForm());
+    const cur = data.get(`currency_${slot}`);
+    return {
+      start_date: String(data.get(`start_date_${slot}`)),
+      end_date: String(data.get(`end_date_${slot}`)),
+      capital: Number(data.get(`capital_${slot}`)),
+      currency: cur === "USD" ? "USD" : "EUR",
+    };
+  }
+
+  function readSignal(slot: Slot): SignalConfigShape {
+    const data = new FormData(getForm());
+    const get = (name: string) => String(data.get(`${name}_${slot}`));
+    const num = (name: string) => Number(data.get(`${name}_${slot}`));
+    return {
+      universe: get("universe"),
+      selector: get("selector"),
+      manager: get("manager"),
+      max_positions: num("max_positions"),
+      max_position_pct: num("max_position_pct"),
+      min_hold_days: num("min_hold_days"),
+    };
+  }
+
+  function readMirror(slot: Slot): MirrorConfigShape {
+    const data = new FormData(getForm());
+    return { source: String(data.get(`mirror_source_${slot}`) ?? "agent:yolo-sapiens-eur") };
+  }
+
+  function readAllocation(slot: Slot): AllocationConfigShape {
+    const data = new FormData(getForm());
+    const cadence = (data.get(`rebalance_cadence_${slot}`) ?? "monthly") as RebalanceCadence;
+    const rows = document.querySelectorAll<HTMLDivElement>(
+      `.weights[data-slot="${slot}"] .weight-row`,
+    );
+    const weights: AllocationWeight[] = [];
+    rows.forEach((row) => {
+      const ticker = (row.querySelector('[data-role="ticker"]') as HTMLInputElement | null)?.value.trim() ?? "";
+      const weightStr = (row.querySelector('[data-role="weight"]') as HTMLInputElement | null)?.value ?? "";
+      const weight = Number(weightStr);
+      if (ticker && weight > 0) weights.push({ ticker: ticker.toUpperCase(), weight });
+    });
+    return { weights, rebalance_cadence: cadence };
+  }
+
+  function readSlot(slot: Slot): SimulateConfig {
+    const common = readCommon(slot);
+    const kind = activeKind(slot);
+    if (kind === "signal") {
+      return { kind: "signal", config: readSignal(slot), ...common };
+    }
+    if (kind === "allocation") {
+      return { kind: "allocation", config: readAllocation(slot), ...common };
+    }
+    return { kind: "mirror", config: readMirror(slot), ...common };
+  }
+
+  function writeCommon(slot: Slot, common: { start_date: string; end_date: string; capital: number; currency: string }): void {
+    const form = getForm();
+    const set = (name: string, value: string | number) => {
+      const el = form.elements.namedItem(`${name}_${slot}`) as HTMLInputElement | HTMLSelectElement | null;
+      if (el) el.value = String(value);
+    };
+    set("start_date", common.start_date);
+    set("end_date", common.end_date);
+    set("capital", common.capital);
+    set("currency", common.currency);
+  }
+
+  function writeSignal(slot: Slot, config: SignalConfigShape): void {
+    const form = getForm();
+    const set = (name: string, value: string | number) => {
+      const el = form.elements.namedItem(`${name}_${slot}`) as HTMLInputElement | HTMLSelectElement | null;
+      if (el) el.value = String(value);
+    };
+    set("universe", config.universe);
+    set("selector", config.selector);
+    set("manager", config.manager);
+    set("max_positions", config.max_positions);
+    set("max_position_pct", config.max_position_pct);
+    set("min_hold_days", config.min_hold_days);
+  }
+
+  function setWeights(slot: Slot, weights: AllocationWeight[]): void {
+    const container = document.querySelector(`.weights[data-slot="${slot}"]`);
+    if (!container) return;
+    // Preserve the header row, replace data rows.
+    const header = container.querySelector(".weights-header");
+    container.innerHTML = "";
+    if (header) container.appendChild(header);
+    weights.forEach((w) => container.appendChild(makeWeightRow(w.ticker, w.weight)));
+    updateTotal(slot);
+  }
+
+  function makeWeightRow(ticker: string, weight: number): HTMLDivElement {
+    const row = document.createElement("div");
+    row.className = "weight-row";
+    row.innerHTML = `
+      <input type="text" data-role="ticker" value="${escape(ticker)}" placeholder="e.g. VOO" />
+      <input type="number" data-role="weight" value="${weight}" min="0.1" max="100" step="0.1" />
+      <button type="button" data-role="remove" aria-label="Remove">×</button>
+    `;
+    return row;
+  }
+
+  function escape(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
+  }
+
+  function writeAllocation(slot: Slot, config: AllocationConfigShape): void {
+    const form = getForm();
+    const cad = form.elements.namedItem(`rebalance_cadence_${slot}`) as HTMLSelectElement | null;
+    if (cad) cad.value = config.rebalance_cadence;
+    setWeights(slot, config.weights);
+  }
+
+  function writeMirror(slot: Slot, config: MirrorConfigShape): void {
+    const form = getForm();
+    const src = form.elements.namedItem(`mirror_source_${slot}`) as HTMLSelectElement | null;
+    if (src) src.value = config.source;
+  }
+
+  function writeSlot(slot: Slot, config: SimulateConfig): void {
+    setActiveKind(slot, config.kind);
+    writeCommon(slot, config);
+    if (config.kind === "signal") {
+      writeSignal(slot, config.config);
+    } else if (config.kind === "allocation") {
+      writeAllocation(slot, config.config);
+    } else {
+      writeMirror(slot, config.config);
+    }
+  }
+
+  function updateTotal(slot: Slot): void {
+    const rows = document.querySelectorAll<HTMLDivElement>(
+      `.weights[data-slot="${slot}"] .weight-row`,
+    );
+    let total = 0;
+    rows.forEach((row) => {
+      const w = Number((row.querySelector('[data-role="weight"]') as HTMLInputElement | null)?.value ?? 0);
+      if (Number.isFinite(w)) total += w;
+    });
+    const el = document.querySelector<HTMLElement>(`.total-weight[data-slot="${slot}"]`);
+    if (el) {
+      el.textContent = `Total: ${total.toFixed(1)}%`;
+      el.classList.toggle("invalid", Math.abs(total - 100) > 0.01);
+    }
+  }
+
+  function showSlotB(): void {
+    const el = slotEl("b");
+    if (el) el.hidden = false;
+    const add = document.getElementById("add-strategy-b");
+    if (add) add.hidden = true;
+  }
+
+  function hideSlotB(): void {
+    const el = slotEl("b");
+    if (el) el.hidden = true;
+    const add = document.getElementById("add-strategy-b");
+    if (add) add.hidden = false;
+  }
+
+  function visibleSlots(): Slot[] {
+    return (["a", "b"] as Slot[]).filter(isSlotVisible);
+  }
+
+  function updateUrl(configs: SimulateConfig[]): void {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("s");
+    for (const c of configs) {
+      url.searchParams.append("s", encodeConfig(c));
+    }
+    history.replaceState(null, "", url.toString());
+  }
+
+  function strategyLabel(slot: Slot, config: SimulateConfig): string {
+    const prefix = `Strategy ${slot.toUpperCase()}`;
+    if (config.kind === "signal") {
+      const c = config.config;
+      return `${prefix} — ${c.universe} / ${c.selector} / ${c.manager}`;
+    }
+    if (config.kind === "allocation") {
+      const tickers = config.config.weights
+        .map((w) => `${w.ticker} ${w.weight}%`)
+        .join(" + ");
+      return `${prefix} (allocation, ${config.config.rebalance_cadence}) — ${tickers}`;
+    }
+    return `${prefix} (mirror) — ${config.config.source}`;
+  }
+
+  function metricsHtml(slot: Slot, config: SimulateConfig, result: RunResponse): string {
+    const m = result.metrics;
+    const labelClass = slot === "a" ? "label-a" : "label-b";
+    return `
+      <div class="strategy-block">
+        <p class="strategy-label ${labelClass}">${strategyLabel(slot, config)}</p>
+        <dl class="simulate-metrics">
+          <div><dt>Total return</dt><dd>${m.total_return_pct.toFixed(1)}%</dd></div>
+          <div><dt>CAGR</dt><dd>${m.cagr_pct.toFixed(1)}%</dd></div>
+          <div><dt>Sharpe</dt><dd>${m.sharpe.toFixed(2)}</dd></div>
+          <div><dt>Max drawdown</dt><dd>${m.max_drawdown_pct.toFixed(1)}%</dd></div>
+          <div><dt>vs MSCI World</dt><dd>${m.vs_msci_world_pct.toFixed(1)} pp</dd></div>
+          <div><dt>vs Coin flip</dt><dd>${m.vs_coin_flip_pct.toFixed(1)} pp</dd></div>
+        </dl>
+      </div>
+    `;
+  }
+
+  function errorHtml(slot: Slot, message: string): string {
+    const clean = cleanErrorMessage(message);
+    return `<p class="error"><strong>Strategy ${slot.toUpperCase()} failed.</strong> ${clean} Try a different configuration.</p>`;
+  }
+
+  function cleanErrorMessage(raw: string): string {
+    let msg = raw.trim();
+    msg = msg.replace(/^Backtest failed \(\d+\):\s*/, "");
+    const detailMatch = msg.match(/"detail"\s*:\s*"([^"]+)"/);
+    if (detailMatch) msg = detailMatch[1];
+    msg = msg.replace(/^Backtest failed:\s*/, "");
+    if (!/[.!?]$/.test(msg)) msg += ".";
+    return msg;
+  }
+
+  function renderResults(
+    pairs: Array<{ slot: Slot; config: SimulateConfig; result?: RunResponse; error?: string }>,
+  ): void {
+    const successes = pairs.filter((p) => p.result).map((p) => p.result as RunResponse);
+    callChart(successes);
+
+    const mount = document.getElementById("result-mount");
+    if (!mount) return;
+    mount.innerHTML = pairs
+      .map((p) =>
+        p.result
+          ? metricsHtml(p.slot, p.config, p.result)
+          : errorHtml(p.slot, p.error ?? "unknown error"),
+      )
+      .join("");
+  }
+
+  function setLoading(loading: boolean): void {
+    const btn = document.getElementById("simulate-submit") as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.disabled = loading;
+    const spinner = btn.querySelector<HTMLElement>(".spinner");
+    const label = btn.querySelector<HTMLElement>(".submit-label");
+    if (spinner) spinner.hidden = !loading;
+    if (label) label.textContent = loading ? "Running…" : "Run backtest";
+  }
+
+  async function runOne(slot: Slot, config: SimulateConfig) {
+    try {
+      const result = await runBacktest(config);
+      return { slot, config, result };
+    } catch (err) {
+      return { slot, config, error: (err as Error).message };
+    }
+  }
+
+  async function handleSubmit(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    const slots = visibleSlots();
+    const configs = slots.map((s) => readSlot(s));
+    updateUrl(configs);
+    setLoading(true);
+    try {
+      const pairs = await Promise.all(slots.map((s, i) => runOne(s, configs[i])));
+      renderResults(pairs);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target) return;
+
+    if (target.matches(".kind-tab")) {
+      const slot = target.dataset.slot as Slot | undefined;
+      const kind = target.dataset.kind as Kind | undefined;
+      if (slot && kind) {
+        setActiveKind(slot, kind);
+        // When switching to Mirror, clamp Start to Day 1 (agents have no
+        // data before then) and bump End to today so the window is valid.
+        if (kind === "mirror") {
+          const form = getForm();
+          const startEl = form.elements.namedItem(`start_date_${slot}`) as HTMLInputElement | null;
+          const endEl = form.elements.namedItem(`end_date_${slot}`) as HTMLInputElement | null;
+          if (startEl && startEl.value < AGENT_DAY_ONE) startEl.value = AGENT_DAY_ONE;
+          const today = new Date().toISOString().slice(0, 10);
+          if (endEl && (endEl.value < AGENT_DAY_ONE || endEl.value < (startEl?.value ?? AGENT_DAY_ONE))) {
+            endEl.value = today;
+          }
+        }
+      }
+      return;
+    }
+
+    if (target.dataset.action === "remove-b") {
+      hideSlotB();
+      return;
+    }
+
+    if (target.dataset.action === "add-weight") {
+      const slot = target.dataset.slot as Slot | undefined;
+      if (!slot) return;
+      const container = document.querySelector(`.weights[data-slot="${slot}"]`);
+      container?.appendChild(makeWeightRow("", 0));
+      updateTotal(slot);
+      return;
+    }
+
+    if (target.dataset.role === "remove") {
+      const row = target.closest(".weight-row");
+      const slot = (target.closest(".weights") as HTMLElement | null)?.dataset.slot as Slot | undefined;
+      row?.remove();
+      if (slot) updateTotal(slot);
+      return;
+    }
+
+    if (target.dataset.preset) {
+      const slot = target.dataset.slot as Slot | undefined;
+      const preset = target.dataset.preset;
+      if (slot && PRESETS[preset]) setWeights(slot, PRESETS[preset]);
+      return;
+    }
+  }
+
+  function handleInput(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (target?.dataset.role === "weight") {
+      const slot = (target.closest(".weights") as HTMLElement | null)?.dataset.slot as Slot | undefined;
+      if (slot) updateTotal(slot);
+    }
+  }
+
+  function bootstrap(): void {
+    const form = getForm();
+    if (!form) return;
+    form.addEventListener("submit", handleSubmit);
+    form.addEventListener("click", handleClick);
+    form.addEventListener("input", handleInput);
+
+    const addBtn = document.getElementById("add-strategy-b");
+    addBtn?.addEventListener("click", showSlotB);
+
+    // Initialise totals for default rows.
+    updateTotal("a");
+    updateTotal("b");
+
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.getAll("s");
+    const decoded = encoded
+      .map(decodeConfig)
+      .filter((c): c is SimulateConfig => c !== null);
+
+    if (decoded.length === 0) {
+      callChart([EXAMPLE_RESULT]);
+      const mount = document.getElementById("result-mount");
+      if (mount) {
+        const exampleConfig: SimulateConfig = {
+          kind: "signal",
+          config: {
+            universe: "classic-60-40",
+            selector: "buy-and-hold",
+            manager: "fixed-60-40",
+            max_positions: 20,
+            max_position_pct: 100,
+            min_hold_days: 0,
+          },
+          start_date: "2018-01-01",
+          end_date: "2026-04-25",
+          capital: 10000,
+          currency: "EUR",
+        };
+        mount.innerHTML = metricsHtml("a", exampleConfig, EXAMPLE_RESULT);
+      }
+    } else {
+      writeSlot("a", decoded[0]);
+      if (decoded[1]) {
+        showSlotB();
+        writeSlot("b", decoded[1]);
+      }
+      const slots = decoded.length === 1 ? (["a"] as Slot[]) : (["a", "b"] as Slot[]);
+      void Promise.all(slots.map((s, i) => runOne(s, decoded[i]))).then(renderResults);
+    }
+
+    void pingBacktester();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrap);
+  } else {
+    bootstrap();
+  }
+</script>

@@ -1,0 +1,127 @@
+---
+// SimulateChart renders 1-2 strategy equity curves + benchmark from
+// RunResponse[]. Hydrates client-side via the inline script below; the
+// server output is just a sized container.
+---
+
+<figure class="simulate-chart">
+  <div id="simulate-chart-canvas" data-testid="simulate-chart"></div>
+  <figcaption class="visually-hidden">
+    Strategy equity curves over the selected backtest window.
+  </figcaption>
+</figure>
+
+<style>
+  .simulate-chart { margin: 2rem 0; }
+  .simulate-chart > div {
+    width: 100%;
+    height: 360px;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+</style>
+
+<script>
+  import uPlot from "uplot";
+  import "uplot/dist/uPlot.min.css";
+
+  import type { RunResponse } from "../lib/simulate-api";
+
+  declare global {
+    interface Window {
+      __renderSimulateCharts?: (results: RunResponse[]) => void;
+    }
+  }
+
+  const STRATEGY_COLORS = [
+    { stroke: "#0a6", fill: "rgba(0,170,102,0.10)", label: "Strategy A" },
+    { stroke: "#36c", fill: "rgba(51,102,204,0.08)", label: "Strategy B" },
+  ];
+
+  let chart: uPlot | null = null;
+  let pendingResults: RunResponse[] | null = null;
+
+  function render(results: RunResponse[]) {
+    const el = document.getElementById("simulate-chart-canvas");
+    if (!el || results.length === 0) return;
+
+    // Build a unified date axis: union of all strategy dates.
+    const dateSet = new Set<string>();
+    for (const r of results) {
+      for (const p of r.equity_curve) dateSet.add(p.date);
+    }
+    const dates = Array.from(dateSet).sort();
+    const xs = dates.map((d) => Math.floor(new Date(d).getTime() / 1000));
+
+    const seriesData: (number[] | (number | null)[])[] = [xs];
+    const series: uPlot.Series[] = [{}];
+
+    results.forEach((r, idx) => {
+      const color = STRATEGY_COLORS[idx % STRATEGY_COLORS.length];
+      const map = new Map(r.equity_curve.map((p) => [p.date, p.value]));
+      const ys: (number | null)[] = dates.map((d) => map.get(d) ?? null);
+      seriesData.push(ys);
+      series.push({
+        label: color.label,
+        stroke: color.stroke,
+        width: 2,
+        ...(idx === 0 ? { fill: color.fill } : {}),
+      });
+    });
+
+    // Benchmark: use the first response's benchmark_curve (all results
+    // share the same MSCI World benchmark for the requested window).
+    const first = results[0];
+    if (first.benchmark_curve && first.benchmark_curve.length > 0) {
+      const bMap = new Map(first.benchmark_curve.map((p) => [p.date, p.value]));
+      const ys: (number | null)[] = dates.map((d) => bMap.get(d) ?? null);
+      seriesData.push(ys);
+      series.push({
+        label: first.benchmark_label || "Benchmark",
+        stroke: "#888",
+        width: 1.5,
+        dash: [5, 4],
+      });
+    }
+
+    if (chart) chart.destroy();
+    chart = new uPlot(
+      {
+        title: "",
+        width: el.clientWidth || 880,
+        height: 360,
+        scales: { x: { time: true } },
+        series,
+        legend: { show: true },
+      },
+      seriesData as uPlot.AlignedData,
+      el,
+    );
+  }
+
+  window.__renderSimulateCharts = (results: RunResponse[]) => {
+    if (document.readyState === "loading") {
+      pendingResults = results;
+    } else {
+      render(results);
+    }
+  };
+
+  // Drain any pending render once the DOM is ready (handles the case where
+  // SimulateForm's bootstrap fires before SimulateChart's module loads).
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      if (pendingResults) {
+        render(pendingResults);
+        pendingResults = null;
+      }
+    });
+  }
+
+  window.dispatchEvent(new Event("simulate-chart-ready"));
+</script>

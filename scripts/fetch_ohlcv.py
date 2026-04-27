@@ -304,6 +304,16 @@ def main() -> int:
     parser.add_argument(
         "--dry-run", action="store_true", help="List symbols without fetching"
     )
+    parser.add_argument(
+        "--backfill",
+        action="store_true",
+        help=(
+            "Force a full re-fetch of the --history-days window for every "
+            "symbol, ignoring existing rows. Used once to deepen the OHLCV "
+            "store; new rows are deduped against existing dates so this is "
+            "idempotent."
+        ),
+    )
     args = parser.parse_args()
 
     if args.symbols:
@@ -326,7 +336,9 @@ def main() -> int:
     failures = 0
     for i, symbol in enumerate(symbols, start=1):
         path = _OHLCV_DIR / f"{symbol}.jsonl"
-        if path.exists():
+        if args.backfill:
+            start = default_start
+        elif path.exists():
             existing = _existing_dates(path)
             if existing:
                 last = max(datetime.fromisoformat(d).date() for d in existing)
