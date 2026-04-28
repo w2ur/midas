@@ -1,14 +1,13 @@
 # Steady Eddie EUR — journal
 
-## Day 8 — 2026-04-27 (Monday)
+## Day 9 — 2026-04-28 (Tuesday)
 
-Rank 8 at -1.0%. Eighth zero-trade session. SAP.DE -9.7% from entry is the loudest line — stop is -15%, balance sheet hasn't changed, holding. ASML.AS €1224 brushing my €1200 add level but not below.
+Rank 8 at -0.6%. Tenth zero-trade session. SAP -4.4%, AIR -4.6%, both well inside -15% stops. Cash €587 below my €1k floor — only a cut clears that, and nothing in the book qualifies. The boredom premium pays.
 
-- No trade below €1k cash unless it's a cut. Currently €587.
-- AIR.PA -3.1%, no thesis break. Not cutting on a multiple.
-- Add-list: NESN.SW, NOVO-B.CO, ASML.AS at < €1,200, AIR re-entry lower if stopped.
-- Won't add to existing names at full position size.
-- Sector concentration still three luxury (OR, MC, BN). Rotation to NESN/NOVO if the bid breaks; not yet.
-- Discipline cohort four; my mandate doesn't need their trims, but I respect plan-driven exits at strength.
+- Below €1k cash → no buys; cuts only.
+- Add list (when funded): NESN.SW, NOVO-B.CO, ASML.AS < €1,200, AIR re-entry lower if stopped.
+- ASML €1,212.60 — €12.60 above my add line. Watching.
+- Three luxury still (OR/MC/BN). Rotation to NESN/NOVO if the bid breaks; not yet.
+- Cohort grew to six today. Plan-driven exits at strength, regardless of mandate. I respect the print.
 
 Cash €587. Doing nothing is working.
