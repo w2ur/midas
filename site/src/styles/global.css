@@ -275,44 +275,6 @@ th {
   color: var(--bg);
   border-color: var(--ink);
 }
-.feed-post {
-  padding: 1.25rem 0;
-  border-bottom: 1px solid var(--rule);
-}
-.feed-post .head {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  margin-bottom: 0.35rem;
-}
-.feed-post .name { font-family: var(--font-display); font-size: var(--fs-md); }
-.feed-post .when { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-muted); }
-.feed-post .kind {
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--accent);
-}
-.feed-post .body { font-size: var(--fs-base); }
-
-/* Mentions */
-.mentions {
-  margin-top: 0.6rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-.mention {
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
-  padding: 0.15rem 0.5rem;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  color: var(--ink-muted);
-  text-decoration: none;
-}
-.mention:hover { border-color: var(--rule-strong); color: var(--ink); }
-
 /* Trade card */
 .trade-card {
   margin-top: 0.75rem;
@@ -376,3 +338,171 @@ th {
 }
 .trade-history .side.buy { background: var(--pos); color: #fff; }
 .trade-history .side.sell { background: var(--neg); color: #fff; }
+
+/* ─── Feed: archive strip ─── */
+.feed-archive-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+  padding: 0.6rem 0;
+  margin-bottom: 1.25rem;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+.feed-archive-strip a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-bottom: 1px dotted transparent;
+}
+.feed-archive-strip a:hover {
+  color: var(--ink);
+  border-bottom-color: var(--rule-strong);
+}
+.feed-archive-strip a[aria-current="page"] {
+  color: var(--ink);
+  border-bottom: 1px solid var(--accent);
+  font-weight: 700;
+}
+.feed-archive-strip .more {
+  margin-left: auto;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ─── Feed: card ─── */
+.feed-card {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 0.75rem 0.85rem;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.feed-card .monogram {
+  width: 28px;
+  height: 28px;
+  background: var(--agent-color, var(--ink-muted));
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  align-self: start;
+}
+.feed-card .meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.55rem;
+  font-size: var(--fs-xs);
+  margin-bottom: 0.25rem;
+}
+.feed-card .meta .name {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+.feed-card .meta .name:hover { color: var(--accent); }
+.feed-card .meta .handle {
+  font-family: var(--font-mono);
+  color: var(--ink-muted);
+}
+.feed-card .meta .when {
+  font-family: var(--font-mono);
+  color: var(--ink-muted);
+  margin-left: auto;
+}
+.feed-card .meta .kind {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.feed-card .body {
+  grid-column: 2;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+  color: var(--ink);
+  margin: 0;
+}
+.feed-card .trade-summary {
+  grid-column: 2;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--rule);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.feed-card .trade-summary a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--rule-strong);
+}
+.feed-card .trade-summary a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* Inline ticker + mention chips inside .feed-card .body */
+.feed-card .body a.feed-ticker {
+  font-family: var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--rule-strong);
+  white-space: nowrap;
+}
+.feed-card .body a.feed-ticker:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.feed-card .body a.feed-mention {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--agent-color, var(--accent));
+  font-weight: 500;
+}
+.feed-card .body a.feed-mention:hover { color: var(--agent-color, var(--accent)); }
+
+/* ─── Per-agent signature colors ─── */
+[data-agent="steady-eddie-eur"]   { --agent-color: #2e6b3c; }
+[data-agent="steady-eddie-usd"]   { --agent-color: #2a4d6b; }
+[data-agent="sharp-shooter-eur"]  { --agent-color: #9b3e1d; }
+[data-agent="sharp-shooter-usd"]  { --agent-color: #7d2a24; }
+[data-agent="yolo-sapiens-eur"]   { --agent-color: #8a6a1d; }
+[data-agent="yolo-sapiens-usd"]   { --agent-color: #8a4d1d; }
+[data-agent="satoshi"]            { --agent-color: #2a2a2a; }
+[data-agent="monsieur-forex"]     { --agent-color: #3a4d5a; }
+[data-agent="goldfinger"]         { --agent-color: #7a5a1d; }
+[data-agent="world"]              { --agent-color: #5a3a2a; }
+
+:root[data-theme="dark"] [data-agent="steady-eddie-eur"]   { --agent-color: #7bb488; }
+:root[data-theme="dark"] [data-agent="steady-eddie-usd"]   { --agent-color: #7ba0c4; }
+:root[data-theme="dark"] [data-agent="sharp-shooter-eur"]  { --agent-color: #d68c7e; }
+:root[data-theme="dark"] [data-agent="sharp-shooter-usd"]  { --agent-color: #c47a72; }
+:root[data-theme="dark"] [data-agent="yolo-sapiens-eur"]   { --agent-color: #d4b572; }
+:root[data-theme="dark"] [data-agent="yolo-sapiens-usd"]   { --agent-color: #d4a172; }
+:root[data-theme="dark"] [data-agent="satoshi"]            { --agent-color: #bfb8a8; }
+:root[data-theme="dark"] [data-agent="monsieur-forex"]     { --agent-color: #9badb8; }
+:root[data-theme="dark"] [data-agent="goldfinger"]         { --agent-color: #c9a55b; }
+:root[data-theme="dark"] [data-agent="world"]              { --agent-color: #b08877; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-agent="steady-eddie-eur"]   { --agent-color: #7bb488; }
+  :root:not([data-theme="light"]) [data-agent="steady-eddie-usd"]   { --agent-color: #7ba0c4; }
+  :root:not([data-theme="light"]) [data-agent="sharp-shooter-eur"]  { --agent-color: #d68c7e; }
+  :root:not([data-theme="light"]) [data-agent="sharp-shooter-usd"]  { --agent-color: #c47a72; }
+  :root:not([data-theme="light"]) [data-agent="yolo-sapiens-eur"]   { --agent-color: #d4b572; }
+  :root:not([data-theme="light"]) [data-agent="yolo-sapiens-usd"]   { --agent-color: #d4a172; }
+  :root:not([data-theme="light"]) [data-agent="satoshi"]            { --agent-color: #bfb8a8; }
+  :root:not([data-theme="light"]) [data-agent="monsieur-forex"]     { --agent-color: #9badb8; }
+  :root:not([data-theme="light"]) [data-agent="goldfinger"]         { --agent-color: #c9a55b; }
+  :root:not([data-theme="light"]) [data-agent="world"]              { --agent-color: #b08877; }
+}
