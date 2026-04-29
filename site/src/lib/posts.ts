@@ -2,7 +2,7 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { POSTS_DIR } from "./paths";
-import { TRADING_AGENTS } from "./roster";
+import { getAgent, isTradingAgent } from "./roster";
 import { tickerSlug } from "./orders";
 
 export type Post = {
@@ -86,8 +86,6 @@ export function flattenChronological(byAgent: PostsByAgent): Post[] {
   return all.sort((a, b) => a.post_at.localeCompare(b.post_at));
 }
 
-const AGENT_BY_ID = new Map(TRADING_AGENTS.map((a) => [a.id as string, a]));
-
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -96,8 +94,6 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
-
-const TICKER_RE = /\$([A-Z][A-Z0-9.\-]{0,9})/g;
 
 function replaceFirst(
   haystack: string,
@@ -124,15 +120,16 @@ function replaceFirst(
  */
 export function renderBodyHtml(post: Post): string {
   let html = escapeHtml(post.text);
+  const tickerRe = /\$([A-Z](?:[A-Z0-9.-]{0,8}[A-Z0-9])?)/g;
 
-  html = html.replace(TICKER_RE, (_match, symbol: string) => {
+  html = html.replace(tickerRe, (_match, symbol: string) => {
     const slug = tickerSlug(symbol);
     return `<a class="feed-ticker" href="/ticker/${slug}">$${symbol}</a>`;
   });
 
   for (const id of post.mentions ?? []) {
-    const agent = AGENT_BY_ID.get(id);
-    if (!agent) continue;
+    if (!isTradingAgent(id)) continue;
+    const agent = getAgent(id);
     const chip = `<a class="feed-mention" data-agent="${id}" href="/arena/${id}">@${escapeHtml(
       agent.display_name
     )}</a>`;

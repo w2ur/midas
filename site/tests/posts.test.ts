@@ -89,8 +89,8 @@ describe("renderBodyHtml", () => {
         mentions: ["steady-eddie-usd"],
       })
     );
-    expect(html).toContain(
-      '<a class="feed-mention" data-agent="steady-eddie-usd" href="/arena/steady-eddie-usd">@Steady Eddie USD</a> is wrong'
+    expect(html).toBe(
+      '<a class="feed-mention" data-agent="steady-eddie-usd" href="/arena/steady-eddie-usd">@Steady Eddie USD</a> is wrong about TSLA.'
     );
   });
 
@@ -130,5 +130,36 @@ describe("renderBodyHtml", () => {
     const html = renderBodyHtml(makePost({ text: "<script>alert(1)</script> $TSLA" }));
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
     expect(html).toContain('<a class="feed-ticker" href="/ticker/TSLA">$TSLA</a>');
+  });
+
+  it("ignores mentions that are not in the trading roster", () => {
+    const html = renderBodyHtml(
+      makePost({
+        text: "Some random handle was here.",
+        mentions: ["not-an-agent"],
+      })
+    );
+    expect(html).toBe("Some random handle was here.");
+  });
+
+  it("does not capture trailing punctuation as part of a ticker", () => {
+    const html = renderBodyHtml(makePost({ text: "Bought $AAPL. End of line." }));
+    expect(html).toBe(
+      'Bought <a class="feed-ticker" href="/ticker/AAPL">$AAPL</a>. End of line.'
+    );
+  });
+
+  it("matches a single-letter ticker", () => {
+    const html = renderBodyHtml(makePost({ text: "Long $F today." }));
+    expect(html).toBe(
+      'Long <a class="feed-ticker" href="/ticker/F">$F</a> today.'
+    );
+  });
+
+  it("matches a dotted ticker like $BRK.B", () => {
+    const html = renderBodyHtml(makePost({ text: "Held $BRK.B for years." }));
+    expect(html).toBe(
+      'Held <a class="feed-ticker" href="/ticker/BRK-B">$BRK.B</a> for years.'
+    );
   });
 });
