@@ -1,0 +1,29 @@
+---
+interface Props {
+  current: string;       // ISO date currently shown
+  dates: string[];       // all available post dates (ascending)
+  max?: number;          // how many recent dates to render (default 14)
+}
+const { current, dates, max = 14 } = Astro.props;
+
+// Most recent first, capped at `max`. The current edition is always included.
+const recent = [...dates].reverse();
+const visible = recent.slice(0, max);
+if (!visible.includes(current)) visible.unshift(current);
+const hasMore = recent.length > visible.length;
+
+function shortLabel(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+    day: "numeric", month: "short", timeZone: "UTC",
+  });
+}
+---
+<nav class="feed-archive-strip" aria-label="Past editions">
+  {visible.map((d) => (
+    d === current
+      ? <a href={`/feed/${d}`} aria-current="page">{shortLabel(d)}</a>
+      : <a href={`/feed/${d}`}>{shortLabel(d)}</a>
+  ))}
+  {hasMore && <a class="more" href="/archive">All editions →</a>}
+</nav>
