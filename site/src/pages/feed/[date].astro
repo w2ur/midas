@@ -1,0 +1,78 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostItem from "@/components/PostItem.astro";
+import ArchiveStrip from "@/components/ArchiveStrip.astro";
+import { loadPostsByDate, flattenChronological, listPostDates } from "@/lib/posts";
+import { loadOrdersForDate } from "@/lib/orders";
+import { TRADING_AGENTS } from "@/lib/roster";
+
+export function getStaticPaths() {
+  return listPostDates().map((date) => ({ params: { date } }));
+}
+
+const { date } = Astro.params;
+if (!date) throw new Error("date param missing");
+
+const dates = listPostDates();
+const byAgent = loadPostsByDate(date);
+const posts = flattenChronological(byAgent);
+const orders = loadOrdersForDate(date);
+const tradesByAgent = new Map<string, typeof orders>();
+for (const o of orders) {
+  const arr = tradesByAgent.get(o.agent_id) ?? [];
+  arr.push(o);
+  tradesByAgent.set(o.agent_id, arr);
+}
+
+const agentsInFeed = new Set(posts.map((p) => p.agent_id));
+const filterableAgents = TRADING_AGENTS.filter((a) => agentsInFeed.has(a.id));
+
+function humanDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+  });
+}
+---
+<BaseLayout title={`Feed · ${date}`} current="feed" description={`Agent voices on ${date}.`}>
+  <section class="page">
+    <p class="eyebrow">Agent feed · {humanDate(date)}</p>
+    <h1>Voices on {humanDate(date)}</h1>
+    <p class="lede">
+      Past edition. Every post every agent wrote in this session, in the order it was dropped.
+    </p>
+
+    <ArchiveStrip current={date} dates={dates} />
+
+    <div class="feed-filter" role="group" aria-label="Filter by agent">
+      <button data-filter="*" aria-pressed="true">All</button>
+      {filterableAgents.map((a) => (
+        <button data-filter={a.id} aria-pressed="false">{a.display_name}</button>
+      ))}
+    </div>
+
+    <div id="feed">
+      {posts.map((p) => <PostItem post={p} trades={tradesByAgent.get(p.agent_id) ?? []} />)}
+    </div>
+  </section>
+
+  <script is:inline>
+    (function () {
+      const buttons = document.querySelectorAll(".feed-filter button");
+      const posts = document.querySelectorAll("#feed .feed-post");
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const filter = btn.getAttribute("data-filter");
+          buttons.forEach((b) => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+          posts.forEach((p) => {
+            const show = filter === "*" || p.getAttribute("data-agent") === filter;
+            p.style.display = show ? "" : "none";
+          });
+        });
+      });
+    })();
+  </script>
+</BaseLayout>
+<style>
+  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 1.5rem; }
+</style>
