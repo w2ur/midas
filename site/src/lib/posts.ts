@@ -2,6 +2,8 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { POSTS_DIR } from "./paths";
+import { TRADING_AGENTS } from "./roster";
+import { tickerSlug } from "./orders";
 
 export type Post = {
   agent_id: string;
@@ -82,4 +84,62 @@ export function flattenChronological(byAgent: PostsByAgent): Post[] {
     for (const p of arr) all.push(p);
   }
   return all.sort((a, b) => a.post_at.localeCompare(b.post_at));
+}
+
+const AGENT_BY_ID = new Map(TRADING_AGENTS.map((a) => [a.id as string, a]));
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+const TICKER_RE = /\$([A-Z][A-Z0-9.\-]{0,9})/g;
+
+function replaceFirst(
+  haystack: string,
+  needle: string,
+  replacement: string
+): { out: string; found: boolean } {
+  const idx = haystack.indexOf(needle);
+  if (idx === -1) return { out: haystack, found: false };
+  return {
+    out: haystack.slice(0, idx) + replacement + haystack.slice(idx + needle.length),
+    found: true,
+  };
+}
+
+/**
+ * Render a Post's text as inline HTML for the feed:
+ * - escape HTML metacharacters
+ * - linkify $TICKER patterns to /ticker/:slug
+ * - insert mention chips for the first occurrence of each post.mentions[] agent
+ *   (display name preferred, @handle fallback, dropped silently if neither)
+ *
+ * Output is intended for set:html=. Input authority: data/posts/*.json
+ * (engine-written, not user input). Escaping is applied first regardless.
+ */
+export function renderBodyHtml(post: Post): string {
+  let html = escapeHtml(post.text);
+
+  html = html.replace(TICKER_RE, (_match, symbol: string) => {
+    const slug = tickerSlug(symbol);
+    return `<a class="feed-ticker" href="/ticker/${slug}">$${symbol}</a>`;
+  });
+
+  for (const id of post.mentions ?? []) {
+    const agent = AGENT_BY_ID.get(id);
+    if (!agent) continue;
+    const chip = `<a class="feed-mention" data-agent="${id}" href="/arena/${id}">@${escapeHtml(
+      agent.display_name
+    )}</a>`;
+    let r = replaceFirst(html, escapeHtml(agent.display_name), chip);
+    if (!r.found) r = replaceFirst(html, `@${id}`, chip);
+    html = r.out;
+  }
+
+  return html;
 }
