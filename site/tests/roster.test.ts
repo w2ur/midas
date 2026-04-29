@@ -48,6 +48,11 @@ describe("roster", () => {
     expect(new Set(lights).size).toBe(lights.length);
   });
 
+  it("signature colors are unique across the roster (dark)", () => {
+    const darks = TRADING_AGENTS.map((a) => a.signatureColor.dark);
+    expect(new Set(darks).size).toBe(darks.length);
+  });
+
   it("getAgentMonogram returns the first letter of display_name uppercased", () => {
     expect(getAgentMonogram("satoshi")).toBe("S");
     expect(getAgentMonogram("monsieur-forex")).toBe("M");
