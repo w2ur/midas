@@ -8,9 +8,19 @@ This doc is the canonical text to paste into the RemoteTrigger configuration in 
 
 ## Architecture — DISPATCH, do NOT impersonate
 
-Every agent step in this pipeline MUST be performed via the `Task` tool with `subagent_type` set to the agent's id. The orchestrator session NEVER writes commentary, trades, posts, blog, or journal content directly. Its job is: build prompts via `scripts/daily_session.py` helpers, dispatch them, collect JSON results, and pass results to the next step's helper.
+Every persona-authored output (commentary, trades, posts, blog, journal rewrites) MUST come from a `Task` tool dispatch — never inline-authored by the orchestrator session. This keeps each persona's context window isolated; the journal-rewrite loop in particular is contaminated if one orchestrator just spent the last hour also being the other 9 agents.
 
-**This is the load-bearing change vs the previous prompt.** Impersonation (one orchestrator producing all 10 agents in one stream) collapses persona independence and contaminates the journal-rewrite loop, since each per-agent journal is then downstream of an orchestrator who just spent the last hour also being the other 9 agents. The journals are the long-term memory store; we keep them clean by keeping each agent's session context isolated.
+**Dispatch substrate.** Project-level subagents in `.claude/agents/*.md` are NOT auto-registered as `subagent_type` values by Claude Code (neither locally nor in cloud sessions — the Apr 29 session aborted on this). We dispatch via `subagent_type="general-purpose"` with the persona body injected by `engine.persona_dispatch.wrap_persona_prompt`. The orchestrator never improvises persona content; it loads the file and forwards.
+
+```python
+from engine.persona_dispatch import wrap_persona_prompt
+
+wrapped, model = wrap_persona_prompt(agent_id, task_prompt)
+# Then dispatch:
+#   Task(subagent_type="general-purpose", model=model, prompt=wrapped)
+```
+
+`model` is `"opus"` for every current persona — pass it through so the dispatch matches the frontmatter intent. If `model` is `None`, omit the parameter and let the harness pick.
 
 ---
 
@@ -34,7 +44,15 @@ Do NOT write files inline. Do NOT skip steps with rationalizations like
 "already current" or "would be unchanged" — every step is idempotent and
 must be invoked. Do NOT write commentary, trades, posts, blog, or
 journal content yourself for any agent — every persona-authored output
-MUST come back from a Task tool dispatch with subagent_type=<agent-id>.
+MUST come back from a Task tool dispatch.
+
+Persona dispatch pattern (used in every step that targets an agent):
+    from engine.persona_dispatch import wrap_persona_prompt
+    wrapped, model = wrap_persona_prompt(agent_id, task_prompt)
+    # dispatch: Task(subagent_type="general-purpose", model=model, prompt=wrapped)
+
+NEVER use subagent_type=<agent_id> directly — project agents are not
+registered in the Task registry. Use "general-purpose" + wrapper.
 
 # Step 1 — Market data (store-only, no network)
 python scripts/fetch_market_data.py
@@ -43,14 +61,17 @@ python scripts/fetch_market_data.py
 # and report. Do not improvise a hand-built today.json.
 
 # Step 2 — Trading round (DISPATCH IN PARALLEL — one Task call per agent)
-For each agent_id in ROSTER, dispatch a single Task with:
-    subagent_type=<agent_id>
-    prompt=<TRADING_PROMPT below, with {agent_id}, {today}, {yesterday}
-            substituted; {today}/{yesterday} are YYYY-MM-DD>
-All 10 dispatches MUST be issued in the SAME message so they run in
-parallel. Collect agent_results = {agent_id: {"commentary": ..., "trades": [...]}}.
+For each agent_id in ROSTER:
+    wrapped, model = wrap_persona_prompt(
+        agent_id,
+        TRADING_PROMPT.format(agent_id=agent_id, today=today, yesterday=yesterday),
+    )
+Dispatch via Task with subagent_type="general-purpose", model=model,
+prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
+they run in parallel. Collect agent_results = {agent_id: {"commentary":
+..., "trades": [...]}}.
 
-TRADING_PROMPT (sent to each subagent, persona is loaded automatically):
+TRADING_PROMPT (the task body — wrap_persona_prompt prepends the persona):
 """
 It is session day {today}. You are trading independently — you do NOT
 see what other agents are doing today. React to the market and your own
@@ -103,8 +124,10 @@ Build leaderboard from snapshots first, then:
         leaderboard=leaderboard,
         agent_memories=memories,
     )
-Dispatch via Task with subagent_type="the-oracle" and prompt=oracle_prompt.
-Parse the response with parse_oracle_response → blog_draft, oracle_posts.
+    wrapped, model = wrap_persona_prompt("the-oracle", oracle_prompt)
+Dispatch via Task with subagent_type="general-purpose", model=model,
+prompt=wrapped. Parse the response with parse_oracle_response →
+blog_draft, oracle_posts.
 
 # Step 6 — Post round (DISPATCH IN PARALLEL — one Task call per agent)
     from scripts.daily_session import step_build_post_prompts
@@ -112,12 +135,12 @@ Parse the response with parse_oracle_response → blog_draft, oracle_posts.
         agent_results,
         oracle_blog=blog_draft.body_md,   # agents react to Oracle's framing too
     )
-For each agent_id in post_prompts (10 agents), dispatch a Task with:
-    subagent_type=<agent_id>
-    prompt=post_prompts[agent_id]
-All 10 dispatches MUST be issued in the SAME message so they run in
-parallel. Parse each response with parse_post_response. Collect
-agent_posts = {agent_id: [PostPayload, ...]}.
+For each agent_id in post_prompts (10 agents):
+    wrapped, model = wrap_persona_prompt(agent_id, post_prompts[agent_id])
+Dispatch via Task with subagent_type="general-purpose", model=model,
+prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
+they run in parallel. Parse each response with parse_post_response.
+Collect agent_posts = {agent_id: [PostPayload, ...]}.
 
 # Step 7 — Save content (the bundle MUST contain all 10 agents)
     from scripts.daily_session import step_save_content, build_portfolio_summaries
@@ -144,11 +167,12 @@ If fewer than 10, the bundle is malformed — abort.
         agent_posts=agent_posts,
         portfolio_summaries=portfolio_summaries,
     )
-For each agent_id in memory_prompts (10 traders + the-oracle), dispatch a
-Task with subagent_type=<agent_id> and prompt=memory_prompts[agent_id].
-All 11 dispatches MUST be issued in the SAME message so they run in
-parallel. Each subagent rewrites its own first-person journal in full
-and returns the new content as plain markdown.
+For each agent_id in memory_prompts (10 traders + the-oracle):
+    wrapped, model = wrap_persona_prompt(agent_id, memory_prompts[agent_id])
+Dispatch via Task with subagent_type="general-purpose", model=model,
+prompt=wrapped. All 11 dispatches MUST be issued in the SAME message so
+they run in parallel. Each subagent rewrites its own first-person journal
+in full and returns the new content as plain markdown.
     new_journals = {agent_id: response_text for ...}
     step_save_memories(new_journals)
 After this, every data/agent_memory/*.md (11 files) must show fresh mtimes.
@@ -174,8 +198,9 @@ git show HEAD --stat must include:
   - data/posts/{today}.json
   - data/blog/{today}.md
 Also confirm: this session issued at least 31 Task tool dispatches
-(10 trade + 1 oracle + 10 post + 10 journal). If fewer, an agent
-step was inlined instead of dispatched — abort and re-run.
+(10 trade + 1 oracle + 10 post + 10 journal), every one with
+subagent_type="general-purpose" and a wrap_persona_prompt-built prompt.
+If fewer, an agent step was inlined instead of dispatched — abort and re-run.
 If any of these is missing, the corresponding step was skipped. Do not
 report success.
 ```
@@ -187,10 +212,11 @@ report success.
 These rationalizations have broken past sessions. The new prompt
 explicitly forbids them:
 
-- "I'll author Satoshi's trades inline since dispatch is overhead" → MUST dispatch via Task tool with subagent_type=satoshi
+- "I'll author Satoshi's trades inline since dispatch is overhead" → MUST dispatch via general-purpose + wrap_persona_prompt("satoshi", ...)
 - "Generating commentary for [agent] in this context" → MUST dispatch
 - "Now I'll rewrite the journals in each agent's voice" inline → MUST dispatch each journal-rewrite to its agent
-- "Now I'll write Oracle's blog + posts as the Oracle persona" → MUST dispatch to the-oracle
+- "Now I'll write Oracle's blog + posts as the Oracle persona" → MUST dispatch with wrap_persona_prompt("the-oracle", ...)
+- "subagent_type='satoshi' returned 'Agent type not found' so I'll write the trades myself" → MUST switch to subagent_type="general-purpose" with wrap_persona_prompt; never inline
 - "Baselines already current — last snapshot dated …" → MUST call `step_build_baselines()`
 - "Network blocked. Let me update today.json with today's BTC close" → MUST call `python scripts/fetch_market_data.py` (already store-only)
 

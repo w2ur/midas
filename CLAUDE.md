@@ -34,6 +34,7 @@ streamlit run app/main.py
 - `engine/posts.py` — post types, 11-agent display names + schedule (single source of truth)
 - `engine/blog.py` — Oracle prompt builder + response parser + blog draft saver
 - `engine/agent_memory.py` — Ring 2 per-agent journal I/O + digest/excerpt helpers + session-end rewrite prompt
+- `engine/persona_dispatch.py` — load `.claude/agents/{id}.md`, strip frontmatter, wrap a task prompt with the persona body so the orchestrator can dispatch via `subagent_type="general-purpose"` (project agents are not auto-registered as dispatchable subagent types)
 - `engine/selectors/` — bt Algos for entry signals (golden cross, RSI, etc.)
 - `engine/managers/` — bt Algos for position management (grid, trailing stop, etc.)
 - `engine/universes/` — Universe resolvers (S&P 500, congressional, crypto, etc.)
@@ -98,6 +99,7 @@ Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_
 - **Trading session has no outbound HTTP dependency.** Prices and benchmarks are read from the committed `data/market/ohlcv/` store, populated by the `fetch-ohlcv` GitHub Action cron. `scripts/fetch_market_data.py` is store-only by default — `--allow-network` is local-dev-only.
 - The journal rewrite step is load-bearing: if a session's commit touches `data/posts/`, `data/blog/`, `data/output/` but NOT `data/agent_memory/*.md`, Step 9 was skipped. Sessions 2026-04-20..22 hit this bug — weekday trigger fixed on 2026-04-22.
 - The baselines step is load-bearing for the site's "vs benchmark / vs coin flip" deltas — if a daily commit touches `data/portfolios/` but not `data/baselines/`, Step 9a was skipped. Same diagnosis pattern as the journals. Saturday 2026-04-25's weekend session hit this bug; weekend trigger fixed on 2026-04-26.
+- **Persona dispatch substrate.** Project-level subagents in `.claude/agents/*.md` are NOT auto-registered as dispatchable `subagent_type` values (neither locally nor in cloud RemoteTrigger sessions — Apr 29 weekday session aborted on this). Every persona-authored output dispatches through `subagent_type="general-purpose"` with the persona body injected by `engine.persona_dispatch.wrap_persona_prompt(agent_id, task_prompt)`. The orchestrator NEVER inline-authors persona content — wrapping is the substitute for the auto-registration we don't have.
 
 ## Site (Ring 3a)
 
