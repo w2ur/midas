@@ -37,7 +37,7 @@ streamlit run app/main.py
 - `engine/persona_dispatch.py` — load `.claude/agents/{id}.md`, strip frontmatter, wrap a task prompt with the persona body so the orchestrator can dispatch via `subagent_type="general-purpose"` (project agents are not auto-registered as dispatchable subagent types)
 - `engine/selectors/` — bt Algos for entry signals (golden cross, RSI, etc.)
 - `engine/managers/` — bt Algos for position management (grid, trailing stop, etc.)
-- `engine/universes/` — Universe resolvers (S&P 500, congressional, crypto, etc.)
+- `engine/universes/` — Universe resolvers (S&P 500, congressional, crypto, etc.). Read from committed `data/universes/*.json` — no network at runtime. Refresh via `scripts/refresh_universes.py` or the weekly `refresh-universes.yml` workflow.
 - `scripts/` — CLI entry points for backtesting and daily sessions
 - `app/` — Streamlit dashboard pages
 - `data/strategies/` — Strategy spec JSON files
@@ -47,6 +47,7 @@ streamlit run app/main.py
 - `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (committed)
 - `data/agent_memory/` — Ring 2 per-agent journals, 11 markdown files, first-person + biased, rewritten each session (committed)
 - `data/baselines/` — per-agent passive benchmark + coin-flip phantom portfolios, plus `global/msci_world.json`; same snapshot shape as `data/portfolios/`; written by `scripts/backfill_baselines.py` (one-shot) and refreshed by Step 9a of the daily session (committed)
+- `data/universes/` — committed index/alt universes (sp500, dow30, nasdaq100, cac40, dax, ftse100, stoxx600, congressional, insider, high-short). File presence is authoritative; resolvers never hit Wikipedia at runtime. Refresh out-of-band via `scripts/refresh_universes.py` or the weekly workflow.
 - `.claude/agents/` — Ten trading agent personas (EUR/USD twins + Satoshi, Monsieur Forex, Goldfinger, World)
 - `.claude/agents/the-oracle.md` — The Oracle narrator agent (does not trade; blog drafts + scoreboard posts)
 - `engine/output_bundle.py` — assembles data/output/YYYY-MM-DD.json (single source of truth for API + retries)
@@ -99,6 +100,7 @@ Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_
 - **Trading session has no outbound HTTP dependency.** Prices and benchmarks are read from the committed `data/market/ohlcv/` store, populated by the `fetch-ohlcv` GitHub Action cron. `scripts/fetch_market_data.py` is store-only by default — `--allow-network` is local-dev-only.
 - The journal rewrite step is load-bearing: if a session's commit touches `data/posts/`, `data/blog/`, `data/output/` but NOT `data/agent_memory/*.md`, Step 9 was skipped. Sessions 2026-04-20..22 hit this bug — weekday trigger fixed on 2026-04-22.
 - The baselines step is load-bearing for the site's "vs benchmark / vs coin flip" deltas — if a daily commit touches `data/portfolios/` but not `data/baselines/`, Step 9a was skipped. Same diagnosis pattern as the journals. Saturday 2026-04-25's weekend session hit this bug; weekend trigger fixed on 2026-04-26.
+- **Universe data is committed, not cached.** Step 9 (baselines) calls `engine/universes/*` resolvers which need ticker lists for sp500/cac40/dax/ftse100/stoxx600. Those lists live in `data/universes/*.json` (committed). The previous design kept them in `data/cache/universes/` (gitignored, 24h TTL) and tried to refresh from Wikipedia on cache miss — Apr 29 sandbox session needed a manual workaround because outbound HTTP is blocked. Refreshes happen out-of-band only.
 - **Persona dispatch substrate.** Project-level subagents in `.claude/agents/*.md` are NOT auto-registered as dispatchable `subagent_type` values (neither locally nor in cloud RemoteTrigger sessions — Apr 29 weekday session aborted on this). Every persona-authored output dispatches through `subagent_type="general-purpose"` with the persona body injected by `engine.persona_dispatch.wrap_persona_prompt(agent_id, task_prompt)`. The orchestrator NEVER inline-authors persona content — wrapping is the substitute for the auto-registration we don't have.
 - **Oracle runs on Sonnet, traders on Opus.** Same Apr 29 session: the Oracle dispatch on Opus repeatedly hit the cloud streaming idle timeout (~60s) while the model was still in pre-output thinking. Sonnet starts streaming in 2-10s and is more than capable of the daily narrative voice. Frontmatter `model:` in `.claude/agents/*.md` controls this; only `the-oracle.md` is on `sonnet`. Trade-round dispatches (single-agent reasoning, smaller prompts) stay on Opus. The Oracle prompt is also trimmed at the source (commentary capped at 240 chars/agent, trade reasoning at 100 chars, journal digest at 250 chars/agent) to keep first-token latency low — see `engine/blog.py` and `engine/agent_memory.format_oracle_digest`.
 
