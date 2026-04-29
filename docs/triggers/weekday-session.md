@@ -1,26 +1,33 @@
-# Weekend Crypto Session — RemoteTrigger Prompt
+# Weekday Session — RemoteTrigger Prompt
 
-**Cron:** `0 20 * * 6,0` (Sat-Sun 20:00 UTC)
-**Roster:** `satoshi`, `yolo-sapiens-eur`, `yolo-sapiens-usd`
-**Cadence-invariant pipeline:** identical helpers as the weekday session, only the roster differs.
+**Cron:** `0 20 * * 1-5` (Mon-Fri 20:00 UTC)
+**Roster:** 10 trading agents + The Oracle.
+**Cadence-invariant pipeline:** identical helpers as the weekend session, only the roster differs.
 
-This doc is the canonical text to paste into the RemoteTrigger configuration in claude.ai. The weekday trigger lives at `weekday-session.md` and shares 95% of this text — only `ROSTER` and the trading-round addendum differ.
+This doc is the canonical text to paste into the RemoteTrigger configuration in claude.ai. The weekend trigger lives at `weekend-session.md` and shares 95% of this text — only `ROSTER` and the trading-round addendum differ.
 
 ## Architecture — DISPATCH, do NOT impersonate
 
-Every agent step MUST be performed via the `Task` tool with `subagent_type` set to the agent's id. The orchestrator session NEVER writes commentary, trades, posts, blog, or journal content directly. See `weekday-session.md` for the rationale (clean per-agent journal-rewrite loop, voice-drift containment).
+Every agent step in this pipeline MUST be performed via the `Task` tool with `subagent_type` set to the agent's id. The orchestrator session NEVER writes commentary, trades, posts, blog, or journal content directly. Its job is: build prompts via `scripts/daily_session.py` helpers, dispatch them, collect JSON results, and pass results to the next step's helper.
+
+**This is the load-bearing change vs the previous prompt.** Impersonation (one orchestrator producing all 10 agents in one stream) collapses persona independence and contaminates the journal-rewrite loop, since each per-agent journal is then downstream of an orchestrator who just spent the last hour also being the other 9 agents. The journals are the long-term memory store; we keep them clean by keeping each agent's session context isolated.
 
 ---
 
 ## Trigger prompt
 
 ```
-You are running the Midas weekend crypto trading session for today's date.
+You are running the Midas weekday trading session for today's date.
 
 Repository: ~/Dev/midas (already cloned). Activate the venv:
     source .venv/bin/activate
 
-ROSTER = ["satoshi", "yolo-sapiens-eur", "yolo-sapiens-usd"]
+ROSTER = [
+    "steady-eddie-eur", "steady-eddie-usd",
+    "sharp-shooter-eur", "sharp-shooter-usd",
+    "yolo-sapiens-eur", "yolo-sapiens-usd",
+    "satoshi", "monsieur-forex", "goldfinger", "world",
+]
 
 Drive every step through the helpers in scripts/daily_session.py.
 Do NOT write files inline. Do NOT skip steps with rationalizations like
@@ -40,7 +47,7 @@ For each agent_id in ROSTER, dispatch a single Task with:
     subagent_type=<agent_id>
     prompt=<TRADING_PROMPT below, with {agent_id}, {today}, {yesterday}
             substituted; {today}/{yesterday} are YYYY-MM-DD>
-All 3 dispatches MUST be issued in the SAME message so they run in
+All 10 dispatches MUST be issued in the SAME message so they run in
 parallel. Collect agent_results = {agent_id: {"commentary": ..., "trades": [...]}}.
 
 TRADING_PROMPT (sent to each subagent, persona is loaded automatically):
@@ -60,10 +67,6 @@ Stay in your persona, mandate, universe, and base currency. Long-only;
 use bearish ETFs to express short views. Respect your position limits
 and safety rails — the broker will reject violations anyway.
 
-Weekend session — restrict orders to crypto pairs in your base currency.
-Equities/forex markets are closed; the broker would reject those orders
-anyway.
-
 Output JSON only, no other text:
 {
   "commentary": "your day's reasoning, in your voice (3-8 sentences)",
@@ -74,7 +77,7 @@ Output JSON only, no other text:
 }
 """
 
-After all 3 results arrive:
+After all 10 results arrive:
     from scripts.daily_session import step_author_orders
     step_author_orders(agent_results)
 
@@ -109,10 +112,10 @@ Parse the response with parse_oracle_response → blog_draft, oracle_posts.
         agent_results,
         oracle_blog=blog_draft.body_md,   # agents react to Oracle's framing too
     )
-For each agent_id in post_prompts (3 agents), dispatch a Task with:
+For each agent_id in post_prompts (10 agents), dispatch a Task with:
     subagent_type=<agent_id>
     prompt=post_prompts[agent_id]
-All 3 dispatches MUST be issued in the SAME message so they run in
+All 10 dispatches MUST be issued in the SAME message so they run in
 parallel. Parse each response with parse_post_response. Collect
 agent_posts = {agent_id: [PostPayload, ...]}.
 
@@ -122,9 +125,9 @@ agent_posts = {agent_id: [PostPayload, ...]}.
     step_save_content(
         bundle_date=today,
         market_data=market_payload,
-        agent_results=agent_results,             # 3 agents
-        agent_posts=agent_posts,                 # 3 agents
-        portfolio_summaries=portfolio_summaries, # 10 agents — non-default!
+        agent_results=agent_results,             # 10 agents
+        agent_posts=agent_posts,                 # 10 agents
+        portfolio_summaries=portfolio_summaries, # 10 agents
         leaderboard=leaderboard,
         blog_draft=blog_draft,
         oracle_posts=oracle_posts,
@@ -132,7 +135,7 @@ agent_posts = {agent_id: [PostPayload, ...]}.
 After this returns, verify data/output/{today}.json contains 10 agent keys.
 If fewer than 10, the bundle is malformed — abort.
 
-# Step 8 — Memory rewrite (DISPATCH IN PARALLEL — 3 agents + the-oracle)
+# Step 8 — Memory rewrite (DISPATCH IN PARALLEL — 10 agents + the-oracle)
     from scripts.daily_session import (
         step_build_memory_update_prompts, step_save_memories
     )
@@ -141,16 +144,15 @@ If fewer than 10, the bundle is malformed — abort.
         agent_posts=agent_posts,
         portfolio_summaries=portfolio_summaries,
     )
-For each agent_id in memory_prompts (3 traders + the-oracle), dispatch a
+For each agent_id in memory_prompts (10 traders + the-oracle), dispatch a
 Task with subagent_type=<agent_id> and prompt=memory_prompts[agent_id].
-All 4 dispatches MUST be issued in the SAME message so they run in
+All 11 dispatches MUST be issued in the SAME message so they run in
 parallel. Each subagent rewrites its own first-person journal in full
 and returns the new content as plain markdown.
     new_journals = {agent_id: response_text for ...}
     step_save_memories(new_journals)
-After this, data/agent_memory/{satoshi,yolo-sapiens-eur,yolo-sapiens-usd,the-oracle}.md
-must show fresh mtimes. If any are unchanged, that agent's dispatch was
-skipped — abort.
+After this, every data/agent_memory/*.md (11 files) must show fresh mtimes.
+If any are unchanged, that agent's dispatch was skipped — abort.
 
 # Step 9 — Baselines refresh (ALWAYS, no conditional)
     from scripts.daily_session import step_build_baselines
@@ -161,19 +163,19 @@ change in data/baselines/, this step was skipped — abort.
 # Step 10 — Commit and push
     from scripts.daily_session import step_git_commit_push
     step_git_commit_push(dry_run=False)
-Commit message: "chore: weekend crypto session {today}"
+Commit message: "chore: weekday session {today}"
 
 # Self-check before reporting success
 git show HEAD --stat must include:
   - data/output/{today}.json
   - data/baselines/**
-  - data/agent_memory/*.md (running 3 + the-oracle)
+  - data/agent_memory/*.md (all 11 — 10 traders + the-oracle)
   - data/portfolios/*/snapshots.json (all 10)
   - data/posts/{today}.json
   - data/blog/{today}.md
-Also confirm: this session issued at least 11 Task tool dispatches
-(3 trade + 1 oracle + 3 post + 4 journal). If fewer, an agent step was
-inlined instead of dispatched — abort and re-run.
+Also confirm: this session issued at least 31 Task tool dispatches
+(10 trade + 1 oracle + 10 post + 10 journal). If fewer, an agent
+step was inlined instead of dispatched — abort and re-run.
 If any of these is missing, the corresponding step was skipped. Do not
 report success.
 ```
@@ -192,16 +194,17 @@ explicitly forbids them:
 - "Baselines already current — last snapshot dated …" → MUST call `step_build_baselines()`
 - "Network blocked. Let me update today.json with today's BTC close" → MUST call `python scripts/fetch_market_data.py` (already store-only)
 
-## Diff vs weekday trigger
+## Diff vs weekend trigger
 
-The weekday trigger uses:
+The weekend trigger uses:
 ```
-ROSTER = [
-    "steady-eddie-eur", "steady-eddie-usd",
-    "sharp-shooter-eur", "sharp-shooter-usd",
-    "yolo-sapiens-eur", "yolo-sapiens-usd",
-    "satoshi", "monsieur-forex", "goldfinger", "world",
-]
+ROSTER = ["satoshi", "yolo-sapiens-eur", "yolo-sapiens-usd"]
 ```
-And the TRADING_PROMPT does NOT include the "Weekend session — restrict orders to crypto pairs" addendum.
-Every other step is byte-identical.
+And appends to the TRADING_PROMPT body:
+```
+"Weekend session — restrict orders to crypto pairs in your base currency.
+Equities/forex markets are closed; the broker would reject those orders anyway."
+```
+Every other step is byte-identical (the helpers are roster-agnostic and
+the bundle is cadence-invariant — non-runners get carry-forward summaries
+via `build_portfolio_summaries()`).

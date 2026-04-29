@@ -132,18 +132,27 @@ def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> l
     return fills
 
 
-def step_build_post_prompts(agent_results: dict[str, dict]) -> dict[str, str]:
+def step_build_post_prompts(
+    agent_results: dict[str, dict],
+    oracle_blog: str | None = None,
+) -> dict[str, str]:
     """Step 5a — build post-generation prompts for each trading agent.
 
     Does NOT call Claude. Returns a dict of {agent_id: prompt_str} the orchestrator
     dispatches to each agent. The Oracle is excluded — it gets a different prompt
     via step_build_oracle_prompt.
+
+    When the post round runs AFTER the Oracle (current pipeline ordering),
+    pass `oracle_blog=blog_draft.body_md` so each agent can react to the
+    Oracle's framing as well as to other agents' raw moves.
     """
     print("\n=== Step 5a: Build post prompts ===")
     prompts: dict[str, str] = {}
     for agent_id in agent_results:
         if agent_id in AGENT_POST_TIMES:  # trading agents only
-            prompts[agent_id] = build_post_prompt(agent_id, agent_results)
+            prompts[agent_id] = build_post_prompt(
+                agent_id, agent_results, oracle_blog=oracle_blog
+            )
     print(f"  Built {len(prompts)} post prompts")
     return prompts
 
@@ -151,8 +160,8 @@ def step_build_post_prompts(agent_results: dict[str, dict]) -> dict[str, str]:
 def step_build_oracle_prompt(
     market_data: dict,
     agent_results: dict[str, dict],
-    agent_posts: dict[str, list[dict]],
-    leaderboard: list[dict],
+    agent_posts: dict[str, list[dict]] | None = None,
+    leaderboard: list[dict] | None = None,
     agent_memories: dict[str, str] | None = None,
 ) -> str:
     """Step 5b — build The Oracle's daily narration prompt.

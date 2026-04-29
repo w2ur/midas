@@ -33,15 +33,21 @@ def build_oracle_prompt(
     day_number: int,
     market_data: dict,
     agent_results: dict[str, dict],
-    agent_posts: dict[str, list[dict]],
-    leaderboard: list[dict],
+    agent_posts: dict[str, list[dict]] | None = None,
+    leaderboard: list[dict] | None = None,
     agent_memories: dict[str, str] | None = None,
 ) -> str:
     """Build The Oracle's daily prompt — blog draft + narrator posts.
 
     When `agent_memories` is provided (Ring 2 onwards), a journal digest is
     appended so The Oracle can cite specific prior entries in its narration.
+
+    `agent_posts` is optional: when the Oracle runs BEFORE the post round
+    (current pipeline ordering), pass `None` or an empty dict and the
+    "AGENT POSTS TODAY" section is suppressed.
     """
+    agent_posts = agent_posts or {}
+    leaderboard = leaderboard or []
     market = "\n".join(
         f"  {k}: {v:,.2f}"
         for k, v in market_data.items()
@@ -62,6 +68,7 @@ def build_oracle_prompt(
         for p in posts:
             text = p.get("text", "") if isinstance(p, dict) else str(p)
             posts_s += f'    - "{text}"\n'
+    posts_block = f"\n\nAGENT POSTS TODAY:{posts_s}" if posts_s else ""
 
     lb_s = "\n".join(
         f"  #{e['rank']} {AGENT_DISPLAY_NAMES.get(e['agent'], e['agent'])}: {e['return_pct']:+.1f}% (EUR)"
@@ -80,9 +87,7 @@ def build_oracle_prompt(
 MARKET DATA TODAY:
 {market}
 
-AGENT ACTIVITY TODAY:{agents_s}
-
-AGENT POSTS TODAY:{posts_s}
+AGENT ACTIVITY TODAY:{agents_s}{posts_block}
 
 CURRENT LEADERBOARD (EUR-normalized):
 {lb_s}{journal_section}

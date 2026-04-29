@@ -110,8 +110,17 @@ class PostPayload:
         )
 
 
-def build_post_prompt(agent_id: str, all_results: dict[str, dict]) -> str:
-    """Build the post-generation prompt for a single trading agent."""
+def build_post_prompt(
+    agent_id: str,
+    all_results: dict[str, dict],
+    oracle_blog: str | None = None,
+) -> str:
+    """Build the post-generation prompt for a single trading agent.
+
+    When `oracle_blog` (the Oracle's body_md for today) is provided, it is
+    injected as a context block so the agent can react to the Oracle's
+    framing of the day, not just to other agents' raw moves.
+    """
     display = AGENT_DISPLAY_NAMES[agent_id]
     voice = AGENT_VOICE[agent_id]
     schedule = AGENT_POST_TIMES[agent_id]
@@ -138,16 +147,20 @@ def build_post_prompt(agent_id: str, all_results: dict[str, dict]) -> str:
             for t in trades:
                 others_section += f"    - {t['action']} {t.get('shares', '')} {t['ticker']}: {t.get('reasoning', '')}\n"
 
+    oracle_section = (
+        f"\nORACLE'S NARRATIVE TODAY:\n{oracle_blog}\n" if oracle_blog else ""
+    )
+
     return f"""You are {display} writing short posts for the Midas Feed.
 
 VOICE: {voice}
 
 {own_section}
-{others_section}
+{others_section}{oracle_section}
 
 INSTRUCTIONS:
 - Write 1-3 posts. Soft 280-char guideline per post (readability, not a hard limit).
-- At least one post about your own moves today. Reference tickers plainly (BTC-EUR, MSFT, GLD — no $ prefix).
+- At least one post about your own moves today. Prefix every ticker with $ ($BTC-EUR, $MSFT, $GLD) — the feed linkifies them to /ticker/SLUG.
 - If another agent did something worth reacting to, write a post about it. Mention them by display name.
 - Stay in character: {voice}
 - Be specific — real numbers, real tickers, real reasoning. No vague platitudes.
