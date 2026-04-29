@@ -18,6 +18,7 @@ export type Agent = {
   archetype: string;
   base_currency: BaseCurrency;
   universe_summary: string;
+  signatureColor: { light: string; dark: string };
 };
 
 export const ORACLE_ID = "the-oracle" as const;
@@ -29,6 +30,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Conservative quality, PEA-leaning",
     base_currency: "EUR",
     universe_summary: "STOXX 600 quality large-caps",
+    signatureColor: { light: "#2e6b3c", dark: "#7bb488" },
   },
   {
     id: "steady-eddie-usd",
@@ -36,6 +38,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Conservative quality",
     base_currency: "USD",
     universe_summary: "S&P 500 quality large-caps",
+    signatureColor: { light: "#2a4d6b", dark: "#7ba0c4" },
   },
   {
     id: "sharp-shooter-eur",
@@ -43,6 +46,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Momentum under UCITS handcuffs",
     base_currency: "EUR",
     universe_summary: "EU momentum, 2x UCITS leverage cap",
+    signatureColor: { light: "#9b3e1d", dark: "#d68c7e" },
   },
   {
     id: "sharp-shooter-usd",
@@ -50,6 +54,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Aggressive US momentum",
     base_currency: "USD",
     universe_summary: "S&P 500 + S&P 400 momentum",
+    signatureColor: { light: "#7d2a24", dark: "#c47a72" },
   },
   {
     id: "yolo-sapiens-eur",
@@ -57,6 +62,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "EU cross-asset degen",
     base_currency: "EUR",
     universe_summary: "Anything EU: equities, ETFs, crypto-EUR",
+    signatureColor: { light: "#8a6a1d", dark: "#d4b572" },
   },
   {
     id: "yolo-sapiens-usd",
@@ -64,6 +70,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "US cross-asset degen",
     base_currency: "USD",
     universe_summary: "Anything US: equities, ETFs, crypto-USD",
+    signatureColor: { light: "#8a4d1d", dark: "#d4a172" },
   },
   {
     id: "satoshi",
@@ -71,6 +78,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "On-chain crypto specialist",
     base_currency: "EUR",
     universe_summary: "Kraken top-cap crypto-EUR pairs",
+    signatureColor: { light: "#2a2a2a", dark: "#bfb8a8" },
   },
   {
     id: "monsieur-forex",
@@ -78,6 +86,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Central-banker whisperer",
     base_currency: "EUR",
     universe_summary: "Major and minor FX pairs",
+    signatureColor: { light: "#3a4d5a", dark: "#9badb8" },
   },
   {
     id: "goldfinger",
@@ -85,6 +94,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Contrarian commodities",
     base_currency: "EUR",
     universe_summary: "UCITS gold, silver, energy, miners",
+    signatureColor: { light: "#7a5a1d", dark: "#c9a55b" },
   },
   {
     id: "world",
@@ -92,6 +102,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Cross-asset, cross-currency",
     base_currency: "mixed",
     universe_summary: "Anything globally listed, valued in EUR",
+    signatureColor: { light: "#5a3a2a", dark: "#b08877" },
   },
 ];
 
@@ -105,4 +116,8 @@ export function getAgent(id: AgentId): Agent {
 
 export function isTradingAgent(id: string): id is AgentId {
   return BY_ID.has(id as AgentId);
+}
+
+export function getAgentMonogram(id: AgentId): string {
+  return getAgent(id).display_name.charAt(0).toUpperCase();
 }
