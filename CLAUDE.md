@@ -1,7 +1,7 @@
 # Midas — AI Fund Manager
 
 ## Project Overview
-Personal AI fund manager that autonomously analyzes markets, makes investment decisions, and manages portfolios. Two execution engines: bt (Python) for deterministic strategies, Claude agents for analytical ones. Local-only — runs on localhost via Streamlit.
+Personal AI fund manager that autonomously analyzes markets, makes investment decisions, and manages portfolios. Two execution engines: bt (Python) for deterministic strategies, Claude agents for analytical ones. Public narrative at `midas.revah.paris` (Astro site, Ring 3a). Streamlit dashboard for local exploration. Backtester API on Google Cloud Run.
 
 ## Tech Stack
 - Python 3.12+, bt (backtesting), yfinance (market data), pandas-ta (indicators)
@@ -40,7 +40,7 @@ streamlit run app/main.py
 - `scripts/` — CLI entry points for backtesting and daily sessions
 - `app/` — Streamlit dashboard pages
 - `data/strategies/` — Strategy spec JSON files
-- `data/portfolios/` — Runtime portfolio state (gitignored)
+- `data/portfolios/` — Runtime portfolio state (committed — needed by the sandboxed remote agent)
 - `data/agent_config/` — per-agent safety rails (committed)
 - `data/ticker_currencies.json` — ticker → ISO currency override map (committed)
 - `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (committed)

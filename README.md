@@ -74,7 +74,7 @@ Each daily session produces a complete output bundle combining all agent activit
 5. **The Oracle narration** — the 11th agent (non-trader) produces a daily blog draft and 1–3 narrator posts via `engine/blog.py`.
 6. **Bundle assembly** — `engine/output_bundle.py` assembles `data/output/YYYY-MM-DD.json` containing trades, fills, posts, blog, portfolios, leaderboard. Day number is retry-idempotent.
 
-Local artifacts (gitignored) land in `data/posts/`, `data/blog/`, `data/output/`.
+Daily artifacts land in `data/posts/`, `data/blog/`, `data/output/` — these are committed so the sandboxed remote agent's output persists across session teardowns and the Astro site can render them at build time.
 
 ## Orders Pipeline
 
