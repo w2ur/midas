@@ -120,6 +120,11 @@ Build leaderboard from snapshots first, then:
         agent_memories=memories,
     )
     wrapped, model = wrap_persona_prompt("the-oracle", oracle_prompt)
+    # NOTE: model resolves to "sonnet" by design — the-oracle.md's
+    # frontmatter declares sonnet because Opus first-token latency on
+    # the narrative+10-agent prompt repeatedly tripped the cloud streaming
+    # idle timeout (Apr 29). Do NOT manually override to "opus" — see
+    # CLAUDE.md "Persona dispatch substrate" section.
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. Parse the response with parse_oracle_response →
 blog_draft, oracle_posts.
