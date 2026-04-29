@@ -36,8 +36,26 @@ def test_load_persona_satoshi_strips_frontmatter():
 
 def test_load_persona_the_oracle_present_and_has_model():
     body, model = load_persona("the-oracle")
-    assert model == "opus"
+    # Oracle is deliberately downgraded to sonnet: Opus first-token latency on
+    # the narrative+10-agent-context prompt routinely exceeded the cloud
+    # streaming idle timeout (~60s). Sonnet starts streaming in 2-10s.
+    assert model == "sonnet"
     assert "Oracle" in body
+
+
+def test_load_persona_traders_use_opus():
+    # Trade-round dispatches don't hit the streaming timeout — keep Opus.
+    for agent_id in [
+        "steady-eddie-eur",
+        "sharp-shooter-eur",
+        "yolo-sapiens-eur",
+        "satoshi",
+        "monsieur-forex",
+        "goldfinger",
+        "world",
+    ]:
+        _, model = load_persona(agent_id)
+        assert model == "opus", f"{agent_id}: expected opus, got {model}"
 
 
 @pytest.mark.parametrize("agent_id", ROSTER)

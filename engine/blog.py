@@ -12,6 +12,19 @@ from engine.posts import AGENT_DISPLAY_NAMES, PostPayload
 
 BLOG_DIR = Path(__file__).parent.parent / "data" / "blog"
 
+# Trim caps applied to the Oracle prompt so first-token latency stays under
+# the cloud streaming idle threshold. Verbatim agent commentary is not what
+# the Oracle needs — the trades show actions, the leaderboard shows outcomes.
+_ORACLE_COMMENTARY_CAP = 240
+_ORACLE_TRADE_REASONING_CAP = 100
+
+
+def _truncate(text: str, cap: int) -> str:
+    text = text.strip()
+    if len(text) <= cap:
+        return text
+    return text[: cap - 1].rstrip() + "…"
+
 
 @dataclass
 class BlogDraft:
@@ -57,9 +70,11 @@ def build_oracle_prompt(
     agents_s = ""
     for aid, res in agent_results.items():
         name = AGENT_DISPLAY_NAMES.get(aid, aid)
-        agents_s += f"\n  {name}:\n    Commentary: {res.get('commentary', '')}\n"
+        commentary = _truncate(res.get("commentary", ""), _ORACLE_COMMENTARY_CAP)
+        agents_s += f"\n  {name}:\n    Commentary: {commentary}\n"
         for t in res.get("trades", []):
-            agents_s += f"    - {t['action']} {t.get('shares', '')} {t['ticker']}: {t.get('reasoning', '')}\n"
+            reasoning = _truncate(t.get("reasoning", ""), _ORACLE_TRADE_REASONING_CAP)
+            agents_s += f"    - {t['action']} {t.get('shares', '')} {t['ticker']}: {reasoning}\n"
 
     posts_s = ""
     for aid, posts in agent_posts.items():

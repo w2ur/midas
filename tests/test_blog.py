@@ -88,6 +88,46 @@ class TestBuildOraclePrompt:
         )
         assert "JOURNAL DIGEST" not in prompt
 
+    def test_long_commentary_is_truncated(self) -> None:
+        long = "X" * 2000
+        prompt = build_oracle_prompt(
+            day_number=1,
+            market_data={},
+            agent_results={"satoshi": {"commentary": long, "trades": []}},
+            agent_posts={},
+            leaderboard=[],
+        )
+        # The full 2000-X commentary must NOT appear — would push the prompt
+        # past the cloud streaming first-token threshold for the Oracle.
+        assert long not in prompt
+        assert "…" in prompt
+        # Truncated form is bounded — first-token latency depends on it.
+        assert prompt.count("X") < 300
+
+    def test_long_trade_reasoning_is_truncated(self) -> None:
+        long_reasoning = "Y" * 500
+        prompt = build_oracle_prompt(
+            day_number=1,
+            market_data={},
+            agent_results={
+                "satoshi": {
+                    "commentary": "ok",
+                    "trades": [
+                        {
+                            "action": "BUY",
+                            "ticker": "BTC-EUR",
+                            "shares": 1,
+                            "reasoning": long_reasoning,
+                        }
+                    ],
+                }
+            },
+            agent_posts={},
+            leaderboard=[],
+        )
+        assert long_reasoning not in prompt
+        assert prompt.count("Y") < 200
+
     def test_journal_digest_included_when_memories_provided(self) -> None:
         prompt = build_oracle_prompt(
             day_number=1,

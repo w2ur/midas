@@ -79,7 +79,7 @@ def format_memory_section(agent_id: str, max_chars: int = DEFAULT_MAX_CHARS) -> 
 
 
 def format_oracle_digest(
-    agent_memories: dict[str, str], per_agent_chars: int = 400
+    agent_memories: dict[str, str], per_agent_chars: int = 250
 ) -> str:
     """Render a digest of all agents' journals for The Oracle's prompt.
 
