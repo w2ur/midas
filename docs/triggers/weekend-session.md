@@ -186,18 +186,22 @@ data/baselines/* must be modified by this call. If git diff shows no
 change in data/baselines/, this step was skipped — abort.
 
 # Step 10 — Commit and push
+Commit data/ first, with the richer message:
+    git add data/
+    git commit -m "chore: weekend crypto session {today}"
+Then ALWAYS hand the push off to the helper:
     from scripts.daily_session import step_git_commit_push
     step_git_commit_push(dry_run=False)
-Commit message: "chore: weekend crypto session {today}" (the orchestrator
-commits data/ itself with this richer message before calling the helper;
-the helper sees nothing staged and proceeds to the push).
+The helper sees nothing staged (you already committed) and pushes HEAD
+to origin/main with an explicit refspec.
 
-**Push must land on origin/main, not the sandbox's working branch.** RemoteTrigger
-sessions check out a throwaway branch like `claude/<slug>`; a plain `git push`
-publishes THAT branch, leaving main (and the public Vercel deploy) untouched.
-Either let `step_git_commit_push` handle the push (it uses `git push origin
-HEAD:main`), or, if you push manually, use the same explicit refspec — never
-a bare `git push`.
+**DO NOT run `git push` yourself.** RemoteTrigger sessions check out a
+throwaway branch like `claude/<slug>`; a bare `git push` publishes THAT
+branch, leaving main (and the public Vercel deploy) untouched — exactly
+what happened on 2026-04-30. The helper is the only sanctioned push path:
+it does `git push origin HEAD:main` (fast-forward only) so the daily
+snapshot lands on the public deploy regardless of which sandbox branch
+you're on.
 
 # Self-check before reporting success
 git show HEAD --stat must include:
@@ -211,6 +215,11 @@ Also confirm: this session issued at least 11 Task tool dispatches
 (3 trade + 1 oracle + 3 post + 4 journal), every one with
 subagent_type="general-purpose" and a wrap_persona_prompt-built prompt.
 If fewer, an agent step was inlined instead of dispatched — abort and re-run.
+Also confirm the session commit reached origin/main:
+    git fetch origin main
+    git rev-parse HEAD == git rev-parse origin/main
+If origin/main does not point at HEAD, the push went to a sandbox branch
+and the public deploy will NOT update — re-run `step_git_commit_push`.
 If any of these is missing, the corresponding step was skipped. Do not
 report success.
 ```
@@ -229,6 +238,7 @@ explicitly forbids them:
 - "subagent_type='satoshi' returned 'Agent type not found' so I'll write the trades myself" → MUST switch to subagent_type="general-purpose" with wrap_persona_prompt; never inline
 - "Baselines already current — last snapshot dated …" → MUST call `step_build_baselines()`
 - "Network blocked. Let me update today.json with today's BTC close" → MUST call `python scripts/fetch_market_data.py` (already store-only)
+- "Now I'll `git push` the session commit" → MUST call `step_git_commit_push(dry_run=False)`. A bare `git push` publishes the sandbox's throwaway branch (`claude/<slug>`) instead of advancing main — Apr 30 incident. The helper uses `git push origin HEAD:main`; that is the only sanctioned push path.
 
 ## Diff vs weekday trigger
 
