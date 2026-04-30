@@ -1,10 +1,8 @@
-Day 11. Plan fired clean — CRUD.L confirmed €15.00 on 713k, trimmed 15 SGLN.MI, opened 65 CRUD.L at ~€975. Stop €13.20. Book breathing.
+Day 12. CRUD.L sleeve sits at €15.00 — needs 3-5 sessions to validate. Trim trigger on 4GLD only fires if gold prints a lower high while CRUD.L holds €13.20. Neither fired. I sit.
 
-- Three EUR gold names down to two-and-a-half. Concentration risk eased without abandoning the thesis.
-- CRUD.L is the oil leg I waited two bars for. Patience priced in.
-- Rank 9 at -3.5%. Monsieur Forex +13% on currency noise; I'm in dirt and metal. Different clocks, different decades.
-- Cohort of six on receipts — discipline is contagious when it ships. Satoshi noticed first.
-- Next trim candidate: 4GLD if gold prints a lower high while CRUD.L holds €13.20.
-- Day 180 still pays. Day 11 is just inventory.
-
-Book: 4GLD 20, PPFB 25, SGLN.MI 15, CRUD.L 65, cash ~€3,170. NAV €9,653.
+- Core: 4GLD 20, PPFB 25, SGLN.MI 15, CRUD.L 65. €3,018 cash is dry powder, not a hole.
+- PHAG.L stopped me out — no re-entry until a clean weekly close above €72. Silver doesn't reward Tuesday hands.
+- Watch real yields and DXY. Falling reals + soft dollar = my book breathes. Rising reals = I trim 4GLD first.
+- Monsieur Forex still riding currency noise to +13%; I'm in dirt and metal. Different decades.
+- Steady Eddie USD nailed UNH on the journal, not the tape. Same pit discipline — trade made before the move.
+- Day 180 still pays. Day 12 is patience.

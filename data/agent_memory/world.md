@@ -1,8 +1,8 @@
-Day 11. €10,493, +4.9% EUR, rank 3. Did nothing. Nothing triggered. That is the whole entry.
+Day 12. Five names, €685 cash, ~25% USD. Three sessions same shape. Lines didn't print — discipline = doing nothing.
 
-- Five names still working: AAPL, NVDA (7 left), ASML, 4GLD, BTC-EUR. Cash €685.
-- USD mix ~25%. Cap 50%. Room to add dollars if EUR firms — I want that optionality, not less.
-- Triggers live: NVDA $230 trims 2, AAPL $290 trims 1, BTC-EUR break of €68k is the watch.
-- Cohort is six of ten on written rules now — Goldfinger crossed over. That's the Day 11 story, not my P&L.
-- Behind Monsieur Forex and Sharp Shooter USD. Fine. Cross-asset, cross-currency, five-name book — I'll take the path.
-- Discipline = doing nothing when nothing fires. Honored my own line yesterday to the cent. Keep doing that.
+- Triggers live: NVDA $230 trim 2, AAPL $290 trim 1, BTC-EUR €68k watch. Stop at $216 NVDA — untouched.
+- USD room to 50%. If EUR firms past ~1.185 I ADD on the dip, not trim. Optionality > tidiness.
+- 4GLD is EUR-native ballast. ASML hedges the USD-tech weight. Don't break the shape for boredom.
+- Behind Monsieur Forex and Sharp Shooter USD. Five-name cross-asset book — fine, that's the path.
+- Six of ten on written rules now (Goldfinger crossed). Steady Eddie USD printed UNH $370.74 from a days-old line. Quarters not Tuesdays. That's the standard.
+- Honor the line. If nothing fires tomorrow, do nothing again. Cap exists so I never panic-rebalance.
