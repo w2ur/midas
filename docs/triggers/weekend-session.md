@@ -188,7 +188,16 @@ change in data/baselines/, this step was skipped — abort.
 # Step 10 — Commit and push
     from scripts.daily_session import step_git_commit_push
     step_git_commit_push(dry_run=False)
-Commit message: "chore: weekend crypto session {today}"
+Commit message: "chore: weekend crypto session {today}" (the orchestrator
+commits data/ itself with this richer message before calling the helper;
+the helper sees nothing staged and proceeds to the push).
+
+**Push must land on origin/main, not the sandbox's working branch.** RemoteTrigger
+sessions check out a throwaway branch like `claude/<slug>`; a plain `git push`
+publishes THAT branch, leaving main (and the public Vercel deploy) untouched.
+Either let `step_git_commit_push` handle the push (it uses `git push origin
+HEAD:main`), or, if you push manually, use the same explicit refspec — never
+a bare `git push`.
 
 # Self-check before reporting success
 git show HEAD --stat must include:

@@ -456,24 +456,47 @@ def step_git_commit_push(dry_run: bool = False) -> None:
         # Stage data/ changes.
         subprocess.run(["git", "add", data_dir], cwd=_PROJECT_ROOT, check=True)
 
-        # Check if there is anything to commit.
-        result = subprocess.run(
+        # Commit any staged data changes the orchestrator hasn't already
+        # committed. (Orchestrators that commit themselves with a richer
+        # message — "chore: weekday session …" — will land here with nothing
+        # left staged, which is fine.)
+        diff_result = subprocess.run(
             ["git", "diff", "--cached", "--quiet"],
             cwd=_PROJECT_ROOT,
         )
-        if result.returncode == 0:
-            print("  Nothing to commit — data unchanged.")
+        if diff_result.returncode != 0:
+            today_str = date.today().isoformat()
+            commit_msg = f"chore: daily snapshot {today_str}"
+            subprocess.run(
+                ["git", "commit", "-m", commit_msg],
+                cwd=_PROJECT_ROOT,
+                check=True,
+            )
+            print(f"  Committed: {commit_msg}")
+
+        # Always push HEAD to origin/main. Cloud sandbox sessions
+        # (RemoteTrigger) check out a throwaway branch like `claude/<slug>`;
+        # without an explicit refspec, `git push` would publish that branch
+        # instead of advancing main, leaving the daily snapshot off the
+        # public deploy. Fast-forward only — anything else is a real
+        # conflict that should fail loudly.
+        ahead = subprocess.run(
+            ["git", "rev-list", "--count", "origin/main..HEAD"],
+            cwd=_PROJECT_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        if int(ahead.stdout.strip() or "0") == 0:
+            print("  Nothing to push — HEAD is at origin/main.")
             return
 
-        today_str = date.today().isoformat()
-        commit_msg = f"chore: daily snapshot {today_str}"
         subprocess.run(
-            ["git", "commit", "-m", commit_msg], cwd=_PROJECT_ROOT, check=True
+            ["git", "push", "origin", "HEAD:main"],
+            cwd=_PROJECT_ROOT,
+            check=True,
         )
-        print(f"  Committed: {commit_msg}")
-
-        subprocess.run(["git", "push"], cwd=_PROJECT_ROOT, check=True)
-        print("  Pushed to remote.")
+        print("  Pushed to origin/main.")
 
     except subprocess.CalledProcessError as exc:
         print(f"  [ERROR] Git operation failed: {exc}")
