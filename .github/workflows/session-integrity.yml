@@ -1,0 +1,76 @@
+name: session-integrity
+
+# Enforces the load-bearing pipeline rule documented in CLAUDE.md:
+# A daily-session commit that publishes posts/blog/output MUST also
+# rewrite agent journals (Step 9) and refresh baselines (Step 9a).
+# Past silent skips: Apr 20-22 (journals), Apr 25 (baselines).
+#
+# Scope: only commits authored by the daily session (message matches
+# "chore: weekday session" or "chore: weekend session" or "chore: daily session").
+# Backfills and manual artifact commits use different messages and pass through.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Verify session commit touches journals + baselines
+        run: |
+          set -euo pipefail
+
+          msg=$(git log -1 --pretty=%s)
+          echo "HEAD commit message: $msg"
+
+          if ! echo "$msg" | grep -Eq '^chore: (weekday|weekend|daily) session'; then
+            echo "Not a daily-session commit — skipping integrity check."
+            exit 0
+          fi
+
+          files=$(git diff-tree --no-commit-id --name-only -r HEAD)
+          echo "--- changed files ---"
+          echo "$files"
+          echo "---------------------"
+
+          touches_artifacts=0
+          touches_journals=0
+          touches_baselines=0
+
+          if echo "$files" | grep -Eq '^data/(posts|blog|output)/'; then
+            touches_artifacts=1
+          fi
+          if echo "$files" | grep -Eq '^data/agent_memory/.+\.md$'; then
+            touches_journals=1
+          fi
+          if echo "$files" | grep -Eq '^data/baselines/'; then
+            touches_baselines=1
+          fi
+
+          if [[ $touches_artifacts -eq 0 ]]; then
+            echo "Session commit publishes no artifacts under data/posts|blog|output — nothing to check."
+            exit 0
+          fi
+
+          fail=0
+          if [[ $touches_journals -eq 0 ]]; then
+            echo "::error::Session commit publishes posts/blog/output but does NOT rewrite data/agent_memory/*.md (Step 9 skipped)."
+            fail=1
+          fi
+          if [[ $touches_baselines -eq 0 ]]; then
+            echo "::error::Session commit publishes posts/blog/output but does NOT refresh data/baselines/ (Step 9a skipped)."
+            fail=1
+          fi
+
+          if [[ $fail -ne 0 ]]; then
+            echo ""
+            echo "See CLAUDE.md > Session Cadence > 'cadence-invariant pipeline rule' and 'load-bearing' notes."
+            exit 1
+          fi
+
+          echo "Session integrity OK: artifacts + journals + baselines all present."
