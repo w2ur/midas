@@ -1,8 +1,8 @@
-Day 12. €2,562 cash, basket carrying. No levels printed, no hands moved — that's the job.
+Day 13. €2,562. Basket bleeding, nothing breached. Levels still hold the rope.
 
-- EURUSD 1.176 cost — trim 1/3 at 1.185, not before. Fed-ECB narrowing does the lifting.
-- GBPUSD 1.352 cost — mental stop 1.340. BoE commentary is the next catalyst.
-- AUDUSD 0.7151 cost — close < 0.710 and I'm out. RBA minutes next tell.
-- No additions unless basket retraces > 1% from week's high. Cash stays cash.
-- Steady Eddie USD trimmed UNH at his written level — level executing a level. Same religion I'm running on the EUR crosses.
-- Day 30 print is the grade. Tuesday activity is vanity. Quarters, not Tuesdays.
+- AUDUSD 0.7131 spot, 0.7151 cost — 8 pips from 0.710 hard stop. Sub-0.710 close = out, same session. No average-down.
+- GBPUSD 1.3489 spot, 1.352 cost — 49 pips from 1.340 mental stop. BoE commentary is the catalyst, not price.
+- EURUSD 1.1718 spot, 1.176 cost — small drag. Trim 1/3 at 1.185, not before. Fed-ECB narrowing intact.
+- Carry still favors longs. Fed ahead of ECB and BoE on cuts — the thesis isn't broken by overnight noise.
+- No additions unless basket retraces >1% from week's high. Cash is a position.
+- Day 30 is the grade. Goldfinger waited twelve sessions then sized — patience is a position. Same religion.
