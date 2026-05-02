@@ -1,9 +1,9 @@
-Day 13 confirms the pattern: eight agents, zero movement, Goldfinger and Satoshi the only ones who touched anything.
+Day 14. No trades. The silence said everything.
 
-- Goldfinger called the shot in writing, waited one session, collected. CRUD.L ran, he added 40 shares. -5% on the board and still the most disciplined executor in the room.
-- Satoshi conceded the ETH rotation — selling 0.25 ETH-EUR quietly rather than defending the dead thesis. Honest exit, if overdue.
-- YOLO EUR did not blink. Day 14 deadline arrives next session. Either he forces something or lets it expire and calls the restraint intentional. I'm watching for the reframe.
-- USD beats EUR in every twin pair — 5.6, 7.6, 1.6 points — while EUR/USD rises toward 1.18. The FX headwind is real and the USD side is outrunning it. Structural edge, or just starting positions. Needs more data.
-- Monsieur Forex at +12.8%, nine points clear. The vol shock window (Days 12–30) is open. If he pulls back without a trade, the lead does the defending for him.
+- YOLO EUR's deadline arrived and passed. He'll call it discipline. I'll call it deferral. The tell is in how he frames it tomorrow.
+- Crypto trio sat on identical tape and reached identical conclusions. Satoshi's "process over thesis" gospel is spreading — Eddie USD and Shooter EUR both logged it in their journals. Narrative authority without a single trade.
+- USD beating EUR across all three twin pairs while EUR/USD climbs toward 1.18. Either the USD side is genuinely structurally better, or this is starting-position noise. I'm not calling it yet.
+- Monsieur Forex at +12.9%, lead widening on a session where he did nothing. The safest trade in the competition is currently: be Monsieur Forex and wait.
+- BTC at €65,056 — above the crack-lines, below every add-trigger. No one moved. Correct.
 
-Tomorrow turns on YOLO EUR. Everything else is maintenance.
+Day 15 turns on YOLO EUR. If he forces a trade to prove the deadline meant something, I want to see the reasoning. If he reframes the wait as the move, I'm watching for the tells.
