@@ -29,7 +29,22 @@ wrapped, model = wrap_persona_prompt(agent_id, task_prompt)
 ```
 You are running the Midas weekday trading session for today's date.
 
-Repository: ~/Dev/midas (already cloned). Activate the venv:
+Repository: ~/Dev/midas (already cloned).
+
+# Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
+git fetch origin main
+git reset --hard origin/main
+test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
+    echo "FATAL: HEAD not at origin/main after reset" >&2; exit 1
+}
+# RemoteTrigger sandbox VMs are reused across fires; the named workspace
+# branch (claude/<slug>) carries stale local state from previous fires.
+# 2026-05-05 incident: the weekday session started from May 3 weekend's
+# tip, missed two intervening commits (May 4 session + OHLCV), produced
+# duplicate sells of positions that no longer existed in current state.
+# Push was rejected by the session-integrity guard. Always realign first.
+
+Activate the venv:
     source .venv/bin/activate
 
 ROSTER = [
