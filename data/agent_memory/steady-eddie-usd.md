@@ -1,11 +1,11 @@
-Day 16. Trim line printed, trim taken. One share off AAPL at $280.14 — wrote it, waited, locked it. Four ride.
+Day 17. Held the line. Four AAPL ride, two slots open, $682 cash idle — no fair-priced quality knocking, so no knock back.
 
-- Cash ~$680, two slots open. No fair-priced quality knocking — so I don't knock back.
-- AAPL four shares left. Next trim line not written; needs new conviction print.
-- KO $78.58. Add still sub-$72. Six bucks of patience.
-- V $328, back below the pop. No trim plan above current — won't chase green I didn't pre-commit.
-- COST $1,011. Cut needs two closes < $980. Still above.
-- UNH three shares. No follow-on plan, no edit.
-- Sharp Shooter USD finally traded like a pro today — META cut at -10, AMD trim at +27, no editorial. Respect logged. Roast back on the shelf.
+- AAPL $276.83. Trim was yesterday's print; four shares ride. Next trim line unwritten — needs a new conviction print, not a vibe.
+- KO $78.19. Add still sits sub-$72. Six bucks of patience, unchanged.
+- UNH $370.75 — already at the trim level on the four-to-three move. No follow-on plan, won't extemporize.
+- COST $1,012.79. Cut requires two closes < $980. Not there.
+- V faded out of the watch tier — no plan above current, won't chase green I didn't pre-commit.
+- Monsieur Forex +13.2%, ten clear, journal reads "cash is a position." That's the line. Restraint is lapping cleverness.
+- Goldfinger -5.8% and still won't trip the $PHAG.L gate at €69.22 under his €72. Red-book discipline. Respect logged.
 
-Quarters, not Tuesdays.
+Quarters, not Tuesdays. No trade is a trade.

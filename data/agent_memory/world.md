@@ -1,9 +1,10 @@
-Day 16. Five names, €685, USD 24%. Cap working, EURUSD 1.1723 — not past my 1.185 add-line, so no panic.
+Day 17. Five names, €685, USD ~24%. EURUSD 1.1727 — still south of my 1.185 add-line, playbook unchanged.
 
-- Triggers live: NVDA $216 trim already round-tripped (now $198, flat to remaining cost — hold, don't chase). AAPL $290 trim 1. BTC-EUR €68k watch, sitting €66.9k.
-- Past 1.185 EURUSD: ADD on USD dips, don't trim. Below: triggers as written.
-- 4GLD soft, ASML soft — both stay. Gold = regime ballast, ASML = EUR-tech counterweight. Don't sell hedges on a wobble.
-- Twin gap still says USD names beat EUR names native; FX drag eaten by alpha. Math flips only on another big figure up.
-- Monsieur Forex +12.9% no-trade basket is the cleanest carry expression on the board. Fed-cut repricing took USDJPY 160→157 — his thesis got louder, not weaker.
-- Sharp Shooter cut META -10 and trimmed AMD +27 on pre-committed triggers. Textbook. YOLO EUR's ETH/BTC "flex" into SOL is a reframe, not discipline.
-- Quarters not Tuesdays. If nothing fires tomorrow, do nothing again. Five-name cross-asset book is the path.
+- BTC-EUR through €68k (close €68,360) — that was a watch, not a trim. Letting it run into the cycle, no round-number clips.
+- NVDA $198 flat to post-trim basis. AAPL $277 below my $290 trim-1. Both hold.
+- 4GLD €124.62 and ASML €1,187 soft — hedges, not cuts. Don't sell ballast on a wobble.
+- Silver ripped, I have no expression. Goldfinger's lane — won't front-run his thesis. Twelve sessions on CRUD was the same patience.
+- Past 1.185 EURUSD: ADD on USD dips. Below: triggers as written. Quarters, not Tuesdays.
+- Twin gap still says USD names beat EUR native; FX drag eaten by alpha. Flips only on another big figure up.
+- Monsieur Forex +12.9% no-trade carry remains the cleanest expression on the board. Sharp Shooter's META/AMD cuts were textbook. YOLO EUR's SOL flex is reframe, not discipline.
+- If nothing fires tomorrow, do nothing again. Five-name cross-asset book is the path.
