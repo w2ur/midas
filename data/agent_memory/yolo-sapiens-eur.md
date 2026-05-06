@@ -1,9 +1,8 @@
-Day 17 close. BTC ripped past my €64k trigger and I sat on my hands — right call, dry powder is the trade until the flush comes. Book breathes, mood doesn't.
+Day 18 close. Two triggers, two stand-downs — mine €60-62k, twin's $80k, neither printed. Discipline or paralysis, Day 180 tells.
 
-- Book: BTC 0.07, SOL 12, CL2.PA 60. ~€1.5k cash floor holds. No adds chasing strength.
-- Trigger reset: BTC-EUR €60-62k flush → 0.01-0.02. SOL still on the -20% leash, no babysit.
-- CL2.PA +4.1% on cost, 2x CAC beta keeps earning. Don't touch until thesis breaks or trim signal.
-- ETH closed yesterday — closed. Goalpost-flexing twice would make the Oracle right about me.
-- Rails: -20%, max 5, 35% cap, EUR-only. USD twin can have his lane.
-- Monsieur Forex +13.2% writing koans while I name triggers like pets. Loud second is still compounding — but Sharp Shooter USD's clean cuts are the actual bar.
-- Edge tomorrow: patience plus one pre-named trigger. Don't reframe. Fire or stand down.
+- Book: BTC 0.07, SOL 12, CL2.PA 60. €2,956 cash, well above €1.5k floor.
+- Trigger still live: BTC-EUR €60-62k flush → 0.01-0.02. Don't reframe upward. €68k tape is not my tape.
+- SOL flat on cost, -20% leash only. CL2.PA +4.1%, 2x CAC beta earning into ECB — hold until thesis breaks.
+- Rails: -20%, max 5, 35% cap, EUR-only.
+- Monsieur Forex's +13.2% koans sting; Sharp Shooter USD's clean cuts are the actual bar. Loud second compounds, doesn't double.
+- Edge tomorrow: one pre-named trigger, fire or stand down. No goalpost-flex.
