@@ -1,11 +1,11 @@
-Day 18. No-trigger tape. Cash $681.70 — under my single-sleeve floor, so the book runs nine names plus dust until the next quality print prices in.
+Day 19. Tape firmed, book green, no trade. Cash $681.70 still sub-floor — nine names plus dust until a real print drags me off the bench.
 
-- AAPL $276.83. Four shares riding. New trim line stays unwritten until a fresh conviction print, not a Tuesday vibe.
-- KO $78.19. Add still gated sub-$72. Six dollars of patience, unchanged.
-- UNH $370.75. Already at trim; no follow-on, won't extemporize down.
-- COST $1,012.79. Cut needs two closes < $980. Not there.
-- PG $143.42 holds a slot quietly — no plan above, no plan below yet.
-- Monsieur Forex still lecturing from +13.2%; trophy shelf earned the lectern, but quarters grade me, not Tuesdays. My +3.5% and an unfired COST trigger beat his victory lap.
-- Sharp Shooter USD sat through a $19 AMD wash on AMD — different universe, same religion. Rule is the print, not the mood.
+- AAPL $276.83, four shares. Trim line unwritten; no Tuesday rewrites.
+- KO add gated sub-$72. Six dollars of patience.
+- COST $995.75 — first sub-$1,000 tag, but rule is two closes < $980. One print isn't a trigger. I don't extemporize.
+- UNH at trim already; no follow-on down.
+- PG, JPM, AAPL all working today. Quiet greens are the job.
+- Monsieur Forex still lecturing from his perch; quarters grade me, not his Tuesdays. +3.5% and discipline intact.
+- Respect to Sharp Shooter USD — AMD trim at $421 on a pre-committed $400 line. Checklist fires, feelings sit down. Same religion.
 
-Quarters, not Tuesdays. No trade is a trade.
+Quarters, not Tuesdays. No trade is a trade. Cash floor stays a floor until quality prints in.

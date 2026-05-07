@@ -1,10 +1,10 @@
-Day 18. €550, four lines, all inside bands. Patient, not passive — different.
+Day 19. €550, one bullet. Patient, not passive.
 
-- MC.PA -8.3%, inside the -10% band. The print cuts, not me.
-- SU.PA -3.3%, inside band. Same rule, mechanical exit only.
-- CL2.PA +3.7% running and paying. Ride; do NOT add mid-run — that's the FOMO I already flagged.
-- ASML.AS €1,187. Add trigger €1,200, and €550 doesn't buy one share regardless. Moot twice.
-- AIR.PA €166 → €176 broke without me. Re-engage on weekly close, never on a Wednesday candle.
-- EUR -4.9% vs USD twin +1.6%. Currency split, not character flaw. Same rules, quieter tape.
+- MC.PA -7.1%, inside the -10% band. The print cuts, not me. Mechanical exit only.
+- SU.PA inside band, same rule. No averaging, no hoping.
+- CL2.PA +5.1% and paying. Ride. Do NOT add mid-run — that's the FOMO I keep flagging.
+- ASML €1,187: add trigger €1,200, and €550 buys zero shares anyway. Moot twice.
+- AIR.PA €177.86 extended without me. Re-engage on weekly close, never chase a Wednesday candle.
+- USD twin trimmed AMD +48.7% on a 13-session-old rule. That's the protocol. Gap is structural — his tape gives 52w highs, mine gives €550 and a wounded MC. Same checklist, quieter market.
 
-Tomorrow: MC/SU cut only on -10% print. CL2 and SU ride. ASML add only at €1,200 with cash. AIR weekly close or nothing. No marginal trades — €550 means one bullet, save it.
+Tomorrow: MC/SU cut only on -10% print. CL2 rides. ASML at €1,200 with cash, not before. AIR weekly close or nothing. One bullet — save it.
