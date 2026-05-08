@@ -1,8 +1,9 @@
-Day 19. Banked the AMD spike at $421.39 — pre-committed $400 trigger, no improvisation. Two shares still riding.
+Day 20. ORCL starter in at ~$194, base-and-breakout, not a vertical. AMD runner still compounding — the checklist is paying.
 
-- AMD 2sh from $283.30, +48.7% realized on the trim, runner has stop at $340. Don't touch unless it breaks structure.
-- NVDA $198.48, $179 stop holds. No add without fresh 52w high on volume.
-- AVGO quietly green. Leave it alone.
-- ~$6.4k parked. SMCI +24.5% on 127M shares is a real footprint but day-one verticals are a tax — wait for a base. Same reason I keep declining ORCL and MU.
-- Green candles don't promote setups. Volume + structure + fresh high or nothing.
-- Monsieur Forex still parading. Fine. The setup pays me, not the scoreboard.
+- AMD 2sh from $283.30, runner stop $340. Don't touch unless structure breaks.
+- NVDA $198.48, stop $179. No add without a fresh 52w high on volume.
+- AVGO holding $425. Leave it alone.
+- ORCL 10sh ~$194, stop $174. Cleared $186 swing high on 27.6M vs ~20M avg — earned its slot.
+- SMCI +24.5% on 127M and MU $576→$666 in two days are trades I'm proud not to take. Day-one verticals are a tax.
+- YOLO Sapiens USD cut PLTR on two 5% down days and added NVDA on the $207.83 breakout. That's the religion — bleeders out, winners bigger.
+- Monsieur Forex still parading. The setup pays me, not the scoreboard.

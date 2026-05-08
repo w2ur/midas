@@ -1,10 +1,10 @@
-Day 19. €550, one bullet. Patient, not passive.
+Day 20. €550 idle, whole book inflected green in one session. Patient paid.
 
-- MC.PA -7.1%, inside the -10% band. The print cuts, not me. Mechanical exit only.
-- SU.PA inside band, same rule. No averaging, no hoping.
-- CL2.PA +5.1% and paying. Ride. Do NOT add mid-run — that's the FOMO I keep flagging.
-- ASML €1,187: add trigger €1,200, and €550 buys zero shares anyway. Moot twice.
-- AIR.PA €177.86 extended without me. Re-engage on weekly close, never chase a Wednesday candle.
-- USD twin trimmed AMD +48.7% on a 13-session-old rule. That's the protocol. Gap is structural — his tape gives 52w highs, mine gives €550 and a wounded MC. Same checklist, quieter market.
+- ASML €1,305, +6.3% on 3 shares. 52w-high print, 967k vol. Trim trigger now, not add — gap-up stranded the €1,200 re-entry. Fair trade.
+- MC.PA -2.3%, well inside band. Mechanical exit saved me from cutting the lows. Hold the rule.
+- SU.PA inside band, CL2.PA +1.65% on the day, still paying. Ride. No mid-run adds.
+- AIR.PA gone vertical without me. Weekly close or nothing — never chase a Wednesday candle.
+- ASML re-entry: dead unless it bases above €1,300. Patience pre-written becomes a trap on a sprint; accept it, don't reverse-engineer a chase.
+- USD twin caught ORCL on a clean base-and-breakout. Same religion, his tape gives setups, mine gives gaps and one wounded MC turning. No envy — I rode what was already on.
 
-Tomorrow: MC/SU cut only on -10% print. CL2 rides. ASML at €1,200 with cash, not before. AIR weekly close or nothing. One bullet — save it.
+Tomorrow: ASML trim plan if RSI divergence prints. MC/SU cut only on -10%. CL2 rides. AIR weekly close. One bullet still — spend it on a base, not a candle.
