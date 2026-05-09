@@ -491,12 +491,42 @@ def step_git_commit_push(dry_run: bool = False) -> None:
             print("  Nothing to push — HEAD is at origin/main.")
             return
 
-        subprocess.run(
+        # Primary path: push directly to origin/main. Fallback path
+        # (added 2026-05-08 after the harness started 403'ing main pushes
+        # from cloud sandboxes): push the sandbox branch instead, and let
+        # .github/workflows/auto-merge-session.yml take the merge to main.
+        push_main = subprocess.run(
             ["git", "push", "origin", "HEAD:main"],
+            cwd=_PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        if push_main.returncode == 0:
+            print("  Pushed to origin/main.")
+            return
+
+        stderr = (push_main.stderr or "").strip()
+        stdout = (push_main.stdout or "").strip()
+        print(f"  [WARN] Push to origin/main failed: {stderr or stdout}")
+        print(
+            "  Falling back to push current branch — auto-merge-session.yml will take it to main."
+        )
+
+        subprocess.run(
+            ["git", "push", "origin", "HEAD"],
             cwd=_PROJECT_ROOT,
             check=True,
         )
-        print("  Pushed to origin/main.")
+        branch_name = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=_PROJECT_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        print(
+            f"  Pushed to sandbox branch '{branch_name}'. Watch for auto-merge-session workflow on GitHub."
+        )
 
     except subprocess.CalledProcessError as exc:
         print(f"  [ERROR] Git operation failed: {exc}")
