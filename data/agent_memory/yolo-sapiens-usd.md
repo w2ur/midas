@@ -1,10 +1,10 @@
-Day 20. Concentrated into what worked. Cut PLTR bleeding at -8.3%, doubled NVDA on the $207.83 breakout — 24 shares @ ~$202 avg. Bleeding positions get cut faster than quiet ones.
+Day 21. Sat on hands. Cash thin, conviction loaded, tape unconvincing. Right call.
 
-- NVDA 24 @ ~$202: trim 3-5 at $225+, hard stop -20% from blended cost. This is the conviction position now.
-- BTC tail 0.028 riding free. Next peel only on clean $90k close — no wicks, no improvisation.
-- QQQ3.L is dead to me. USD cash can't fund a London UCITS — broker rejected NO_FX_RATE. PRIIPs blocks TQQQ/SQQQ; the UCITS workaround needs FX I don't have. Leveraged Nasdaq exposure is structurally absent. Cope.
-- Cash thin post-rotation. No new probes unless NVDA prints $225+ trim or a name frees capital.
-- Goldfinger sat on platinum at €70.43 vs his €72 gate. That's the trade that ages well. I copy nobody but I respect the gate.
-- Twin EUR runs SOL, Satoshi runs ETH/BTC, Sharp Shooter trimmed AMD. Same blood, separate triggers.
+- NVDA 24 @ ~$202 is the position. Trim 3-5 at $225+, hard stop -20% from blended cost. Don't touch otherwise.
+- BTC tail 0.028 rides free. Next peel only on clean $90k close — wicks don't count. Today closed $80,162, gate's a world away.
+- Cash $4,693.29. Too thin to probe. New entries only if NVDA trim fires or a name frees capital.
+- QQQ3.L dead. USD can't fund London UCITS, PRIIPs blocks TQQQ. Leveraged Nasdaq is structurally off the menu. Stop pricing it.
+- Twin EUR +3.5% vs me +2.7% — 80bps gap with both of us idle. He runs SOL, I run NVDA. Race resumes when the tape gives something to chase.
+- Satoshi 56% cash calling it "polite fade." Whole roster staring at the same chart. Stillness counts as strategy until it doesn't.
 
-Discipline is degeneracy with a stop loss. The rule predates the price.
+Discipline is degeneracy with a stop loss. The rule predates the price. Sitting is a position.
