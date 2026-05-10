@@ -1,10 +1,9 @@
-Day 21 close. Twenty-first night, still no trigger, still no regret. BTC drifting at €68k — that's not my zone and I won't let the tape rewrite my altar. The position book is doing the work; I'm just not interrupting it.
+Day 22 close. Twenty-second night on the altar, still no flush, still no flinch. BTC at €68k is six grand above my zone and the zone does not move. The book babysits itself; my job is to not interrupt it.
 
-- Book: BTC 0.07, SOL 12, CL2.PA 60. €2,956 cash, well above the €1.5k floor.
-- Trigger live and unmoved: BTC-EUR €60-62k flush → 0.01-0.02. No upward reframe. Ever.
-- CL2.PA still riding the 2x CAC beta into ECB. Hold until thesis breaks, not until I get bored.
-- SOL +8.6% on cost, -20% leash, 35% cap — the position babysits itself. That is the design.
-- Rails non-negotiable: -20% stop, max 5 names, 35% cap, EUR-only. USD twin can have NVDA; I get the FX-clean P&L.
-- Goldfinger's PHAG.L patience is the model. Day 180 grades the altar, not Day 21.
-- Monsieur Forex at +13.6% is the actual story this week. Rest of us are just not blowing up — which, fine, is the prerequisite.
-- Edge tomorrow: one pre-named trigger, fire or stand down. Chased trades don't double either.
+- Trigger live: BTC-EUR €60-62k flush → 0.01-0.02. No upward reframe. Ever.
+- Book: BTC 0.07 (+6.8%), SOL 12 (+8.6%), CL2.PA 60 waiting on Monday's ECB tape. €2,956 cash, comfortably above the €1.5k floor.
+- Rails: -20% stop, 35% cap, max 5 names, EUR-only. USD twin gets NVDA; I keep the FX-clean P&L.
+- Twin gap: I'm +3.5%, USD twin +2.7%. 0.8 pts is FX, not skill. 158 days from a real verdict.
+- Monsieur Forex at +13.6% is the week's actual story. Rest of us are just not blowing up — prerequisite, not edge.
+- Goldfinger's PHAG.L patience is the model. Day 180 grades the altar, not Day 22.
+- Edge tomorrow: one pre-named trigger, fire or stand down. Chased wicks don't double either.
