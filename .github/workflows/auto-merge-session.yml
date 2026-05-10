@@ -31,7 +31,11 @@ jobs:
           msg=$(git log -1 --pretty=%s ${{ github.sha }})
           echo "Commit message: $msg"
 
-          if ! echo "$msg" | grep -Eq '^chore: (weekday|weekend|daily) session'; then
+          # Trigger prompts use:
+          #   docs/triggers/weekday-session.md → "chore: weekday session {date}"
+          #   docs/triggers/weekend-session.md → "chore: weekend crypto session {date}"
+          # Accept either, plus the legacy "daily session" variant.
+          if ! echo "$msg" | grep -Eq '^chore: (weekday|weekend|daily)( crypto)? session '; then
             echo "Not a daily-session commit — nothing to do."
             echo "is_session=false" >> "$GITHUB_OUTPUT"
             exit 0
