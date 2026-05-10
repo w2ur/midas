@@ -152,14 +152,15 @@ class PortfolioManager:
             portfolio.cash -= cost
 
             # Find existing position for this ticker.
-            existing = next((p for p in portfolio.positions if p.ticker == trade.ticker), None)
+            existing = next(
+                (p for p in portfolio.positions if p.ticker == trade.ticker), None
+            )
             if existing is not None:
                 # Weighted average cost.
                 total_shares = existing.shares + trade.shares
                 existing.avg_cost = (
-                    (existing.shares * existing.avg_cost + trade.shares * trade.price)
-                    / total_shares
-                )
+                    existing.shares * existing.avg_cost + trade.shares * trade.price
+                ) / total_shares
                 existing.shares = total_shares
             else:
                 new_position = Position(
@@ -172,7 +173,9 @@ class PortfolioManager:
                 portfolio.positions.append(new_position)
 
         elif action == "SELL":
-            existing = next((p for p in portfolio.positions if p.ticker == trade.ticker), None)
+            existing = next(
+                (p for p in portfolio.positions if p.ticker == trade.ticker), None
+            )
             if existing is None:
                 raise ValueError(
                     f"Cannot sell {trade.ticker}: no open position for strategy {strategy_id!r}"
@@ -187,10 +190,14 @@ class PortfolioManager:
 
             existing.shares -= trade.shares
             if existing.shares == 0:
-                portfolio.positions = [p for p in portfolio.positions if p.ticker != trade.ticker]
+                portfolio.positions = [
+                    p for p in portfolio.positions if p.ticker != trade.ticker
+                ]
 
         else:
-            raise ValueError(f"Invalid trade action: {trade.action!r}. Expected 'BUY' or 'SELL'.")
+            raise ValueError(
+                f"Invalid trade action: {trade.action!r}. Expected 'BUY' or 'SELL'."
+            )
 
         portfolio.last_updated = trade.timestamp.date()
 
@@ -248,4 +255,15 @@ class PortfolioManager:
             "positions_value": positions_value,
             "benchmarks": benchmarks,
         }
-        self._append_json_list(self._snapshots_path(strategy_id), snapshot)
+        path = self._snapshots_path(strategy_id)
+        records: list[dict] = self._read_json(path)  # type: ignore[assignment]
+        date_key = snapshot["date"]
+        replaced = False
+        for i, existing in enumerate(records):
+            if existing.get("date") == date_key:
+                records[i] = snapshot
+                replaced = True
+                break
+        if not replaced:
+            records.append(snapshot)
+        self._write_json(path, records)
