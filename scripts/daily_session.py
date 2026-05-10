@@ -43,8 +43,9 @@ from engine.agent_memory import (
     save_journal,
 )
 from engine.blog import build_oracle_prompt, save_daily_blog_draft
-from engine.market_data import MarketDataFetcher
+from engine.ohlcv_store import latest_close_on_or_before
 from engine.orders import Order, append_order, make_order_id
+from engine.types import Portfolio
 from engine.output_bundle import (
     assemble_output_bundle,
     get_day_number,
@@ -327,6 +328,26 @@ def step_save_content(
     return bundle
 
 
+def _compute_positions_value(
+    portfolio: Portfolio, on: date, store: Path | None = None
+) -> float:
+    """Mark a portfolio's open positions to market using per-ticker latest closes.
+
+    For each position, walks the OHLCV store for the most recent close at or
+    before `on`. Falls back to avg_cost when no row exists. This carries
+    European tickers forward when their same-day close hasn't landed yet —
+    avoids the NaN portfolio_value bug where pandas left-joined a pricing
+    DataFrame whose `iloc[-1]` row contained NaN for lagging markets.
+    """
+    total = 0.0
+    for p in portfolio.positions:
+        price = latest_close_on_or_before(p.ticker, on, store=store)
+        if price is None:
+            price = p.avg_cost
+        total += p.shares * price
+    return total
+
+
 def step_update_snapshots(market_payload: dict) -> list[str]:
     """Step 4 — Append daily snapshots for all active portfolios.
 
@@ -354,10 +375,6 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
     snapshot_date = date.fromisoformat(market_payload["date"])
     benchmarks = market_payload["benchmarks"]
 
-    # Fetch current prices to compute positions_value for each portfolio.
-    cache_dir = _PROJECT_ROOT / "data" / "cache"
-    fetcher = MarketDataFetcher(cache_dir=cache_dir)
-
     snapshotted: list[str] = []
 
     for portfolio_dir in sorted(portfolios_dir.iterdir()):
@@ -375,29 +392,7 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
             print(f"  [WARN] Could not load {strategy_id}: {exc}")
             continue
 
-        # Compute positions value from current prices.
-        positions_value = 0.0
-        if portfolio.positions:
-            tickers = [p.ticker for p in portfolio.positions]
-            from datetime import timedelta
-
-            start = snapshot_date - timedelta(days=7)
-            try:
-                prices_df = fetcher.fetch_prices(
-                    tickers, start=start, end=snapshot_date
-                )
-                if not prices_df.empty:
-                    latest_prices = prices_df.iloc[-1].to_dict()
-                    positions_value = sum(
-                        p.shares * latest_prices.get(p.ticker, p.avg_cost)
-                        for p in portfolio.positions
-                    )
-                else:
-                    # Fall back to cost basis.
-                    positions_value = portfolio.cost_basis
-            except Exception:
-                positions_value = portfolio.cost_basis
-
+        positions_value = _compute_positions_value(portfolio, snapshot_date)
         portfolio_value = portfolio.cash + positions_value
 
         manager.add_snapshot(
