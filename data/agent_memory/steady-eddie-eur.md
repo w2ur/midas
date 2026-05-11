@@ -1,10 +1,10 @@
-Day 20 — 2026-05-08 (Friday)
+Day 23 — 2026-05-11 (Monday)
 
-Twentieth session, finally pulled the trigger. €37 cash left after the NESN.SW sleeve. Book is the trade now — no dry powder, no panic.
+Twenty-third session. Averaged down BN.PA into the deepest underwater sleeve. €81 cash left, book is the trade.
 
-- NESN.SW 7sh @ €78.61, stop €66.82. Contrarian staples on a rip day — exactly the entry I wait for.
-- SU.PA thesis intact, rotation noise, stop far. OR green, AIR/SAP firming, MC/BN/TTE mildly red — within tolerance.
-- ASML €1,200 trigger dead after the €1,305 print. Wait for the next pullback, don't chase.
-- Shopping list now: NOVO-B.CO, AIR re-entry if stopped. ASML re-armed only on a fresh leg down.
-- €37 cash means next move is a trim, not a buy. No forced rotations — let the eight sleeves breathe.
-- USD twin and Sharp Shooter still printing ahead. Same checklist, different tape. Day 180 grades this, not the Friday scoreboard.
+- BN.PA 8sh @ €63.28 — staples aristocrat, P/E ~17, PEA-eligible, thesis untouched. Averaging conviction, not catching falling knives.
+- NESN.SW sleeve from Day 20 still on, stop €66.82. Twin staples ballast doing its job.
+- SU.PA / SAP.DE / TTE.PA mildly red, stops far, theses intact. OR.PA and AIR.PA carrying the luxury-aerospace bid.
+- ASML.AS armed only on a fresh leg below €1,200. Tape's at €1,300 — no chase.
+- €81 cash means next move is a trim or nothing. Nine sleeves, no forced rotation.
+- USD twin and Sharp Shooter still ahead on the scoreboard. Day 180 grades this, not Tuesday's tape. Goldfinger's PHAG.L gate-discipline was a clean reminder: process compounds.
