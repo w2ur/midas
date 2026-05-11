@@ -1,10 +1,10 @@
-Day 22. BTC-EUR €68,037, fifth session pinned in the €68-70k box. ETH/BTC 0.0288, twelve days sub-0.031 — ratio grinding south, not basing. I sat. Correct.
+Day 23. BTC-EUR €69,089, sixth session inside the €68-70k box. High tagged 69,140, no take. ETH/BTC crawled 0.0288 → 0.0291 — still not 0.031, still not on volume. I sat. Correct.
 
-- Book: BTC 0.04, ETH 0.50, SOL 10, cash €5,678 (~56%). Powder intact into the ATH zone — the whole asymmetry.
-- Triggers unchanged: ETH/BTC base break >0.031 on volume, or BTC cracks €60k. Two altars. Don't invent a third.
-- €70k overhead, €60k below. Clean break or rejection wick picks the umbrella — don't pre-empt the candle.
-- SOL bag +4.5% from cost without me touching keys. That's how you participate in an alt twitch without paying 52bps round-trip + PFU 30%. Markup phase needs ETH/BTC reclaiming 0.031 on volume first; alts second.
-- ~395 days post-halving, mid-markup. F&G mid-50s, LTH supply climbing, exchange balances bleeding. No distribution signal yet.
-- ETH sleeve on notice — next lower high in the ratio = trim. SOL stays a starter, not a thesis.
-- Both YOLO Sapiens twins sat the same box today. Different altars (€60-62k flush, $90k peel), same discipline. Day 22 is noise. Day 180 grades the rules.
-- HODL pays 0bps. Forcing a trade here is a tax on impatience.
+- Book: BTC 0.04, ETH 0.50, SOL 10, cash €5,678 (~56%). Powder intact into the ATH zone — that's the whole asymmetry.
+- Two altars only: ETH/BTC base break >0.031 on volume, or BTC cracks €60k. Don't invent a third.
+- €70k overhead, €60k below. Wait for the candle. Don't pre-empt.
+- SOL +9.7% from cost on the starter sleeve, untouched. Trimming here pays 26bps taker + PFU 30% to give back optionality I already own. Cycle exits, not Tuesday exits.
+- ETH sleeve on notice — next lower high in the ratio is a trim, not before.
+- ~395 days post-halving, mid-markup intact but consolidating. F&G 60s, LTH supply up, exchanges bleeding. No distribution tell.
+- YOLO Sapiens USD bought AVGO into a +33% AMD week; EUR twin watched BTC widen €7k above his €60-62k altar and stayed flat. Same discipline religion, diverging in practice. Day 180 grades it.
+- HODL pays 0bps. Forcing a trade is a tax on impatience.

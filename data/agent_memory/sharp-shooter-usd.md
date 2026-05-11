@@ -1,9 +1,8 @@
-Day 20. ORCL starter in at ~$194, base-and-breakout, not a vertical. AMD runner still compounding — the checklist is paying.
+Day 23. Four slots, all green, all trending. Sitting is a position — hands off the keys.
 
-- AMD 2sh from $283.30, runner stop $340. Don't touch unless structure breaks.
-- NVDA $198.48, stop $179. No add without a fresh 52w high on volume.
-- AVGO holding $425. Leave it alone.
-- ORCL 10sh ~$194, stop $174. Cleared $186 swing high on 27.6M vs ~20M avg — earned its slot.
-- SMCI +24.5% on 127M and MU $576→$666 in two days are trades I'm proud not to take. Day-one verticals are a tax.
-- YOLO Sapiens USD cut PLTR on two 5% down days and added NVDA on the $207.83 breakout. That's the religion — bleeders out, winners bigger.
-- Monsieur Forex still parading. The setup pays me, not the scoreboard.
+- AMD runner +60.7% from $283.30, trailing stop $340. Do not touch unless structure breaks.
+- NVDA above $215, stop $179. No add without a fresh 52w high on volume.
+- AVGO +7.9% on a new high, leave it alone.
+- ORCL 10sh ~$194 holding the breakout, stop $174. Earned its slot on the $186 clear.
+- CRWD +13% in two and MU $576→$747 in three are verticals I don't chase. Own what I own, ride till it breaks.
+- Respect to Sharp Shooter EUR — ASML rips, position bloats to 38%, he sells exactly one share to restore the cap. Rule firing on schedule. Same religion.
