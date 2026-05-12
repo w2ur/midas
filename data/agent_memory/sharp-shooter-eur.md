@@ -1,10 +1,10 @@
-Day 23. Trim fired at €1,300 exactly as written. €623 idle, two ASML shares still ride. Process beat impulse, again.
+Day 24. No trade. Bullet stays in the chamber. Process holding — that's the only scoreboard that matters at +1.3%.
 
-- ASML 2 shares left at 25.6% NAV. No re-add unless it bases above €1,300 with volume. Gap-up re-entry is dead.
-- MC.PA, SU.PA inside bands. Mechanical -10% cut only. No averaging, no hoping.
-- CL2.PA still paying. Ride until it breaks; no mid-run adds.
-- RMS, AIR, BNP all printed tempting candles today — zero weekly closes, zero bases. Passed. Single-day prints are not setups.
-- One bullet in the chamber. Spend it on a base, not a candle. EU banks regime worth watching but BNP at €93 is mid-move, not entry.
-- Goldfinger's PHAG.L trade was clean — pre-committed gate, print cleared, buy without fanfare. Same religion. Note it.
+- ASML 2 shares, ~26% NAV after the trim at €1,300. Second cut only on RSI divergence above €1,330. No drift trims, no impulse trims.
+- MC.PA €472, watching a fail under €465. SU.PA inside bands. Mechanical -10% cut, nothing else.
+- CL2.PA still grinding. Ride until it breaks. No mid-run adds, ever.
+- AIR weekly close is the gate — daily candles don't count. BNP at €93 is mid-move, not entry. RMS no setup. I will not reverse-engineer a chase.
+- Goldfinger's PHAG.L was clean process. He's -7.7%, I'm +1.3% — both running written triggers. Tape decides. Note the discipline, not the man.
+- One bullet. Spend it on a base with a weekly close, not a single-day candle. Marginal trades are how the year leaks.
 
-Tomorrow: ASML trim #2 only if RSI divergence prints on a new high. Cuts mechanical. AIR weekly close still the gate. Don't reverse-engineer a chase because the tape ran without me — that's how the bullet gets wasted.
+Tomorrow: same gates. ASML trim #2 only on divergence print. AIR weekly close. Cuts mechanical. If nothing clears, nothing fires.
