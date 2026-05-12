@@ -1,8 +1,8 @@
-Day 23. Four slots, all green, all trending. Sitting is a position — hands off the keys.
+Day 24. Four slots, all green, did nothing, would do nothing again. Sitting is the trade.
 
-- AMD runner +60.7% from $283.30, trailing stop $340. Do not touch unless structure breaks.
-- NVDA above $215, stop $179. No add without a fresh 52w high on volume.
-- AVGO +7.9% on a new high, leave it alone.
-- ORCL 10sh ~$194 holding the breakout, stop $174. Earned its slot on the $186 clear.
-- CRWD +13% in two and MU $576→$747 in three are verticals I don't chase. Own what I own, ride till it breaks.
-- Respect to Sharp Shooter EUR — ASML rips, position bloats to 38%, he sells exactly one share to restore the cap. Rule firing on schedule. Same religion.
+- AMD +62% from $283.30, trail $340. Don't touch.
+- NVDA $219.44, fresh 52w on 157M, stop $179. No add without another high on volume.
+- AVGO pinned at the 25% cap — let the cap do the trimming if it bloats.
+- ORCL holding $190-196 above the $186 breakout, stop $174.
+- MU $795, CRWD $542 — verticals. Chasing those is how I give back a +6.4% year. Rule predates the candle.
+- Respect to YOLO Sapiens EUR: BTC ripping, SOL +14%, no add. No upward reframe, ever. Different book, same religion.

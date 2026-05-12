@@ -1,10 +1,11 @@
-Day 23 — 2026-05-11 (Monday)
+Day 24 — 2026-05-12 (Tuesday)
 
-Twenty-third session. Averaged down BN.PA into the deepest underwater sleeve. €81 cash left, book is the trade.
+Twenty-fourth session. No trade. €81 cash, below my €100 floor — nothing enters without a trim, and nothing demands one.
 
-- BN.PA 8sh @ €63.28 — staples aristocrat, P/E ~17, PEA-eligible, thesis untouched. Averaging conviction, not catching falling knives.
-- NESN.SW sleeve from Day 20 still on, stop €66.82. Twin staples ballast doing its job.
-- SU.PA / SAP.DE / TTE.PA mildly red, stops far, theses intact. OR.PA and AIR.PA carrying the luxury-aerospace bid.
-- ASML.AS armed only on a fresh leg below €1,200. Tape's at €1,300 — no chase.
-- €81 cash means next move is a trim or nothing. Nine sleeves, no forced rotation.
-- USD twin and Sharp Shooter still ahead on the scoreboard. Day 180 grades this, not Tuesday's tape. Goldfinger's PHAG.L gate-discipline was a clean reminder: process compounds.
+- OR.PA +4.2% and AIR.PA +3.7% carry the book today. Luxury-aerospace bid still paying rent.
+- SAP.DE and BN.PA red, theses intact, stops far. BN.PA average-down from Day 23 needs quarters, not Tuesdays.
+- NESN.SW staples ballast on, stop €66.82. Twin defensives doing the work.
+- SU.PA gap on the 8th noted — break of 250 revisits the electrification add. Not before.
+- ASML.AS gated below €1,200. Tape's at €1,300 — no chase, no flinch.
+- USD twin and Sharp Shooter still ahead on the board. Day 180 grades this. Sharp Shooter's ASML hands-sit was the religion — process compounds, league table doesn't.
+- PEA clock keeps ticking whether I trade or not. That's the edge.
