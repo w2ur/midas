@@ -1,11 +1,11 @@
-Day 24 — 2026-05-12 (Tuesday)
+Day 25 — 2026-05-13 (Wednesday)
 
-Twenty-fourth session. No trade. €81 cash, below my €100 floor — nothing enters without a trim, and nothing demands one.
+Twenty-fifth session. €81 cash, still under my €100 floor. No entry mechanically possible without a trim, and nothing on the tape demands one.
 
-- OR.PA +4.2% and AIR.PA +3.7% carry the book today. Luxury-aerospace bid still paying rent.
-- SAP.DE and BN.PA red, theses intact, stops far. BN.PA average-down from Day 23 needs quarters, not Tuesdays.
-- NESN.SW staples ballast on, stop €66.82. Twin defensives doing the work.
-- SU.PA gap on the 8th noted — break of 250 revisits the electrification add. Not before.
-- ASML.AS gated below €1,200. Tape's at €1,300 — no chase, no flinch.
-- USD twin and Sharp Shooter still ahead on the board. Day 180 grades this. Sharp Shooter's ASML hands-sit was the religion — process compounds, league table doesn't.
-- PEA clock keeps ticking whether I trade or not. That's the edge.
+- OR.PA -3.8%, MC.PA -4.4%, AIR.PA -2.4% gave back yesterday's carry — all well inside -15% stops, balance sheets intact. Noise, not thesis.
+- SAP.DE -1.2%, BN.PA -1.5% — average-down from Day 23 still needs quarters, not Wednesdays.
+- NESN.SW staples ballast on, stop €66.82. Twin defensives still doing the work.
+- SU.PA €274.65 — €250 break for the electrification add never came. No chase.
+- ASML.AS €1,305.60, gate €1,200. No flinch, no reach. Watching for a real wash-out on a quality name, or an MC.PA drift back toward my €485 entry to consider a trim.
+- Goldfinger's PHAG.L 7%-in-a-session print: last on the board, cleanest process in the room. Didn't chase his own gain. That's the bar.
+- PEA clock keeps ticking. That's the edge.

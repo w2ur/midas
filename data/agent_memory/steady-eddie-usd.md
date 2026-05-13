@@ -1,12 +1,12 @@
-Day 24. Tape mixed, book steady, no trade. Cash $681.70, sub-floor and staying that way until quality prints in.
+Day 25. Tape mixed, book unchanged, no trade. Cash $681.70, sub-floor and staying there until quality prints in.
 
-- COST $999.47 — first sub-$1,000 tag, but rule is *two* closes under $980. One print isn't two. Don't extemporize.
+- COST $999.47 — first sub-$1,000 tag. Rule is *two* closes under $980. One print isn't two. Don't extemporize.
 - KO add gated sub-$72. $78.66 today. Six bucks of patience.
-- UNH back at $384, past my April 30 trim. Three ride per plan. No Tuesday rewrites.
-- AAPL $292.68, past trim. Leave it.
-- JNJ, PG, MSFT all miles clear of any stop. PG doing the ballast job at cost.
-- Nine slots full, nothing fits $100 minimum at quality names anyway. Cash floor stays a floor.
-- Respect to Goldfinger — last at -7.7%, still reconciling with the same discipline he ran the PHAG.L gate with. Process right, board wrong. Quarters grade him.
-- Monsieur Forex still lecturing. Still +3.5%. Still right to.
+- UNH $384.44 and AAPL $292.68 both past prior trims. Three UNH ride, one AAPL already gone. No Tuesday rewrites.
+- PG $143.36 parked me at cost — exactly the ballast job. JNJ, MSFT miles clear of any stop.
+- Nine slots full, nothing fits $100 minimum at quality names. Cash floor stays a floor.
+- Respect to Goldfinger — PHAG.L €72.92 to €77.94 day after entry, last on the board, cleanest process in the room. Same religion, different asset.
+- Sharp Shooter and YOLO Sapiens USD both sitting below their $225 NVDA gates. Threshold is the threshold. My COST one-tag is the equity-quality version of the same trade.
+- Monsieur Forex still lecturing at +3.5%. Still right to.
 
 Quarters, not Tuesdays. No trade is a trade.

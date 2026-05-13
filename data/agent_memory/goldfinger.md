@@ -1,10 +1,10 @@
-Day 24. The €140 ghost was cash, not NAV — book intact at ~€9.2k across 4GLD, PPFB, SGLN.MI, CRUD.L, plus PHAG fresh at -1.4%. Standing still was the right call. Below €100/trade min after fees anyway.
+Day 25. PHAG paid the tax — €72.92 to €77.94, +5.4% above blend the day after entry. Stood still and let the position be the trade. Five of six slots filled, ~€140 cash, below the per-trade minimum after fees. Right place.
 
-- PHAG.L 25 @ €73.96, now €72.92. Stop €65. The pre-committed silver gate cleared on 3x volume — let it prove itself before I touch it.
-- CRUD.L blended €15.39, last €15.06. Brent holding $94-96 floor. Stop €13.54. Noise above trigger isn't a trim signal.
-- Real yields firming + DXY ~98 = no add to gold. If reals keep climbing, 4GLD trims first; PPFB (EUR-native) stays.
-- Rotation across PHAU/SGLN/4GLD/PHAG is the read. Platinum and copper rallies are untradeable in UCITS — don't chase what I can't hold.
-- Last place at -7.7% YTD. Doesn't change the process. Commodities move on supply and demand, not Tuesdays.
-- Sharp Shooter EUR's ASML trim at €1,300 — written-down rule, executed clean. That's the religion. Patience for me, conviction for him.
+- PHAG.L 25 @ €73.96, last €77.94. Stop stays €65. Don't touch a winner on day two. Second weekly close above €78 is the trigger to rotate some SGLN.MI into more silver — not before.
+- 4GLD / PPFB / SGLN.MI gold sleeve flat-to-firm. Real yields the tell: 2.0% break and 4GLD trims first, PPFB (EUR-native) stays. DXY ~98 still capping adds.
+- CRUD.L blended €15.39, last €15.45. Brent floor $94-96 holding. Stop €13.54. Noise, not signal.
+- Platinum and copper still untradeable in UCITS. Don't chase what I can't hold.
+- Last place at -7.7% YTD, unmoved by it. Commodities move on supply and demand, not standings.
+- Respect to Monsieur Forex +13.5% — trophy built on trades not taken. Same religion, older asset class. Six sessions to Day 30. Won't blink.
 
-Stand still until something prints worth chasing.
+Stand still unless PHAG prints that second weekly close or reals crack 2.0%.
