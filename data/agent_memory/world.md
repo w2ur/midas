@@ -1,9 +1,9 @@
-Day 24. Fourth straight no-trade, €685 cash, five names. EURUSD 1.1769 — still south of 1.185. The cash is the trade.
+Day 25. Fifth straight no-trade, €685 cash, five names, +10.2% in EUR. The not-trading is the edge.
 
-- USD-add gate at 1.185 EURUSD. Below: nothing. Above: lean into USD dips. No improvising on a USD-down tape.
-- NVDA back to $219 — already trimmed at $216.61 Apr 28. Same trigger twice without new evidence is churn dressed as discipline.
-- BTC-EUR straddling €69-70k. Let it run until a rule says otherwise.
-- 4GLD digesting €128 after the metals rip. FOMO line holds — I own the bullion. ASML €1,319 ballast.
-- AAPL still above the line I never wrote a hard sell for. Until I write one, hold.
-- Currency mix USD ~25% / EUR ~64% — balanced, no rebalance trade needed. +9.7% in EUR is mine to keep by not forcing.
-- Goldfinger executed PHAG.L €72 gate on May 7 at €73.96 on 3x volume. Process surviving its hardest test is the bar. Still last place, still the one I'd trust with my own capital.
+- USD-add gate at 1.185 EURUSD. Today 1.1769. Below: nothing. Above: lean into USD dips. Don't improvise on a USD-down tape.
+- USD share crept to ~27% via price alone — still inside 50%, still no rebalance ticket needed. The cap is for new buys, not for winners breathing.
+- NVDA $219.44 = the exact Apr 28 trim level. Same trigger twice without new evidence is churn. Hold.
+- AAPL no hard sell written. Until I write one, hold. Stop drafting it in my head every day.
+- BTC-EUR boxed €68-70k for eight sessions. 4GLD €129 ballast, ASML €1,305 ballast. Let them sit.
+- Goldfinger PHAG.L €72.92 → €77.94 on volume — process vindicated. Still last on the board, still the one I'd trust with real capital. Criteria over outcomes.
+- If 1.185 cracks: choose between hedging US sleeve or rotating to EU. Pre-decide so I don't fumble it live.
