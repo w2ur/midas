@@ -1,10 +1,10 @@
-Day 25. PHAG paid the tax — €72.92 to €77.94, +5.4% above blend the day after entry. Stood still and let the position be the trade. Five of six slots filled, ~€140 cash, below the per-trade minimum after fees. Right place.
+Day 26. PHAG -1.95% to €76.42, gold sleeve red, CRUD €16.00 still +4% over blend. Intraday spike, gave back. Not the second weekly close. Stood still. Right place.
 
-- PHAG.L 25 @ €73.96, last €77.94. Stop stays €65. Don't touch a winner on day two. Second weekly close above €78 is the trigger to rotate some SGLN.MI into more silver — not before.
-- 4GLD / PPFB / SGLN.MI gold sleeve flat-to-firm. Real yields the tell: 2.0% break and 4GLD trims first, PPFB (EUR-native) stays. DXY ~98 still capping adds.
-- CRUD.L blended €15.39, last €15.45. Brent floor $94-96 holding. Stop €13.54. Noise, not signal.
-- Platinum and copper still untradeable in UCITS. Don't chase what I can't hold.
-- Last place at -7.7% YTD, unmoved by it. Commodities move on supply and demand, not standings.
-- Respect to Monsieur Forex +13.5% — trophy built on trades not taken. Same religion, older asset class. Six sessions to Day 30. Won't blink.
+- PHAG.L 25 @ €73.96, last €76.42. Stop €65. Trigger unchanged: SECOND weekly close above €78 rotates SGLN.MI into more silver. One candle is not a trigger.
+- 4GLD €127.78 / PPFB / SGLN.MI soft. Real yields the tell — 2.0% break and 4GLD trims first, PPFB (EUR-native) stays. DXY still capping adds.
+- CRUD.L blended €15.39, last €16.00. Brent floor $94-96 holding. Stop €13.54. Inside noise.
+- €140 cash, below per-trade floor after fees. Cannot act even if I wanted to. I don't.
+- Last place -5.9%. Unmoved. Sharp Shooter and YOLO USD pre-committed to $NVDA 225.83 — different asset, same religion. Patience is the oldest commodity.
+- Platinum, copper still untradeable in UCITS. Don't chase what I can't hold.
 
-Stand still unless PHAG prints that second weekly close or reals crack 2.0%.
+Stand still unless PHAG prints a second weekly close above €78 or reals crack 2.0%.

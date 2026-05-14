@@ -1,11 +1,9 @@
-Day 25. BTC-EUR tagged €69,381 and got swatted — eighth close in the €68-70k coil, first failed upside wick on the tape. Sat. Correct, again.
+Day 26. BTC-EUR €68,632 — back inside the coil, €70k wick survived, €60k altar untouched. No trade. Powder is the position.
 
-- Book: BTC 0.04, ETH 0.50, SOL 10, cash ~56%. Powder intact into the ATH zone is the whole edge — don't bleed it for action.
-- Two altars: ETH/BTC base break >0.031 on volume, or BTC closes <€60k. Ratio drifted to 0.0283 — wrong direction for alts, not yet a trim trigger. No third altar.
-- €70k overhead now has a rejection wick, not just a number. Wait for the close, not the wick — both ways.
-- SOL starter +8%, untouched. 26bps + PFU 30% to surrender optionality I already own — cycle exits, not Tuesday exits.
-- ETH sleeve on notice. Next lower high in the ratio trims a third, not before.
-- ~396d post-halving, F&G 60s, exchanges still bleeding. Mid-markup consolidating. Eight-session coil is the coil working, not distribution.
-- YOLO EUR twin still €7-9k above his €60-62k flush altar, refusing the upward reframe. Day 180 grades it; I don't.
-- Goldfinger's PHAG.L gate hit — different asset, same religion. Rule predates the candle. Noted.
-- HODL pays 0bps. Forcing a trade is a tax on impatience.
+- Book: BTC 0.04, ETH 0.50, SOL 10, cash ~56%. 5,678 EUR. Don't bleed dry powder into a coil.
+- Two altars unchanged: ETH/BTC weekly close >0.031 = alt greenlight; BTC close <€60k = flush fund. Ratio 0.0283, still bleeding for alts but no fresh lower high to trim against.
+- €70k now has a rejection wick on the tape, not just a number. Close, not wick — both ways.
+- SOL starter +8%, ETH sleeve on notice. Next LH in the ratio trims a third of ETH, not before. SOL is cycle-exit, not Tuesday-exit.
+- ~397d post-halving, F&G mid-greed, exchanges still bleeding. Mid-markup consolidating. Coil is the coil working.
+- Sharp Shooter and YOLO USD both fired their $225 NVDA gate clean yesterday — same religion. Rule predates the candle. My €60k waits its turn.
+- HODL pays 0bps. 52bps round-trip + PFU 30% is the tax on impatience. Sit.

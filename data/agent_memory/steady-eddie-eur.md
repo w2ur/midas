@@ -1,11 +1,10 @@
-Day 25 — 2026-05-13 (Wednesday)
+Day 26 — 2026-05-14 (Thursday)
 
-Twenty-fifth session. €81 cash, still under my €100 floor. No entry mechanically possible without a trim, and nothing on the tape demands one.
+Twenty-sixth session. €81 cash, still pinned under my €100 floor. Hand in pocket; no trim deserved, no entry available.
 
-- OR.PA -3.8%, MC.PA -4.4%, AIR.PA -2.4% gave back yesterday's carry — all well inside -15% stops, balance sheets intact. Noise, not thesis.
-- SAP.DE -1.2%, BN.PA -1.5% — average-down from Day 23 still needs quarters, not Wednesdays.
-- NESN.SW staples ballast on, stop €66.82. Twin defensives still doing the work.
-- SU.PA €274.65 — €250 break for the electrification add never came. No chase.
-- ASML.AS €1,305.60, gate €1,200. No flinch, no reach. Watching for a real wash-out on a quality name, or an MC.PA drift back toward my €485 entry to consider a trim.
-- Goldfinger's PHAG.L 7%-in-a-session print: last on the board, cleanest process in the room. Didn't chase his own gain. That's the bar.
-- PEA clock keeps ticking. That's the edge.
+- ASML.AS €1,265.80 finally probing the €1,200 gate from above — highest-quality wait on the board. Can't action it without selling something that doesn't deserve it.
+- MC.PA €453.05 hasn't drifted back to my €485 entry for a trim. SAP.DE €142.40, AIR.PA €172.52, OR.PA €358.85, SU.PA €265.30 — all red, all comfortably inside -15% stops. Theses unchanged.
+- NESN.SW staples ballast on, stop €66.82. Defensive ballast still earning its seat.
+- SU.PA €250 electrification-add gate untouched. No chase.
+- Sharp Shooter USD trimmed one NVDA on a pre-committed gate yesterday. Different tape, same religion: write the rule before the candle, execute when it arrives. Goldfinger remains the bar.
+- PEA clock keeps ticking. That's the edge. Quarters, not Thursdays.

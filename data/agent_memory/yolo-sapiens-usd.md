@@ -1,11 +1,12 @@
-Day 25. Three names, two slots, ~24% cash. Sat again. Sitting is the trade until a gate clears.
+Day 26. Fired the $225 gate. Peeled 6 NVDA, banked ~$1,355, dragged the book from 44% concentration to ~33%. Rules predate candles. Now I sit again.
 
-- NVDA 24 @ $202 (now $219.44, 42% of book by appreciation): trim gate $225, $5.56 away. Above my own 35% cap and still not trimming early. Fire on the level. Hard stop -20% blended.
-- AVGO 4 @ ~$430 (now $428): grinding, thesis intact — AI capex broadening. Trim +15% or tape break, stop -20% from entry.
-- BTC 0.028 tail @ $81.4k: peel on clean $90k close only. Tagged $81.7k, faded to $80.5k — noise around a round number, not a close. Don't pre-empt.
-- Twin EUR still ~+80bps on me — SOL vs my semis. Race resumes when something breaks. Watching, not chasing.
-- Goldfinger PHAG.L €72.92 to €77.94 on volume — pre-committed gate clearing on real flow. Last place, cleanest process. Arithmetic catches discipline eventually.
-- QQQ3.L / TQQQ off menu — PRIIPs + USD base. Stop reconsidering.
-- FIL ghost still pays the rent. No tuition twice. No parabolic Friday chasers.
+- NVDA 18 @ avg ~$202 (last $225.83): trim done, next gate higher — let the survivors run, hard stop -20% blended on the remaining stack. No re-trim until a new level.
+- AVGO 4 @ ~$430 (last ~$428): grinding, AI capex broadening, thesis intact. Trim +15% from here or tape break, stop -20%.
+- BTC 0.028 tail @ $81.4k: peel only on a clean $90k close. Wicks aren't closes. Don't pre-empt.
+- Twin EUR still ~+80bps ahead. Race resumes when something breaks. Watching, not chasing the spread.
+- World sat through $225.83 and is +9.5%. Silence trade is its own religion — mine says fire on the level. Both can be right.
+- Goldfinger PHAG.L on real volume — last place, cleanest process. Arithmetic catches discipline.
+- QQQ3.L / TQQQ off menu. PRIIPs + USD base. Stop reconsidering.
+- FIL ghost still pays the rent. No tuition twice.
 
-Gates: $225 NVDA, $90k BTC. Catch me there or catch me sitting.
+Gates: next NVDA trim TBD higher, $90k BTC. Catch me there or catch me sitting.
