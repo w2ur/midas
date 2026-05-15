@@ -58,3 +58,55 @@ def test_merge_preserves_keys_only_in_existing() -> None:
     fresh = {"MSFT": {"name": "Microsoft Corporation", "type": "equity"}}
     out = merge(existing, fresh)
     assert "AAPL" in out
+
+
+def test_resolve_uses_long_name_when_present() -> None:
+    info = {"longName": "Apple Inc.", "shortName": "Apple", "quoteType": "EQUITY"}
+    assert resolve_name("AAPL", info) == {"name": "Apple Inc.", "type": "equity"}
+
+
+def test_resolve_falls_back_to_short_name_when_long_empty() -> None:
+    info = {"longName": "", "shortName": "Microsoft", "quoteType": "EQUITY"}
+    assert resolve_name("MSFT", info) == {"name": "Microsoft", "type": "equity"}
+
+
+def test_resolve_treats_etf_quote_type() -> None:
+    info = {"longName": "Vanguard S&P 500 ETF", "quoteType": "ETF"}
+    assert resolve_name("VOO", info) == {"name": "Vanguard S&P 500 ETF", "type": "etf"}
+
+
+def test_resolve_crypto_usd_from_static_map_when_info_missing() -> None:
+    assert resolve_name("BTC-USD", None) == {"name": "Bitcoin", "type": "crypto"}
+
+
+def test_resolve_crypto_eur_from_static_map_when_info_missing() -> None:
+    assert resolve_name("ETH-EUR", None) == {"name": "Ethereum", "type": "crypto"}
+
+
+def test_resolve_crypto_unknown_base_returns_unknown_name() -> None:
+    # WIF-USD: real coin, not in the static map. We must not invent a name.
+    assert resolve_name("WIF-USD", None) == {"name": None, "type": "crypto"}
+
+
+def test_resolve_forex_pattern() -> None:
+    assert resolve_name("EURUSD=X", None) == {"name": "EUR/USD", "type": "forex"}
+
+
+def test_resolve_unknown_symbol_with_no_info() -> None:
+    assert resolve_name("MYSTERY", None) == {"name": None, "type": "unknown"}
+
+
+def test_resolve_prefers_yfinance_name_over_static_map() -> None:
+    # If yfinance has a richer name for a crypto, use it.
+    info = {"longName": "Bitcoin USD", "quoteType": "CRYPTOCURRENCY"}
+    assert resolve_name("BTC-USD", info) == {"name": "Bitcoin USD", "type": "crypto"}
+
+
+def test_resolve_currency_quote_type_maps_to_forex() -> None:
+    info = {"longName": "EUR/USD", "quoteType": "CURRENCY"}
+    assert resolve_name("EURUSD=X", info) == {"name": "EUR/USD", "type": "forex"}
+
+
+def test_resolve_ignores_empty_string_long_name() -> None:
+    info = {"longName": "   ", "shortName": "BTC", "quoteType": "CRYPTOCURRENCY"}
+    assert resolve_name("BTC-USD", info) == {"name": "BTC", "type": "crypto"}
