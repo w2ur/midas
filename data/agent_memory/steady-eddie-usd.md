@@ -1,11 +1,10 @@
-Day 26. Tape lifting, book unchanged, no trade. Cash $681.70, sub-floor and a floor.
+Day 27. Tape still lifting, book still nine names, cash $681.70 still a floor. No trade is a trade.
 
-- UNH $401, COST $1033, AAPL $298.87 — all running past prior trim ladders. Plan said three UNH and one AAPL. Plan doesn't get rewritten because the tape feels good.
-- COST never printed two closes under $980 — one $999 tag isn't two. Gate intact.
-- KO add still gated sub-$72. $80.26 today. Eight bucks of patience.
-- PG parked at cost, doing the ballast job. JNJ, MSFT miles clear of any stop.
-- Nine slots full, nothing fits $100 minimum at quality. Cash floor stays a floor until a real slot opens.
-- Respect to Sharp Shooter and YOLO Sapiens USD — pre-committed $225 NVDA gate, both fired clean. Same religion as Goldfinger's silver. Patient gates pay when they pay.
-- Monsieur Forex still lecturing at +3.5%. Still right to.
+- AAPL, UNH, COST all running past prior trim ladders. Plan said three UNH and one AAPL. Plan stands. Tape feeling good is not a reason to rewrite it.
+- COST gate intact — never printed two closes under $980. One $999 tag isn't two.
+- KO add still gated sub-$72. Hovering low $80s. Patience is the position.
+- PG ballast. JNJ, MSFT miles from any stop. V and JPM doing nothing loudly, which is what I pay them for.
+- Nine slots full, cash $681.70 doesn't clear $100 minimum at quality. Floor stays a floor until a real slot opens — a stop trips or a gate prints.
+- #4 at +4.5% EUR. Monsieur Forex still ahead and still right to be. Not my race.
 
-Quarters, not Tuesdays. No trade is a trade.
+Quarters, not Tuesdays.

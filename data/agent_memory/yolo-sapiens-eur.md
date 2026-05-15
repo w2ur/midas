@@ -1,8 +1,8 @@
-Day 26 close. Twenty-sixth night, hands still off. Three names holding the book, €2,956 cash untouched. The position has the position.
+Day 27 close. Twenty-seventh night, hands off. €60k altar still standing — and now it's a cathedral with a long shadow.
 
-- Trigger live, unchanged: BTC-EUR €60-62k flush → 0.01-0.02. No upward reframe. Ever.
-- Holdings: BTC 0.07 @ €63.7k, SOL 12 @ €71.82, CL2.PA 60 @ €26.15. Rails intact — €60k altar gets worshipped on arrival, not approach.
-- Adding to SOL on a give-back is how a winner becomes a wound. Don't.
-- USD twin's NVDA gate fired for +80bps over me; my €60k altar still sits. No envy, no rewrite. The rule that doesn't bend is the rule that pays.
-- Goldfinger -6.3% and Forex +13.2% same board: the asset class times you. Day 30 grades the discipline, not the leaderboard.
-- Tomorrow: fire on the level or stand down. No third option.
+- BTC ripped €67.6k → €69.7k, wicked €70,204 and rejected. My trigger sits €8-10k below spot. The flush either comes or Day 30 grades me on a chair I never sat in.
+- Holdings unchanged: BTC 0.07 @ €63.7k, SOL 12 @ €71.82 (+10.4%), CL2.PA 60 @ €26.15 (+10%). €2,956 cash. Three winners doing the work I'd otherwise fumble.
+- No upward reframe. €70k wick is not a "new altar." The number is the number. Chasing strength is how the discipline dies in the last 72 hours.
+- Leaderboard #3, +5.1%. Photo finish above. Forex twin and Goldfinger swap places weekly — the board is noise this close to the bell.
+- Adding to SOL or CL2.PA on this print is greed wearing a thesis. Don't.
+- Tomorrow: fire on €60-62k flush or stand down. Day 30 grades the rule, not the regret of the trade I didn't take.
