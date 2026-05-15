@@ -28,6 +28,13 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 import pandas as pd
 import yfinance as yf
 
+from engine.tickers import (
+    DEFAULT_PATH as _TICKERS_PATH,
+    load_registry,
+    merge as _merge_registry,
+    resolve_name,
+    save_registry,
+)
 from engine.universes.index import (
     get_sp500_tickers,
     get_dow30_tickers,
@@ -56,6 +63,19 @@ from engine.universes.assets import (
 
 _OHLCV_DIR = _PROJECT_ROOT / "data" / "market" / "ohlcv"
 _PORTFOLIOS_DIR = _PROJECT_ROOT / "data" / "portfolios"
+
+
+def _fetch_ticker_info(symbol: str) -> dict | None:
+    """Fetch yfinance .info for a symbol. Returns None on any failure.
+
+    Names are best-effort — a yfinance hiccup must never fail the OHLCV run.
+    """
+    try:
+        return yf.Ticker(symbol).info  # type: ignore[no-any-return]
+    except Exception as exc:
+        print(f"  ! {symbol}: info fetch error — {exc}", file=sys.stderr)
+        return None
+
 
 # Reference symbols always fetched — used for market commentary and regime detection
 # even when no strategy directly references them.
@@ -314,6 +334,15 @@ def main() -> int:
             "idempotent."
         ),
     )
+    parser.add_argument(
+        "--names-only",
+        action="store_true",
+        help=(
+            "Skip OHLCV download — only refresh the data/tickers.json "
+            "registry. Used for the one-time bootstrap and for cheap "
+            "re-runs after a universe change."
+        ),
+    )
     args = parser.parse_args()
 
     if args.symbols:
@@ -332,36 +361,58 @@ def main() -> int:
     end = date.today()
     default_start = end - timedelta(days=args.history_days)
 
+    registry_updates: dict[str, dict] = {}
+
     total_new = 0
     failures = 0
     for i, symbol in enumerate(symbols, start=1):
-        path = _OHLCV_DIR / f"{symbol}.jsonl"
-        if args.backfill:
-            start = default_start
-        elif path.exists():
-            existing = _existing_dates(path)
-            if existing:
-                last = max(datetime.fromisoformat(d).date() for d in existing)
-                if last >= end - timedelta(days=1):
-                    continue  # Already up to date
-                start = last + timedelta(days=1)
+        if not args.names_only:
+            path = _OHLCV_DIR / f"{symbol}.jsonl"
+            if args.backfill:
+                start = default_start
+            elif path.exists():
+                existing = _existing_dates(path)
+                if existing:
+                    last = max(datetime.fromisoformat(d).date() for d in existing)
+                    if last >= end - timedelta(days=1):
+                        registry_updates[symbol] = resolve_name(
+                            symbol, _fetch_ticker_info(symbol)
+                        )
+                        continue  # OHLCV already up to date; still refresh name
+                    start = last + timedelta(days=1)
+                else:
+                    start = default_start
             else:
                 start = default_start
-        else:
-            start = default_start
 
-        df = _fetch_symbol(symbol, start, end)
-        if df is None:
-            failures += 1
-            continue
-        n = _write_rows(symbol, df)
-        total_new += n
-        if i % 25 == 0 or n > 0:
-            print(f"  [{i}/{len(symbols)}] {symbol}: +{n} rows")
+            df = _fetch_symbol(symbol, start, end)
+            if df is None:
+                failures += 1
+            else:
+                n = _write_rows(symbol, df)
+                total_new += n
+                if i % 25 == 0 or n > 0:
+                    print(f"  [{i}/{len(symbols)}] {symbol}: +{n} rows")
 
-    print(
-        f"\nDone. Wrote {total_new} new rows across {len(symbols)} symbols. {failures} failures."
-    )
+        registry_updates[symbol] = resolve_name(symbol, _fetch_ticker_info(symbol))
+
+    if registry_updates:
+        existing_reg = load_registry()
+        merged = _merge_registry(existing_reg, registry_updates)
+        save_registry(merged)
+        non_null = sum(1 for v in registry_updates.values() if v.get("name"))
+        print(
+            f"Refreshed tickers registry: {non_null}/{len(registry_updates)} "
+            f"symbols resolved to a name."
+        )
+
+    if args.names_only:
+        print(f"\nDone (names-only).")
+    else:
+        print(
+            f"\nDone. Wrote {total_new} new rows across {len(symbols)} "
+            f"symbols. {failures} failures."
+        )
     return 0
 
 
