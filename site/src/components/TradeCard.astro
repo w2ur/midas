@@ -1,6 +1,7 @@
 ---
 import type { Order } from "@/lib/orders";
 import { tickerSlug } from "@/lib/orders";
+import { tickerName } from "@/lib/tickers";
 
 interface Props { orders: Order[] }
 const { orders } = Astro.props;
@@ -22,7 +23,7 @@ function fmtPrice(n: number | null, ccy: string | null): string {
     <div class={`row ${o.status}`}>
       <div class="line">
         <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
-        <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`}>{o.ticker}</a>
+        <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`} title={tickerName(o.ticker) ?? undefined}>{o.ticker}</a>
         <span class="shares">{fmtShares(o.shares)} sh</span>
         <span class="at">@</span>
         <span class="px">{fmtPrice(o.fill_price, o.fill_currency)}</span>

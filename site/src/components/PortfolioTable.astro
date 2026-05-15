@@ -2,6 +2,7 @@
 import type { AgentPortfolio } from "@/lib/output";
 import { loadLastClose, inferCurrency } from "@/lib/ohlcv";
 import { tickerSlug } from "@/lib/orders";
+import { tickerName } from "@/lib/tickers";
 
 interface Props {
   portfolio: AgentPortfolio;
@@ -78,7 +79,7 @@ function fmtShares(n: number): string {
           const weight = r.value !== null && valuedTotal > 0 ? (r.value / valuedTotal) * 100 : null;
           return (
             <tr>
-              <td><a class="tick" href={`/ticker/${tickerSlug(r.ticker)}`}>{r.ticker}</a></td>
+              <td><a class="tick" href={`/ticker/${tickerSlug(r.ticker)}`} title={tickerName(r.ticker) ?? undefined}>{r.ticker}</a></td>
               <td class="num">{fmtShares(r.shares)}</td>
               <td class="num">
                 {r.close !== null ? (
