@@ -12,6 +12,7 @@ Two modes:
      - step_fill_orders()                  → data/orders/inbox/ + portfolio mutation
      - step_build_post_prompts()           → prompts for the orchestrator
      - step_load_memories()                → dict[agent_id, str]
+     - step_build_leaderboard()            → ranked rows (EUR mtm / €10k inception)
      - step_build_oracle_prompt()          → Oracle prompt (optionally with journals)
      - build_portfolio_summaries()         → dict for ALL 10 agents (carry-forward)
      - step_save_content()                 → data/posts/, data/blog/, data/output/
@@ -156,6 +157,45 @@ def step_build_post_prompts(
             )
     print(f"  Built {len(prompts)} post prompts")
     return prompts
+
+
+def step_build_leaderboard(
+    portfolio_summaries: dict[str, dict],
+    on: date | None = None,
+) -> list[dict]:
+    """Step 5a-bis — canonical leaderboard for the day.
+
+    Returns ``[{"rank": int, "agent": str, "return_pct": float}]`` sorted by
+    EUR-equivalent MTM descending, anchored to the €10,000 inception baseline
+    that ``engine/daily_log.py`` and ``engine/baselines.py`` use everywhere
+    else.
+
+    Always call this helper instead of hand-rolling the calculation from
+    ``snapshots.json``. The first persisted snapshot is NOT inception for
+    every agent — agents whose seed portfolio contained non-cash positions
+    (e.g. Monsieur Forex starts with FX cash legs, World starts with
+    multi-currency baskets) have ``snapshots[0]['portfolio_value']`` already
+    reflecting non-zero P&L. Using that as the baseline materially
+    understates their returns. The 2026-05-15 weekday session shipped that
+    bug; this helper is the fix.
+    """
+    from engine.valuation import portfolio_mtm_eur
+
+    print("\n=== Step 5a-bis: Build leaderboard ===")
+    rows: list[dict] = []
+    for agent_id, summary in portfolio_summaries.items():
+        eur_mtm = portfolio_mtm_eur(summary, on)
+        if eur_mtm is None:
+            continue
+        rows.append({
+            "agent": agent_id,
+            "return_pct": (eur_mtm / 10_000 - 1) * 100,
+        })
+    rows.sort(key=lambda r: r["return_pct"], reverse=True)
+    for i, row in enumerate(rows, start=1):
+        row["rank"] = i
+    print(f"  Ranked {len(rows)} agents (top: {rows[0]['agent']} {rows[0]['return_pct']:+.2f}%)")
+    return rows
 
 
 def step_build_oracle_prompt(
