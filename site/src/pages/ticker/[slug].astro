@@ -2,6 +2,7 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { buildTickerIndex, loadAllOrders, tickerSlug, type Order } from "@/lib/orders";
 import { isTradingAgent, getAgent } from "@/lib/roster";
+import { tickerName } from "@/lib/tickers";
 
 export function getStaticPaths() {
   const idx = buildTickerIndex();
@@ -14,6 +15,7 @@ export function getStaticPaths() {
 interface Props { ticker: string }
 const { ticker } = Astro.props;
 const { slug } = Astro.params as { slug: string };
+const name = tickerName(ticker);
 
 const all = loadAllOrders().filter((o) => o.ticker === ticker);
 all.sort((a, b) => (a.date === b.date ? a.order_id.localeCompare(b.order_id) : b.date.localeCompare(a.date)));
@@ -50,6 +52,7 @@ function fmtPrice(n: number | null, ccy: string | null): string {
     <header>
       <p class="eyebrow">Ticker · {slug}</p>
       <h1>{ticker}</h1>
+      {name && <p class="name">{name}</p>}
       <p class="lede">
         Every order any agent wrote for this ticker, filled or rejected. One row per order.
       </p>
@@ -100,6 +103,7 @@ function fmtPrice(n: number | null, ccy: string | null): string {
 </BaseLayout>
 <style>
   .ticker-page h1 { font-family: var(--font-mono); font-size: var(--fs-3xl); margin-bottom: 0.25em; }
+  .ticker-page .name { font-size: var(--fs-md); color: var(--ink-muted); margin: 0 0 1.25rem; font-style: italic; }
   .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 2rem; }
   .stats dl {
     display: grid;
