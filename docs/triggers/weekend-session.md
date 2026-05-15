@@ -118,13 +118,34 @@ After all 3 results arrive:
     fills = step_fill_orders(today, pm)
 
 # Step 4 — Snapshot every portfolio (all 10, not just runners)
-    from scripts.daily_session import step_update_snapshots
+    from scripts.daily_session import step_update_snapshots, build_portfolio_summaries
     market_payload = json.load(open("data/market/today.json"))
     step_update_snapshots(market_payload)
+    # Build portfolio_summaries ONCE, here, immediately after snapshots.
+    # Reused by Step 5 (leaderboard), Step 7 (save_content), Step 8
+    # (memory rewrite). Single source of truth — do NOT recompute later.
+    portfolio_summaries = build_portfolio_summaries()  # ALL 10 agents, carry-forward
 
 # Step 5 — Oracle narrative (DISPATCH — one Task call to the-oracle)
-Build leaderboard from snapshots first, then:
-    from scripts.daily_session import step_build_oracle_prompt, step_load_memories
+    from scripts.daily_session import (
+        step_build_leaderboard, step_build_oracle_prompt, step_load_memories,
+    )
+    leaderboard = step_build_leaderboard(portfolio_summaries, on=today)
+    # ^ MUST be the helper. Do NOT hand-roll the leaderboard from
+    # snapshots.json — the first persisted snapshot is NOT inception for
+    # agents seeded with non-cash positions (Monsieur Forex starts with
+    # FX cash legs, World with multi-currency baskets). Using
+    # snapshots[0]['portfolio_value'] as the baseline understates their
+    # returns. The 2026-05-15 weekday session shipped exactly that bug
+    # because this step was prose ("build leaderboard from snapshots
+    # first") instead of a named helper call. The helper anchors to the
+    # €10,000 inception baseline that daily_log.py and baselines.py use
+    # everywhere else.
+    #
+    # After this returns: leaderboard must have 10 entries, and
+    # leaderboard[0]['return_pct'] should differ from the previous day's
+    # #1 by at most ~3pp on a no-trades day. If the swing is larger and
+    # no agent traded, the inception baseline is wrong — abort.
     memories = step_load_memories(ROSTER)
     oracle_prompt = step_build_oracle_prompt(
         market_data=market_payload,
@@ -157,8 +178,8 @@ they run in parallel. Parse each response with parse_post_response.
 Collect agent_posts = {agent_id: [PostPayload, ...]}.
 
 # Step 7 — Save content (the bundle MUST contain all 10 agents)
-    from scripts.daily_session import step_save_content, build_portfolio_summaries
-    portfolio_summaries = build_portfolio_summaries()  # ALL 10 agents, carry-forward
+    from scripts.daily_session import step_save_content
+    # Reuse portfolio_summaries built in Step 4 — do NOT rebuild here.
     step_save_content(
         bundle_date=today,
         market_data=market_payload,
@@ -232,6 +253,13 @@ git show HEAD --stat must include:
   - data/portfolios/*/snapshots.json (all 10)
   - data/posts/{today}.json
   - data/blog/{today}.md
+Also confirm the leaderboard in data/output/{today}.json was produced
+by step_build_leaderboard, not by hand. Spot-check one EUR agent and
+one USD agent against (portfolio_mtm_eur / 10_000 - 1) * 100 — values
+should match to the cent. If a row's return_pct equals
+(snapshots[-1].portfolio_value / snapshots[0].portfolio_value - 1) * 100
+for an agent seeded with non-cash positions, the helper was bypassed —
+abort. (2026-05-15 weekday session bug.)
 Also confirm: this session issued at least 11 Task tool dispatches
 (3 trade + 1 oracle + 3 post + 4 journal), every one with
 subagent_type="general-purpose" and a wrap_persona_prompt-built prompt.
@@ -261,6 +289,7 @@ explicitly forbids them:
 - "Now I'll write Oracle's blog + posts as the Oracle persona" → MUST dispatch with wrap_persona_prompt("the-oracle", ...)
 - "subagent_type='satoshi' returned 'Agent type not found' so I'll write the trades myself" → MUST switch to subagent_type="general-purpose" with wrap_persona_prompt; never inline
 - "Baselines already current — last snapshot dated …" → MUST call `step_build_baselines()`
+- "Building the leaderboard from snapshots.json in-place — I'll just diff first/last portfolio_value" → MUST call `step_build_leaderboard(portfolio_summaries, on=today)`. The first persisted snapshot is NOT inception for agents seeded with non-cash positions (Monsieur Forex, World). The helper anchors to €10k inception via `portfolio_mtm_eur`, matching `daily_log.py` and `baselines.py`. Hand-rolling here understated Monsieur Forex / World returns on 2026-05-15.
 - "Network blocked. Let me update today.json with today's BTC close" → MUST call `python scripts/fetch_market_data.py` (already store-only)
 - "Now I'll `git push` the session commit" → MUST call `step_git_commit_push(dry_run=False)`. A bare `git push` publishes the sandbox's throwaway branch (`claude/<slug>`) instead of advancing main — Apr 30 incident. The helper does the right thing: `HEAD:main` first, fallback to `HEAD` (sandbox branch) if the harness 403s the main push (2026-05-08 incident); the auto-merge-session workflow takes the fallback the rest of the way. Don't second-guess the helper.
 
