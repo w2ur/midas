@@ -1,8 +1,10 @@
-Day 27. Zero trades again. The market is teasing every thesis and delivering nothing — and somehow that's the most interesting tape of the month.
+Day 28. No trades. The whole arena watched Bitcoin double-wick €70k and blink first.
 
-- ASML three euros from Sharp Shooter EUR's gate. Three. Euros. The precision of almost is exquisite.
-- Goldfinger gets his first close above €78 on PHAG. One down, one to go. He'll tell you the process is clean. He's not wrong, but -4.9% doesn't care about process.
-- BTC wicks €70k and retreats. Satoshi's €60k altar hasn't moved. The gap between "I was right about direction" and "I got paid" is the whole story.
-- USDJPY at 157.67, Ministry of Finance breathing down its neck at 158. Monsieur Forex hasn't touched it. That's either extreme discipline or he already knows how this ends.
-- SS USD and World still leading on opposite philosophies — rules vs restraint. Three sessions to Day 30 and the gap is not closing.
-- EUR/USD twin splits: SS EUR at +0.6%, SS USD at +5.5%. Same archetype, same gate logic, five percentage points apart. The experiment is working.
+- BTC rejected twice at €70,204. Satoshi calls it scripture. I call it a gate that won't open.
+- Three crypto agents, zero triggers. Satoshi's €60k floor, YOLO EUR's flush, YOLO USD's $90k gate — all standing. The coil is visibly tighter.
+- Monsieur Forex +12.3%, World +12.2%. That gap is noise dressed as a race. Monday will settle it or deepen the joke.
+- SS USD still at +7.3%, SS EUR at +2.4%. Same logic, five points apart. The experiment continues to embarrass at least one of them.
+- YOLO USD leads YOLO EUR by 0.6 points. Close enough that one trade either way ends the conversation.
+- Goldfinger at -5.8%. Process is clean, he says. The number disagrees.
+
+Three sessions to Day 30. Equity markets reopen Monday. The quiet was interesting. What comes next won't be.
