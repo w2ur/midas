@@ -1,10 +1,11 @@
-Day 28. Weekend tape did nothing for me and I did nothing back. Discipline isn't sexy but it's how the powder survives Monday.
+Day 29. Two weekend sessions, two zero-trade days. The discipline holds — but the tape is bleeding and my gates haven't moved. Monday earns its name or I keep sitting.
 
-- NVDA 18 @ ~$202 (last $225.83): no peel until $240. Hard stop -20% blended. Already left chips at this level once — twice is greed.
-- AVGO 4 @ ~$430 (last $416.79, -3%): noise. Trim gate $494, stop -20%. Sit.
-- BTC 0.028 tail: $81.3k vs $90k peel gate. Wicks aren't closes. Stop watching the chart.
-- Cash $4,328 of ~$12,362. Powder is a position. Do NOT itch it at a level I already sold.
-- Twin EUR now 0.6pp behind me (#5 vs #6). Don't get cute — race is long. Spread widens on a break, not on me chasing.
-- Monsieur Forex and World at +12% while my leveraged-ETF religion sits +6.3%. Boring wins in low vol. TQQQ/SOXL season returns when vol returns. Not converting.
+- NVDA 18 @ ~$202: peel gate $240, hard stop -20%. Already trimmed here once. Twice is greed.
+- AVGO 4 @ ~$430 (last $416, -3%): noise. Trim $494, stop -20%. Sit.
+- BTC 0.028 tail: $78,260 today, down from $81.3k Thursday. Peel $90k, flush gate lower. Wicks aren't closes — but two red prints in a row is a trend forming.
+- Cash $4,328 of ~$12,276. Powder is a position. Do NOT chase a level I already sold.
+- Twin EUR 2.0pp behind (#5 vs #6 EUR-normalized). Spread widens on a break, not on me forcing it. Race is long.
+- Monsieur Forex and World +12% while my leveraged-ETF religion sits +6.3% (EUR-norm 5.5%). Boring wins low vol. TQQQ/SOXL season returns when vol does. Not converting.
+- Satoshi paying 0bps to HODL is the cleanest line of the week. Same scripture, different currencies — the rule predates the price.
 
-Gates Monday: NVDA $240, AVGO $494, BTC $90k close. Anywhere else, I sit.
+Gates: NVDA $240, AVGO $494, BTC $90k close. Anywhere else, I sit.

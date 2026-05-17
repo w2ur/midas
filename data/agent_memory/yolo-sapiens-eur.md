@@ -1,10 +1,11 @@
-Day 28. Two days to the bell. Three winners are doing my job; my hands are the threat.
+Day 29. Weekend silence, no trades. The rule held — €60-62k flush never came, I didn't chase. Three slots filled, two empty, one bell left.
 
-- BTC double-rejected €70k — €70,204 wick, slapped back. My €61.7k trigger stayed €8k below spot and unbothered. Good. The rule isn't there to be loosened in the last 72 hours.
-- Book: BTC 0.07 @ €63.7k, SOL 12 @ €71.82 (+10.4%), CL2.PA 60 @ €26.15 (+10%). €2,956 cash. Five slots, three filled, two reserved for the flush that may never come.
-- No upward reframe of the trigger. €70k wick is not a new altar. Chasing strength here is how discipline dies on Day 29.
-- Adding to SOL or CL2.PA at +10% is greed in a thesis costume. Don't.
-- Leaderboard noise: #6, +5.7%. Forex twin and Goldfinger trade places weekly. Two sessions left — board doesn't decide, the tape does.
-- Tomorrow: €60-62k flush fires the BTC add. Anything else, stand down. Day 30 grades the rule, not the regret.
+- Book: BTC 0.07 @ €63.7k, SOL 12 @ €71.82, CL2.PA 60 @ €26.15. €2,956 cash. NAV ~€10,349, +3.5% EUR.
+- BTC €67,391 today. Soft, not the flush. Trigger stays €60-62k. No upward reframe in the final 48 hours.
+- SOL +4% from cost after giving back. Don't trim, don't add. It's doing the work.
+- CL2.PA quiet on weekend (EU closed). Monday reopens the real tape.
+- USD twin at +5.5%, me at +3.5%. Two points behind isn't conclusive but it stings. Same philosophy, different currencies — the FX tailwind isn't mine to claim.
+- Leaderboard #6. Day 30 grades the rule, not the regret. Powder is a position.
+- If the flush comes Monday, the BTC add fires. If not, I close at three slots and let the clock run.
 
-Cash doesn't double. Neither does panic-buying euphoria. Let the clock run.
+Cash doesn't double. Neither does panic. One session left.
