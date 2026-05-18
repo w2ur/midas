@@ -1,0 +1,267 @@
+"""Tests for scripts.check_triggers — the conditional-order watcher."""
+
+from __future__ import annotations
+
+import json
+from datetime import date, datetime, timezone
+from pathlib import Path
+
+import pytest
+
+from engine.orders import Order, read_inbox
+from engine.portfolio import PortfolioManager
+from engine.triggers import list_pending, save_pending
+
+
+# ---------------------------------------------------------------------------
+# Fixtures (replicated from test_paper_broker — cross-file fixture sharing
+# via conftest is the alternative; inline keeps this test file self-contained).
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def broker_env(tmp_path, monkeypatch):
+    ohlcv = tmp_path / "ohlcv"
+    ohlcv.mkdir()
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    ticker_ccy_path = tmp_path / "ticker_currencies.json"
+    outbox = tmp_path / "outbox"
+    outbox.mkdir()
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    pm_base = tmp_path / "portfolios"
+    pm_base.mkdir()
+    pending_dir = tmp_path / "pending"
+    cancels_dir = tmp_path / "cancels"
+    monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", ohlcv)
+    monkeypatch.setattr("engine.paper_broker.AGENT_CONFIG_DIR", config_dir)
+    monkeypatch.setattr("engine.paper_broker.TICKER_CURRENCIES_PATH", ticker_ccy_path)
+    monkeypatch.setattr("engine.paper_broker._TICKER_CURRENCY_OVERRIDES", None)
+    monkeypatch.setattr("engine.orders.OUTBOX_DIR", outbox)
+    monkeypatch.setattr("engine.orders.INBOX_DIR", inbox)
+    monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
+    monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+    return {
+        "ohlcv": ohlcv,
+        "config_dir": config_dir,
+        "ticker_ccy": ticker_ccy_path,
+        "outbox": outbox,
+        "inbox": inbox,
+        "pm_base": pm_base,
+        "pending": pending_dir,
+        "cancels": cancels_dir,
+    }
+
+
+def _write_config(config_dir: Path, agent_id: str, **overrides) -> None:
+    cfg = {
+        "max_order_notional": 10_000.0,
+        "max_orders_per_day": 10,
+        "daily_drawdown_halt_pct": -50.0,
+        "allowed_universe": [],
+        "dry_run": False,
+    }
+    cfg.update(overrides)
+    (config_dir / f"{agent_id}.json").write_text(json.dumps(cfg), encoding="utf-8")
+
+
+def _init_portfolio(
+    pm_base: Path, agent_id: str, cash: float = 10_000.0, currency: str = "EUR"
+) -> PortfolioManager:
+    pm = PortfolioManager(pm_base)
+    pm.initialize(agent_id, initial_capital=cash, currency=currency)
+    return pm
+
+
+def _seed_pending(broker_env, **overrides) -> Order:
+    defaults = dict(
+        order_id="ord_2026-05-10_satoshi_003",
+        ts=datetime(2026, 5, 10, 20, 2, tzinfo=timezone.utc),
+        agent_id="satoshi",
+        action="SELL",
+        ticker="BTC-EUR",
+        shares=0.01,
+        reasoning="trim at 85k",
+        currency="EUR",
+        trigger={"op": ">=", "level": 85000.0},
+        expires="2026-06-10",
+    )
+    defaults.update(overrides)
+    o = Order(**defaults)
+    save_pending(o)
+    return o
+
+
+# ---------------------------------------------------------------------------
+# Blackout window
+# ---------------------------------------------------------------------------
+
+
+class TestBlackoutWindow:
+    @pytest.mark.parametrize("hh,mm", [(19, 55), (20, 0), (20, 15), (20, 30)])
+    def test_blackout_skips_processing(self, broker_env, hh, mm) -> None:
+        from scripts import check_triggers
+
+        _seed_pending(broker_env)
+        fake_now = datetime(2026, 5, 17, hh, mm, tzinfo=timezone.utc)
+        result = check_triggers.run(now=fake_now, portfolio_manager=None)
+        assert result["blacked_out"] is True
+        assert len(list_pending()) == 1  # untouched
+
+    @pytest.mark.parametrize("hh,mm", [(19, 54), (20, 31), (3, 0), (14, 30)])
+    def test_normal_hours_do_run(self, broker_env, monkeypatch, hh, mm) -> None:
+        from scripts import check_triggers
+        from engine import triggers as triggers_mod
+
+        _seed_pending(broker_env)
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+        # Force trigger NOT to fire so the run is a no-op besides the blackout check.
+        monkeypatch.setattr(triggers_mod, "get_current_price", lambda t, today: 70000.0)
+        fake_now = datetime(2026, 5, 17, hh, mm, tzinfo=timezone.utc)
+        result = check_triggers.run(now=fake_now, portfolio_manager=pm)
+        assert result["blacked_out"] is False
+
+
+# ---------------------------------------------------------------------------
+# Trigger fire / no-fire / unavailable price
+# ---------------------------------------------------------------------------
+
+
+class TestTriggerFire:
+    def test_fire_when_price_meets_trigger(self, broker_env, monkeypatch) -> None:
+        from scripts import check_triggers
+        from engine import triggers as triggers_mod
+
+        o = _seed_pending(broker_env)
+        _write_config(broker_env["config_dir"], "satoshi")
+        # Seed a position so the SELL can be filled (rails check NO_POSITION_TO_SELL).
+        # Cash must cover the seed BUY (0.1 BTC × 70000 = 7000 EUR).
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=8000.0, currency="EUR"
+        )
+        from engine.types import Trade
+
+        pm.apply_trade(
+            "satoshi",
+            Trade(
+                id="seed_001",
+                timestamp=datetime(2026, 5, 1, tzinfo=timezone.utc),
+                action="BUY",
+                ticker="BTC-EUR",
+                shares=0.1,
+                price=70000.0,
+                total=7000.0,
+                fees=0.0,
+                reasoning="seed",
+            ),
+        )
+        monkeypatch.setattr(
+            triggers_mod, "get_current_price", lambda t, today: 85123.45
+        )
+        fake_now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        check_triggers.run(now=fake_now, portfolio_manager=pm)
+
+        assert list_pending() == []
+        fills = read_inbox(fake_now.date())
+        triggered = [f for f in fills if f.order_id == o.order_id]
+        assert len(triggered) == 1
+        assert triggered[0].status == "filled"
+        assert triggered[0].trigger_fired is True
+        assert triggered[0].fill_price == 85123.45
+
+    def test_no_fire_when_price_doesnt_meet_trigger(
+        self, broker_env, monkeypatch
+    ) -> None:
+        from scripts import check_triggers
+        from engine import triggers as triggers_mod
+
+        _seed_pending(broker_env)
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+        monkeypatch.setattr(triggers_mod, "get_current_price", lambda t, today: 80000.0)
+        fake_now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        check_triggers.run(now=fake_now, portfolio_manager=pm)
+
+        assert len(list_pending()) == 1
+        assert read_inbox(fake_now.date()) == []
+
+    def test_price_unavailable_carries_forward(self, broker_env, monkeypatch) -> None:
+        from scripts import check_triggers
+        from engine import triggers as triggers_mod
+
+        _seed_pending(broker_env)
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+        monkeypatch.setattr(triggers_mod, "get_current_price", lambda t, today: None)
+        fake_now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        check_triggers.run(now=fake_now, portfolio_manager=pm)
+
+        assert len(list_pending()) == 1
+        assert read_inbox(fake_now.date()) == []
+
+
+# ---------------------------------------------------------------------------
+# Expiry takes precedence over firing
+# ---------------------------------------------------------------------------
+
+
+class TestExpiry:
+    def test_expired_order_removed_and_rejection_logged(
+        self, broker_env, monkeypatch
+    ) -> None:
+        from scripts import check_triggers
+        from engine import triggers as triggers_mod
+
+        o = _seed_pending(broker_env, expires="2026-04-01")  # already expired
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+        monkeypatch.setattr(
+            triggers_mod, "get_current_price", lambda t, today: 85123.45
+        )  # would fire if not expired
+        fake_now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        check_triggers.run(now=fake_now, portfolio_manager=pm)
+
+        assert list_pending() == []
+        fills = read_inbox(fake_now.date())
+        expired = [f for f in fills if f.order_id == o.order_id]
+        assert len(expired) == 1
+        assert expired[0].status == "rejected"
+        assert expired[0].reason == "TRIGGER_EXPIRED"
+
+
+# ---------------------------------------------------------------------------
+# Safety rails apply at fire time, not declaration time
+# ---------------------------------------------------------------------------
+
+
+class TestBrokerRailsApplyOnFire:
+    def test_insufficient_cash_at_fire_time_logged_as_rejection(
+        self, broker_env, monkeypatch
+    ) -> None:
+        """The agent's portfolio has 0 cash when the trigger fires — rejection, not fill."""
+        from scripts import check_triggers
+        from engine import triggers as triggers_mod
+
+        _seed_pending(broker_env, action="BUY", trigger={"op": "<=", "level": 90000.0})
+        _write_config(broker_env["config_dir"], "satoshi")
+        # Initialize with 0 cash so a BUY will fail INSUFFICIENT_CASH.
+        pm = _init_portfolio(broker_env["pm_base"], "satoshi", cash=0.0, currency="EUR")
+        monkeypatch.setattr(triggers_mod, "get_current_price", lambda t, today: 80000.0)
+        fake_now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        check_triggers.run(now=fake_now, portfolio_manager=pm)
+
+        assert list_pending() == []  # pending removed regardless of outcome
+        fills = read_inbox(fake_now.date())
+        assert any(
+            f.status == "rejected" and f.reason == "INSUFFICIENT_CASH" for f in fills
+        )

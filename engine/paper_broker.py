@@ -369,3 +369,111 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
                 filled += 1
 
     return fills
+
+
+def execute_triggered_order(
+    order: Order,
+    trade_date: date,
+    portfolio_manager: PortfolioManager,
+    fire_price: float,
+) -> Fill:
+    """Execute a fired conditional order through the same safety rails as market orders.
+
+    Differences from market-order processing:
+      - `fire_price` is the live price observed by the watcher, used as fill_price
+        instead of latest_close_on_or_before. The rails (notional cap, cash check,
+        position check) are evaluated against this price.
+      - The returned Fill always has trigger_fired=True so the agent and the site
+        can distinguish scheduled fills from market fills.
+      - Does NOT consult MAX_ORDERS_PER_DAY (a triggered fire is not a same-day order).
+        Does still respect MAX_ORDER_NOTIONAL, TICKER_NOT_IN_UNIVERSE, INSUFFICIENT_CASH,
+        NO_POSITION_TO_SELL, INSUFFICIENT_SHARES, NO_FX_RATE, APPLY_TRADE_FAILED.
+
+    Caller is responsible for appending the returned Fill to the inbox and removing
+    the pending file (so the watcher can decide policy if it wants).
+    """
+    config = AgentConfig.load(order.agent_id)
+    portfolio = portfolio_manager.load(order.agent_id)
+    base_ccy = portfolio.currency
+    ticker_ccy = _ticker_currency(order.ticker)
+    notional_native = order.shares * fire_price
+
+    if ticker_ccy == base_ccy:
+        notional_base = notional_native
+    else:
+        converted = fx_convert(notional_native, ticker_ccy, base_ccy, trade_date)
+        if converted is None:
+            f = _reject(order.order_id, "NO_FX_RATE")
+            f.trigger_fired = True
+            return f
+        notional_base = converted
+
+    allowed_tickers: set[str] = set()
+    for u in config.allowed_universe:
+        try:
+            allowed_tickers.update(resolve_universe(u))
+        except KeyError:
+            logger.warning("Unknown universe %s in %s config", u, order.agent_id)
+
+    if allowed_tickers and order.ticker not in allowed_tickers:
+        f = _reject(order.order_id, "TICKER_NOT_IN_UNIVERSE")
+        f.trigger_fired = True
+        return f
+
+    if notional_base > config.max_order_notional:
+        f = _reject(order.order_id, "MAX_ORDER_NOTIONAL")
+        f.trigger_fired = True
+        return f
+
+    if order.action == "BUY" and notional_base > portfolio.cash:
+        f = _reject(order.order_id, "INSUFFICIENT_CASH")
+        f.trigger_fired = True
+        return f
+
+    if order.action == "SELL":
+        position = next(
+            (p for p in portfolio.positions if p.ticker == order.ticker), None
+        )
+        if position is None:
+            f = _reject(order.order_id, "NO_POSITION_TO_SELL")
+            f.trigger_fired = True
+            return f
+        if order.shares > position.shares:
+            f = _reject(order.order_id, "INSUFFICIENT_SHARES")
+            f.trigger_fired = True
+            return f
+
+    trade = Trade(
+        id=order.order_id,
+        timestamp=order.ts,
+        action=order.action,
+        ticker=order.ticker,
+        shares=order.shares,
+        price=fire_price,
+        total=notional_base,
+        fees=0.0,
+        reasoning=order.reasoning,
+    )
+
+    if not config.dry_run:
+        try:
+            portfolio_manager.apply_trade(order.agent_id, trade)
+        except ValueError as exc:
+            logger.warning(
+                "apply_trade failed for triggered order %s: %s", order.order_id, exc
+            )
+            f = _reject(order.order_id, "APPLY_TRADE_FAILED")
+            f.trigger_fired = True
+            return f
+
+    return Fill(
+        order_id=order.order_id,
+        ts_filled=datetime.now(timezone.utc),
+        status="filled",
+        fill_price=fire_price,
+        fill_currency=ticker_ccy,
+        notional_base=notional_base,
+        fees=0.0,
+        reason=None,
+        trigger_fired=True,
+    )
