@@ -17,6 +17,9 @@ Rejection reason codes:
 - INSUFFICIENT_SHARES: SELL shares > held shares
 - DAILY_DRAWDOWN_HALT: agent's drawdown <= cap; ALL their orders rejected
 - APPLY_TRADE_FAILED: PortfolioManager.apply_trade raised; broker continues with next order
+- TRIGGER_NO_EXPIRY: conditional order without an expires date (agent error)
+- CANCELLED_BY_AGENT: cancel request matched a pending order; pending file removed
+- CANCEL_TARGET_NOT_FOUND: cancel request targeted an order_id not in pending
 """
 
 from __future__ import annotations
@@ -33,6 +36,11 @@ from engine.ohlcv_store import (
     latest_close_on_or_before,
 )
 from engine.orders import Fill, Order, append_fill
+from engine.triggers import (
+    delete_pending,
+    read_cancels,
+    save_pending,
+)
 from engine.portfolio import PortfolioManager
 from engine.types import Trade
 from engine.universes import resolve_universe
@@ -283,27 +291,65 @@ def _process_one(
 def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill]:
     """Fill all outbox orders for a trade date.
 
-    Malformed outbox lines (bad JSON or shares<=0) produce INVALID_SHARES rejections
-    rather than crashing the pass. Fills write to inbox and (unless dry_run) mutate
-    the portfolio via PortfolioManager.apply_trade.
-    """
-    orders, invalid_ids = _read_outbox_lines(trade_date)
+    Order of operations:
+      1. Process cancel requests — remove targeted pending orders, write
+         CANCELLED_BY_AGENT (or CANCEL_TARGET_NOT_FOUND) rejections to inbox.
+      2. Read outbox, split into conditional (trigger set) and market (trigger None).
+      3. Conditional orders → save_pending() with TRIGGER_NO_EXPIRY rejection
+         for any missing the expires field. No inbox fill on successful registration.
+      4. Market orders → existing per-agent processing (drawdown halt, rails, fill).
 
+    Malformed outbox lines (bad JSON or shares<=0) produce INVALID_SHARES rejections
+    rather than crashing the pass.
+    """
     fills: list[Fill] = []
+
+    # --- Pass 1: process cancel requests ---
+    for cancel in read_cancels(trade_date):
+        removed = delete_pending(cancel.target_order_id)
+        reason = "CANCELLED_BY_AGENT" if removed else "CANCEL_TARGET_NOT_FOUND"
+        f = Fill(
+            order_id=cancel.target_order_id,
+            ts_filled=datetime.now(timezone.utc),
+            status="rejected",
+            fill_price=None,
+            fill_currency=None,
+            notional_base=None,
+            fees=None,
+            reason=reason,
+        )
+        fills.append(f)
+        append_fill(trade_date, f)
+
+    # --- Pass 2: read outbox and split conditional vs market ---
+    orders, invalid_ids = _read_outbox_lines(trade_date)
     for oid in invalid_ids:
         f = _reject(oid, "INVALID_SHARES")
         fills.append(f)
         append_fill(trade_date, f)
 
-    # Group remaining orders by agent so per-agent rails (drawdown, daily cap) apply.
-    by_agent: dict[str, list[Order]] = {}
+    market_orders: list[Order] = []
     for o in orders:
+        if o.trigger is None:
+            market_orders.append(o)
+            continue
+        if o.expires is None:
+            f = _reject(o.order_id, "TRIGGER_NO_EXPIRY")
+            fills.append(f)
+            append_fill(trade_date, f)
+            continue
+        save_pending(o)
+        # No inbox record on successful registration — the agent sees it
+        # next session in their "Active triggers" prompt section.
+
+    # --- Pass 3: existing market-order fill loop ---
+    by_agent: dict[str, list[Order]] = {}
+    for o in market_orders:
         by_agent.setdefault(o.agent_id, []).append(o)
 
     for agent_id, agent_orders in by_agent.items():
         config = AgentConfig.load(agent_id)
 
-        # Drawdown halt: a single per-agent decision that rejects ALL orders.
         if (
             _drawdown_pct(agent_id, portfolio_manager, trade_date)
             < config.daily_drawdown_halt_pct
@@ -314,7 +360,6 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
                 append_fill(trade_date, f)
             continue
 
-        # Resolve allowed universe once per agent.
         allowed_tickers: set[str] = set()
         for u in config.allowed_universe:
             try:

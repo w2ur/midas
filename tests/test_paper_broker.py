@@ -592,3 +592,234 @@ def test_dry_run_fills_inbox_but_does_not_mutate_portfolio(broker_env):
     p_after = pm.load("agent1")
     assert p_after.cash == cash_before
     assert len(p_after.positions) == 0
+
+
+# ---------------------------------------------------------------------------
+# Conditional order routing
+# ---------------------------------------------------------------------------
+
+
+class TestConditionalOrderRouting:
+    def test_market_order_fills_as_before(self, broker_env) -> None:
+        """Sanity: a no-trigger order still goes through the existing fill path."""
+        from engine.orders import read_inbox
+        from engine.paper_broker import fill_day
+
+        d = date(2026, 5, 17)
+        _seed_ohlcv(broker_env["ohlcv"], "BTC-EUR", [("2026-05-17", 80000.0)])
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+
+        append_order(
+            d,
+            Order(
+                order_id="ord_market_001",
+                ts=datetime(2026, 5, 17, 20, 2, tzinfo=timezone.utc),
+                agent_id="satoshi",
+                action="BUY",
+                ticker="BTC-EUR",
+                shares=0.001,
+                reasoning="dip",
+                currency="EUR",
+            ),
+        )
+        fill_day(d, pm)
+        fills = read_inbox(d)
+        assert len(fills) == 1
+        assert fills[0].order_id == "ord_market_001"
+        assert fills[0].status == "filled"
+
+    def test_conditional_order_routed_to_pending_no_inbox_record(
+        self, broker_env, monkeypatch, tmp_path
+    ) -> None:
+        """A conditional order does NOT produce an inbox fill; it goes to pending."""
+        pending_dir = tmp_path / "pending"
+        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
+        cancels_dir = tmp_path / "cancels"
+        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+
+        from engine.orders import read_inbox
+        from engine.paper_broker import fill_day
+        from engine.triggers import list_pending
+
+        d = date(2026, 5, 17)
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+
+        append_order(
+            d,
+            Order(
+                order_id="ord_conditional_001",
+                ts=datetime(2026, 5, 17, 20, 2, tzinfo=timezone.utc),
+                agent_id="satoshi",
+                action="SELL",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="trim at 85k",
+                currency="EUR",
+                trigger={"op": ">=", "level": 85000.0},
+                expires="2026-06-17",
+            ),
+        )
+        fill_day(d, pm)
+
+        fills = read_inbox(d)
+        assert not any(f.order_id == "ord_conditional_001" for f in fills)
+        pending = list_pending()
+        assert len(pending) == 1
+        assert pending[0].order_id == "ord_conditional_001"
+
+    def test_conditional_without_expires_rejected_at_broker(
+        self, broker_env, monkeypatch, tmp_path
+    ) -> None:
+        """A conditional missing expires gets a TRIGGER_NO_EXPIRY rejection (not silently pending forever).
+
+        Note: Order.__post_init__ rejects expires-without-trigger but ALLOWS
+        trigger-without-expires (the agent could forget to set expires). The
+        broker enforces the requirement here.
+        """
+        pending_dir = tmp_path / "pending"
+        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
+        cancels_dir = tmp_path / "cancels"
+        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+
+        from engine.orders import read_inbox
+        from engine.paper_broker import fill_day
+        from engine.triggers import list_pending
+
+        d = date(2026, 5, 17)
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+
+        append_order(
+            d,
+            Order(
+                order_id="ord_no_expiry_001",
+                ts=datetime(2026, 5, 17, 20, 2, tzinfo=timezone.utc),
+                agent_id="satoshi",
+                action="SELL",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="trim",
+                currency="EUR",
+                trigger={"op": ">=", "level": 85000.0},
+                expires=None,
+            ),
+        )
+        fill_day(d, pm)
+
+        fills = read_inbox(d)
+        rejections = [f for f in fills if f.order_id == "ord_no_expiry_001"]
+        assert len(rejections) == 1
+        assert rejections[0].status == "rejected"
+        assert rejections[0].reason == "TRIGGER_NO_EXPIRY"
+        assert list_pending() == []
+
+
+# ---------------------------------------------------------------------------
+# Cancel request processing
+# ---------------------------------------------------------------------------
+
+
+class TestCancelRequestProcessing:
+    def test_cancel_removes_pending_and_writes_rejection(
+        self, broker_env, monkeypatch, tmp_path
+    ) -> None:
+        pending_dir = tmp_path / "pending"
+        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
+        cancels_dir = tmp_path / "cancels"
+        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+
+        from engine.orders import read_inbox
+        from engine.paper_broker import fill_day
+        from engine.triggers import (
+            CancelRequest,
+            append_cancel,
+            list_pending,
+            save_pending,
+        )
+
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+
+        # Seed pending order from a previous session.
+        save_pending(
+            Order(
+                order_id="ord_2026-05-10_satoshi_003",
+                ts=datetime(2026, 5, 10, 20, 2, tzinfo=timezone.utc),
+                agent_id="satoshi",
+                action="SELL",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="trim",
+                currency="EUR",
+                trigger={"op": ">=", "level": 85000.0},
+                expires="2026-06-10",
+            )
+        )
+
+        # Today's session writes a cancel for that order.
+        d = date(2026, 5, 17)
+        append_cancel(
+            d,
+            CancelRequest(
+                request_id="cnl_2026-05-17_satoshi_001",
+                ts=datetime(2026, 5, 17, 20, 5, tzinfo=timezone.utc),
+                agent_id="satoshi",
+                target_order_id="ord_2026-05-10_satoshi_003",
+                reasoning="thesis changed",
+            ),
+        )
+
+        fill_day(d, pm)
+
+        assert list_pending() == []
+        fills = read_inbox(d)
+        cancelled = [f for f in fills if f.order_id == "ord_2026-05-10_satoshi_003"]
+        assert len(cancelled) == 1
+        assert cancelled[0].status == "rejected"
+        assert cancelled[0].reason == "CANCELLED_BY_AGENT"
+
+    def test_cancel_targeting_nonexistent_pending_writes_rejection(
+        self, broker_env, monkeypatch, tmp_path
+    ) -> None:
+        pending_dir = tmp_path / "pending"
+        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
+        cancels_dir = tmp_path / "cancels"
+        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+
+        from engine.orders import read_inbox
+        from engine.paper_broker import fill_day
+        from engine.triggers import CancelRequest, append_cancel
+
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+
+        d = date(2026, 5, 17)
+        append_cancel(
+            d,
+            CancelRequest(
+                request_id="cnl_x",
+                ts=datetime(2026, 5, 17, 20, 5, tzinfo=timezone.utc),
+                agent_id="satoshi",
+                target_order_id="ord_does_not_exist",
+                reasoning="oops",
+            ),
+        )
+        fill_day(d, pm)
+
+        fills = read_inbox(d)
+        no_op = [f for f in fills if f.order_id == "ord_does_not_exist"]
+        assert len(no_op) == 1
+        assert no_op[0].status == "rejected"
+        assert no_op[0].reason == "CANCEL_TARGET_NOT_FOUND"
