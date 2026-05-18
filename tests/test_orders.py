@@ -28,47 +28,77 @@ class TestOrderValidation:
     def test_shares_zero_rejected(self) -> None:
         with pytest.raises(ValueError, match="shares must be > 0"):
             Order(
-                order_id="ord_x", ts=datetime.now(timezone.utc),
-                agent_id="satoshi", action="BUY", ticker="BTC-EUR",
-                shares=0.0, reasoning="test", currency="EUR",
+                order_id="ord_x",
+                ts=datetime.now(timezone.utc),
+                agent_id="satoshi",
+                action="BUY",
+                ticker="BTC-EUR",
+                shares=0.0,
+                reasoning="test",
+                currency="EUR",
             )
 
     def test_shares_negative_rejected(self) -> None:
         with pytest.raises(ValueError, match="shares must be > 0"):
             Order(
-                order_id="ord_x", ts=datetime.now(timezone.utc),
-                agent_id="satoshi", action="BUY", ticker="BTC-EUR",
-                shares=-1.0, reasoning="test", currency="EUR",
+                order_id="ord_x",
+                ts=datetime.now(timezone.utc),
+                agent_id="satoshi",
+                action="BUY",
+                ticker="BTC-EUR",
+                shares=-1.0,
+                reasoning="test",
+                currency="EUR",
             )
 
     def test_invalid_action_rejected(self) -> None:
         with pytest.raises(ValueError, match="action must be"):
             Order(
-                order_id="ord_x", ts=datetime.now(timezone.utc),
-                agent_id="satoshi", action="SHORT", ticker="BTC-EUR",
-                shares=0.01, reasoning="test", currency="EUR",
+                order_id="ord_x",
+                ts=datetime.now(timezone.utc),
+                agent_id="satoshi",
+                action="SHORT",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="test",
+                currency="EUR",
             )
 
     def test_buy_accepted(self) -> None:
         Order(
-            order_id="ord_x", ts=datetime.now(timezone.utc),
-            agent_id="satoshi", action="BUY", ticker="BTC-EUR",
-            shares=0.01, reasoning="test", currency="EUR",
+            order_id="ord_x",
+            ts=datetime.now(timezone.utc),
+            agent_id="satoshi",
+            action="BUY",
+            ticker="BTC-EUR",
+            shares=0.01,
+            reasoning="test",
+            currency="EUR",
         )
 
     def test_sell_accepted(self) -> None:
         Order(
-            order_id="ord_x", ts=datetime.now(timezone.utc),
-            agent_id="satoshi", action="SELL", ticker="BTC-EUR",
-            shares=0.01, reasoning="test", currency="EUR",
+            order_id="ord_x",
+            ts=datetime.now(timezone.utc),
+            agent_id="satoshi",
+            action="SELL",
+            ticker="BTC-EUR",
+            shares=0.01,
+            reasoning="test",
+            currency="EUR",
         )
 
     def test_shares_nan_rejected(self) -> None:
         with pytest.raises(ValueError, match="shares must be > 0"):
             Order(
-                order_id="ord_x", ts=datetime.now(timezone.utc),
-                agent_id="satoshi", action="BUY", ticker="BTC-EUR",
-                shares=float("nan"), reasoning="test", currency="EUR",
+                order_id="ord_x",
+                ts=datetime.now(timezone.utc),
+                agent_id="satoshi",
+                action="BUY",
+                ticker="BTC-EUR",
+                shares=float("nan"),
+                reasoning="test",
+                currency="EUR",
             )
 
 
@@ -76,23 +106,38 @@ class TestFillValidation:
     def test_invalid_status_rejected(self) -> None:
         with pytest.raises(ValueError, match="status must be"):
             Fill(
-                order_id="ord_x", ts_filled=datetime.now(timezone.utc),
-                status="pending", fill_price=None, fill_currency=None,
-                notional_base=None, fees=None, reason=None,
+                order_id="ord_x",
+                ts_filled=datetime.now(timezone.utc),
+                status="pending",
+                fill_price=None,
+                fill_currency=None,
+                notional_base=None,
+                fees=None,
+                reason=None,
             )
 
     def test_filled_status_accepted(self) -> None:
         Fill(
-            order_id="ord_x", ts_filled=datetime.now(timezone.utc),
-            status="filled", fill_price=100.0, fill_currency="EUR",
-            notional_base=100.0, fees=0.0, reason=None,
+            order_id="ord_x",
+            ts_filled=datetime.now(timezone.utc),
+            status="filled",
+            fill_price=100.0,
+            fill_currency="EUR",
+            notional_base=100.0,
+            fees=0.0,
+            reason=None,
         )
 
     def test_rejected_status_accepted(self) -> None:
         Fill(
-            order_id="ord_x", ts_filled=datetime.now(timezone.utc),
-            status="rejected", fill_price=None, fill_currency=None,
-            notional_base=None, fees=None, reason="MAX_ORDERS_PER_DAY",
+            order_id="ord_x",
+            ts_filled=datetime.now(timezone.utc),
+            status="rejected",
+            fill_price=None,
+            fill_currency=None,
+            notional_base=None,
+            fees=None,
+            reason="MAX_ORDERS_PER_DAY",
         )
 
 
@@ -103,8 +148,12 @@ class TestOutboxRoundTrip:
         order = Order(
             order_id="ord_2026-04-17_satoshi_001",
             ts=datetime(2026, 4, 17, 20, 2, 15, tzinfo=timezone.utc),
-            agent_id="satoshi", action="BUY", ticker="BTC-EUR",
-            shares=0.01, reasoning="dip", currency="EUR",
+            agent_id="satoshi",
+            action="BUY",
+            ticker="BTC-EUR",
+            shares=0.01,
+            reasoning="dip",
+            currency="EUR",
         )
         append_order(d, order)
         read_back = read_outbox(d)
@@ -117,12 +166,19 @@ class TestOutboxRoundTrip:
         monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path)
         d = date(2026, 4, 17)
         for i in range(1, 4):
-            append_order(d, Order(
-                order_id=make_order_id(d, "satoshi", i),
-                ts=datetime(2026, 4, 17, 20, 0, i, tzinfo=timezone.utc),
-                agent_id="satoshi", action="BUY", ticker="BTC-EUR",
-                shares=0.01, reasoning=f"#{i}", currency="EUR",
-            ))
+            append_order(
+                d,
+                Order(
+                    order_id=make_order_id(d, "satoshi", i),
+                    ts=datetime(2026, 4, 17, 20, 0, i, tzinfo=timezone.utc),
+                    agent_id="satoshi",
+                    action="BUY",
+                    ticker="BTC-EUR",
+                    shares=0.01,
+                    reasoning=f"#{i}",
+                    currency="EUR",
+                ),
+            )
         orders = read_outbox(d)
         assert [o.order_id[-3:] for o in orders] == ["001", "002", "003"]
 
@@ -132,8 +188,12 @@ class TestOutboxRoundTrip:
         order = Order(
             order_id="ord_x",
             ts=datetime(2026, 4, 17, 20, 2, 15, tzinfo=timezone.utc),
-            agent_id="satoshi", action="BUY", ticker="BTC-EUR",
-            shares=0.01, reasoning="test", currency="EUR",
+            agent_id="satoshi",
+            action="BUY",
+            ticker="BTC-EUR",
+            shares=0.01,
+            reasoning="test",
+            currency="EUR",
         )
         append_order(d, order)
         raw = (tmp_path / "2026-04-17.jsonl").read_text()
@@ -143,7 +203,9 @@ class TestOutboxRoundTrip:
         monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path)
         assert read_outbox(date(2026, 4, 17)) == []
 
-    def test_malformed_jsonl_raises_with_context(self, tmp_path: Path, monkeypatch) -> None:
+    def test_malformed_jsonl_raises_with_context(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
         monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path)
         path = tmp_path / "2026-04-17.jsonl"
         path.write_text('{"broken": ')  # truncated JSON
@@ -155,26 +217,32 @@ class TestInboxRoundTrip:
     def test_filled_and_rejected(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setattr("engine.orders.INBOX_DIR", tmp_path)
         d = date(2026, 4, 17)
-        append_fill(d, Fill(
-            order_id="ord_2026-04-17_satoshi_001",
-            ts_filled=datetime(2026, 4, 17, 20, 2, 17, tzinfo=timezone.utc),
-            status="filled",
-            fill_price=64320.50,
-            fill_currency="EUR",
-            notional_base=643.20,
-            fees=0.0,
-            reason=None,
-        ))
-        append_fill(d, Fill(
-            order_id="ord_2026-04-17_yolo-sapiens-usd_003",
-            ts_filled=datetime(2026, 4, 17, 20, 2, 18, tzinfo=timezone.utc),
-            status="rejected",
-            fill_price=None,
-            fill_currency=None,
-            notional_base=None,
-            fees=None,
-            reason="MAX_ORDERS_PER_DAY",
-        ))
+        append_fill(
+            d,
+            Fill(
+                order_id="ord_2026-04-17_satoshi_001",
+                ts_filled=datetime(2026, 4, 17, 20, 2, 17, tzinfo=timezone.utc),
+                status="filled",
+                fill_price=64320.50,
+                fill_currency="EUR",
+                notional_base=643.20,
+                fees=0.0,
+                reason=None,
+            ),
+        )
+        append_fill(
+            d,
+            Fill(
+                order_id="ord_2026-04-17_yolo-sapiens-usd_003",
+                ts_filled=datetime(2026, 4, 17, 20, 2, 18, tzinfo=timezone.utc),
+                status="rejected",
+                fill_price=None,
+                fill_currency=None,
+                notional_base=None,
+                fees=None,
+                reason="MAX_ORDERS_PER_DAY",
+            ),
+        )
         fills = read_inbox(d)
         assert len(fills) == 2
         assert fills[0].status == "filled"
@@ -183,3 +251,186 @@ class TestInboxRoundTrip:
     def test_empty_when_file_missing(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setattr("engine.orders.INBOX_DIR", tmp_path)
         assert read_inbox(date(2026, 4, 17)) == []
+
+
+class TestOrderTriggerField:
+    def test_market_order_has_no_trigger(self) -> None:
+        o = Order(
+            order_id="ord_x",
+            ts=datetime.now(timezone.utc),
+            agent_id="satoshi",
+            action="BUY",
+            ticker="BTC-EUR",
+            shares=0.01,
+            reasoning="test",
+            currency="EUR",
+        )
+        assert o.trigger is None
+        assert o.expires is None
+
+    def test_conditional_order_accepts_trigger_and_expires(self) -> None:
+        o = Order(
+            order_id="ord_x",
+            ts=datetime.now(timezone.utc),
+            agent_id="satoshi",
+            action="SELL",
+            ticker="BTC-EUR",
+            shares=0.01,
+            reasoning="trim at resistance",
+            currency="EUR",
+            trigger={"op": ">=", "level": 85000.0},
+            expires="2026-06-17",
+        )
+        assert o.trigger == {"op": ">=", "level": 85000.0}
+        assert o.expires == "2026-06-17"
+
+    def test_trigger_must_be_dict(self) -> None:
+        with pytest.raises(ValueError, match="trigger must be a dict"):
+            Order(
+                order_id="ord_x",
+                ts=datetime.now(timezone.utc),
+                agent_id="satoshi",
+                action="SELL",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="test",
+                currency="EUR",
+                trigger="85000",  # type: ignore[arg-type]
+            )
+
+    def test_trigger_unknown_op_rejected(self) -> None:
+        with pytest.raises(ValueError, match="trigger.op must be one of"):
+            Order(
+                order_id="ord_x",
+                ts=datetime.now(timezone.utc),
+                agent_id="satoshi",
+                action="SELL",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="test",
+                currency="EUR",
+                trigger={"op": "between", "level": 85000.0},
+            )
+
+    def test_trigger_missing_level_rejected(self) -> None:
+        with pytest.raises(ValueError, match="trigger.level must be a number"):
+            Order(
+                order_id="ord_x",
+                ts=datetime.now(timezone.utc),
+                agent_id="satoshi",
+                action="SELL",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="test",
+                currency="EUR",
+                trigger={"op": ">="},
+            )
+
+    def test_expires_must_be_iso_date(self) -> None:
+        with pytest.raises(ValueError, match="expires must be ISO date"):
+            Order(
+                order_id="ord_x",
+                ts=datetime.now(timezone.utc),
+                agent_id="satoshi",
+                action="SELL",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="test",
+                currency="EUR",
+                trigger={"op": ">=", "level": 85000.0},
+                expires="next month",
+            )
+
+    def test_serde_round_trip_with_trigger(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path)
+        d = date(2026, 5, 17)
+        o = Order(
+            order_id="ord_2026-05-17_satoshi_001",
+            ts=datetime(2026, 5, 17, 20, 2, 0, tzinfo=timezone.utc),
+            agent_id="satoshi",
+            action="SELL",
+            ticker="BTC-EUR",
+            shares=0.01,
+            reasoning="trim",
+            currency="EUR",
+            trigger={"op": ">=", "level": 85000.0},
+            expires="2026-06-17",
+        )
+        append_order(d, o)
+        back = read_outbox(d)
+        assert back[0].trigger == {"op": ">=", "level": 85000.0}
+        assert back[0].expires == "2026-06-17"
+
+    def test_serde_round_trip_legacy_without_trigger(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """An outbox file written by old code (no trigger/expires keys) must still parse."""
+        monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path)
+        d = date(2026, 4, 17)
+        (tmp_path / f"{d.isoformat()}.jsonl").write_text(
+            '{"order_id":"ord_x","ts":"2026-04-17T20:02:15Z","agent_id":"satoshi",'
+            '"action":"BUY","ticker":"BTC-EUR","shares":0.01,"reasoning":"dip","currency":"EUR"}\n'
+        )
+        back = read_outbox(d)
+        assert back[0].trigger is None
+        assert back[0].expires is None
+
+
+class TestFillTriggerFiredField:
+    def test_default_is_false(self) -> None:
+        f = Fill(
+            order_id="ord_x",
+            ts_filled=datetime.now(timezone.utc),
+            status="filled",
+            fill_price=100.0,
+            fill_currency="EUR",
+            notional_base=100.0,
+            fees=0.0,
+            reason=None,
+        )
+        assert f.trigger_fired is False
+
+    def test_can_be_true_for_triggered_fills(self) -> None:
+        f = Fill(
+            order_id="ord_x",
+            ts_filled=datetime.now(timezone.utc),
+            status="filled",
+            fill_price=100.0,
+            fill_currency="EUR",
+            notional_base=100.0,
+            fees=0.0,
+            reason=None,
+            trigger_fired=True,
+        )
+        assert f.trigger_fired is True
+
+    def test_serde_round_trip(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setattr("engine.orders.INBOX_DIR", tmp_path)
+        d = date(2026, 5, 17)
+        append_fill(
+            d,
+            Fill(
+                order_id="ord_x",
+                ts_filled=datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc),
+                status="filled",
+                fill_price=85100.0,
+                fill_currency="EUR",
+                notional_base=851.0,
+                fees=0.0,
+                reason=None,
+                trigger_fired=True,
+            ),
+        )
+        back = read_inbox(d)
+        assert back[0].trigger_fired is True
+
+    def test_serde_round_trip_legacy_inbox(self, tmp_path: Path, monkeypatch) -> None:
+        """An inbox file written by old code (no trigger_fired key) must still parse, defaulting to False."""
+        monkeypatch.setattr("engine.orders.INBOX_DIR", tmp_path)
+        d = date(2026, 4, 17)
+        (tmp_path / f"{d.isoformat()}.jsonl").write_text(
+            '{"order_id":"ord_x","ts_filled":"2026-04-17T20:02:17Z","status":"filled",'
+            '"fill_price":64320.5,"fill_currency":"EUR","notional_base":643.2,"fees":0.0,"reason":null}\n'
+        )
+        back = read_inbox(d)
+        assert back[0].trigger_fired is False
