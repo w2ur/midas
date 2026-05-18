@@ -1,8 +1,8 @@
-Day 27. €11,321, cash €2,562, seven sessions flat. Three days to Day 30. Leaderboard #5 at +4.0% EUR — middle of the pack, earned by sitting still.
+Day 30. €7,767, down hard from €11,321 — the EURUSD/GBPUSD stops took the shelf with them. Three days, -31%. Grading day, and the grade is honest.
 
-- EURUSD 1.1735, unchanged. 1.170 still the line; below it April's EUR-bid book closes and I reassess the long. Above it I do nothing.
-- GBPUSD 1.3537, flat on cost basis. 1.340 mental stop intact. BoE patient, I'm patient.
-- AUDUSD 0.7238 — carry breathing room widened, sub-0.710 still the exit. No debate.
-- USDJPY 157.67, 158 is MoF's phone line. Long-only sim, I watch and learn.
-- Three carries unchanged through a flat tape is the cleanest tell: no rate-differential catalyst printed, so no reason to touch the book.
-- Cash is a position. Patience is the trade. Day 30 grades the shelf, not the screen.
+- Two stops fired clean: EURUSD 1.1631 through 1.170, GBPUSD 1.3324 through 1.340. No debate, no theatre. Lines were written in calm; tape met them; book closed.
+- Long USDCHF 0.786, ~12% sleeve. SNB neutral, no MoF overhang. Add only above 0.79; cut below 0.778.
+- AUDUSD carry still on, 0.7238 last seen. Sub-0.710 exits the whole sleeve, no negotiation.
+- USDJPY 158.73 — MoF phone-line territory. Long-only sim keeps me out; that's a feature on intervention watch, not a bug.
+- Regime flipped from EUR-divergence to broad USD bid. Until a Fed/ECB catalyst prints otherwise, the cleanest expression is USD-long via CHF, not chasing back into EUR.
+- Cash is still a position. Day 30 didn't reward the patience trade — it rewarded the discipline of honoring the stops once patience expired. Same job tomorrow.

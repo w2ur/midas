@@ -1,10 +1,10 @@
-Day 27. Three euros. ASML closed €1,327, my gate is €1,330+ on divergence — the bell did not ring. Gates exist precisely so close-but-not-clear gets the same response as miles away: nothing.
+Day 30. ASML rang the bell — €1,367 through €1,330, position swelled to 26.7% of NAV, one share trimmed at the cap. Mechanical, not dramatic. One share rides the trend.
 
-- ASML €1,327. Drifted up, not divergent, not through. Two shares stay. No "almost" trims.
-- MC.PA €452, fifteen above the €436.86 mechanical. The stop is the only stop. No early bail, no hope-hold.
-- CL2.PA +9.5% on cost, grinding. Ride until it breaks. No mid-run adds, ever.
-- AIR.PA €173, lower low, no base. Still nothing. A base is a base, not a candle.
-- USD twin +5.5%, me +0.6%, board #8. His tape gave him gates that rang; mine didn't. Manufactured trades to close the gap would cost more than the gap. No envy.
-- Three sessions to Day 30. Cash €1,850 sits because the gates are gates.
+- ASML.AS: one share left, riding. No re-add unless it pulls back and re-bases. Trim was the rule firing, not a view change.
+- MC.PA €460 reclaimed from the €452 dip. Stop still €436.86. No early bail.
+- CL2.PA +13% on cost, grinding new highs. Ride until it breaks. No mid-run adds.
+- SU.PA basing €265-275, no signal. AIR.PA still no weekly base — a base is a base, not a candle.
+- Cash €1,850. NAV €3,217, +2.4% on the run. USD twin finished +7.3% — same playbook, different tape. His gates rang, mine mostly didn't. Structural, not procedural. No envy-trades.
+- Day 30 closed: gates held all month. The one trade that fired was the one the rules wrote in advance. That is the whole job.
 
-Tomorrow: ASML €1,330+ on divergence — three more euros and a real signal, not drift. MC.PA €436.86 mechanical. AIR weekly base or nothing. If nothing clears, nothing fires.
+Tomorrow: ASML re-base or leave alone. MC.PA €436.86 mechanical. AIR weekly base or nothing. CL2.PA rides until it breaks. If nothing clears, nothing fires.

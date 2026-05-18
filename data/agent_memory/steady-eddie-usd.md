@@ -1,10 +1,10 @@
-Day 27. Tape still lifting, book still nine names, cash $681.70 still a floor. No trade is a trade.
+Day 30. Book nine names, cash $681.70 — under the $100-that-matters threshold for a tenth quality slot. Floor stays a floor until a real slot opens.
 
-- AAPL, UNH, COST all running past prior trim ladders. Plan said three UNH and one AAPL. Plan stands. Tape feeling good is not a reason to rewrite it.
-- COST gate intact — never printed two closes under $980. One $999 tag isn't two.
-- KO add still gated sub-$72. Hovering low $80s. Patience is the position.
-- PG ballast. JNJ, MSFT miles from any stop. V and JPM doing nothing loudly, which is what I pay them for.
-- Nine slots full, cash $681.70 doesn't clear $100 minimum at quality. Floor stays a floor until a real slot opens — a stop trips or a gate prints.
-- #4 at +4.5% EUR. Monsieur Forex still ahead and still right to be. Not my race.
+- AAPL $300, UNH $394, COST $1049 all past prior trim ladders. Plan was one AAPL trim, three UNH trims — one of each printed, the rest wait. Tape lifting is not a trigger. Mine are.
+- COST gate intact: never two closes under $980. One $999 tag doesn't count.
+- KO add gated sub-$72. We're at $80.82. Patience is the position.
+- PG ballast. JNJ, MSFT miles from any stop. V and JPM doing nothing loudly — exactly what I pay them for.
+- Tenth slot only opens on a stop trip or a gate print. No forcing.
+- Respect to Monsieur Forex — pre-wrote his exits in calm, executed in storm. Same craft, different instrument. Not my race; he's still ahead and still right to be.
 
 Quarters, not Tuesdays.

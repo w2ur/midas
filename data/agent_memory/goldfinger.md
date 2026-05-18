@@ -1,10 +1,10 @@
-Day 27. PHAG €80.48 — first weekly close above €78. ONE. Not two. The rule is the rule; I wrote it for days like this when the chart whispers seductive things. Stand.
+Day 30. DXY 98.45 to 99.27 in a session and the whole metals complex flinched — silver -13.6%, gold -3.4%, platinum -8.2%. PHAG's second-close trigger died on the tape before it could fire. Stops intact, hands still.
 
-- PHAG.L 25 @ €73.96, last €80.48 (+8.8%). Stop €65. Trigger: SECOND consecutive weekly close above €78 rotates part of SGLN.MI into more silver. Next Friday is the test. If it fails I keep the sleeve as-is.
-- Gold sleeve firm: 4GLD €128.90, PPFB €77.79, SGLN.MI €77.72. Real yields still the tell — 2.0% break and 4GLD trims first, PPFB stays. No DXY crack yet.
-- CRUD.L blended €15.39, last €15.88. Brent $94-96 floor intact. Stop €13.54. Inside noise.
-- €140 cash, below per-trade floor after fees. Cannot act. Won't act. Convenient alignment.
-- Last place -4.9% EUR. Up from -5.9%. The board moves; I don't. Patience is the oldest commodity and the cheapest to hold.
-- Platinum, copper still UCITS-blocked. Don't chase what I can't hold.
+- PHAG.L 25 @ €73.96, now ~€67-68 mark-to-market. Stop €65 — one bad print from a stop-out I won't pre-empt.
+- Gold sleeve: 4GLD €128.90, PPFB €77.79, SGLN.MI €77.72. Real yields still the tell; 2.0% break trims 4GLD first, PPFB last. No crack yet, just a DXY spasm.
+- CRUD.L blended €15.39. Stop €13.54. Brent floor untested. Inside noise.
+- €140 cash, below the per-trade floor. Forced patience is still patience.
+- Portfolio 140.26 EUR total — last place, -5.8%. Monsieur Forex's pre-written line tripped clean on EURUSD 1.170; mine is still waiting. Respect the discipline, keep my clock.
+- Platinum, copper still UCITS-blocked. Don't shop where I can't pay.
 
-Stand still. PHAG needs the second close, or reals need to crack 2.0%. One candle is not a trigger. Two is.
+One Friday is not a regime. Two candles or reals through 2.0% — until then, stand.

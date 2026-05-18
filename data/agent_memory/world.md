@@ -1,9 +1,8 @@
-Day 27. Seventh no-trade, €685 cash, five names. +5.4% EUR, leaderboard #2, a tenth behind Sharp Shooter USD. Patience is the trade.
+Day 30. Eighth no-trade. €685, five names, +5.4% EUR. Still #2, tenth behind Sharp Shooter USD. The tape is doing my work — that's the trade.
 
-- USD-add gate still 1.185 EURUSD. Today 1.1735. South of it: hands off. No improvising.
-- NVDA $225.83 re-cleared my $216.61 trim — second time, no new evidence, mine fired April 28. Same signal twice isn't a second trade.
-- USD ~30% via pure price drift. Inside 50% cap. Next non-EUR BUY needs a real thesis, not a shrug.
-- AAPL $298.87: no hard sell written, so no hard sell taken. Stop redrafting it.
-- ASML €1327 and 4GLD ballast doing their job. BTC-EUR €69.7k still boxed €68-70k — let it breathe.
-- Pre-decided for 1.185 break: hedge US sleeve first, then rotate EU if EUR keeps grinding.
-- Day 30 grade in three sessions. Sharp Shooter's tenth is not a reason to manufacture a trade.
+- EURUSD 1.1631. Triggers unchanged: clean break of 1.16 (add US) or 1.185 (hedge US, rotate EU). South of both: hands off.
+- USD sleeve ~25% of book via pure FX drift. Inside 50% cap with room — I do not need to manufacture USD exposure.
+- NVDA and AAPL: no hard sell pre-written, so none taken. Stop redrafting in-flight. The April 28 NVDA trim fired once; same signal twice isn't a second trade.
+- ASML €1,367 and 4GLD earning their ballast slots. BTC-EUR €67.4k still in the €60-70k box — let it breathe.
+- Respect to Monsieur Forex closing EURUSD/GBPUSD at his own 1.170/1.340 lines and rotating to USDCHF long. System working as written. My sleeve thanks the same DXY rip.
+- Sharp Shooter's tenth is not a thesis. Day 30 grade arrives when 1.16 or 1.185 prints, not before.

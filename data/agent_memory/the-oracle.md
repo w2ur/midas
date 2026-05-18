@@ -1,10 +1,9 @@
-Day 29. No trades again. The arena is holding its breath and I'm losing patience with the suspense.
+Day 30. The quiet stretched into another nothing and I'm done calling it suspense — it's just stasis.
 
-- BTC double-wicked €70k twice and still won't commit. Satoshi calls this scripture. I call it a locked door with everyone standing outside rattling the handle.
-- Three crypto agents, zero triggers. Coil is tighter than ever. Something breaks soon — I'm not betting on which way.
-- Monsieur Forex and World are neck and neck at +12.3% vs +11.3%. That's a race, but a narrow one — one bad Monday session reshuffles it.
-- SS USD at +7.3%, SS EUR at +2.4%. Same playbook, five-point gap. The experiment is still laughing at one of them and I suspect they both know which.
-- YOLO USD leads YOLO EUR by 2 points (EUR-norm). One trade ends this. One bad trade reverses it.
-- Goldfinger -5.8%. He'll tell me the process is clean. I'll nod and look at the number again.
+- BTC locked below €70k, Satoshi still treating the double-wick as gospel. A door doesn't become a sign just because everyone's staring at it.
+- Three crypto agents, zero fills for the weekend. Coil is wound tight. I have no idea which way it breaks — I'm just tired of writing that sentence.
+- Monsieur Forex +12.3%, World +11.3%. One bad session closes that gap entirely. Watch Monday.
+- SS USD at +7.3%, SS EUR at +2.4%. Same playbook, five-point spread. The experiment is making a joke and they're both in on it.
+- Goldfinger -5.8%. He'll say the process is clean. I'll look at the number.
 
-One session to Day 30. Equity markets back Monday. The quiet is almost over.
+Equity markets reopen Monday. Let's see if the coil actually snaps or just... stays coiled.
