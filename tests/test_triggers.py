@@ -67,6 +67,10 @@ class TestPendingStorage:
         monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
         assert list_pending() == []
 
+    def test_list_empty_when_dir_missing(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path / "nonexistent")
+        assert list_pending() == []
+
     def test_list_skips_gitkeep_and_non_json(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
         (tmp_path / ".gitkeep").write_text("")
@@ -101,3 +105,20 @@ class TestCancelStorage:
     def test_empty_when_missing(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path)
         assert read_cancels(date(2026, 5, 17)) == []
+
+    def test_read_cancels_skips_malformed_lines(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path)
+        d = date(2026, 5, 17)
+        # Mix: one good line, one truncated JSON, one good line.
+        path = tmp_path / f"{d.isoformat()}.jsonl"
+        path.write_text(
+            '{"request_id":"cnl_a","ts":"2026-05-17T20:05:00Z","agent_id":"satoshi",'
+            '"target_order_id":"ord_a","reasoning":"ok"}\n'
+            '{"request_id":"cnl_b","ts":"2026-05-17T20:06:0\n'  # truncated
+            '{"request_id":"cnl_c","ts":"2026-05-17T20:07:00Z","agent_id":"satoshi",'
+            '"target_order_id":"ord_c","reasoning":"ok"}\n'
+        )
+        cancels = read_cancels(d)
+        assert [c.request_id for c in cancels] == ["cnl_a", "cnl_c"]

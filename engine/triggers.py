@@ -13,11 +13,14 @@ Evaluation and price-fetch dispatch are added in subsequent tasks.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
 from engine.orders import Order
+
+logger = logging.getLogger(__name__)
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 PENDING_DIR = _REPO_ROOT / "data" / "orders" / "pending"
@@ -82,8 +85,8 @@ def list_pending() -> list[Order]:
     for path in sorted(PENDING_DIR.glob("*.json")):
         try:
             out.append(Order.from_dict(json.loads(path.read_text(encoding="utf-8"))))
-        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-            # Skip malformed files rather than crashing the watcher.
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            logger.warning("Skipping malformed pending file %s: %s", path.name, exc)
             continue
     return out
 
@@ -114,5 +117,15 @@ def read_cancels(d: date) -> list[CancelRequest]:
     path = CANCELS_DIR / f"{d.isoformat()}.jsonl"
     if not path.exists():
         return []
+    out: list[CancelRequest] = []
     with path.open(encoding="utf-8") as f:
-        return [CancelRequest.from_dict(json.loads(line)) for line in f if line.strip()]
+        for idx, line in enumerate(f, 1):
+            if not line.strip():
+                continue
+            try:
+                out.append(CancelRequest.from_dict(json.loads(line)))
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+                logger.warning(
+                    "Skipping malformed cancel line %d in %s: %s", idx, path.name, exc
+                )
+    return out
