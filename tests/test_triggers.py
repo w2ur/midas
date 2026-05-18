@@ -169,3 +169,72 @@ class TestIsExpired:
         """Defensive: an order with no expires set shouldn't expire. (Authoring step enforces expiry, but be safe.)"""
         o = _make_order(trigger=None, expires=None)
         assert is_expired(o, today=date(2030, 1, 1)) is False
+
+
+from unittest.mock import MagicMock
+
+from engine.triggers import get_current_price, is_crypto_ticker
+
+
+class TestIsCryptoTicker:
+    @pytest.mark.parametrize("t", ["BTC-EUR", "ETH-USD", "SOL-EUR", "DOGE-USD"])
+    def test_known_crypto(self, t: str) -> None:
+        assert is_crypto_ticker(t) is True
+
+    @pytest.mark.parametrize(
+        "t", ["MSFT", "AAPL", "SPY", "EURUSD=X", "GLD", "TLT", "AAPL.PA", ""]
+    )
+    def test_non_crypto(self, t: str) -> None:
+        assert is_crypto_ticker(t) is False
+
+    def test_unknown_base_is_not_crypto(self) -> None:
+        # Looks like crypto-shape, but PEPE isn't in the allowlist.
+        assert is_crypto_ticker("PEPE-EUR") is False
+
+
+class TestGetCurrentPrice:
+    def test_equity_falls_through_to_ohlcv(self, monkeypatch) -> None:
+        from engine import triggers
+
+        called = {}
+
+        def fake_latest(ticker, on, store=None):
+            called["args"] = (ticker, on)
+            return 420.42
+
+        monkeypatch.setattr(triggers, "latest_close_on_or_before", fake_latest)
+        price = get_current_price("MSFT", today=date(2026, 5, 17))
+        assert price == 420.42
+        assert called["args"] == ("MSFT", date(2026, 5, 17))
+
+    def test_equity_missing_returns_none(self, monkeypatch) -> None:
+        from engine import triggers
+
+        monkeypatch.setattr(triggers, "latest_close_on_or_before", lambda *a, **k: None)
+        assert get_current_price("MSFT", today=date(2026, 5, 17)) is None
+
+    def test_crypto_uses_ccxt(self, monkeypatch) -> None:
+        from engine import triggers
+
+        fake_exchange = MagicMock()
+        fake_exchange.fetch_ticker.return_value = {"last": 85123.45}
+        monkeypatch.setattr(triggers, "_get_crypto_exchange", lambda: fake_exchange)
+        price = get_current_price("BTC-EUR", today=date(2026, 5, 17))
+        assert price == 85123.45
+        fake_exchange.fetch_ticker.assert_called_once_with("BTC/EUR")
+
+    def test_crypto_exchange_exception_returns_none(self, monkeypatch) -> None:
+        from engine import triggers
+
+        fake_exchange = MagicMock()
+        fake_exchange.fetch_ticker.side_effect = Exception("network down")
+        monkeypatch.setattr(triggers, "_get_crypto_exchange", lambda: fake_exchange)
+        assert get_current_price("BTC-EUR", today=date(2026, 5, 17)) is None
+
+    def test_crypto_missing_last_returns_none(self, monkeypatch) -> None:
+        from engine import triggers
+
+        fake_exchange = MagicMock()
+        fake_exchange.fetch_ticker.return_value = {}  # no 'last' key
+        monkeypatch.setattr(triggers, "_get_crypto_exchange", lambda: fake_exchange)
+        assert get_current_price("BTC-EUR", today=date(2026, 5, 17)) is None

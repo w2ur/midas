@@ -159,3 +159,80 @@ def is_expired(order: Order, today: date) -> bool:
     if order.expires is None:
         return False
     return today >= date.fromisoformat(order.expires)
+
+
+# ---------- Price fetch dispatch ----------
+
+from engine.ohlcv_store import (
+    latest_close_on_or_before,
+)  # placed here to keep module-level imports tidy
+
+_CRYPTO_BASES = frozenset(
+    {
+        "BTC",
+        "ETH",
+        "SOL",
+        "XRP",
+        "ADA",
+        "DOGE",
+        "DOT",
+        "LINK",
+        "LTC",
+        "BCH",
+        "AVAX",
+        "ATOM",
+        "XLM",
+        "FIL",
+        "MATIC",
+        "UNI",
+    }
+)
+_CRYPTO_QUOTES = frozenset({"EUR", "USD", "GBP", "JPY", "CHF"})
+
+
+def is_crypto_ticker(ticker: str) -> bool:
+    """True for tickers like BTC-EUR/ETH-USD where the base is in the crypto allowlist."""
+    if "-" not in ticker:
+        return False
+    base, _, quote = ticker.partition("-")
+    return base in _CRYPTO_BASES and quote in _CRYPTO_QUOTES
+
+
+_crypto_exchange = None
+
+
+def _get_crypto_exchange():
+    """Lazy-init a single ccxt exchange. Coinbase is the primary, no auth needed.
+
+    Module-level singleton so we don't pay init cost per price fetch.
+    """
+    global _crypto_exchange
+    if _crypto_exchange is None:
+        import ccxt  # local import — keep top of module clean
+
+        _crypto_exchange = ccxt.coinbase()
+    return _crypto_exchange
+
+
+def get_current_price(ticker: str, today: date) -> float | None:
+    """Return latest price for trigger evaluation.
+
+    - Crypto (BTC-EUR etc.): live fetch via ccxt (Coinbase). Returns None on any error.
+    - Everything else: latest close from the committed OHLCV store on-or-before `today`.
+
+    The crypto path is intraday and 24/7; equity/FX triggers effectively re-evaluate
+    once per day, after fetch-ohlcv.yml updates the store post-close.
+    """
+    if is_crypto_ticker(ticker):
+        try:
+            exchange = _get_crypto_exchange()
+            base, _, quote = ticker.partition("-")
+            symbol = f"{base}/{quote}"
+            tick = exchange.fetch_ticker(symbol)
+            last = tick.get("last")
+            return float(last) if last is not None else None
+        except Exception:
+            # ccxt raises a wide variety of exception classes; treat all as "price unavailable
+            # right now" and carry the pending order forward.
+            return None
+    return latest_close_on_or_before(ticker, today)
