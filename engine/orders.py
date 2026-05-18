@@ -18,6 +18,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTBOX_DIR = _REPO_ROOT / "data" / "orders" / "outbox"
 INBOX_DIR = _REPO_ROOT / "data" / "orders" / "inbox"
 
+TRIGGER_OPS: tuple[str, ...] = ("<=", ">=")
+
 
 @dataclass
 class Order:
@@ -44,8 +46,6 @@ class Order:
     trigger: dict | None = None
     expires: str | None = None
 
-    _ALLOWED_TRIGGER_OPS = ("<=", ">=")
-
     def __post_init__(self) -> None:
         if not (self.shares > 0):
             raise ValueError(f"Order.shares must be > 0, got {self.shares}")
@@ -59,13 +59,15 @@ class Order:
                     f"Order.trigger must be a dict, got {type(self.trigger).__name__}"
                 )
             op = self.trigger.get("op")
-            if op not in self._ALLOWED_TRIGGER_OPS:
+            if op not in TRIGGER_OPS:
                 raise ValueError(
-                    f"Order.trigger.op must be one of {self._ALLOWED_TRIGGER_OPS}, got {op!r}"
+                    f"Order.trigger.op must be one of {TRIGGER_OPS}, got {op!r}"
                 )
             level = self.trigger.get("level")
             if not isinstance(level, (int, float)) or isinstance(level, bool):
                 raise ValueError("Order.trigger.level must be a number")
+        if self.expires is not None and self.trigger is None:
+            raise ValueError("Order.expires requires trigger to be set")
         if self.expires is not None:
             try:
                 date.fromisoformat(self.expires)

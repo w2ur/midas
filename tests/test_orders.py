@@ -361,6 +361,21 @@ class TestOrderTriggerField:
         assert back[0].trigger == {"op": ">=", "level": 85000.0}
         assert back[0].expires == "2026-06-17"
 
+    def test_expires_without_trigger_rejected(self) -> None:
+        with pytest.raises(ValueError, match="expires requires trigger"):
+            Order(
+                order_id="ord_x",
+                ts=datetime.now(timezone.utc),
+                agent_id="satoshi",
+                action="BUY",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="test",
+                currency="EUR",
+                trigger=None,
+                expires="2026-06-17",
+            )
+
     def test_serde_round_trip_legacy_without_trigger(
         self, tmp_path: Path, monkeypatch
     ) -> None:
