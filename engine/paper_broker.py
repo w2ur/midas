@@ -386,6 +386,10 @@ def execute_triggered_order(
       - The returned Fill always has trigger_fired=True so the agent and the site
         can distinguish scheduled fills from market fills.
       - Does NOT consult MAX_ORDERS_PER_DAY (a triggered fire is not a same-day order).
+      - Does NOT consult DAILY_DRAWDOWN_HALT — that rail lives at the fill_day batch
+        level, not inside _process_one. A triggered fire that should be halted by
+        drawdown will still fire here; the agent sees the fill in their inbox and
+        can re-author cautiously next session. Revisit if this becomes a problem.
         Does still respect MAX_ORDER_NOTIONAL, TICKER_NOT_IN_UNIVERSE, INSUFFICIENT_CASH,
         NO_POSITION_TO_SELL, INSUFFICIENT_SHARES, NO_FX_RATE, APPLY_TRADE_FAILED.
 

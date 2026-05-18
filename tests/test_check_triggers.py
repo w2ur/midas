@@ -237,6 +237,7 @@ class TestExpiry:
         assert len(expired) == 1
         assert expired[0].status == "rejected"
         assert expired[0].reason == "TRIGGER_EXPIRED"
+        assert expired[0].trigger_fired is True
 
 
 # ---------------------------------------------------------------------------

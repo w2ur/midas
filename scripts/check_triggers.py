@@ -50,6 +50,10 @@ def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
 
     portfolio_manager may be None ONLY during blackout (we short-circuit before use).
     """
+    # Late binding: tests monkeypatch `engine.triggers.get_current_price` so we
+    # must call it through the module attribute, not the imported name.
+    from engine import triggers as _triggers
+
     summary = {
         "blacked_out": False,
         "checked": 0,
@@ -78,15 +82,12 @@ def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
                 notional_base=None,
                 fees=None,
                 reason="TRIGGER_EXPIRED",
+                trigger_fired=True,
             )
             append_fill(today, f)
             delete_pending(order.order_id)
             summary["expired"] += 1
             continue
-
-        # Late binding: tests monkeypatch `engine.triggers.get_current_price` so we
-        # must call it through the module attribute, not the imported name.
-        from engine import triggers as _triggers
 
         price = _triggers.get_current_price(order.ticker, today=today)
         if price is None:
