@@ -308,16 +308,7 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
     for cancel in read_cancels(trade_date):
         removed = delete_pending(cancel.target_order_id)
         reason = "CANCELLED_BY_AGENT" if removed else "CANCEL_TARGET_NOT_FOUND"
-        f = Fill(
-            order_id=cancel.target_order_id,
-            ts_filled=datetime.now(timezone.utc),
-            status="rejected",
-            fill_price=None,
-            fill_currency=None,
-            notional_base=None,
-            fees=None,
-            reason=reason,
-        )
+        f = _reject(cancel.target_order_id, reason)
         fills.append(f)
         append_fill(trade_date, f)
 

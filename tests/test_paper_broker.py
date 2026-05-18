@@ -600,8 +600,15 @@ def test_dry_run_fills_inbox_but_does_not_mutate_portfolio(broker_env):
 
 
 class TestConditionalOrderRouting:
-    def test_market_order_fills_as_before(self, broker_env) -> None:
+    def test_market_order_fills_as_before(
+        self, broker_env, monkeypatch, tmp_path
+    ) -> None:
         """Sanity: a no-trigger order still goes through the existing fill path."""
+        pending_dir = tmp_path / "pending"
+        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
+        cancels_dir = tmp_path / "cancels"
+        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
 
@@ -823,3 +830,64 @@ class TestCancelRequestProcessing:
         assert len(no_op) == 1
         assert no_op[0].status == "rejected"
         assert no_op[0].reason == "CANCEL_TARGET_NOT_FOUND"
+
+    def test_duplicate_cancel_in_same_session_idempotent(
+        self, broker_env, monkeypatch, tmp_path
+    ) -> None:
+        """Two cancels for the same target_order_id in one session: first wins as
+        CANCELLED_BY_AGENT, second sees the pending already gone and becomes
+        CANCEL_TARGET_NOT_FOUND. Same target_order_id, two distinct rejection records."""
+        pending_dir = tmp_path / "pending"
+        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
+        cancels_dir = tmp_path / "cancels"
+        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+
+        from engine.orders import read_inbox
+        from engine.paper_broker import fill_day
+        from engine.triggers import (
+            CancelRequest,
+            append_cancel,
+            list_pending,
+            save_pending,
+        )
+
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+        )
+
+        save_pending(
+            Order(
+                order_id="ord_2026-05-10_satoshi_003",
+                ts=datetime(2026, 5, 10, 20, 2, tzinfo=timezone.utc),
+                agent_id="satoshi",
+                action="SELL",
+                ticker="BTC-EUR",
+                shares=0.01,
+                reasoning="trim",
+                currency="EUR",
+                trigger={"op": ">=", "level": 85000.0},
+                expires="2026-06-10",
+            )
+        )
+
+        d = date(2026, 5, 17)
+        for seq in (1, 2):
+            append_cancel(
+                d,
+                CancelRequest(
+                    request_id=f"cnl_2026-05-17_satoshi_{seq:03d}",
+                    ts=datetime(2026, 5, 17, 20, 5, tzinfo=timezone.utc),
+                    agent_id="satoshi",
+                    target_order_id="ord_2026-05-10_satoshi_003",
+                    reasoning=f"cancel attempt #{seq}",
+                ),
+            )
+
+        fill_day(d, pm)
+
+        assert list_pending() == []
+        fills = read_inbox(d)
+        targeting = [f for f in fills if f.order_id == "ord_2026-05-10_satoshi_003"]
+        reasons = sorted(f.reason for f in targeting)
+        assert reasons == ["CANCELLED_BY_AGENT", "CANCEL_TARGET_NOT_FOUND"]
