@@ -129,3 +129,33 @@ def read_cancels(d: date) -> list[CancelRequest]:
                     "Skipping malformed cancel line %d in %s: %s", idx, path.name, exc
                 )
     return out
+
+
+# ---------- Evaluation ----------
+
+
+def evaluate_trigger(price: float, trigger: dict) -> bool:
+    """Return True if the price satisfies the trigger condition.
+
+    Supported ops (v1): ">=" and "<=". Comparisons are inclusive at the level.
+    """
+    op = trigger["op"]
+    level = float(trigger["level"])
+    if op == ">=":
+        return price >= level
+    if op == "<=":
+        return price <= level
+    raise ValueError(f"unknown trigger op: {op!r}")
+
+
+def is_expired(order: Order, today: date) -> bool:
+    """Return True if today is on or after the order's expiry date.
+
+    Expiry is inclusive: an order with expires=2026-05-17 is expired on 2026-05-17.
+    Orders with no expires field never expire (defensive — the authoring step
+    enforces expiry, but this keeps the watcher safe if a manually-edited file
+    is missing the field).
+    """
+    if order.expires is None:
+        return False
+    return today >= date.fromisoformat(order.expires)

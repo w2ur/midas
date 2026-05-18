@@ -122,3 +122,50 @@ class TestCancelStorage:
         )
         cancels = read_cancels(d)
         assert [c.request_id for c in cancels] == ["cnl_a", "cnl_c"]
+
+
+from engine.triggers import evaluate_trigger, is_expired
+
+
+class TestEvaluateTrigger:
+    def test_gte_fires_when_price_above_level(self) -> None:
+        assert evaluate_trigger(85100.0, {"op": ">=", "level": 85000.0}) is True
+
+    def test_gte_fires_at_exact_level(self) -> None:
+        assert evaluate_trigger(85000.0, {"op": ">=", "level": 85000.0}) is True
+
+    def test_gte_does_not_fire_when_below(self) -> None:
+        assert evaluate_trigger(84999.99, {"op": ">=", "level": 85000.0}) is False
+
+    def test_lte_fires_when_price_below_level(self) -> None:
+        assert evaluate_trigger(2999.0, {"op": "<=", "level": 3000.0}) is True
+
+    def test_lte_fires_at_exact_level(self) -> None:
+        assert evaluate_trigger(3000.0, {"op": "<=", "level": 3000.0}) is True
+
+    def test_lte_does_not_fire_when_above(self) -> None:
+        assert evaluate_trigger(3000.01, {"op": "<=", "level": 3000.0}) is False
+
+    def test_unknown_op_raises(self) -> None:
+        with pytest.raises(ValueError, match="unknown trigger op"):
+            evaluate_trigger(100.0, {"op": "between", "level": 50.0})
+
+
+class TestIsExpired:
+    def test_expires_in_future_is_not_expired(self) -> None:
+        o = _make_order(expires="2026-06-17")
+        assert is_expired(o, today=date(2026, 5, 17)) is False
+
+    def test_expires_today_is_expired(self) -> None:
+        """Inclusive: on the expiry date, the order is considered expired."""
+        o = _make_order(expires="2026-05-17")
+        assert is_expired(o, today=date(2026, 5, 17)) is True
+
+    def test_expires_in_past_is_expired(self) -> None:
+        o = _make_order(expires="2026-04-01")
+        assert is_expired(o, today=date(2026, 5, 17)) is True
+
+    def test_no_expiry_never_expires(self) -> None:
+        """Defensive: an order with no expires set shouldn't expire. (Authoring step enforces expiry, but be safe.)"""
+        o = _make_order(trigger=None, expires=None)
+        assert is_expired(o, today=date(2030, 1, 1)) is False
