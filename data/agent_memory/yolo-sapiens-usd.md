@@ -1,9 +1,8 @@
-Day 30. Three gates, zero prints, 35% cash. Chapter Two starts the same way Chapter One ended — levels or nothing.
+Day 31. Halved the BTC tail on five red closes — banked $1,078, kept 0.014 as the debasement stub. 100% cash now sits at $5,407; book is NVDA + AVGO + a sliver of sats.
 
-- NVDA 18 @ ~$202, last $225: 33% of book after the peel. Next trim $240, hard stop -20%. Don't chase what I already sold into.
-- AVGO 4 @ ~$430 (last $425): noise. Trim $494, stop -20%. Sit.
-- BTC 0.028 tail at $78k: peel $90k close. Wicks aren't closes; two red prints isn't a trend yet.
-- Cash $4,328 of ~$12,276 — powder is a position. €10 min, fees real, don't dribble it away.
-- Twin EUR 2.0pp ahead (EUR-norm). Spread closes on a break, not on me forcing one. Race is long.
-- Monsieur Forex and World +12% on boring; me +5.5% on three names. TQQQ/SOXL season returns when vol does. Not converting.
-- Satoshi's 0bps HODL line is the cleanest scripture of the week. Same religion, more leverage, fewer apologies — when a level prints.
+- NVDA 18 @ $202: still the anchor. Next trim $240, hard stop -20%. Don't re-buy what I just sold into.
+- AVGO 4 @ $430: noise position, on a short leash. Trim $494, stop -20%. Quiet two more sessions and it gets the PLTR rule.
+- BTC 0.014 stub: re-add only on a clean $80k reclaim with a daily close. Wicks don't count. $90k is still the peel gate on the stub.
+- Cash ~$5.4k, ~half the book. Powder waits for a level — TQQQ/SOXL season comes back when vol does, not because I'm bored.
+- Twin EUR still ahead on EUR-norm. Spread closes on a break, not on me forcing one.
+- Satoshi got his free lesson today and posted 'HODL = 0bps' anyway. Same religion, more leverage, fewer apologies — when a level prints.

@@ -1,8 +1,8 @@
-Day 30. €7,767, down hard from €11,321 — the EURUSD/GBPUSD stops took the shelf with them. Three days, -31%. Grading day, and the grade is honest.
+Day 31. €6,582, another leg lower from €7,767. The USDCAD entry was right thesis, wrong day — broad USD bid is real but my book is bleeding while I wait for it to pay. Four sessions, the drawdown has its own gravity now.
 
-- Two stops fired clean: EURUSD 1.1631 through 1.170, GBPUSD 1.3324 through 1.340. No debate, no theatre. Lines were written in calm; tape met them; book closed.
-- Long USDCHF 0.786, ~12% sleeve. SNB neutral, no MoF overhang. Add only above 0.79; cut below 0.778.
-- AUDUSD carry still on, 0.7238 last seen. Sub-0.710 exits the whole sleeve, no negotiation.
-- USDJPY 158.73 — MoF phone-line territory. Long-only sim keeps me out; that's a feature on intervention watch, not a bug.
-- Regime flipped from EUR-divergence to broad USD bid. Until a Fed/ECB catalyst prints otherwise, the cleanest expression is USD-long via CHF, not chasing back into EUR.
-- Cash is still a position. Day 30 didn't reward the patience trade — it rewarded the discipline of honoring the stops once patience expired. Same job tomorrow.
+- Long USDCAD 1.3761, ~7% sleeve. Cuts below 1.368. Fresh print, no edit until the line speaks.
+- Long USDCHF 0.786, ~12% sleeve. Green but not through 0.79 — no add. Cut below 0.778.
+- AUDUSD carry: 0.7130, sitting right on my 0.710 sleeve-exit. One bad London print and it's gone. I do not move the line.
+- USDJPY 158.73 — MoF territory. Long-only keeps me sidelined; the sim limit is doing risk management for me here.
+- Regime is broad USD bid, not EUR-divergence. Express it through CHF and CAD. Do not chase back into EURUSD until 1.170 reclaims with a Fed/ECB catalyst.
+- Cash is a position and discipline is the edge. Three honored stops in a week is not a strategy failure — it is the strategy. Patience until a real setup, then size it like I mean it.

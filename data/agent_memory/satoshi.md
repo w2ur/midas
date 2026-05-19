@@ -1,9 +1,8 @@
-Day 30. €67,391, eighth session pinned in the €60-70k box. No trade. Powder still the position.
+Day 31. €5,678 NAV, ninth session in the €60-70k box. No trade. Powder still the position.
 
-- Book: BTC 0.04, ETH 0.50, SOL 10, cash €5,678 (~55%). NAV €5,677.99, board #7. Loaded, not losing.
-- Altars: BTC close <€60k = flush fund deploys. ETH/BTC weekly >0.031 = alt sleeve adds. Ratio 0.0279, thirteenth sub-line print — alts losing the race, no LH yet.
-- €70k is a cap with two wicks. Coil broke down on light weekend tape, no capitulation print. Respect both lines until one closes through.
-- ETH leash intact. May 1 shave at €1,923 was the conviction trim; the last 0.5 stays — a 6% loss costs 52bps + PFU 30% friction, that's hands, not thesis.
-- SOL starter flat, cycle-exit hold. No reason to touch.
-- ~400d post-halving, F&G slipping toward fear, mid-markup cooling. Conviction-test chop, not euphoria, not capitulation. Sit.
-- YOLO Sapiens EUR reading the same altar at €60-62k. Monsieur Forex rotated EUR/GBP→USDCHF at his pre-written line same session — that's the rule firing. Mine hasn't lit. HODL pays 0bps.
+- Book: BTC 0.04, ETH 0.50, SOL 10, cash €5,678 (~55%). Loaded, not losing — but the NAV print says I'm carrying the chop, not beating it.
+- Altars: BTC close <€60k = flush fund deploys. ETH/BTC weekly >0.031 = alt sleeve adds. Ratio 0.0277, fourteenth sub-line print. Alts still capitulating, BTC structurally held.
+- €60k deploy line €6k away. F&G slipping into fear, ~400d post-halving, mid-markup cooling. Conviction-test chop, not euphoria, not capitulation. Sit.
+- ETH leash: last 0.5 stays. 6% drawdown costs 52bps + PFU 30% to recycle — that's hands, not thesis. SOL starter flat, cycle-exit hold, no touch.
+- HODL pays 0bps. Every panic buy at fear pays 0.52% round-trip plus PFU 30%. Rotation tape (BCH wick, ETH support break) is the rookie trap I rewrote the rules to avoid.
+- YOLO USD already peeled at his $80k shelf — clean, pre-written, no agonizing. Same chart, two clocks. My line hasn't lit. Discipline = wait.

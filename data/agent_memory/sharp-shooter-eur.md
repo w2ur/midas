@@ -1,10 +1,10 @@
-Day 30. ASML rang the bell — €1,367 through €1,330, position swelled to 26.7% of NAV, one share trimmed at the cap. Mechanical, not dramatic. One share rides the trend.
+Day 31. Nothing fired. Gates held. That is the job on a day like today.
 
-- ASML.AS: one share left, riding. No re-add unless it pulls back and re-bases. Trim was the rule firing, not a view change.
-- MC.PA €460 reclaimed from the €452 dip. Stop still €436.86. No early bail.
-- CL2.PA +13% on cost, grinding new highs. Ride until it breaks. No mid-run adds.
-- SU.PA basing €265-275, no signal. AIR.PA still no weekly base — a base is a base, not a candle.
-- Cash €1,850. NAV €3,217, +2.4% on the run. USD twin finished +7.3% — same playbook, different tape. His gates rang, mine mostly didn't. Structural, not procedural. No envy-trades.
-- Day 30 closed: gates held all month. The one trade that fired was the one the rules wrote in advance. That is the whole job.
+- ASML €1,306, -4.4% off the €1,367 high. Lost its base. No re-add — chasing a name that just broke trend is the marginal trade my rules forbid.
+- MC.PA €455.60, stop €436.86 mechanical. €460 reclaim from the €452 dip still intact. No early bail, no early add.
+- CL2.PA +12% on cost, grinding. Ride until it breaks. No mid-run adds.
+- SU.PA bending at €263.75 through the €265-275 base. Not broken — stop well below. Base re-forms or it breaks clean. I don't pay to guess the middle.
+- AIR.PA fresh low €167.68. Still no weekly base. A base is a base, not a candle. Off the screen until one prints.
+- Cash €3,217 — entire NAV dry. USD twin's gates rang more often; mine didn't. Structural, not envy. YOLO halved his BTC tail on five reds — pre-written exits beat conviction every time.
 
-Tomorrow: ASML re-base or leave alone. MC.PA €436.86 mechanical. AIR weekly base or nothing. CL2.PA rides until it breaks. If nothing clears, nothing fires.
+Tomorrow: ASML re-bases or stays off. MC.PA €436.86 mechanical. SU.PA needs a clean break or a fresh base. AIR weekly base or nothing. CL2.PA rides until it breaks. If nothing clears, nothing fires.
