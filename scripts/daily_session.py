@@ -46,6 +46,11 @@ from engine.agent_memory import (
 from engine.blog import build_oracle_prompt, save_daily_blog_draft
 from engine.ohlcv_store import latest_close_on_or_before
 from engine.orders import Order, append_order, make_order_id
+from engine.triggers import (
+    CancelRequest,
+    append_cancel,
+    list_pending,
+)
 from engine.types import Portfolio
 from engine.output_bundle import (
     assemble_output_bundle,
@@ -102,6 +107,9 @@ def step_author_orders(
     -------
     Number of orders appended to the outbox (malformed trades raise at Order construction
     time; callers are expected to pass well-formed trades from agent JSON).
+
+    Each trade may optionally include ``trigger`` and ``expires`` for conditional
+    orders. See CONDITIONAL_ORDER_INSTRUCTIONS for the schema.
     """
     print(f"\n=== Step 3a: Author orders for {agent_id} ({len(trades)} trades) ===")
     for seq, t in enumerate(trades, start=1):
@@ -114,9 +122,98 @@ def step_author_orders(
             shares=float(t["shares"]),
             reasoning=t.get("reasoning", ""),
             currency=currency,
+            trigger=t.get("trigger"),
+            expires=t.get("expires"),
         )
         append_order(trade_date, order)
     return len(trades)
+
+
+CONDITIONAL_ORDER_INSTRUCTIONS = """\
+Conditional orders (optional):
+You can defer a trade until a price condition is hit. Add `trigger` and `expires`
+fields to any trade in your `trades` array:
+
+    {
+      "action": "SELL", "ticker": "BTC-EUR", "shares": 0.01,
+      "reasoning": "trim at resistance",
+      "trigger": {"op": ">=", "level": 85000.0},
+      "expires": "2026-06-17"
+    }
+
+Supported `op` values (v1): ">=" and "<=". Comparisons are inclusive at the level.
+`expires` must be an ISO date (YYYY-MM-DD); on or after that date the order is
+cancelled with reason TRIGGER_EXPIRED. A watcher cron evaluates triggers every
+15 minutes against live prices (live for crypto via ccxt; daily-close for everything
+else via the committed OHLCV store).
+
+Safety rails (notional cap, cash check, position check, FX availability) are
+evaluated AT FIRE TIME, not declaration time — so a trigger that fires after
+your cash is depleted will reject with INSUFFICIENT_CASH and you'll see it in
+your inbox next session. Conditional orders do not consume your daily order
+cap; only the fills do (at fire time).
+
+Cancellations: emit a `cancels` array alongside `trades` to remove pending
+orders authored on previous days:
+
+    "cancels": [
+      {"target_order_id": "ord_2026-05-10_satoshi_003", "reasoning": "thesis changed"}
+    ]
+
+Your currently-active triggers are shown in the section below — review them
+each session and cancel or stack as your thesis evolves.
+"""
+
+
+def render_active_triggers_for_agent(agent_id: str) -> str:
+    """Render this agent's pending conditional orders as a human-readable list.
+
+    Used in the daily-session prompt so the agent sees what's queued before
+    authoring new trades. Returns a single string ready to drop into the prompt.
+    """
+    mine = [o for o in list_pending() if o.agent_id == agent_id]
+    if not mine:
+        return "Active triggers: (no active triggers)"
+    lines = ["Active triggers:"]
+    for o in mine:
+        op = o.trigger["op"]
+        level = o.trigger["level"]
+        lines.append(
+            f"  - {o.order_id}: {o.action} {o.shares} {o.ticker} "
+            f"if price {op} {level:g}  (expires {o.expires})  "
+            f"— reasoning: {o.reasoning}"
+        )
+    return "\n".join(lines)
+
+
+def step_author_cancels(
+    agent_id: str,
+    cancels: list[dict],
+    trade_date: date,
+) -> int:
+    """Step 3a-bis — convert an agent's cancels[] into cancel requests.
+
+    Each cancel dict requires `target_order_id` and optionally `reasoning`.
+    Returns the number of cancels appended to data/orders/cancels/.
+    """
+    if not cancels:
+        return 0
+    print(
+        f"\n=== Step 3a-bis: Author cancels for {agent_id} ({len(cancels)} cancels) ==="
+    )
+    for seq, c in enumerate(cancels, start=1):
+        request_id = f"cnl_{trade_date.isoformat()}_{agent_id}_{seq:03d}"
+        append_cancel(
+            trade_date,
+            CancelRequest(
+                request_id=request_id,
+                ts=datetime.now(timezone.utc),
+                agent_id=agent_id,
+                target_order_id=c["target_order_id"],
+                reasoning=c.get("reasoning", ""),
+            ),
+        )
+    return len(cancels)
 
 
 def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> list:
@@ -187,14 +284,18 @@ def step_build_leaderboard(
         eur_mtm = portfolio_mtm_eur(summary, on)
         if eur_mtm is None:
             continue
-        rows.append({
-            "agent": agent_id,
-            "return_pct": (eur_mtm / 10_000 - 1) * 100,
-        })
+        rows.append(
+            {
+                "agent": agent_id,
+                "return_pct": (eur_mtm / 10_000 - 1) * 100,
+            }
+        )
     rows.sort(key=lambda r: r["return_pct"], reverse=True)
     for i, row in enumerate(rows, start=1):
         row["rank"] = i
-    print(f"  Ranked {len(rows)} agents (top: {rows[0]['agent']} {rows[0]['return_pct']:+.2f}%)")
+    print(
+        f"  Ranked {len(rows)} agents (top: {rows[0]['agent']} {rows[0]['return_pct']:+.2f}%)"
+    )
     return rows
 
 

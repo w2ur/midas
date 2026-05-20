@@ -71,6 +71,19 @@ First application (Ring 1): trade execution.
 
 Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_broker.py` that talks to Interactive Brokers — same outbox/inbox contract, credentials held outside the sandbox. See `~/.claude/plans/2026-04-17-midas-public-experiment-design-v2.md` for the full experiment design.
 
+### Conditional Triggers (extension of Brain/Hands)
+
+Agents may author conditional orders that defer execution until a price condition fires. Authoring (Brain) happens in the normal daily session; execution (Hands) happens in a separate cron worker:
+
+- Agent emits `{"trigger": {"op": ">=", "level": N}, "expires": "YYYY-MM-DD"}` on any trade in their session output.
+- `engine/paper_broker.py:fill_day` recognizes the `trigger` field and routes the order to `data/orders/pending/{order_id}.json` instead of filling immediately.
+- `.github/workflows/check-triggers.yml` runs `scripts/check_triggers.py` every 15 minutes. The watcher evaluates each pending order's trigger against live prices (ccxt for crypto, OHLCV store for equity/FX) and fires through `engine/paper_broker.execute_triggered_order`, which applies the same safety rails as market orders.
+- Cancellations live as a separate channel: `data/orders/cancels/YYYY-MM-DD.jsonl`. Agents emit a `cancels: [{target_order_id, reasoning}]` field alongside their `trades`. The broker processes cancels at the start of `fill_day`, removes the target pending file, and writes a `CANCELLED_BY_AGENT` rejection to inbox.
+- The watcher is blacked out 19:55–20:30 UTC to avoid commit-races with the 20:00 UTC daily session.
+- Supported trigger ops (v1): `>=`, `<=`. Expiry is mandatory; orders without `expires` are rejected at the broker with `TRIGGER_NO_EXPIRY`. Expiry is inclusive — an order with `expires=2026-05-17` is `TRIGGER_EXPIRED` on 2026-05-17.
+
+Same Brain/Hands invariant: safety rails live in the broker (now both at market-fill time and trigger-fire time), not the persona.
+
 ## Real-Money Tax & Regulatory Context
 - Operator is a **French tax resident**. All broker choices must serve France and expose a trading API.
 - Approved brokers: **Interactive Brokers Ireland (IBIE)** for equities/ETFs/forex; **Kraken** (PSAN-registered in France) for crypto; **OANDA Europe (Ireland)** for dedicated forex.

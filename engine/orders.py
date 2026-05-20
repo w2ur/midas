@@ -18,6 +18,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTBOX_DIR = _REPO_ROOT / "data" / "orders" / "outbox"
 INBOX_DIR = _REPO_ROOT / "data" / "orders" / "inbox"
 
+TRIGGER_OPS: tuple[str, ...] = ("<=", ">=")
+
 
 @dataclass
 class Order:
@@ -25,6 +27,12 @@ class Order:
 
     Long-only invariant: shares must be strictly positive — any attempt at
     short-selling (negative shares) or no-op orders (zero) is rejected.
+
+    Optional fields for conditional orders:
+      - trigger: {"op": ">="|"<=", "level": float} — fires when current price
+        crosses level in the given direction. None → fills immediately end-of-day.
+      - expires: ISO date string (YYYY-MM-DD). On or after this date the
+        watcher cancels the pending order with reason TRIGGER_EXPIRED.
     """
 
     order_id: str
@@ -35,6 +43,8 @@ class Order:
     shares: float
     reasoning: str
     currency: str
+    trigger: dict | None = None
+    expires: str | None = None
 
     def __post_init__(self) -> None:
         if not (self.shares > 0):
@@ -43,9 +53,31 @@ class Order:
             raise ValueError(
                 f"Order.action must be 'BUY' or 'SELL', got {self.action!r}"
             )
+        if self.trigger is not None:
+            if not isinstance(self.trigger, dict):
+                raise ValueError(
+                    f"Order.trigger must be a dict, got {type(self.trigger).__name__}"
+                )
+            op = self.trigger.get("op")
+            if op not in TRIGGER_OPS:
+                raise ValueError(
+                    f"Order.trigger.op must be one of {TRIGGER_OPS}, got {op!r}"
+                )
+            level = self.trigger.get("level")
+            if not isinstance(level, (int, float)) or isinstance(level, bool):
+                raise ValueError("Order.trigger.level must be a number")
+        if self.expires is not None and self.trigger is None:
+            raise ValueError("Order.expires requires trigger to be set")
+        if self.expires is not None:
+            try:
+                date.fromisoformat(self.expires)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"Order.expires must be ISO date YYYY-MM-DD, got {self.expires!r}"
+                ) from exc
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "order_id": self.order_id,
             "ts": self.ts.isoformat().replace("+00:00", "Z"),
             "agent_id": self.agent_id,
@@ -55,6 +87,11 @@ class Order:
             "reasoning": self.reasoning,
             "currency": self.currency,
         }
+        if self.trigger is not None:
+            d["trigger"] = self.trigger
+        if self.expires is not None:
+            d["expires"] = self.expires
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "Order":
@@ -67,6 +104,8 @@ class Order:
             shares=float(d["shares"]),
             reasoning=d.get("reasoning", ""),
             currency=d["currency"],
+            trigger=d.get("trigger"),
+            expires=d.get("expires"),
         )
 
 
@@ -75,6 +114,8 @@ class Fill:
     """Paper broker confirmation.
 
     Status is "filled" or "rejected"; reason set only on rejections.
+    trigger_fired: True when the fill came from a conditional order whose
+      trigger condition was hit by the watcher (not a same-session market fill).
 
     Currency convention (filled orders):
       - fill_price, fill_currency — the ticker's NATIVE currency (e.g., MSFT → USD)
@@ -93,6 +134,7 @@ class Fill:
     notional_base: float | None
     fees: float | None
     reason: str | None
+    trigger_fired: bool = False
 
     def __post_init__(self) -> None:
         if self.status not in ("filled", "rejected"):
@@ -101,7 +143,7 @@ class Fill:
             )
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "order_id": self.order_id,
             "ts_filled": self.ts_filled.isoformat().replace("+00:00", "Z"),
             "status": self.status,
@@ -111,6 +153,9 @@ class Fill:
             "fees": self.fees,
             "reason": self.reason,
         }
+        if self.trigger_fired:
+            d["trigger_fired"] = True
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "Fill":
@@ -123,6 +168,7 @@ class Fill:
             notional_base=d.get("notional_base"),
             fees=d.get("fees"),
             reason=d.get("reason"),
+            trigger_fired=bool(d.get("trigger_fired", False)),
         )
 
 

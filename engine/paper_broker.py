@@ -17,6 +17,9 @@ Rejection reason codes:
 - INSUFFICIENT_SHARES: SELL shares > held shares
 - DAILY_DRAWDOWN_HALT: agent's drawdown <= cap; ALL their orders rejected
 - APPLY_TRADE_FAILED: PortfolioManager.apply_trade raised; broker continues with next order
+- TRIGGER_NO_EXPIRY: conditional order without an expires date (agent error)
+- CANCELLED_BY_AGENT: cancel request matched a pending order; pending file removed
+- CANCEL_TARGET_NOT_FOUND: cancel request targeted an order_id not in pending
 """
 
 from __future__ import annotations
@@ -33,6 +36,11 @@ from engine.ohlcv_store import (
     latest_close_on_or_before,
 )
 from engine.orders import Fill, Order, append_fill
+from engine.triggers import (
+    delete_pending,
+    read_cancels,
+    save_pending,
+)
 from engine.portfolio import PortfolioManager
 from engine.types import Trade
 from engine.universes import resolve_universe
@@ -283,27 +291,56 @@ def _process_one(
 def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill]:
     """Fill all outbox orders for a trade date.
 
-    Malformed outbox lines (bad JSON or shares<=0) produce INVALID_SHARES rejections
-    rather than crashing the pass. Fills write to inbox and (unless dry_run) mutate
-    the portfolio via PortfolioManager.apply_trade.
-    """
-    orders, invalid_ids = _read_outbox_lines(trade_date)
+    Order of operations:
+      1. Process cancel requests — remove targeted pending orders, write
+         CANCELLED_BY_AGENT (or CANCEL_TARGET_NOT_FOUND) rejections to inbox.
+      2. Read outbox, split into conditional (trigger set) and market (trigger None).
+      3. Conditional orders → save_pending() with TRIGGER_NO_EXPIRY rejection
+         for any missing the expires field. No inbox fill on successful registration.
+      4. Market orders → existing per-agent processing (drawdown halt, rails, fill).
 
+    Malformed outbox lines (bad JSON or shares<=0) produce INVALID_SHARES rejections
+    rather than crashing the pass.
+    """
     fills: list[Fill] = []
+
+    # --- Pass 1: process cancel requests ---
+    for cancel in read_cancels(trade_date):
+        removed = delete_pending(cancel.target_order_id)
+        reason = "CANCELLED_BY_AGENT" if removed else "CANCEL_TARGET_NOT_FOUND"
+        f = _reject(cancel.target_order_id, reason)
+        fills.append(f)
+        append_fill(trade_date, f)
+
+    # --- Pass 2: read outbox and split conditional vs market ---
+    orders, invalid_ids = _read_outbox_lines(trade_date)
     for oid in invalid_ids:
         f = _reject(oid, "INVALID_SHARES")
         fills.append(f)
         append_fill(trade_date, f)
 
-    # Group remaining orders by agent so per-agent rails (drawdown, daily cap) apply.
-    by_agent: dict[str, list[Order]] = {}
+    market_orders: list[Order] = []
     for o in orders:
+        if o.trigger is None:
+            market_orders.append(o)
+            continue
+        if o.expires is None:
+            f = _reject(o.order_id, "TRIGGER_NO_EXPIRY")
+            fills.append(f)
+            append_fill(trade_date, f)
+            continue
+        save_pending(o)
+        # No inbox record on successful registration — the agent sees it
+        # next session in their "Active triggers" prompt section.
+
+    # --- Pass 3: existing market-order fill loop ---
+    by_agent: dict[str, list[Order]] = {}
+    for o in market_orders:
         by_agent.setdefault(o.agent_id, []).append(o)
 
     for agent_id, agent_orders in by_agent.items():
         config = AgentConfig.load(agent_id)
 
-        # Drawdown halt: a single per-agent decision that rejects ALL orders.
         if (
             _drawdown_pct(agent_id, portfolio_manager, trade_date)
             < config.daily_drawdown_halt_pct
@@ -314,7 +351,6 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
                 append_fill(trade_date, f)
             continue
 
-        # Resolve allowed universe once per agent.
         allowed_tickers: set[str] = set()
         for u in config.allowed_universe:
             try:
@@ -333,3 +369,115 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
                 filled += 1
 
     return fills
+
+
+def execute_triggered_order(
+    order: Order,
+    trade_date: date,
+    portfolio_manager: PortfolioManager,
+    fire_price: float,
+) -> Fill:
+    """Execute a fired conditional order through the same safety rails as market orders.
+
+    Differences from market-order processing:
+      - `fire_price` is the live price observed by the watcher, used as fill_price
+        instead of latest_close_on_or_before. The rails (notional cap, cash check,
+        position check) are evaluated against this price.
+      - The returned Fill always has trigger_fired=True so the agent and the site
+        can distinguish scheduled fills from market fills.
+      - Does NOT consult MAX_ORDERS_PER_DAY (a triggered fire is not a same-day order).
+      - Does NOT consult DAILY_DRAWDOWN_HALT — that rail lives at the fill_day batch
+        level, not inside _process_one. A triggered fire that should be halted by
+        drawdown will still fire here; the agent sees the fill in their inbox and
+        can re-author cautiously next session. Revisit if this becomes a problem.
+        Does still respect MAX_ORDER_NOTIONAL, TICKER_NOT_IN_UNIVERSE, INSUFFICIENT_CASH,
+        NO_POSITION_TO_SELL, INSUFFICIENT_SHARES, NO_FX_RATE, APPLY_TRADE_FAILED.
+
+    Caller is responsible for appending the returned Fill to the inbox and removing
+    the pending file (so the watcher can decide policy if it wants).
+    """
+    config = AgentConfig.load(order.agent_id)
+    portfolio = portfolio_manager.load(order.agent_id)
+    base_ccy = portfolio.currency
+    ticker_ccy = _ticker_currency(order.ticker)
+    notional_native = order.shares * fire_price
+
+    if ticker_ccy == base_ccy:
+        notional_base = notional_native
+    else:
+        converted = fx_convert(notional_native, ticker_ccy, base_ccy, trade_date)
+        if converted is None:
+            f = _reject(order.order_id, "NO_FX_RATE")
+            f.trigger_fired = True
+            return f
+        notional_base = converted
+
+    allowed_tickers: set[str] = set()
+    for u in config.allowed_universe:
+        try:
+            allowed_tickers.update(resolve_universe(u))
+        except KeyError:
+            logger.warning("Unknown universe %s in %s config", u, order.agent_id)
+
+    if allowed_tickers and order.ticker not in allowed_tickers:
+        f = _reject(order.order_id, "TICKER_NOT_IN_UNIVERSE")
+        f.trigger_fired = True
+        return f
+
+    if notional_base > config.max_order_notional:
+        f = _reject(order.order_id, "MAX_ORDER_NOTIONAL")
+        f.trigger_fired = True
+        return f
+
+    if order.action == "BUY" and notional_base > portfolio.cash:
+        f = _reject(order.order_id, "INSUFFICIENT_CASH")
+        f.trigger_fired = True
+        return f
+
+    if order.action == "SELL":
+        position = next(
+            (p for p in portfolio.positions if p.ticker == order.ticker), None
+        )
+        if position is None:
+            f = _reject(order.order_id, "NO_POSITION_TO_SELL")
+            f.trigger_fired = True
+            return f
+        if order.shares > position.shares:
+            f = _reject(order.order_id, "INSUFFICIENT_SHARES")
+            f.trigger_fired = True
+            return f
+
+    trade = Trade(
+        id=order.order_id,
+        timestamp=order.ts,
+        action=order.action,
+        ticker=order.ticker,
+        shares=order.shares,
+        price=fire_price,
+        total=notional_base,
+        fees=0.0,
+        reasoning=order.reasoning,
+    )
+
+    if not config.dry_run:
+        try:
+            portfolio_manager.apply_trade(order.agent_id, trade)
+        except ValueError as exc:
+            logger.warning(
+                "apply_trade failed for triggered order %s: %s", order.order_id, exc
+            )
+            f = _reject(order.order_id, "APPLY_TRADE_FAILED")
+            f.trigger_fired = True
+            return f
+
+    return Fill(
+        order_id=order.order_id,
+        ts_filled=datetime.now(timezone.utc),
+        status="filled",
+        fill_price=fire_price,
+        fill_currency=ticker_ccy,
+        notional_base=notional_base,
+        fees=0.0,
+        reason=None,
+        trigger_fired=True,
+    )
