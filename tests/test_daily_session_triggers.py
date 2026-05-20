@@ -14,9 +14,11 @@ import pytest
 
 from engine.orders import Order, read_outbox
 from engine.triggers import list_pending, read_cancels, save_pending
+from engine.portfolio import PortfolioManager
 from scripts.daily_session import (
     CONDITIONAL_ORDER_INSTRUCTIONS,
     render_active_triggers_for_agent,
+    step_author_all,
     step_author_cancels,
     step_author_orders,
 )
@@ -189,3 +191,81 @@ class TestConditionalOrderInstructions:
             or ">=" in CONDITIONAL_ORDER_INSTRUCTIONS
         )
         assert "cancels" in CONDITIONAL_ORDER_INSTRUCTIONS.lower()
+
+
+class TestAuthorAll:
+    def test_authors_orders_and_cancels_for_multiple_agents(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path / "outbox")
+        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path / "cancels")
+        pm_base = tmp_path / "portfolios"
+        pm = PortfolioManager(pm_base)
+        pm.initialize("satoshi", initial_capital=10_000.0, currency="EUR")
+        pm.initialize("world", initial_capital=10_000.0, currency="EUR")
+
+        d = date(2026, 5, 20)
+        agent_results = {
+            "satoshi": {
+                "commentary": "...",
+                "trades": [
+                    {
+                        "action": "BUY",
+                        "ticker": "BTC-EUR",
+                        "shares": 0.01,
+                        "reasoning": "dip",
+                    },
+                    {
+                        "action": "SELL",
+                        "ticker": "ETH-EUR",
+                        "shares": 0.5,
+                        "reasoning": "trim at 4k",
+                        "trigger": {"op": ">=", "level": 4000.0},
+                        "expires": "2026-06-20",
+                    },
+                ],
+                "cancels": [
+                    {"target_order_id": "ord_old_001", "reasoning": "stale thesis"},
+                ],
+            },
+            "world": {
+                "commentary": "...",
+                "trades": [
+                    {
+                        "action": "BUY",
+                        "ticker": "MSFT",
+                        "shares": 2,
+                        "reasoning": "earnings",
+                    },
+                ],
+            },
+        }
+        summary = step_author_all(agent_results, d, portfolio_manager=pm)
+
+        assert summary == {
+            "satoshi": {"orders": 2, "cancels": 1},
+            "world": {"orders": 1, "cancels": 0},
+        }
+        out = read_outbox(d)
+        assert len(out) == 3
+        cancels = read_cancels(d)
+        assert len(cancels) == 1
+        assert cancels[0].target_order_id == "ord_old_001"
+
+    def test_missing_trades_and_cancels_keys_treated_as_empty(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path / "outbox")
+        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path / "cancels")
+        pm_base = tmp_path / "portfolios"
+        pm = PortfolioManager(pm_base)
+        pm.initialize("satoshi", initial_capital=10_000.0, currency="EUR")
+
+        d = date(2026, 5, 20)
+        summary = step_author_all(
+            {"satoshi": {"commentary": "..."}}, d, portfolio_manager=pm
+        )
+
+        assert summary == {"satoshi": {"orders": 0, "cancels": 0}}
+        assert read_outbox(d) == []
+        assert read_cancels(d) == []

@@ -216,6 +216,44 @@ def step_author_cancels(
     return len(cancels)
 
 
+def step_author_all(
+    agent_results: dict[str, dict],
+    trade_date: date,
+    portfolio_manager: PortfolioManager | None = None,
+) -> dict[str, dict[str, int]]:
+    """Step 3 — author orders + cancels for every agent in `agent_results`.
+
+    Single entry point the trigger prose calls instead of looping in prose
+    over `step_author_orders` (which was the 2026-05-15 leaderboard-bug
+    pattern: per-agent loops as natural-language instructions). Each agent's
+    base currency is read from disk via PortfolioManager — no prose lookup.
+
+    Reads `trades` and optional `cancels` from each agent's result dict.
+    Returns {agent_id: {"orders": N, "cancels": M}} for caller logging.
+    """
+    print("\n=== Step 3: Author orders + cancels (all agents) ===")
+    if portfolio_manager is None:
+        portfolio_manager = PortfolioManager(
+            base_dir=_PROJECT_ROOT / "data" / "portfolios"
+        )
+    summary: dict[str, dict[str, int]] = {}
+    for agent_id, result in agent_results.items():
+        portfolio = portfolio_manager.load(agent_id)
+        n_orders = step_author_orders(
+            agent_id,
+            result.get("trades", []),
+            trade_date,
+            portfolio.currency,
+        )
+        n_cancels = step_author_cancels(
+            agent_id,
+            result.get("cancels", []),
+            trade_date,
+        )
+        summary[agent_id] = {"orders": n_orders, "cancels": n_cancels}
+    return summary
+
+
 def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> list:
     """Step 3b — invoke the paper broker on the day's outbox.
 

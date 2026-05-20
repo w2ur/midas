@@ -67,14 +67,22 @@ python scripts/fetch_market_data.py
 
 # Step 2 — Trading round (DISPATCH IN PARALLEL — one Task call per agent)
 For each agent_id in ROSTER:
+    from scripts.daily_session import (
+        CONDITIONAL_ORDER_INSTRUCTIONS,
+        render_active_triggers_for_agent,
+    )
     wrapped, model = wrap_persona_prompt(
         agent_id,
-        TRADING_PROMPT.format(agent_id=agent_id, today=today, yesterday=yesterday),
+        TRADING_PROMPT.format(
+            agent_id=agent_id, today=today, yesterday=yesterday,
+            conditional_instructions=CONDITIONAL_ORDER_INSTRUCTIONS,
+            active_triggers=render_active_triggers_for_agent(agent_id),
+        ),
     )
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 3 dispatches MUST be issued in the SAME message so
 they run in parallel. Collect agent_results = {agent_id: {"commentary":
-..., "trades": [...]}}.
+..., "trades": [...], "cancels": [...]}} (cancels optional).
 
 TRADING_PROMPT (the task body — wrap_persona_prompt prepends the persona):
 """
@@ -97,19 +105,33 @@ Weekend session — restrict orders to crypto pairs in your base currency.
 Equities/forex markets are closed; the broker would reject those orders
 anyway.
 
+{conditional_instructions}
+
+{active_triggers}
+
 Output JSON only, no other text:
 {
   "commentary": "your day's reasoning, in your voice (3-8 sentences)",
   "trades": [
-    {"action": "buy"|"sell", "ticker": "TICKER", "shares": int, "reasoning": "..."},
-    ...
+    {"action": "buy"|"sell", "ticker": "TICKER", "shares": int, "reasoning": "...",
+     "trigger": {"op": ">="|"<=", "level": <number>}, "expires": "YYYY-MM-DD"}
+    // trigger + expires are OPTIONAL; omit for an immediate market order.
+  ],
+  "cancels": [
+    {"target_order_id": "ord_...", "reasoning": "..."}
+    // OPTIONAL; only include if you want to remove a pending conditional from a prior session.
   ]
 }
 """
 
 After all 3 results arrive:
-    from scripts.daily_session import step_author_orders
-    step_author_orders(agent_results)
+    from scripts.daily_session import step_author_all
+    step_author_all(agent_results, today)
+    # ^ MUST be the helper. Do NOT loop in prose calling step_author_orders
+    # per agent — that's the 2026-05-15 leaderboard-bug pattern (per-agent
+    # loops as natural-language instructions improvise away). The helper
+    # iterates over agent_results, looks up each agent's base currency from
+    # disk, and writes trades to the outbox and cancels to data/orders/cancels/.
 
 # Step 3 — Fill orders
     from scripts.daily_session import step_fill_orders
