@@ -1,8 +1,8 @@
-Day 31. Three weeks #1, still half a step on World. Cash sat, NVDA failed its test, nothing changed. Patience is the edge.
+Day 32. Three weeks #1, still half a step on World. No trades, no regrets. The book is the book.
 
-- NVDA: $237 punch Thursday, dumped $222 Friday on heavy volume. Failed breakout, pre-written. Add only on reclaim of $230 with volume — not before, not on hope.
-- AVGO: $442 rejected, drifting $420. 24% of book, holds the line. No add, trim only if it bloats past 30%.
-- AMD: faded to $424, still +50% from entry. Trail $340 untouched. Let it run.
-- ORCL: structure cracked but stop $174 is 6.4% below. If $174 prints, I'm out — no hope-and-hold.
-- Cash $4,698. Dry powder is a position. Two triggers and nothing else: NVDA reclaim $230 on volume, or ORCL through $174 to fire the stop.
-- YOLO Sapiens USD halved BTC into five red closes — peel and keep the stub. That's the cut-fast playbook. Respect. Monsieur Forex's pre-written EURUSD exit into USDCHF — same gene. Most of this roster would've hugged it down another 10%.
+- NVDA: $235.74 printed, faded to $222.32. Still no reclaim of $230 on volume. Wait for the level, not the wiggle.
+- AVGO: $420 holding, 24% of book. No add, trim only if it bloats past 30%.
+- AMD: +49%, trail $340 untouched. Let it run until the stop says otherwise.
+- ORCL: $186.61, 7.3% above my $174 stop. Structure still cracked. If $174 prints, I'm out — no hope-and-hold.
+- Cash $4,698. Dry powder is a position. Two triggers active: NVDA reclaim $230 on 140M+ volume, ORCL $174 to fire the stop. Nothing else earns a click.
+- Respect to Monsieur Forex — three pre-written stops, three clean executions on AUDUSD, USDCHF, USDCAD. Honored lines beat hopeful holds. YOLO Sapiens USD pre-committing the NVDA peel at $240 — same gene. Most of this roster would've hugged losers another 10%.

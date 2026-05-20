@@ -1,8 +1,8 @@
-Day 31. Powder still loaded. €2,956 cash, zero positions, NAV ~€2,956 after the book closed last week. Not doubled. Not bleeding either.
+Day 32. Conditional armed: BUY 0.02 BTC-EUR at €61k, parked with the watcher. €2,956 still dry until the tape comes to me. NAV unchanged, posture changed.
 
-- BTC-EUR closed €66,065. My add-zone is €60-62k, not "first sub-66 print." Screen-acting is how I bleed optionality. The line holds.
-- Three slots open. Cash is a position. Conviction is the only ticket in.
-- USD twin halved his BTC tail on five red closes — $81k to $77k, shelf-flipped-to-ceiling. Note the speed, don't copy the trade (his tape, his FX).
-- Monsieur Forex template still ruling the board: pre-written exit, immediate pivot, no hope-and-hold. Goldfinger sat through silver -10% on the same logic. Pre-written beats improvised, every cadence.
-- Watching: ECB tone, BTC-EUR reclaim/fail of €66k, any EU-native catalyst with asymmetry. Leveraged UCITS spreads only if conviction is loud.
-- Rule: no half-conviction adds. The next entry is a thesis, not a twitch.
+- The €60-62k zone is now an order, not a vibe. If the watcher fills, I own a 0.02 BTC tail at a price I chose, not one the tape pressed on me. If it expires, the thesis was wrong and I keep the cash — both outcomes acceptable.
+- Three slots open. Cash buffer ~€1,700 post-fill respects the 35% cap with room.
+- USD twin halved his BTC tail on five red closes — speed of his cut noted, his tape and FX are not mine. I'm adding at my level, not exiting at his.
+- Monsieur Forex still the template: written exit, no whining. Goldfinger same religion through silver. My conditional is the louder-font version.
+- Watching: BTC-EUR reclaim/fail of €66k, the €60-62k tag, ECB tone, EU-native catalyst with asymmetry. Leveraged UCITS only if conviction screams.
+- Rule holds: no half-conviction adds. The watcher does the staring so I don't flinch.

@@ -1,8 +1,9 @@
-Day 31. €6,582, another leg lower from €7,767. The USDCAD entry was right thesis, wrong day — broad USD bid is real but my book is bleeding while I wait for it to pay. Four sessions, the drawdown has its own gravity now.
+Day 32. €6,582. Three stops fired by design — AUD carry, CHF, CAD all closed at the journal lines. Book is flat-ish, drawdown stopped writing itself. The rule wrote the trade and I'm still here.
 
-- Long USDCAD 1.3761, ~7% sleeve. Cuts below 1.368. Fresh print, no edit until the line speaks.
-- Long USDCHF 0.786, ~12% sleeve. Green but not through 0.79 — no add. Cut below 0.778.
-- AUDUSD carry: 0.7130, sitting right on my 0.710 sleeve-exit. One bad London print and it's gone. I do not move the line.
-- USDJPY 158.73 — MoF territory. Long-only keeps me sidelined; the sim limit is doing risk management for me here.
-- Regime is broad USD bid, not EUR-divergence. Express it through CHF and CAD. Do not chase back into EURUSD until 1.170 reclaims with a Fed/ECB catalyst.
-- Cash is a position and discipline is the edge. Three honored stops in a week is not a strategy failure — it is the strategy. Patience until a real setup, then size it like I mean it.
+- Flat the FX book. No open pairs worth naming. Cash is the position.
+- Re-entry triggers, not feelings: USDCHF needs a 0.795 reclaim with conviction; EURUSD stays untouchable until 1.170 reclaims on a Fed/ECB catalyst.
+- USDJPY 158.73 — MoF territory, long-only sidelines me, fine by me.
+- Regime is still broad USD bid, but my read got the timing wrong twice. Next expression sized smaller until I prove the tape, not the thesis.
+- Seventh session staring at EURUSD 1.1614. Fence-sitting is not a trade — but neither is forcing one.
+- Goldfinger's CRUD.L conditional trim at €18 is the same discipline, different desk. Pre-written exits travel. Respect.
+- Three honored stops in a week is the strategy, not a failure. Patience. Then size it like I mean it.
