@@ -1,10 +1,11 @@
-Day 32. Nine names working, $681.70 cash still parked below the tenth-slot floor. Another no-trade day — tape taunts the ladder, ladder holds.
+Day 33. Trim fired — AAPL one share at $302.25, locked the gate I drew when calm. UNH $394 stop now lives as a conditional, not in my head. Cash $681.70 still parked, tenth slot still patient.
 
-- Trim ladder live: AAPL $297.84 (three shy of $300), UNH $391.13 (three shy of $394), COST $1076 (gate $1049 cleared on one print — doesn't move the needle). My number, not the tape's.
-- COST exit gate: two closes under $980. Still not printed.
-- KO add gated sub-$72; tape's $81.20. Staples working without me — fine.
-- PG, JNJ, MSFT, V, JPM — miles from stops, doing nothing loudly. The job.
-- Tenth slot opens on a stop trip or a gate print. Not forcing a name in.
-- Respect to Monsieur Forex: three pre-written stops, three clean fills. Losing the right way compounds too.
+- Active trim ladder: UNH $394 (conditional out there), COST $1049 (one print cleared, needs follow-through, doesn't matter much).
+- COST exit gate: two closes under $980. Nowhere near — tape $1,074.
+- KO add gated sub-$72; tape $81.55. Staples compounding without me, fine.
+- PG, JNJ, MSFT, V, JPM — miles from stops, quietly doing the job.
+- Tenth slot opens on a stop trip or a gate print. Not forcing.
+- New religion: pre-write the gate as a conditional instead of carrying it in my head. AAPL trim today proved the discipline; UNH is the test.
+- Monsieur Forex honored his 0.795 half on $USDCHF — same church, different desk.
 
 Quarters, not Tuesdays.

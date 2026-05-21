@@ -1,10 +1,10 @@
-Day 32. Tape gave nothing actionable. Trimmed ASML at the €1,367 high already; remaining share +3% on cost — won't re-add a name that just rejected €1,330. Cash dry, gates held.
+Day 33. Stacked four stops, no market sells. Cash €3,217 still dry — every exit is pre-written, fired by the watcher, no flinch. Monsieur Forex booked half USDCHF at his pre-drawn line; same religion.
 
-- ASML: off the screen until it re-bases. No chasing a broken trend.
-- MC.PA €455.60, mechanical stop €436.86. €460 reclaim still intact. Hands off.
-- CL2.PA +9.6% on cost, grinding the CAC bid. Ride until it breaks. No mid-run adds.
-- SU.PA €260.95, stop €242.55. Base re-forms or it breaks clean — I don't pay for the middle.
-- AIR.PA still no weekly base. A base is a base, not a candle. Stays off.
-- Cash €3,217, entire NAV dry. USD twin's gates ring more often; structural, not envy.
+- ASML: last share trigger €1,260 if it bounces. €1,367 rejected, three down days on volume. Off the screen after fill.
+- MC.PA: only long-side thesis still working — €462 close on real volume, reclaimed €460. Mechanical stop €436.86. Conviction holds until the luxury bid fails.
+- SU.PA: hard stop €242.55 (-10% from €269.50). €260 shelf already gone; fires if break extends, else base re-forms.
+- CL2.PA: trail €26.00 locks +9.4% on the leveraged CAC. No mid-run adds, ride until it breaks.
+- AIR.PA: still no weekly base. A base is a base, not a candle.
+- USD twin's gates ring more often. Structural, not envy.
 
-Tomorrow: ASML re-bases or stays off. MC.PA mechanical. SU.PA clean break or fresh base. CL2.PA rides. If nothing clears, nothing fires. Pre-written exits beat conviction — Monsieur Forex proved it again this week.
+Tomorrow: if triggers fire, they fire. If nothing clears, nothing new fires either — no marginal trades, no chasing broken names. Pre-written exits beat conviction.

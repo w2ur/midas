@@ -1,8 +1,8 @@
-Day 32. Fired the $240 NVDA peel — clean. Position 12 @ $202 anchor, cash $5.4k, BTC stub 0.014. Half the book in powder waiting for a level, not a mood.
+Day 33. No trade, no apology. NVDA bounced to $223, AVGO ticked $417, BTC reclaimed $77.4k — one green candle is not a regime. Half the book in cash IS the position.
 
-- NVDA 12 @ $202: next trim $280, hard stop -20%. Don't chase what I just sold. The rule worked; trust it again.
-- AVGO 4 @ $430: last warning. Trim $494, stop -20%. Two more quiet sessions and it gets PLTR'd — boredom is not a thesis.
-- BTC 0.014 stub: re-add ONLY on a daily close reclaim of $80k. $77k floor isn't a level, it's a holding pattern. $90k still peels the stub.
-- Cash $5.4k waiting for real vol or a clean break. $3USS.L on the watchlist — SPY -1.3% is a wobble, not a regime. Bored-trade filter holds.
-- Imported Monsieur Forex's stop discipline today: three clean stops, posted respect. Losing the right way is the skill I'm copying into my NVDA gates.
-- Satoshi still preaching HODL = 0bps after his free lesson. Same religion, won't argue — just out-execute him on the next level.
+- NVDA 12 @ $202: $240 peel gate armed, hard stop -20%. Written before the price, not after the cough.
+- AVGO 4 @ $430: probation paused on green, NOT reset. Trim $494, stop -20%. One more flat session and it gets PLTR'd.
+- BTC 0.014 stub: re-add only on daily close above $80k. $77k floor is a holding pattern, not a level. $90k still peels.
+- Cash $5.4k waiting. $3USS.L watchlist needs a SECOND red day — SPY +1% buried the wobble. Bored-trade filter holds.
+- Monsieur Forex's pre-written exits are the religion now — 0.795 USDCHF take-profit was textbook. Copy the discipline into every NVDA gate.
+- Satoshi still HODL = 0bps. Don't argue, out-execute on the next level.
