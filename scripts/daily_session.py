@@ -300,40 +300,19 @@ def step_build_leaderboard(
 ) -> list[dict]:
     """Step 5a-bis — canonical leaderboard for the day.
 
-    Returns ``[{"rank": int, "agent": str, "return_pct": float}]`` sorted by
-    EUR-equivalent MTM descending, anchored to the €10,000 inception baseline
-    that ``engine/daily_log.py`` and ``engine/baselines.py`` use everywhere
-    else.
-
-    Always call this helper instead of hand-rolling the calculation from
-    ``snapshots.json``. The first persisted snapshot is NOT inception for
-    every agent — agents whose seed portfolio contained non-cash positions
-    (e.g. Monsieur Forex starts with FX cash legs, World starts with
-    multi-currency baskets) have ``snapshots[0]['portfolio_value']`` already
-    reflecting non-zero P&L. Using that as the baseline materially
-    understates their returns. The 2026-05-15 weekday session shipped that
-    bug; this helper is the fix.
+    Thin wrapper around engine.leaderboard.build_leaderboard_rows so the
+    same logic powers the weekend refresh script and the watcher.
     """
-    from engine.valuation import portfolio_mtm_eur
+    from engine.leaderboard import build_leaderboard_rows
 
     print("\n=== Step 5a-bis: Build leaderboard ===")
-    rows: list[dict] = []
-    for agent_id, summary in portfolio_summaries.items():
-        eur_mtm = portfolio_mtm_eur(summary, on)
-        if eur_mtm is None:
-            continue
-        rows.append(
-            {
-                "agent": agent_id,
-                "return_pct": (eur_mtm / 10_000 - 1) * 100,
-            }
+    rows = build_leaderboard_rows(portfolio_summaries, on=on)
+    if rows:
+        print(
+            f"  Ranked {len(rows)} agents (top: {rows[0]['agent']} {rows[0]['return_pct']:+.2f}%)"
         )
-    rows.sort(key=lambda r: r["return_pct"], reverse=True)
-    for i, row in enumerate(rows, start=1):
-        row["rank"] = i
-    print(
-        f"  Ranked {len(rows)} agents (top: {rows[0]['agent']} {rows[0]['return_pct']:+.2f}%)"
-    )
+    else:
+        print("  No agents had computable EUR-MTM — leaderboard empty.")
     return rows
 
 

@@ -19,8 +19,7 @@ def build_leaderboard_rows(
 ) -> list[dict]:
     """Return ranked rows: [{rank, agent, return_pct}, ...] sorted desc.
 
-    Mirrors scripts.daily_session.step_build_leaderboard. Agents whose
-    EUR-MTM cannot be computed (e.g. missing FX rate) are dropped.
+    Agents whose EUR-MTM cannot be computed (e.g. missing FX rate) are dropped.
     """
     rows: list[dict] = []
     for agent_id, summary in portfolio_summaries.items():
@@ -46,7 +45,7 @@ def build_current_leaderboard_artifact(
     trigger: str,
     updated_at: datetime | None = None,
 ) -> dict:
-    """Build the data/leaderboard/current.json payload."""
+    """Build the current leaderboard artifact payload."""
     ts = updated_at or datetime.now(timezone.utc)
     iso = (
         ts.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
