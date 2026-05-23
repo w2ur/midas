@@ -2,6 +2,7 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import LeaderboardTable from "@/components/LeaderboardTable.astro";
 import { loadLatest } from "@/lib/output";
+import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 import { loadBlogLatest, excerpt } from "@/lib/blog";
 import { loadAllOrders, tickerSlug } from "@/lib/orders";
 import { isTradingAgent, getAgent } from "@/lib/roster";
@@ -9,6 +10,10 @@ import { tickerName } from "@/lib/tickers";
 import { loadGlobalReference, loadBenchmark, returnPct } from "@/lib/baselines";
 
 const bundle = loadLatest();
+const current = loadCurrentLeaderboard();
+const leaderboardRows = current?.rows ?? bundle.leaderboard;
+const updatedAt = current?.updated_at;
+const trigger = current?.trigger;
 const latestBlog = loadBlogLatest();
 const blogExcerpt = excerpt(latestBlog.body, 280);
 
@@ -65,10 +70,12 @@ function fmtPrice(n: number | null, ccy: string | null): string {
       <h2>The leaderboard</h2>
     </header>
     <LeaderboardTable
-      rows={bundle.leaderboard}
+      rows={leaderboardRows}
       reference={{ label: "MSCI World (EUR)", return_pct: globalRefPct }}
       showVsBench
       vsBenchByAgent={vsBenchByAgent}
+      updatedAt={updatedAt}
+      trigger={trigger}
     />
   </section>
 

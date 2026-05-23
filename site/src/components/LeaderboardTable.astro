@@ -7,9 +7,11 @@ interface Props {
   reference?: { label: string; return_pct: number | null };
   showVsBench?: boolean;
   vsBenchByAgent?: Record<string, number | null>;
+  updatedAt?: string;
+  trigger?: string;
 }
 
-const { rows, reference, showVsBench, vsBenchByAgent } = Astro.props;
+const { rows, reference, showVsBench, vsBenchByAgent, updatedAt, trigger } = Astro.props;
 
 function fmtPct(n: number): string {
   const sign = n > 0 ? "+" : n < 0 ? "" : "";
@@ -26,7 +28,25 @@ function deltaCls(v: number | null | undefined): string {
   if (v === null || v === undefined) return "";
   return v > 0 ? "pos" : v < 0 ? "neg" : "";
 }
+
+function formatUpdatedAt(iso: string): string {
+  const d = new Date(iso);
+  return d.toUTCString().replace("GMT", "UTC");
+}
+
+function formatTrigger(t: string): string {
+  if (t === "scheduled-weekend-refresh") return "weekend refresh";
+  if (t === "trigger-fire") return "conditional order fire";
+  if (t.startsWith("session-")) return `session ${t.slice(8)}`;
+  return t;
+}
 ---
+{updatedAt && (
+  <p class="leaderboard-meta">
+    Last updated: {formatUpdatedAt(updatedAt)}
+    {trigger && <> &middot; via {formatTrigger(trigger)}</>}
+  </p>
+)}
 <table class="leaderboard">
   <thead>
     <tr>
@@ -69,6 +89,11 @@ function deltaCls(v: number | null | undefined): string {
   )}
 </table>
 <style>
+  .leaderboard-meta {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+  }
   .reference-row td { color: var(--ink-muted); border-top: 2px solid var(--rule); }
   .reference-row em { font-style: italic; }
   .reference-row .muted { font-style: italic; }

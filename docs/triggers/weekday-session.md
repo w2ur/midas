@@ -247,6 +247,17 @@ If any are unchanged, that agent's dispatch was skipped — abort.
 data/baselines/* must be modified by this call. If git diff shows no
 change in data/baselines/, this step was skipped — abort.
 
+# Step 9b — Live leaderboard artifact (ALWAYS)
+    from scripts.daily_session import step_write_current_leaderboard
+    step_write_current_leaderboard(
+        rows=leaderboard,
+        trigger=f"session-{today.isoformat()}",
+    )
+data/leaderboard/current.json must be (re)written by this call. The site's
+homepage live-leaderboard widget reads this file; per-day archive pages
+keep reading data/output/{today}.json. Reuses the `leaderboard` variable
+computed in Step 5 — do NOT recompute.
+
 # Step 10 — Commit and push
 Commit data/ first, with the richer message:
     git add data/
@@ -280,6 +291,7 @@ git show HEAD --stat must include:
   - data/portfolios/*/snapshots.json (all 10)
   - data/posts/{today}.json
   - data/blog/{today}.md
+  - data/leaderboard/current.json
 Also confirm the leaderboard in data/output/{today}.json was produced
 by step_build_leaderboard, not by hand. Spot-check one EUR agent and
 one USD agent against (portfolio_mtm_eur / 10_000 - 1) * 100 — values
