@@ -24,7 +24,7 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Verify session commit touches journals + baselines
+      - name: Verify session or refresh commit integrity
         run: |
           set -euo pipefail
 
