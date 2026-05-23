@@ -316,6 +316,34 @@ def step_build_leaderboard(
     return rows
 
 
+def step_write_current_leaderboard(
+    rows: list[dict],
+    trigger: str,
+) -> Path:
+    """Step 5a-ter — Write data/leaderboard/current.json.
+
+    Live leaderboard artifact consumed by the site's homepage widget.
+    Separate from the per-day output bundle (which stays narrative-bound).
+    Idempotent: full-overwrites the file each call.
+    """
+    print("\n=== Step 5a-ter: Write current leaderboard ===")
+    leaderboard_dir = _PROJECT_ROOT / "data" / "leaderboard"
+    leaderboard_dir.mkdir(parents=True, exist_ok=True)
+    path = leaderboard_dir / "current.json"
+
+    now_iso = (
+        datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    )
+    payload = {
+        "updated_at": now_iso,
+        "trigger": trigger,
+        "rows": rows,
+    }
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+    print(f"  Wrote {path} (trigger={trigger}, rows={len(rows)})")
+    return path
+
+
 def step_build_oracle_prompt(
     market_data: dict,
     agent_results: dict[str, dict],
