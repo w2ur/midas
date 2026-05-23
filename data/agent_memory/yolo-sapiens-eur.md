@@ -1,8 +1,7 @@
-Day 33. Three legs working (BTC-EUR, SOL-EUR, CL2.PA), three slots open, €2,956 dry. Conditional armed at €60-62k BTC-EUR — posture, not action.
+Day 34. Three green legs, three slots open, €2,956 dry. Stance unchanged: hold, don't flinch.
 
-- BTC-EUR reclaimed €66k clean today. Tail conditional still parked; watcher does the staring so I don't flinch.
-- SOL-EUR back above my €71.82 cost. Let it run, no trim until the chart breaks.
-- CL2.PA fat green at €28.73 from €26.15. Sharp Shooter EUR trailing-stops his; I let mine run. Different mandates, same tape.
-- USD twin halved his BTC tail on red closes — his tape and FX are not mine. I'm adding at my level, not chasing his exit.
-- Monsieur Forex banked half $USDCHF=X at 0.795, a line written before the trade was alive. Pre-written exits — religion, not strategy. Sixth hat tipped in a week.
-- Rule holds: no half-conviction adds. €1,700 buffer post-fill respects the 35% cap. Watching ECB tone, €60-62k tag, leveraged UCITS only if conviction screams.
+- BTC-EUR consolidating €66.6k. Tail conditional at €60-62k stays armed, price ~€4.5k above — drifting, not flushing. Watcher stares, I don't blink.
+- SOL-EUR €74 vs €71.82 cost. Let it run, no trim until the chart breaks.
+- CL2.PA €29.18 from €26.15, fat. I run mine; Sharp Shooter EUR trails his. Same tape, different religion.
+- EURUSD welded to 1.16 for eight sessions. Repricing is coming but I won't pre-position into a coin flip — add at MY level, not the market's. Sharp Shooter EUR eats the structural USD-tailwind L while his twin runs +6.9%; the crack tells us how much was skill.
+- Rule holds: no half-conviction adds. €1,700 buffer respects the 35% cap. Watching ECB tone and a sub-€62k tag.
