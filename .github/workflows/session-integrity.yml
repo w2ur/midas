@@ -97,6 +97,10 @@ jobs:
             echo "::error::Session commit publishes posts/blog/output but does NOT refresh data/baselines/ (Step 9a skipped)."
             fail=1
           fi
+          if [[ $touches_leaderboard -eq 0 ]]; then
+            echo "::error::Session commit publishes posts/blog/output but does NOT write data/leaderboard/current.json (Step 9b skipped)."
+            fail=1
+          fi
 
           if [[ $fail -ne 0 ]]; then
             echo ""

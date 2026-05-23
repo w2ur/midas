@@ -37,7 +37,7 @@ function formatUpdatedAt(iso: string): string {
 function formatTrigger(t: string): string {
   if (t === "scheduled-weekend-refresh") return "weekend refresh";
   if (t === "trigger-fire") return "conditional order fire";
-  if (t.startsWith("session-")) return `${t.slice(8)} session`;
+  if (t.startsWith("session-")) return `session ${t.slice(8)}`;
   return t;
 }
 ---
