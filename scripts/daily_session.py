@@ -320,13 +320,13 @@ def step_write_current_leaderboard(
     rows: list[dict],
     trigger: str,
 ) -> Path:
-    """Step 5a-ter — Write data/leaderboard/current.json.
+    """Step 9b — Write data/leaderboard/current.json.
 
     Live leaderboard artifact consumed by the site's homepage widget.
     Separate from the per-day output bundle (which stays narrative-bound).
     Idempotent: full-overwrites the file each call.
     """
-    print("\n=== Step 5a-ter: Write current leaderboard ===")
+    print("\n=== Step 9b: Write current leaderboard ===")
     leaderboard_dir = _PROJECT_ROOT / "data" / "leaderboard"
     leaderboard_dir.mkdir(parents=True, exist_ok=True)
     path = leaderboard_dir / "current.json"
