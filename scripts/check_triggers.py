@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import subprocess
 import sys
@@ -31,6 +32,10 @@ from engine.triggers import (
     get_current_price,
     is_expired,
     list_pending,
+)
+from engine.leaderboard import build_leaderboard_rows as _build_leaderboard_rows
+from scripts.daily_session import (
+    build_portfolio_summaries as _build_portfolio_summaries,
 )
 
 logger = logging.getLogger(__name__)
@@ -118,11 +123,38 @@ def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
     return summary
 
 
+def refresh_leaderboard_artifact(trigger: str, on: date) -> None:
+    """Best-effort refresh of data/leaderboard/current.json after a fire.
+
+    Wrapped: any failure here is logged but never raised. The fill is the
+    critical bit; the leaderboard is derived state and resyncs on the next
+    fire / weekend refresh / weekday session.
+    """
+    try:
+        summaries = _build_portfolio_summaries()
+        rows = _build_leaderboard_rows(summaries, on=on)
+        leaderboard_dir = _PROJECT_ROOT / "data" / "leaderboard"
+        leaderboard_dir.mkdir(parents=True, exist_ok=True)
+        path = leaderboard_dir / "current.json"
+        now_iso = (
+            datetime.now(timezone.utc)
+            .isoformat(timespec="seconds")
+            .replace("+00:00", "Z")
+        )
+        artifact = {"updated_at": now_iso, "trigger": trigger, "rows": rows}
+        path.write_text(json.dumps(artifact, indent=2, ensure_ascii=False) + "\n")
+        logger.info("Refreshed %s after fire (rows=%d)", path, len(rows))
+    except Exception as exc:
+        logger.warning("Leaderboard refresh failed (non-fatal): %s", exc)
+
+
 def commit_and_push() -> None:
-    """Commit data/orders/{pending,inbox}/ changes and push to origin/main."""
+    """Commit data/orders/{pending,inbox}/ and data/portfolios/ and data/leaderboard/ changes and push to origin/main."""
     data_dirs = [
         str(_PROJECT_ROOT / "data" / "orders" / "pending"),
         str(_PROJECT_ROOT / "data" / "orders" / "inbox"),
+        str(_PROJECT_ROOT / "data" / "portfolios"),
+        str(_PROJECT_ROOT / "data" / "leaderboard"),
     ]
     subprocess.run(["git", "add", *data_dirs], cwd=_PROJECT_ROOT, check=True)
     diff = subprocess.run(
@@ -163,6 +195,8 @@ def main() -> None:
         return
     if summary["fired"] == 0 and summary["expired"] == 0:
         return
+    if summary["fired"] > 0:
+        refresh_leaderboard_artifact(trigger="trigger-fire", on=now.date())
     commit_and_push()
 
 
