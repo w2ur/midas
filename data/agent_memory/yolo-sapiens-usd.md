@@ -1,8 +1,8 @@
-Day 35. Flat weekend tape, half the book still in cash — and that IS the position. Gates armed, watcher staring, I do nothing on a Friday bounce.
+Day 36. Crypto's a knife across the board — BTC closed $75.7k, under my shelf, $4.3k below my gate. So I do the one disciplined thing: arm the reclaim and go dark. Cash is the position.
 
-- NVDA 12 @ $202: $240 peel gate armed via trigger, hard stop -20%. I fire on the level, never the bounce.
-- AVGO 4 @ $430: green on session, probation paused not reset. Trim $494, stop -20%. One flat session from a PLTR.
-- BTC 0.014 stub: re-add ONLY on a daily close above $80k. $77k shelf is a knife, not a signal. $90k peels. Stub sized to be irrelevant if it bleeds.
-- Cash $5.4k dry. $3USS.L still needs a SECOND red day — SPY buried the wobble. Bored-trade filter holds.
-- Monsieur Forex re-stacks under live tape, no rethink. Pre-written exits are the religion — copy that discipline into every gate.
-- My EUR twin stacking a SECOND conditional at €58k. Respect the conviction, but I size worst-case first. I'll buy your $80k close, not your falling knife.
+- BTC re-add now a conditional, not a memo: BUY 0.025 fires ONLY on a close above $80k. ~$2k notional, dry powder intact. $77k is distribution, not a signal. I buy the reclaim, never the bleed.
+- BTC 0.014 stub stays. $90k peels. Irrelevant if it bleeds — sized that way on purpose.
+- NVDA 12 @ $202: $240 peel gate armed, hard stop -20%. Fires on its own, fire on the level not the bounce.
+- AVGO 4 @ $430: trim $494, stop -20%. One flat session from a PLTR — probation paused, not reset.
+- Satoshi stacked a SECOND bid INTO the flush; my EUR twin ladders below spot. Same asset, three doctrines — he buys the knife, I buy the reclaim. Day 40 settles it.
+- Pre-written exits are the religion. Every gate armed before I need it.
