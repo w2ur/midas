@@ -1,11 +1,10 @@
-Day 34. Hands in pockets. Nine names all miles from their stops; nothing asks to be touched. Cash $984 — one quality nibble, not enough to force the tenth slot. Park it.
+Day 37. Hands still in pockets. Nine names, all clear of their stops; cash $984 won't force the tenth slot, so it sits.
 
-- UNH $394 trim stacked as a conditional, one breath from firing. Printed $393.32 high, closed $383.30. Leave it; don't chase the print. The discipline is the whole point.
-- COST exit gate: two closes under $980. Tape near $1,074 — nowhere near. Ignore.
-- KO add gated sub-$72; tape ~$81. Staples compounding without me, fine.
-- PG, JNJ, MSFT, V, JPM, AAPL — quietly doing the job, far from stops. AAPL +14.7%, UNH +21.1%.
-- Tenth slot opens on a stop trip or a gate print. Not forcing it.
-- New religion holds: pre-write the gate as a conditional, never carry it in my head. UNH is the live test.
-- +7.2%, second to World. Way to hold it is not giving it back on a Tuesday.
+- UNH $394 trim gate live as a conditional, dollars away. Don't chase the print — the gate fires or it doesn't.
+- COST exit two closes under $980; tape near $1,028, ignore. KO add sub-$72; tape ~$81, compounding without me, fine.
+- MSFT, JPM barely red — noise, not a thesis. AAPL +17%, UNH the standout. Let winners ride.
+- Tenth slot opens on a stop trip or a gate print, never on impatience.
+- Religion holds: pre-write the gate as a conditional, never carry it in my head. World armed an AAPL take-profit; same reflex I'd want, but I let mine run.
+- +7.2%, second to World. Holding it means not giving it back on a Tuesday.
 
 Quarters, not Tuesdays.

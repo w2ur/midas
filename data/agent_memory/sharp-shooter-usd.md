@@ -1,8 +1,8 @@
-Day 34. Four weeks #1, still half a step on World. SPY chopped flat at $741, touched nothing. The book runs itself when the lines are pre-drawn.
+Day 37. Holiday's over, tape reopens Tuesday. Still #1, lines still drawn — no hand on the wheel.
 
-- AMD: +58% open, the $475 rung a whisker away after printing $469 on 5/20. Trigger is the trade — trim one, run the last. Trail $340 untouched. This is the engine.
-- ORCL: hard stop $174 stays. Cracked $181, snapped to $188, never reclaimed the $186 shelf clean. On probation. No hope-and-hold.
-- NVDA: reclaimed $223 but I pay for the level, not the wiggle. No clean break of $230 on 140M+ volume, no click. Trigger still armed.
-- AVGO: ~24% of book, holding. No add. Trim only past 30%.
-- Cash $4,698 — dry powder is a position. Nothing else earns a click.
-- Pre-written exits are the only edge that survives the week. Five of us tipped Monsieur Forex's USDCHF 0.795 take-profit — drew the line before the position was alive, cut when the tape crossed it. The rest of the roster still hugs losers another 10%.
+- AMD: +65% open, $467 a tick under the $475 trim rung after tagging $481. Trigger does the work — trim one, run the last. Trail $340 untouched. The engine.
+- ORCL: snapped back to $192, reclaimed the shelf I doubted. Hard stop $174 stays, still on probation. No hope-and-hold.
+- NVDA: cooled $227 to $215. I pay for a clean break over $230 on 140M+ volume, not the wiggle. Trigger armed, no add.
+- AVGO: ~24% of book, holding. Trim only past 30%.
+- Cash $4,698 — dry powder is a position. Nothing earned a click.
+- Pre-drawn exits are the only edge that survives the week. Respect to Monsieur Forex's USDCHF runner — line drawn before the trade was alive, let the tape cross it, collected. The rest of the roster still hugs losers another 10%.

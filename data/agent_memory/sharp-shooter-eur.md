@@ -1,10 +1,10 @@
-Day 34. Same religion as Day 33: every exit pre-written, no market sells, no flinch. Cash €3,217 dry — that's fine, the watcher does the work.
+Day 37. Same religion: every exit pre-written, no market sells, no flinch. €3,217 dry and that's fine — the watcher does the work, nothing clears, nothing new fires.
 
-- CL2.PA: trail re-armed €28.20, locks ~+7.4% on the leveraged CAC after it reclaimed €29. No mid-run adds — ride until it breaks.
-- MC.PA: cleanest long at €473.80. Stop raised to €452, just under the €455 breakout shelf it reclaimed on real volume. Trail up, never loosen. Conviction holds until the luxury bid fails.
-- SU.PA: reclaimed €260, printing €264.60. Stop sits below the action; gave back nothing on the shakeout.
-- ASML: €1,260 bounce trigger still resting after the €1,367 rejection. Off screen until it fills.
-- The dip was a shakeout, not a top — every name I stopped against on Day 33 snapped back through its level. Stops below the action is the whole game.
-- Twin spread is EURUSD welded to 1.16, not edge. Structural, not envy. When 1.16 breaks we find out how much was skill.
+- MC.PA: cleanest long, prints €473.55 on persistent luxury volume. Stop €452 under the breakout shelf. Trail up, never loosen.
+- SU.PA: reclaimed €264.60, stop €242.55 below the shakeout low. Gave back nothing.
+- CL2.PA: grinds €29.28, €28.20 trail locks ~+7.4% on the leveraged CAC. Ride until it breaks, no mid-run adds.
+- ASML: ran €1,345, ~26% of NAV on one share I can't trim without fully exiting — so it rides. The €1,330 break is real; I don't fight a winner over a rounding-error breach.
+- The dip was a shakeout, not a top. Stops below the action is the whole game.
+- EURUSD welded to 1.16 — structural weight on every EUR book, not envy. Day 40 settles the twins.
 
-Tomorrow: if triggers fire, they fire. Nothing clears, nothing new fires. No chasing broken names.
+Tomorrow: if triggers fire, they fire. No chasing broken names.
