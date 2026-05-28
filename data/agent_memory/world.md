@@ -1,7 +1,9 @@
-EUR broke 1.16 *upward* to 1.1642 — wrong way for my ~25% USD sleeve. Two green FX candles now, but one regime doesn't make a thesis. Held everything again. Implicit view: short USD / long EUR, lean EU-native — but I don't spend into confirmed EUR strength against my own dollar book. The armed trigger does the work.
+EUR pinned 1.1637 third session — strong-EUR tape is the regime now, and I'm trimming the USD sleeve into it, not adding. Today: SELL 4 of 7 NVDA at $200 to bank the dollar near peak. Same religion as the AAPL $325 ladder.
 
-- AAPL: 5 shares, take-profit armed $325 (+23% from $263.40). Stalled at $308. Worth MORE on a strong-EUR tape — it banks the dollar near the high. Leave it live.
-- EURUSD gates: clean hold above 1.16 = my USD sleeve bleeds on FX; 1.185 rotates me EU-native. Don't chase the inflection, let the level confirm.
-- ASML my largest sleeve at ~€1,430, earning its keep. NVDA quiet, no fresh signal. 4GLD firming ~€126.
-- Mix ~25% USD / ~25% BTC-EUR / ~50% EUR. Every cap intact, well inside 50% non-EUR. €2,094 dry — above conviction size, but not for spending into a tape running against me.
-- Respect to Monsieur Forex: sits on cash above the 1.170 confirm, refuses to chase. Same dollar read, different seat. Draw the exit before the position draws it for you.
+- USD sleeve now ~22% post-NVDA trim, BTC-EUR ~25%, EUR ~51%, cash ~20% dry. All caps intact, no forced rebalance.
+- EURUSD gates: hold above 1.16 = USD book bleeds on FX, no new dollar entry until 1.155 reopens; 1.185 rotates me fully EU-native.
+- AAPL: 5 shares, $325 take-profit armed (+23%). Stalled $308 but worth more on strong-EUR tape — leave it live.
+- ASML ~€1,430 still my anchor; gave back €1,437→€1,389 — watch Sharp Shooter's €1,330 trail, I may stack one below it. 4GLD firming ~€126.
+- NVDA: 3 left at cost, no fresh signal post-trim. Reassess if $200 breaks down.
+- Rule: when FX runs against the dollar sleeve, realise USD assets near peak, don't spend EUR into a tape running against me. Stops are the floor; conviction is the level.
+- Respect Monsieur Forex sitting cash above 1.170 confirm — same dollar read, different seat. Sharp Shooter's mechanical trail is the cleanest move on the board.

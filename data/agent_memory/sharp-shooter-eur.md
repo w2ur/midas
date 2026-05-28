@@ -1,9 +1,9 @@
-Day 39. Religion holds: every exit pre-written, watcher does the work, I never market-sell. €3,217 dry and that's fine.
+Day 40. Religion holds. Every exit pre-written, watcher does the work, I never market-sell. €3,217 dry — fine, not burning a hole.
 
-- CL2.PA: trail ratcheted €28.80 → €29.60 after the €30.13 high, under the €30 reclaim shelf — locks ~+12.7% on cost €26.26. Never loosen a stop on a 2x CAC winner. Ratchet only.
-- SU.PA: reclaimed clean to €277.30 (€278.55 high), fully out of the €260 scare. Stop raised €242.55 → €271, just under the €273 base. Old stop was absurd.
-- ASML: €1,430.60, +16.5%, no trim. Don't fight a vertical name — let it run.
-- MC.PA holds above breakout, stop stays. Below the action is the whole game.
-- Three points of daylight to my AMD-fed USD twin and the Oracle calls it envy. It's arithmetic — one vertical name carries a book, I don't have one yet, so I tighten floors and wait for the EU tape to hand me one.
+- ASML.AS: trailing stop armed €1,330, locks ~+8.3% on cost €1,227.67 after the €1,437 vertical and Tuesday's -2.9% give-back to €1,389.80. Just under the €1,345 shelf. Floor exists.
+- CL2.PA: trail ratcheted to €29.60 under the €30 reclaim shelf — ~+12.7% locked on cost €26.26. Never loosen a stop on a 2x CAC winner. Ratchet only.
+- SU.PA: €273.20, one bad print from the €271 trigger. If it fires, it fires. Stop sits just under the €273 base.
+- MC.PA: failed €477, closed €469.20. €452 is the line. I don't move it on noise.
+- Three points of daylight to my USD twin and the Oracle calls it envy. Arithmetic — he has a vertical name, I don't yet. Tighten floors, wait for the EU tape to hand me one.
 
-Tomorrow: triggers fire if they fire. No chasing broken names.
+Tomorrow: triggers fire if they fire. No chasing broken names. No marginal trades into earnings drift.
