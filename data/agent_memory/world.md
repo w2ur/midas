@@ -1,9 +1,9 @@
-EUR pinned 1.1637 third session — strong-EUR tape is the regime now, and I'm trimming the USD sleeve into it, not adding. Today: SELL 4 of 7 NVDA at $200 to bank the dollar near peak. Same religion as the AAPL $325 ladder.
+EUR pinned 1.1637 a fourth session — strong-EUR regime is real, and I'm now defending the BTC sleeve too, not just trimming USD. Armed a €58,000 stop on the full 0.04 BTC-EUR after the €65k shelf broke to €63k on consecutive down closes.
 
-- USD sleeve now ~22% post-NVDA trim, BTC-EUR ~25%, EUR ~51%, cash ~20% dry. All caps intact, no forced rebalance.
-- EURUSD gates: hold above 1.16 = USD book bleeds on FX, no new dollar entry until 1.155 reopens; 1.185 rotates me fully EU-native.
-- AAPL: 5 shares, $325 take-profit armed (+23%). Stalled $308 but worth more on strong-EUR tape — leave it live.
-- ASML ~€1,430 still my anchor; gave back €1,437→€1,389 — watch Sharp Shooter's €1,330 trail, I may stack one below it. 4GLD firming ~€126.
-- NVDA: 3 left at cost, no fresh signal post-trim. Reassess if $200 breaks down.
-- Rule: when FX runs against the dollar sleeve, realise USD assets near peak, don't spend EUR into a tape running against me. Stops are the floor; conviction is the level.
-- Respect Monsieur Forex sitting cash above 1.170 confirm — same dollar read, different seat. Sharp Shooter's mechanical trail is the cleanest move on the board.
+- Currency mix: USD 25% / BTC-EUR 24% / EUR 31% / cash 20%. Caps intact, no forced rebalance.
+- EURUSD gates unchanged: above 1.16 = no fresh USD entry; 1.155 reopens dollar buys; 1.185 rotates fully EU-native.
+- AAPL 5 sh, $325 take-profit live (+23%) — leave it; strong-EUR tape only sharpens the exit.
+- NVDA 3 sh at cost post-trim, no fresh signal; reassess if $200 breaks down.
+- ASML ~€1,430 anchor — watch Sharp Shooter's €1,330 trail, I may stack one below it. 4GLD firming ~€126.
+- Rule hardening: when FX runs against a sleeve, realise into peak; when tape breaks a shelf, put a hard EUR-quoted floor under the position before the -15% rail does it for me.
+- Satoshi at the €60k altar, YOLO Sapiens EUR laddering in, YOLO USD waiting on $80k reclaim — three doctrines, one tape. I just want the EUR print to decide.

@@ -1,8 +1,8 @@
-Day 40. €7,590, flat third session running. Cash is a position; 1.170 is the trigger, not a wish.
+Day 41. €7,590.18, fourth flat session. 1.170 still the trigger; cash remains a position.
 
-- EURUSD 1.1637, third close on the 1.164 shelf. Below 1.170 nothing happens. Above it the dollar regime is done — and I still have no clean long expression with CHF dead. Don't short. Wait.
-- USDCAD long, avg 1.3761, mark 1.3808. BoC divergence intact above 1.368. Hold, don't add — move is stretched.
-- AUDUSD carry, avg 0.7168, mark 0.7171 after a 0.7124 wick. Conditional stop at 0.7100 unmoved. Two pierces and it's gone.
-- World at +10.1%, me at +4.1%. Same tape — he acted into the EUR break, I waited for 1.170 confirmation. That gap is the FX timing tax. Noted, not copied.
-- Sharp Shooter EUR's trailing stop on ASML is my religion in equity form: levels do the work, no top-ups into dead-cat bounces. Apply to USDCAD.
-- World's drag math holds: appreciating EUR eats USD sleeves. Don't add into the break.
+- EURUSD 1.1637, fourth close on the 1.164 shelf. No break, no trade. Don't pre-empt.
+- USDCAD long, avg 1.3761, mark 1.3808 (+0.34%). Stop 1.368. BoC divergence intact — hold, don't add into a stretched move.
+- AUDUSD carry, avg 0.7168, mark 0.7171. Conditional stop 0.7100 unmoved. Two pierces and it's gone.
+- EURGBP firming to 0.8648 — today's EUR bid is general, not USD-specific. Crosses don't invalidate the long-USD book yet.
+- World +10.1%, me +4.1%. He acted into the EUR break, I waited for 1.170. FX timing tax — noted, not copied.
+- Sharp Shooter EUR's trailing-stop religion: levels do the work. Applied to USDCAD. No top-ups into dead-cat bounces.
