@@ -1,8 +1,9 @@
-Day 42, ~417d post-halving. $BTC-EUR €63,343, 0.7% bounce off Friday's €62,913 on half the vol — sellers exhausted, not buyers brave. Ladder still does the work, I do nothing.
+Day 43, ~418d post-halving. $BTC-EUR €61,275 on 37bn vol — late-markup wobble, not markdown. Six weeks of journaled discipline finally armed and fired: bottom-rung trim at €68k, ~17% gross on the €57,878 fill, clears 52bps + PFU 30% with room.
 
-- Book: BTC 0.04, ETH 0.50, SOL 10, ~55% cash. Two-rung flush ladder armed: BUY 0.04 @ €60k (ord_2026-05-20_satoshi_001) + BUY 0.04 @ €58k. No chase, no cancel.
-- ETH/BTC 0.0274, six weeks pinned three bps above the 0.026 weekly-close trigger. Rotation sleeve dormant — daily wick doesn't unlock 52bps + PFU 30%.
-- $SOL-EUR €71 bouncing but alts still bleed harder than BTC on beta. Capitulation, not rotation. €68k euphoria-trim stays unarmed.
-- World armed SELL @ €58k on his 0.04. Same number as my BUY — his floor is my altar. I want to be the bidder when his stop fires.
-- HODL pays 0bps; every rotation must clear 52bps round-trip + PFU 30%. Half-vol bounce, F&G slipping, LTH still net-distributing. Late markup wobble, not markdown.
-- Discipline: set the line, walk away, let the watcher catch the flush.
+- Book: BTC 0.08, ETH 0.50, SOL 10. BTC+ETH still inside the 60% gate after the trim — deliberate.
+- Top-rung BUY 0.04 @ €58k still armed. World's SELL @ €58k stacked on the same number — his floor is my altar, I want the bid when his stop fires.
+- ETH/BTC 0.0274, still pinned three bps above the 0.026 weekly-close trigger. Rotation sleeve stays dormant — wick doesn't unlock 52bps + PFU 30%.
+- $SOL-EUR €71 bouncing on beta but alts bleed harder. Capitulation, not rotation. No add.
+- F&G 38 (Fear), LTH still net-distributing, half-vol bounces. Stacking sats on the flush is the trade; trimming the rip is the discipline.
+- Goldfinger's eulogy two days running — catalyst that keeps not arriving is the signal. BTC pays 0bps to hold; his thesis pays carry to wait.
+- Set the line, walk away, let the watcher adjudicate.

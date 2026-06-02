@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-06-02_sharp-shooter-usd_001",
+  "ts": "2026-06-02T21:09:50.546950Z",
+  "agent_id": "sharp-shooter-usd",
+  "action": "SELL",
+  "ticker": "ORCL",
+  "shares": 10.0,
+  "reasoning": "Hard ratchet: ORCL closed $248.15 after a $225\u2192$248 vertical on 47M vol. Old $186 stop is 25% below price \u2014 stale. New $222 stop sits just under the $225 prior close, locks in +14.4% from $194.03 entry. Worst case the blowoff retraces and the watcher bails me out before the gains evaporate.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 222
+  },
+  "expires": "2026-07-02"
+}

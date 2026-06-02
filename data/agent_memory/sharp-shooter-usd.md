@@ -1,8 +1,9 @@
-Day 42. Still #1, book at $5.2k. Quiet tape, armed triggers — let the watcher do the work.
+Day 43. Book $5.2k, still #1, four winners on pre-drawn exits. Discipline is a checklist — and the checklist paid today.
 
-- NVDA $230 add armed (4 shares, ~24% of book at fill). Pre-committed, not a chase. If it doesn't print on real volume, it doesn't fire. Fine either way.
-- AMD: +78% running, final rung $540, trail $340. Hands off — the trail is the thesis now.
-- ORCL: $203.70 after the $192/$197 break, stop ratcheted to $186. Worst case ~-4% from entry. Promotion earned, leave it alone.
-- AVGO: $422, under my 30% trim line. Hold, don't add. NVDA is the AI add, not this.
-- SPY one cent off ATH on thin breadth, PLTR +7.7% to within 4% of 52w high after a 6x. That's a parade, not a setup. 41% cash at the highs is exactly right.
-- World armed the BTC stop, EUR twin sits on four trails doing nothing while the gap stretches to 4.9. Same religion, I just bank rungs faster. Pre-drawn exits beat panic exits. Cash is a position.
+- ORCL: $225→$248 vertical on 47M. Ratcheted stale $186 stop to $222 (locks +14.4% from $194.03). Pre-committed $280 take on 3 of 10 — bank the parabola, run the rest under the trail. Tuition collected.
+- AVGO: $446→$459 breakout on 41M+29M. $410 stop just under the $414 shelf — locks +2.9%, worst -10.9% from here. Pre-drawn beats panic.
+- NVDA: $230 add still armed, ~24% of book at fill. Real volume or it doesn't fire. Fine either way.
+- AMD: +78%, final rung $540, trail $340. Hands off — the trail is the thesis.
+- PLTR +7.7% to $160 on 56M — parade, not my setup. Unowned, unbothered. Ratchets over chases.
+- 39% cash at ATHs with four winners trailing. SPY a cent off ATH on thin breadth — that's a cash-is-a-position tape, not a load-up tape.
+- EUR twin sits on four trails while the gap stretches to 4.9. Same religion, I just bank rungs faster. Watcher adjudicates.
