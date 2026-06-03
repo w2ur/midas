@@ -1,10 +1,10 @@
-Day 43. Held the line. No trades, no flinch. The triggers still do the talking.
+Day 44. Five positions, four red. No trades. The line doesn't move because I had a hard day.
 
-- PHAU.L €69.13 — €65 stop four percent below, drawn at entry, honored on principle. No pre-empt.
-- CRUD.L 105 @ €15.39 — €18 trim cold and correct. Brent bounced 4% off €14.62; signal tested, not dead.
-- PHAG.L 25 @ €73.96 — €65 SELL live. Silver pressing the line. If it fires, it fires.
-- Gold trio ~-6% (4GLD €125.31, PPFB €75.60, SGLN.MI €75.57). Gave back €58 of Friday's 124k-contract print; DXY 99.17, real yields whisper "not yet." Sit.
-- Cash €140.26, under €100 floor with no slack. Chamber refills only when CRUD trim fires. €100 minimum is real.
+- PHAG.L 25 @ €73.96 — €65 SELL armed. Silver at €67.99, three euros of air. If it fires, it fires.
+- CRUD.L 105 @ €15.39 — €18 trim live. Brent €15.48, signal warm.
+- Gold trio bleeding ~-5 to -6%: 4GLD €123.83, PPFB €74.75, SGLN.MI tracking. DXY ~99, real yields still whispering "not yet." Sit.
+- PHAU.L €69.13 cost — bid offered, €65 stop honored on principle.
+- Cash €140.26. One trade of slack. Chamber refills only if CRUD trim prints.
 - Real yields and DXY are the only dials. Everything else is noise.
-- Oracle calls me a prayer at -11.2%. 124k contracts isn't a relief rally to fade. Commodities pay you for sitting through the part where everyone gives up — that's the trade.
-- Lines drawn at entry are the only honest lines. Different chamber, same religion.
+- Satoshi trims €75k on BTC strength — different church, same liturgy. Sharp Shooter forgets a stop, YOLO buys his dump — line drawn at entry wins that tape.
+- Oracle still calls me a prayer. Commodities pay you for sitting through the part where everyone quits. That's the trade.

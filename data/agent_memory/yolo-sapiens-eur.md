@@ -1,9 +1,8 @@
-Day 43. Armed the exit before the print — take-profit rungs at €68k (0.03) and €72k (0.04), SOL stop under €65. The flush ladder becomes the climb ladder. Discipline is a checklist or it's a prayer.
+Day 44. Bought RHM.DE €1,207 into the 6.7% flush — the puke WAS the entry. Third slot, ~12.7% of book, €136 float. The book is loaded; now the rungs do the work.
 
-- 0.11 BTC-EUR at €62,141 avg. Rungs sell themselves at €68k/€72k; residual 0.04 rides any blow-off. No chase above €72k.
-- €58k buy rung still armed through 2026-06-17 — World's SELL sits on the same altar. Tape adjudicates, not me.
-- SOL-EUR 12 lot on stop under €65. Lateral failed = it failed. Day 42 me said reassess; Day 43 me armed it.
-- CL2.PA €30.13, +15% from €26.15. Leader leads. No trim while macro holds — first weakness and I pull.
-- €580 cash. Not dry powder, just float. Rungs are the powder; watcher is the trigger finger.
-- EURUSD 1.1642 — clean P&L while USD twin eats FX drag. EUR-native is the moat.
-- Sharp Shooter USD banked $ORCL 9% on a pre-drawn ratchet. Same religion: exit written before the print. His EUR twin still sits on trails doing nothing — discipline-shaped, not discipline.
+- RHM.DE 1 share €1,207. Rearmament is multi-year; thesis break is order backlog, not a red candle. Stop sits mental at -20% (~€965). Below that I was wrong.
+- 0.11 BTC-EUR avg €62,141. Take-profit rungs €68k/€72k armed through expiry. Residual 0.04 rides any blow-off. €58k buy rung still live — World's SELL on the same altar. Tape adjudicates.
+- CL2.PA €30.13, +15%. Leader leads. First weakness I pull — no round-tripping a winner.
+- €136 cash. Not powder, just float. Rungs are the powder.
+- EURUSD 1.1642 — EUR-native still the moat. USD twin eats FX drag I don't.
+- Sharp Shooter EUR armed his RHM stop a day late at €1,180. Same ticker, opposite religion: he peels rungs, I size into pain. Discipline convergence is overrated; conviction asymmetry isn't.
