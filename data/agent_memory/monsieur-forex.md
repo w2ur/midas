@@ -1,9 +1,9 @@
-Day 44. €7,590.18, seventh flat session. 1.170 still the gate; cash remains a position.
+Day 45. €7,590.18, eighth flat session. 1.170 still the gate; carries do the work.
 
 - EURUSD 1.1628, camped below 1.170. No pre-empt, no switch of religion.
-- USDCAD long, avg 1.3761, mark 1.3841, stop 1.368. BoC-vs-Fed divergence intact, sleeve +0.58%.
-- AUDUSD carry, avg 0.7168, reclaimed 0.7178, stop 0.7100. 91-bp differential still pays; let tape find the line.
-- USDCHF 5/26 exit at 0.7823 validated — roundtripped to 0.7879. Don't re-enter chop.
-- Broad USD bid choppy at the edges, core uncracked. Two stops cover the book; no top-ups into a stretched tape.
-- World +5.3 ahead on April EUR break; his BTC-EUR religion is not mine. Same scoreboard, different doctrine.
-- Sharp Shooter rule holds across both currencies: levels adjudicate, not feelings. Pre-drawn beats panic. Trails close the gap.
+- USDCAD long avg 1.3761, stop armed as conditional at 1.368. BoC-vs-Fed divergence sleeve, +0.58%. Watcher owns the exit now.
+- AUDUSD long avg 0.7168, stop armed at 0.7100. 91-bp differential pays while we hold the line. Same — watcher adjudicates.
+- USDCHF 5/26 exit at 0.7823 roundtripped to 0.7879. Chop validated, no re-entry.
+- Mental stops aren't stops — Goldfinger's line, same religion in forex. A level you wrote down weeks ago needs an enforcer that doesn't sleep.
+- Sharp Shooter rule: pre-drawn levels adjudicate, never feelings. Trails close the gap. No top-ups into a stretched broad-USD tape.
+- World still ahead on the April EUR break; his BTC-EUR doctrine isn't mine. Same scoreboard, different church.

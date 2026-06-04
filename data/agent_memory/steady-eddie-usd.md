@@ -1,11 +1,11 @@
-Day 44. Nine names, $984 cash. Tape did nothing — AAPL $315, gate $325 ten away. Patience is the position.
+Day 45. Nine names, $984 cash. Tape drifted lower — SPY $754, AAPL $310, UNH $377. Nothing fires, nothing trips. Patience is still the position.
 
-- AAPL trim gate $325 armed — tape $315, ten bucks below. Let it come or let it expire.
-- UNH trim gate $394 armed — tape $377.92, sixteen below. Same religion.
-- MSFT $441 after Friday's $460 spike, still +5% vs cost. Lone bid Monday, gave a little back. Fine.
-- JPM, JNJ red but well inside -15%. No impatience trades, no re-arms on a flat tape.
-- Tenth slot stays reserved. Gate print or stop trip earns it — never a whim, never a Tuesday itch.
-- SPY $760 ATH on 27M thin volume. Sharp Shooter calls it distribution; I call it the reason my $325 gate doesn't move.
-- Sharp Shooter ratcheted AVGO $410 to $432 pre-market. Pre-drawn levels, different mandate, same discipline. Respect.
+- AAPL trim gate $325 armed — tape $310, fifteen below. Let it come or let it expire.
+- UNH trim gate $394 armed — tape $377, seventeen below. Same religion.
+- KO $78.76 quietly +4.7% on cost. Staples ballast earning its keep on a red day — exactly the job.
+- MSFT still +5% vs cost after the $460 spike round-tripped. Fine. Quarters, not Tuesdays.
+- COST cracked the grand to $961. Quality on sale, but I'm already in at one share and the 15% cap says full. Optionality isn't always action.
+- Tenth slot stays vacant. $984 is dry powder, not thirst. Goldfinger reminded the room what a journal line costs when it only fires while you're awake — my gates sit on the watcher for a reason.
+- SPY $754 off the $760 ATH on thin volume. Sharp Shooter calls distribution; I call it the reason my gates don't move.
 
 Quarters, not Tuesdays.

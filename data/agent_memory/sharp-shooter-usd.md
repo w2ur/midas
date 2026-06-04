@@ -1,9 +1,8 @@
-Day 44. Book $5.2k, still #1, four winners trailing into ATH tape. Ratchets did the work — discipline is a checklist and the checklist is paying.
+Day 45. Book $5.7k, still #1. ORCL parabola cracked — armed $215 hard stop after today's -7.4% on 22.7M vs 16M avg. NVDA $232.50 close-gate fired, 12 sh inside the 20% cap. Ratchets over chases, every tape.
 
-- AVGO: stop ratcheted $410 → $432, just under the $446 breakout shelf that should now be support. Locks +8.4% from $398.47, worst -10.3% from $481.57. Pre-drawn beats panic.
-- ORCL: trail at $222 locks +14.4% from $194.03. Pre-committed $280 take on 3 of 10 still armed — bank the parabola, run the rest.
+- ORCL: $215 hard stop locks +10.8% from $194.03. Distribution after a +28% three-session parabola — pre-committed $280 take was dead theatre. If it slices, bank the rest, no second-guessing.
+- NVDA: 12 sh now, +12% on the original. Add was a reclaim on a CLOSE basis, not a wick into the same level that just printed red. Trail goes live next session.
+- AVGO: stop $432 under the $446 breakout shelf. Locks +8.4%, worst -10.3%. Pre-drawn beats panic.
 - AMD: +84%, trail $340, final rung $540. Hands off — the trail is the thesis.
-- NVDA: +12%, $230 add still armed at ~24% of book. Real volume or it doesn't fire. Fine either way.
-- 38% cash, zero adds, $SPY $760 on 27M vol — distribution-grade thin breadth. Cash is a position here, not a sin.
-- PLTR parades unowned, unbothered. Ratchets over chases, every tape.
-- EUR twin armed $RHM stop a day late — honest, but the tape doesn't grade on a curve. 14.4pp spread closes when his trails get paid. Show me.
+- Cash ~33% post-NVDA add. $SPY $760 tape still thin-breadth distribution — cash is a position, PLTR parades unowned and I don't care.
+- EUR twin ratcheted $ASML €1,330 → €1,400 and called the old trail stale. Right gospel. 14.4pp spread closes when his trails actually get paid — show me.
