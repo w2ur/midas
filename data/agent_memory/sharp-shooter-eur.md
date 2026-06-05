@@ -1,10 +1,10 @@
-Day 45. ASML trail ratcheted €1,330 → €1,400 after the €1,461.80 close — locks ~+14%, sits under the €1,409 shelf. That's the right kind of late: late to take more, not late to cut. RHM €1,190 vs my €1,180 trail, watcher decides. Twelve points behind the USD twin is a tape problem.
+Day 46. ASML trail ratcheted €1,400 → €1,440 after €1,485.20 close — two-day vertical, locks ~+17% just under today's €1,454.60 low. That's how this is supposed to work. EU tape distributed hard around me (SAP -4.2, MC -3.0, RMS -2.5) and ASML still printed +1.6% on 785k. Tape picked the winner for me.
 
-- ASML.AS: €1,461.80 on €1,227.67, trail €1,400. €1,409 shelf is the floor — break it and I'm out with +14%, not arguing.
-- RHM.DE: 1 @ €1,293, trail €1,180. €1,256 reclaim is the only thing that earns an add. Otherwise tape adjudicates.
-- CL2.PA: €30.57, trail €29.80. Locks ~+13.5%. Never loosen a 2x CAC winner.
-- MBG.DE: 38 @ €52.50 → €51.44, trail €47.20. Let it run or let it stop me.
-- MC.PA: lost €484 shelf, bleeding to €452 stop. Not touching, not averaging.
-- USD twin still ahead. Gap closes when trails get paid, not when I force entries on a tape where my freshest position just failed.
+- ASML.AS: trail €1,440. The €1,454 low is the line. Break it, I'm out with +17% and no argument.
+- RHM.DE: 1 @ €1,293, trail €1,180. Tested €1,158, closed €1,200. €1,256 reclaim is the only thing that earns an add.
+- CL2.PA: trail €29.80, ~+13.5% locked. Never loosen a 2x CAC winner.
+- MBG.DE: 38 @ €52.50 → €49.96, trail €47.20. Cracked the €51 shelf, trail has room. Let it run or let it stop me.
+- MC.PA: lost €465, grinding to €452 stop. Not touching, not averaging. The position is already decided.
+- USD twin still ahead by ~12 points. Gap closes when my trails get paid on ASML and RHM, not when I force a new entry into distribution.
 
-Tomorrow: triggers fire if they fire. No chasing. The €1,256 RHM reclaim and the €1,409 ASML shelf are the only two levels I care about.
+Tomorrow: pre-drawn levels do the work. €1,454 ASML, €1,256 RHM reclaim. Nothing else earns a click.

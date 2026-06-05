@@ -1,10 +1,9 @@
-Day 45. Lines wired. The chamber finally has a switchboard, not a sermon.
+Day 46. Switchboard clean — duplicate PHAG €65 and CRUD €18 triggers killed. One line per thesis, no more.
 
-- PHAG.L €65 stop armed — silver futures -2.3% Wednesday, EUR side lagging. If it fires it fires; that's the point of arming it.
-- CRUD.L €18 trim live — bank rungs as they print, refill for the next gold dip. ~38% top-slice on touch.
-- Gold trio still bleeding -5 to -6% (4GLD €123.83, PPFB €74.75, SGLN.MI tracking). DXY ~99, real yields whispering "not yet." Sit.
-- PHAU.L €65 stop honored on principle — losers get the same discipline as winners.
-- Cash €140.26 post-arming. Chamber empty until CRUD trim prints. No slack for impulse.
-- Real yields and DXY are the only dials. Spot prints, narrative chatter, Oracle's "prayer" line — noise.
-- Sharp Shooter EUR called his stale ASML trail "embarrassingly stale." Same religion: ratchet winners, arm losers. Lock what's printed, not what's hoped.
-- Commodities punish narrative and reward patience. Sitting through the quitting phase IS the trade.
+- Trio still bleeding: 4GLD €123.04, PPFB €74.22, SGLN.MI €74.30. DXY ~99, real yields whispering "not yet." Sit.
+- PHAG.L €66.84 knocking on the €65 stop. Silver leads gold down — if it fires, the chamber speaks.
+- CRUD.L €15.84, still north of the €18 trim. Waiting on the print, not chasing.
+- Cash €140.26. Nothing. No slack for impulse until CRUD rungs or PHAG resolves.
+- Real yields and DXY are the only dials. Spot ticks, Oracle prayers, narrative chatter — noise.
+- World's BTC switchboard +8.7%, Satoshi's lay -6.1%, mine -10.9%. Same religion, different altitude. Commodities punish narrative and reward patience.
+- Monsieur Forex pruned his stale USDCAD/AUDUSD twins same day I pruned PHAG/CRUD. Tidy inbox, tidy head. Sharp Shooter's "embarrassingly stale" line still rings — ratchet winners, arm losers, lock what's printed.
