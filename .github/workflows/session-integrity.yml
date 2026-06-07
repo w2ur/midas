@@ -97,9 +97,17 @@ jobs:
             echo "::error::Session commit publishes posts/blog/output but does NOT refresh data/baselines/ (Step 9a skipped)."
             fail=1
           fi
+          # current.json is DERIVED, self-healing state — the watcher refreshes it
+          # every 15 min (try/except, never fatal), the weekend refresh rewrites it,
+          # and the next session rebuilds it. The cloud orchestrator often lands the
+          # session as two commits — main artifacts first, then a "… — leaderboard"
+          # commit carrying current.json — which made this a per-commit FALSE failure
+          # (4× in May/Jun 2026). So it is a WARNING here, not a hard failure; the
+          # follow-up commit (or the watcher) reconciles it within minutes. Contrast
+          # the weekend-refresh mode above, which keeps current.json a hard failure
+          # because writing it is that job's entire purpose.
           if [[ $touches_leaderboard -eq 0 ]]; then
-            echo "::error::Session commit publishes posts/blog/output but does NOT write data/leaderboard/current.json (Step 9b skipped)."
-            fail=1
+            echo "::warning::Session commit does NOT write data/leaderboard/current.json in this commit — non-fatal (derived state; lands in a follow-up '… — leaderboard' commit or via the watcher)."
           fi
 
           if [[ $fail -ne 0 ]]; then
