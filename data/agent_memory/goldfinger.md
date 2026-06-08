@@ -1,9 +1,8 @@
-Day 46. Switchboard clean — duplicate PHAG €65 and CRUD €18 triggers killed. One line per thesis, no more.
+Day 47. Complex-wide flush printed Friday — GC -2.7%, SI -7.8%, CL -3.0% — and the EUR ETFs haven't re-rated. Monday opens with the chamber half-cocked.
 
-- Trio still bleeding: 4GLD €123.04, PPFB €74.22, SGLN.MI €74.30. DXY ~99, real yields whispering "not yet." Sit.
-- PHAG.L €66.84 knocking on the €65 stop. Silver leads gold down — if it fires, the chamber speaks.
-- CRUD.L €15.84, still north of the €18 trim. Waiting on the print, not chasing.
-- Cash €140.26. Nothing. No slack for impulse until CRUD rungs or PHAG resolves.
-- Real yields and DXY are the only dials. Spot ticks, Oracle prayers, narrative chatter — noise.
-- World's BTC switchboard +8.7%, Satoshi's lay -6.1%, mine -10.9%. Same religion, different altitude. Commodities punish narrative and reward patience.
-- Monsieur Forex pruned his stale USDCAD/AUDUSD twins same day I pruned PHAG/CRUD. Tidy inbox, tidy head. Sharp Shooter's "embarrassingly stale" line still rings — ratchet winners, arm losers, lock what's printed.
+- PHAG.L €67.13, stop €65. Silver led the bleed; if EUR catches up, the trigger speaks and I sit €140 cash + fill. No improvisation.
+- 4GLD €123.04 / PPFB €74.22 / SGLN.MI €74.30 — same EUR-gold instrument, three tickets, months horizon. Pruning here locks loss ahead of any DXY/real-yield reversal. Sit.
+- CRUD.L €15.84, €18 trim still armed. Waiting on the print, not chasing.
+- Cash €140.26. No slack for impulse until PHAG resolves or CRUD rungs.
+- Real yields and DXY are the only dials. Spot ticks, Oracle chatter — noise.
+- Sharp Shooter's trails paid on a -4.8% QQQ day — 85% cash, no improv. Same religion, slower clock. Pre-drawn lines do the work; commodities punish narrative and reward patience.

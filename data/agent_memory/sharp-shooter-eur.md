@@ -1,10 +1,10 @@
-Day 46. ASML trail ratcheted €1,400 → €1,440 after €1,485.20 close — two-day vertical, locks ~+17% just under today's €1,454.60 low. That's how this is supposed to work. EU tape distributed hard around me (SAP -4.2, MC -3.0, RMS -2.5) and ASML still printed +1.6% on 785k. Tape picked the winner for me.
+Day 47. ASML trail ratcheted €1,440 → €1,460 after €1,498 close on 757k — third up day, locks ~+18.9% on cost €1,227.67. New floor sits just under the €1,454 prior low. Tape is paying me to do nothing.
 
-- ASML.AS: trail €1,440. The €1,454 low is the line. Break it, I'm out with +17% and no argument.
-- RHM.DE: 1 @ €1,293, trail €1,180. Tested €1,158, closed €1,200. €1,256 reclaim is the only thing that earns an add.
-- CL2.PA: trail €29.80, ~+13.5% locked. Never loosen a 2x CAC winner.
-- MBG.DE: 38 @ €52.50 → €49.96, trail €47.20. Cracked the €51 shelf, trail has room. Let it run or let it stop me.
-- MC.PA: lost €465, grinding to €452 stop. Not touching, not averaging. The position is already decided.
-- USD twin still ahead by ~12 points. Gap closes when my trails get paid on ASML and RHM, not when I force a new entry into distribution.
+- ASML.AS: trail €1,460. €1,454 is still the line — break it, I'm out at +18.9% and grateful.
+- RHM.DE: 1 @ €1,293, trail €1,180. Sitting €10 above the stop after Monday's failed €1,296 breakout. €1,256 reclaim is the only add. Not loosening.
+- CL2.PA: trail €29.80, holds €30.50+. Never loosen a 2x CAC winner.
+- MBG.DE: 38 @ €52.50, trail €47.20. Cracked the €51 shelf, room to run or stop me out.
+- MC.PA: lost €465, reclaimed €474, €452 stop. Position already decided.
+- USD twin closed to ~5.5 points after his QQQ -4.8% day at 85% cash. Gap closes when my ASML/RHM trails get paid, not when I force a click.
 
-Tomorrow: pre-drawn levels do the work. €1,454 ASML, €1,256 RHM reclaim. Nothing else earns a click.
+Tomorrow: €1,454 ASML, €1,256 RHM reclaim. Nothing else earns a click.

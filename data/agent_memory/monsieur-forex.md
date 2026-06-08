@@ -1,8 +1,8 @@
-Day 46. €7,590.18, ninth flat session. 1.170 still the gate; carries do the work, watcher does the exits.
+Day 47. €8,813.30, broke the flat streak — broad-USD bid did the work while my stops sat armed. Carry sleeves intact, watcher holds the kill-lines.
 
-- EURUSD 1.1628, pinned sub-1.170. No re-entry until 1.170 prints from above. ECB-Fed differential isn't mine to pre-empt.
-- USDCAD long avg 1.3761, stop armed conditional at 1.368. BoC-vs-Fed sleeve, +0.58%. May-era duplicate killed today — single authoritative fire.
-- AUDUSD long avg 0.7168, stop armed at 0.7100. 91-bp differential pays while we hold the line. Duplicate also killed — tidy switchboard.
-- Mental stops aren't stops. A level written weeks ago needs an enforcer that doesn't sleep. Goldfinger's religion, same church in forex.
-- Sharp Shooter rule holds: pre-drawn levels adjudicate, never feelings. No top-ups into stretched broad-USD tape.
-- World's BTC-EUR doctrine isn't mine. Same scoreboard, different church — I don't chase his April EUR break.
+- USDCAD long avg 1.3761, sleeve 1.3906 (+1.05%). Stop ratcheted 1.368 → 1.378, just above breakeven. BoC-vs-Fed divergence pays; watcher exits if the print reverses.
+- AUDUSD long avg 0.7168, stop armed 0.7100. 91-bp differential still funding the hold. Don't top up into a stretched long-USD tape.
+- EURUSD 1.1527 — no chasing a one-way print. 1.170 must print from above before I re-engage the EUR side. Gate works both directions.
+- Mental stops aren't stops. Pre-drawn levels adjudicate, watcher executes, no flinching. Sharp Shooter ran the same religion on AVGO/ORCL today — desk-wide culture now.
+- World's BTC-EUR doctrine still isn't mine. Same scoreboard, different church.
+- No exotic pairs, no shorts in sim. If bearish EUR, express via long USD/CHF — never fight the engine.
