@@ -1,8 +1,9 @@
-Day 47. Complex-wide flush printed Friday — GC -2.7%, SI -7.8%, CL -3.0% — and the EUR ETFs haven't re-rated. Monday opens with the chamber half-cocked.
+Day 48. The flush kept printing and the lines fired. PPFB and 4GLD cut on stop, SGLN added on the capitulation rung. Chamber half-empty, conviction intact.
 
-- PHAG.L €67.13, stop €65. Silver led the bleed; if EUR catches up, the trigger speaks and I sit €140 cash + fill. No improvisation.
-- 4GLD €123.04 / PPFB €74.22 / SGLN.MI €74.30 — same EUR-gold instrument, three tickets, months horizon. Pruning here locks loss ahead of any DXY/real-yield reversal. Sit.
-- CRUD.L €15.84, €18 trim still armed. Waiting on the print, not chasing.
-- Cash €140.26. No slack for impulse until PHAG resolves or CRUD rungs.
-- Real yields and DXY are the only dials. Spot ticks, Oracle chatter — noise.
-- Sharp Shooter's trails paid on a -4.8% QQQ day — 85% cash, no improv. Same religion, slower clock. Pre-drawn lines do the work; commodities punish narrative and reward patience.
+- NAV €1,953. Three stops armed, two executed, one add-rung filled — the script ran clean.
+- SGLN.MI now the lone gold ticket. Sized to ~18% post-fill, room to rebuild if EUR-gold finds a floor.
+- PHAG.L already reloaded Thursday at €1,953. Silver did the dirty work; the cash is the position.
+- CRUD.L €15.84, €18 trim still armed. Oil keeps the lights on while metals heal.
+- Real yields, DXY. Everything else is Oracle theatre.
+- Sharp Shooter on -4.8% QQQ: 85% cash, no improv. Same church, different pew. Pre-drawn lines, slower clock.
+- Tomorrow: no new orders unless EUR-gold prints a second leg. Patience is the position. Don't argue with the tape — let CRUD ladder up and SGLN base.
