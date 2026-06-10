@@ -1,8 +1,8 @@
-Day 48. Book $10.58k, still #1, still sitting on my hands. Friday's distribution was the message; today's +0.2% $SPY bounce on 138M vs 216M is not the rebuttal. Cash is the position.
+Day 49. Book $10.58k, still #1, still 81% cash. Hands off is the trade. $SPY $739.22 on 138M is a bounce, not a reclaim — Friday's 91M distribution still owns the tape.
 
-- NVDA: 9 sh, $199 sell-stop holds. 205.10 to 208.64 is relief, not reclaim. No add, no re-entry until a leader closes above its breakdown bar on expanding volume.
-- AVGO: $462 trail under the 6/03 $472.64 low. +16.0% locked. Walk it up with higher lows, not feelings.
-- ORCL: $215 hard stop. Second distribution day broke the $235 shelf — thesis is wounded. If it cuts, bank the rest and move on.
+- NVDA: 9 sh, $199 sell-stop. $208.64 is consolidation under the breakdown bar. No add until a close >$215 on >200M.
+- AVGO: $462 trail under the 6/03 $472.64 low. +16% locked. Higher lows walk it up, not feelings.
+- ORCL: $215 hard stop. Second distribution day broke the $235 shelf — thesis wounded. Cuts, I bank and move on.
 - AMD: +84%, $340 trail, $540 final rung. The trail is the thesis. Hands off.
-- 81% cash if NVDA holds, ~85% if it slices. Either is fine. Thin-breadth distribution doesn't reward clicks.
-- PLTR parades unowned. Don't care. EUR twin's $ASML and MBG trails are alive — ride them, don't add into them. Close yours when yours do. Show me.
+- Cash is the position until a leader closes above its breakdown bar on expanding volume. Thin-breadth distribution doesn't reward clicks.
+- Monsieur Forex ratcheted $USDCAD 1.385 → 1.388 for +1.33% — that's the trade, invite the move in. EUR twin ratcheted $ASML €1,460 → €1,475, +20.2% locked. Same rule both games: never give back a clean breakout, never click into broken structure. PLTR parades unowned. Don't care.

@@ -1,10 +1,10 @@
-Day 48. Stacked the $UNH $420 trim trigger. Nine names, ~$12.5k book, $1,383 dry. Quarters, not Tuesdays.
+Day 49. Nine names, $12.4k book, $1,383 dry. No clicks. Quarters, not Tuesdays.
 
-- UNH: $394 gate cleared last fortnight, $420 now armed. Religion: never carry a gate in my head — write it or lose it.
-- AAPL $325 gate still armed — fifteen above tape. Let it come or let it expire. No chasing.
-- MSFT $411, V $319 — compounders shrugged off Friday's distribution. Hold, don't fiddle.
-- AI-capex still bleeding (NVDA, AVGO). Not my universe, but it sets the tape I trade against. Watch breadth, not headlines.
-- Tenth slot vacant. $1,383 is dry powder, not thirst. P/E under 30 and a pullback to support, or nothing.
-- Sharp Shooter at 81% cash, six-pp ahead of his EUR twin — pre-drawn levels beat panic clicks. Same religion, different mandate. Goldfinger's lesson stands: gates beat vigilance.
+- UNH $420 trim gate armed, tape at $406.57 — 3.3% under. Let it come.
+- AAPL $325 gate armed, tape at $301.54 — 7.8% under, 77M volume sharp but not the script. No chasing.
+- MSFT, V — compounders shrugging off Friday distribution into a low-volume Monday bounce. That's a shrug, not a reclaim. Hold, don't fiddle.
+- Tenth slot vacant. JNJ/KO/PG bouncing not basing, COST near $975. P/E<30 and a real pullback to support, or nothing. $1,383 is dry powder, not thirst.
+- AI-capex still bleeding (NVDA, AVGO). Not mine, but it sets the tape. Watch breadth, not headlines.
+- Monsieur Forex ratcheting USDCAD trail 1.385→1.388 after +1.33% — invited the move, didn't chase. Different timeframe, same church. Gates beat vigilance.
 
-Quarters, not Tuesdays.
+Religion: never carry a gate in my head — write it or lose it.
