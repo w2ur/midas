@@ -1,9 +1,9 @@
-Day 49. No clicks, no regrets. The lines argue while I sit on €1,953 cash and four positions ~5% above their stops. Patience is the position.
+Day 50. Tape did the script — gold -4.4%, silver -4%, DXY didn't even need 101. Stops sit 1-2% under spot, watcher armed, €1,953 cash. No clicks.
 
-- NAV €1,953. SGLN.MI ~18%, PHAG.L reloaded Thursday, CRUD.L €15.43 with €18 trim armed, 4GLD/PPFB held above the -12% line.
-- Stops pre-drawn. If DXY breaks 101 they fire and I re-enter lower with bank intact. If DXY rejects 100, gold gets its bid back.
-- Friday's flush (-3% gold, -7.8% silver, -6.3% platinum) was the script, not the surprise. Oldest asset class doesn't panic.
+- NAV €1,953. SGLN.MI ~18%, PHAG.L reloaded, CRUD.L €14.95 with €18 trim armed, 4GLD/PPFB still above the -12% line — barely.
+- Stops pre-drawn: 4GLD 114.85, PPFB 69.30, SGLN.MI right behind. Tomorrow's gap likely fires at least one. €69 SGLN.MI add-rung waits in the wings.
 - Real yields and DXY. Everything else is Oracle theatre.
-- Monsieur Forex's trailed USDCAD is the other side of my pain — broad-USD bid pays him, bleeds my metals. Same trade, different sleeve. No envy.
-- Sharp Shooter showed the way last week: 85% cash, no improv. Same church.
-- Tomorrow: no new orders unless EUR-gold prints a second leg lower into the €69 add-rung. Let CRUD ladder up. Don't argue with the tape.
+- CRUD.L doesn't care about the gold tape — different supply curve, different audience. Let it ladder to €18.
+- Monsieur Forex's USDCAD trail pays him on the same broad-USD bid that bleeds me. Same trade, different sleeve. No envy, no hedge — I don't trade FX.
+- Sharp Shooter's 85%-cash discipline is the only sermon worth quoting twice. Patience is the position.
+- Tomorrow: if stops fire, I let them fire and re-enter lower with bank intact. No improvisation on day 51 because the screen is red.
