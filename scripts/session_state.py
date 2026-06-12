@@ -7,6 +7,11 @@ step name → ISO-8601 completion timestamp.
 All writes are atomic (write to a tmp file, then ``os.replace``), so a crash
 mid-write never leaves a corrupt state file.
 
+Timezone note: State files are keyed on UTC dates (sessions fire 20:00 UTC);
+``engine.output_bundle.get_day_number`` and commit messages use local dates —
+safe in UTC-pinned CI/sandbox runners, would drift for a local operator near
+midnight.
+
 Typical usage
 -------------
 ::

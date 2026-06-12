@@ -326,12 +326,16 @@ def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> l
     return fills
 
 
-@idempotent_step(skip_return={})
 def step_build_post_prompts(
     agent_results: dict[str, dict],
     oracle_blog: str | None = None,
 ) -> dict[str, str]:
     """Step 5a — build post-generation prompts for each trading agent.
+
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects
+    — on resume it must rebuild real prompts so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on the persisting steps
+    (step_save_content / step_save_memories).
 
     Does NOT call Claude. Returns a dict of {agent_id: prompt_str} the orchestrator
     dispatches to each agent. The Oracle is excluded — it gets a different prompt
@@ -406,7 +410,6 @@ def step_write_current_leaderboard(
     return path
 
 
-@idempotent_step(skip_return="")
 def step_build_oracle_prompt(
     market_data: dict,
     agent_results: dict[str, dict],
@@ -415,6 +418,11 @@ def step_build_oracle_prompt(
     agent_memories: dict[str, str] | None = None,
 ) -> str:
     """Step 5b — build The Oracle's daily narration prompt.
+
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects
+    — on resume it must rebuild real prompts so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on the persisting steps
+    (step_save_content / step_save_memories).
 
     Does NOT call Claude. Returns the prompt string the orchestrator dispatches
     to the-oracle agent. When `agent_memories` is provided, each agent's latest
@@ -434,9 +442,13 @@ def step_build_oracle_prompt(
     return prompt
 
 
-@idempotent_step(skip_return={})
 def step_load_memories(agent_ids: list[str]) -> dict[str, str]:
     """Step 5c — load each agent's journal from disk for Oracle prompt assembly.
+
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects
+    — on resume it must rebuild real prompts so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on the persisting steps
+    (step_save_content / step_save_memories).
 
     Returns a dict keyed by agent_id. Missing journals become empty strings so
     the Oracle prompt can still render a "first session" marker.
@@ -448,7 +460,6 @@ def step_load_memories(agent_ids: list[str]) -> dict[str, str]:
     return memories
 
 
-@idempotent_step(skip_return={})
 def step_build_memory_update_prompts(
     agent_results: dict[str, dict],
     agent_posts: dict[str, list[dict]],
@@ -456,6 +467,11 @@ def step_build_memory_update_prompts(
     day_number: int | None = None,
 ) -> dict[str, str]:
     """Step 7a — build session-end journal-rewrite prompts for every agent.
+
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects
+    — on resume it must rebuild real prompts so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on the persisting steps
+    (step_save_content / step_save_memories).
 
     Does NOT call Claude. Returns {agent_id: prompt} the orchestrator dispatches.
     Covers all 11 agents (the 10 traders plus the-oracle). Each agent reads its
@@ -716,8 +732,7 @@ def step_git_commit_push(dry_run: bool = False) -> None:
 
     if dry_run:
         print("  [DRY RUN] Skipping git operations.")
-        # Mark done and clear so a subsequent run on the same day starts fresh.
-        _mark_done(_step_name)
+        # no _mark_done: _clear_state() below removes the whole state file — a finished session leaves no state
         _clear_state()
         return
 
@@ -801,9 +816,7 @@ def step_git_commit_push(dry_run: bool = False) -> None:
         print(f"  [ERROR] Git operation failed: {exc}")
         raise
 
-    # Record successful completion and clear state so the next run of this
-    # session (same calendar day) starts fresh with no stale step markers.
-    _mark_done(_step_name)
+    # no _mark_done: _clear_state() below removes the whole state file — a finished session leaves no state
     _clear_state()
 
 
