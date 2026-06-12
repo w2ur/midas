@@ -211,3 +211,41 @@ def read_inbox(d: date) -> list[Fill]:
     return [
         Fill.from_dict(r) for r in _read_jsonl(INBOX_DIR / f"{d.isoformat()}.jsonl")
     ]
+
+
+def inbox_order_ids(date: date | None = None) -> set[str]:
+    """Collect all order_ids already present in inbox JSONL files.
+
+    If `date` is given, scan only that day's inbox file.
+    If `date` is None, scan ALL inbox files (for execute_triggered_order which
+    must check the full history — a triggered order may have been authored days
+    earlier and fired on a later date, landing in a different inbox file).
+
+    Reads raw JSONL lines and extracts the ``order_id`` field; silently skips
+    malformed lines (the idempotency check is best-effort — a corrupt line
+    cannot retroactively cause a double-fill if the original write succeeded).
+    """
+    if date is not None:
+        paths = [INBOX_DIR / f"{date.isoformat()}.jsonl"]
+    else:
+        if not INBOX_DIR.exists():
+            return set()
+        paths = list(INBOX_DIR.glob("*.jsonl"))
+
+    ids: set[str] = set()
+    for path in paths:
+        if not path.exists():
+            continue
+        with path.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                    oid = record.get("order_id")
+                    if oid:
+                        ids.add(oid)
+                except json.JSONDecodeError:
+                    pass
+    return ids

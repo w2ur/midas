@@ -35,7 +35,7 @@ from engine.ohlcv_store import (
     OHLCV_STORE as _DEFAULT_OHLCV_STORE,
     latest_close_on_or_before,
 )
-from engine.orders import Fill, Order, append_fill
+from engine.orders import Fill, Order, append_fill, inbox_order_ids
 from engine.triggers import (
     delete_pending,
     read_cancels,
@@ -304,8 +304,23 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
     """
     fills: list[Fill] = []
 
+    # Load order_ids already in today's inbox before processing anything.
+    # Any order_id found here is skipped silently — it was processed in a
+    # prior run of fill_day for the same date (e.g. a session restart after
+    # a push failure). This makes fill_day structurally idempotent.
+    # inbox_order_ids reads engine.orders.INBOX_DIR at call time, so
+    # test monkeypatching of that attribute is respected automatically.
+    already_processed: set[str] = inbox_order_ids(trade_date)
+
     # --- Pass 1: process cancel requests ---
+    # Note: within a single run, duplicate cancels targeting the same order_id
+    # are allowed to produce multiple inbox lines (first: CANCELLED_BY_AGENT,
+    # second: CANCEL_TARGET_NOT_FOUND). The cross-run idempotency guard (checking
+    # already_processed) handles re-runs: on the second run, the target_order_id
+    # will already be in the inbox and the cancel entries are skipped.
     for cancel in read_cancels(trade_date):
+        if cancel.target_order_id in already_processed:
+            continue
         removed = delete_pending(cancel.target_order_id)
         reason = "CANCELLED_BY_AGENT" if removed else "CANCEL_TARGET_NOT_FOUND"
         f = _reject(cancel.target_order_id, reason)
@@ -315,12 +330,17 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
     # --- Pass 2: read outbox and split conditional vs market ---
     orders, invalid_ids = _read_outbox_lines(trade_date)
     for oid in invalid_ids:
+        if oid in already_processed:
+            continue
         f = _reject(oid, "INVALID_SHARES")
         fills.append(f)
         append_fill(trade_date, f)
+        already_processed.add(oid)
 
     market_orders: list[Order] = []
     for o in orders:
+        if o.order_id in already_processed:
+            continue
         if o.trigger is None:
             market_orders.append(o)
             continue
@@ -328,6 +348,7 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
             f = _reject(o.order_id, "TRIGGER_NO_EXPIRY")
             fills.append(f)
             append_fill(trade_date, f)
+            already_processed.add(o.order_id)
             continue
         save_pending(o)
         # No inbox record on successful registration — the agent sees it
@@ -349,6 +370,7 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
                 f = _reject(o.order_id, "DAILY_DRAWDOWN_HALT")
                 fills.append(f)
                 append_fill(trade_date, f)
+                already_processed.add(o.order_id)
             continue
 
         allowed_tickers: set[str] = set()
@@ -365,6 +387,7 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
             )
             fills.append(f)
             append_fill(trade_date, f)
+            already_processed.add(o.order_id)
             if f.status == "filled":
                 filled += 1
 
@@ -376,7 +399,7 @@ def execute_triggered_order(
     trade_date: date,
     portfolio_manager: PortfolioManager,
     fire_price: float,
-) -> Fill:
+) -> Fill | None:
     """Execute a fired conditional order through the same safety rails as market orders.
 
     Differences from market-order processing:
@@ -395,7 +418,23 @@ def execute_triggered_order(
 
     Caller is responsible for appending the returned Fill to the inbox and removing
     the pending file (so the watcher can decide policy if it wants).
+
+    Returns None if the order_id already appears in ANY inbox file (any date),
+    meaning this order was already filled or rejected in a prior watcher run.
+    The caller must treat None as a no-op: do not write a second inbox line,
+    do not mutate the portfolio, do not remove the pending file again.
     """
+    # Idempotency check: scan all inbox files for this order_id before executing.
+    # Triggered orders may fire days after authoring, so the existing fill can
+    # live in any date's inbox file — not just today's.
+    # inbox_order_ids reads engine.orders.INBOX_DIR at call time, so
+    # test monkeypatching of that attribute is respected automatically.
+    if order.order_id in inbox_order_ids(date=None):
+        logger.info(
+            "execute_triggered_order: %s already in inbox — skipping", order.order_id
+        )
+        return None
+
     config = AgentConfig.load(order.agent_id)
     portfolio = portfolio_manager.load(order.agent_id)
     base_ccy = portfolio.currency
