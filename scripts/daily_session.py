@@ -28,15 +28,23 @@ Usage (snapshot-only):
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import subprocess
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Any, Callable, TypeVar
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 # Add project root to sys.path so engine imports work when run directly.
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
+
+from scripts.session_state import clear as _clear_state
+from scripts.session_state import is_done as _is_done
+from scripts.session_state import mark_done as _mark_done
 
 from engine.agent_memory import (
     build_memory_update_prompt,
@@ -67,6 +75,43 @@ from engine.posts import (
     save_daily_posts,
 )
 from scripts.fetch_market_data import fetch_and_save as fetch_market_data
+
+
+# ---------------------------------------------------------------------------
+# Idempotency decorator
+# ---------------------------------------------------------------------------
+
+
+def idempotent_step(skip_return: Any) -> Callable[[_F], _F]:
+    """Decorator that makes a ``step_*`` function resumable.
+
+    On entry, if the step's name is already recorded as done in the session
+    state for today, the body is skipped and ``skip_return`` is returned
+    immediately (log a message so the orchestrator sees the skip).
+
+    On successful completion, the step name is recorded via ``mark_done``.
+    On exception, nothing is recorded — the next run will retry.
+
+    ``skip_return`` should be the neutral/empty value appropriate for the
+    function's return type (e.g., ``{}`` for dict, ``[]`` for list, ``0``
+    for int, ``None`` for None).  Callers must tolerate receiving this value.
+    """
+
+    def decorator(fn: _F) -> _F:
+        step_name = fn.__name__
+
+        @functools.wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            if _is_done(step_name):
+                print(f"\n[SKIP] {step_name} already completed this session.")
+                return skip_return
+            result = fn(*args, **kwargs)
+            _mark_done(step_name)
+            return result
+
+        return wrapper  # type: ignore[return-value]
+
+    return decorator
 
 
 # ---------------------------------------------------------------------------
@@ -216,6 +261,7 @@ def step_author_cancels(
     return len(cancels)
 
 
+@idempotent_step(skip_return={})
 def step_author_all(
     agent_results: dict[str, dict],
     trade_date: date,
@@ -254,6 +300,7 @@ def step_author_all(
     return summary
 
 
+@idempotent_step(skip_return=[])
 def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> list:
     """Step 3b — invoke the paper broker on the day's outbox.
 
@@ -269,6 +316,7 @@ def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> l
     return fills
 
 
+@idempotent_step(skip_return={})
 def step_build_post_prompts(
     agent_results: dict[str, dict],
     oracle_blog: str | None = None,
@@ -294,6 +342,7 @@ def step_build_post_prompts(
     return prompts
 
 
+@idempotent_step(skip_return=[])
 def step_build_leaderboard(
     portfolio_summaries: dict[str, dict],
     on: date | None = None,
@@ -316,10 +365,11 @@ def step_build_leaderboard(
     return rows
 
 
+@idempotent_step(skip_return=None)
 def step_write_current_leaderboard(
     rows: list[dict],
     trigger: str,
-) -> Path:
+) -> Path | None:
     """Step 9b — Write data/leaderboard/current.json.
 
     Live leaderboard artifact consumed by the site's homepage widget.
@@ -344,6 +394,7 @@ def step_write_current_leaderboard(
     return path
 
 
+@idempotent_step(skip_return="")
 def step_build_oracle_prompt(
     market_data: dict,
     agent_results: dict[str, dict],
@@ -371,6 +422,7 @@ def step_build_oracle_prompt(
     return prompt
 
 
+@idempotent_step(skip_return={})
 def step_load_memories(agent_ids: list[str]) -> dict[str, str]:
     """Step 5c — load each agent's journal from disk for Oracle prompt assembly.
 
@@ -384,6 +436,7 @@ def step_load_memories(agent_ids: list[str]) -> dict[str, str]:
     return memories
 
 
+@idempotent_step(skip_return={})
 def step_build_memory_update_prompts(
     agent_results: dict[str, dict],
     agent_posts: dict[str, list[dict]],
@@ -422,6 +475,7 @@ def step_build_memory_update_prompts(
     return prompts
 
 
+@idempotent_step(skip_return=0)
 def step_save_memories(new_journals: dict[str, str]) -> int:
     """Step 7b — persist rewritten journals back to data/agent_memory/.
 
@@ -479,6 +533,7 @@ def build_portfolio_summaries() -> dict[str, dict]:
     return summaries
 
 
+@idempotent_step(skip_return={})
 def step_save_content(
     bundle_date: date,
     market_data: dict,
@@ -534,6 +589,7 @@ def _compute_positions_value(
     return total
 
 
+@idempotent_step(skip_return=[])
 def step_update_snapshots(market_payload: dict) -> list[str]:
     """Step 4 — Append daily snapshots for all active portfolios.
 
@@ -601,6 +657,7 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
     return snapshotted
 
 
+@idempotent_step(skip_return=None)
 def step_build_baselines() -> None:
     """Step 9a — Baselines.
 
@@ -624,11 +681,25 @@ def step_build_baselines() -> None:
 
 
 def step_git_commit_push(dry_run: bool = False) -> None:
-    """Step 5 — Git commit and push data changes."""
+    """Step 5 — Git commit and push data changes.
+
+    Not wrapped with @idempotent_step because it needs special behaviour on
+    success: call ``_clear_state()`` AFTER recording its own completion so
+    that a fully-completed session leaves a clean state directory (no file
+    left over). The skip/mark logic is implemented manually below.
+    """
+    _step_name = "step_git_commit_push"
+    if _is_done(_step_name):
+        print(f"\n[SKIP] {_step_name} already completed this session.")
+        return
+
     print("\n=== Step 5: Git commit and push ===")
 
     if dry_run:
         print("  [DRY RUN] Skipping git operations.")
+        # Mark done and clear so a subsequent run on the same day starts fresh.
+        _mark_done(_step_name)
+        _clear_state()
         return
 
     data_dir = str(_PROJECT_ROOT / "data")
@@ -670,48 +741,51 @@ def step_git_commit_push(dry_run: bool = False) -> None:
         )
         if int(ahead.stdout.strip() or "0") == 0:
             print("  Nothing to push — HEAD is at origin/main.")
-            return
+        else:
+            # Primary path: push directly to origin/main. Fallback path
+            # (added 2026-05-08 after the harness started 403'ing main pushes
+            # from cloud sandboxes): push the sandbox branch instead, and let
+            # .github/workflows/auto-merge-session.yml take the merge to main.
+            push_main = subprocess.run(
+                ["git", "push", "origin", "HEAD:main"],
+                cwd=_PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+            )
+            if push_main.returncode == 0:
+                print("  Pushed to origin/main.")
+            else:
+                stderr = (push_main.stderr or "").strip()
+                stdout = (push_main.stdout or "").strip()
+                print(f"  [WARN] Push to origin/main failed: {stderr or stdout}")
+                print(
+                    "  Falling back to push current branch — auto-merge-session.yml will take it to main."
+                )
 
-        # Primary path: push directly to origin/main. Fallback path
-        # (added 2026-05-08 after the harness started 403'ing main pushes
-        # from cloud sandboxes): push the sandbox branch instead, and let
-        # .github/workflows/auto-merge-session.yml take the merge to main.
-        push_main = subprocess.run(
-            ["git", "push", "origin", "HEAD:main"],
-            cwd=_PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
-        if push_main.returncode == 0:
-            print("  Pushed to origin/main.")
-            return
-
-        stderr = (push_main.stderr or "").strip()
-        stdout = (push_main.stdout or "").strip()
-        print(f"  [WARN] Push to origin/main failed: {stderr or stdout}")
-        print(
-            "  Falling back to push current branch — auto-merge-session.yml will take it to main."
-        )
-
-        subprocess.run(
-            ["git", "push", "origin", "HEAD"],
-            cwd=_PROJECT_ROOT,
-            check=True,
-        )
-        branch_name = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=_PROJECT_ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-        print(
-            f"  Pushed to sandbox branch '{branch_name}'. Watch for auto-merge-session workflow on GitHub."
-        )
+                subprocess.run(
+                    ["git", "push", "origin", "HEAD"],
+                    cwd=_PROJECT_ROOT,
+                    check=True,
+                )
+                branch_name = subprocess.run(
+                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    cwd=_PROJECT_ROOT,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+                print(
+                    f"  Pushed to sandbox branch '{branch_name}'. Watch for auto-merge-session workflow on GitHub."
+                )
 
     except subprocess.CalledProcessError as exc:
         print(f"  [ERROR] Git operation failed: {exc}")
         raise
+
+    # Record successful completion and clear state so the next run of this
+    # session (same calendar day) starts fresh with no stale step markers.
+    _mark_done(_step_name)
+    _clear_state()
 
 
 # ---------------------------------------------------------------------------

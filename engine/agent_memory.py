@@ -15,6 +15,8 @@ provides a safety net that trims the prompt-side injection to the tail.
 
 from __future__ import annotations
 
+import os
+import tempfile
 from pathlib import Path
 
 JOURNAL_DIR = Path(__file__).parent.parent / "data" / "agent_memory"
@@ -36,12 +38,23 @@ def load_journal(agent_id: str) -> str:
 
 
 def save_journal(agent_id: str, content: str) -> Path:
-    """Write an agent's journal with a trailing newline. Creates the directory."""
+    """Write an agent's journal atomically (tmp + os.replace). Creates the directory."""
     JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
     path = _path_for(agent_id)
     if not content.endswith("\n"):
         content = content + "\n"
-    path.write_text(content, encoding="utf-8")
+    # Write to a sibling tmp file so os.replace is on the same filesystem.
+    fd, tmp_name = tempfile.mkstemp(dir=JOURNAL_DIR, prefix=".journal_tmp_")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        os.replace(tmp_name, path)
+    except Exception:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
     return path
 
 
