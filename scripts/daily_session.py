@@ -120,7 +120,11 @@ def idempotent_step(skip_return: Any) -> Callable[[_F], _F]:
 
 
 def step_fetch_market_data() -> dict:
-    """Step 1 — Fetch today's benchmark values."""
+    """Step 1 — Fetch today's benchmark values.
+
+    Not wrapped with @idempotent_step: no side effects; fresh data wanted on
+    resume; return feeds snapshots.
+    """
     print("\n=== Step 1: Fetch market data ===")
     return fetch_market_data()
 
@@ -136,6 +140,9 @@ def step_author_orders(
     agent_id: str, trades: list[dict], trade_date: date, currency: str
 ) -> int:
     """Step 3a — convert an agent's trades[] into outbox orders.
+
+    Not wrapped with @idempotent_step: per-agent inner helper invoked via
+    step_author_all; step-name would collide across agents.
 
     Parameters
     ----------
@@ -237,6 +244,9 @@ def step_author_cancels(
     trade_date: date,
 ) -> int:
     """Step 3a-bis — convert an agent's cancels[] into cancel requests.
+
+    Not wrapped with @idempotent_step: per-agent inner helper invoked via
+    step_author_all; step-name would collide across agents.
 
     Each cancel dict requires `target_order_id` and optionally `reasoning`.
     Returns the number of cancels appended to data/orders/cancels/.
@@ -342,12 +352,14 @@ def step_build_post_prompts(
     return prompts
 
 
-@idempotent_step(skip_return=[])
 def step_build_leaderboard(
     portfolio_summaries: dict[str, dict],
     on: date | None = None,
 ) -> list[dict]:
     """Step 5a-bis — canonical leaderboard for the day.
+
+    Not wrapped with @idempotent_step: pure derivation from portfolios, cheap
+    to recompute, and downstream consumers need real rows on resume.
 
     Thin wrapper around engine.leaderboard.build_leaderboard_rows so the
     same logic powers the weekend refresh script and the watcher.
@@ -441,7 +453,7 @@ def step_build_memory_update_prompts(
     agent_results: dict[str, dict],
     agent_posts: dict[str, list[dict]],
     portfolio_summaries: dict[str, dict],
-    day_number: int,
+    day_number: int | None = None,
 ) -> dict[str, str]:
     """Step 7a — build session-end journal-rewrite prompts for every agent.
 
@@ -449,7 +461,14 @@ def step_build_memory_update_prompts(
     Covers all 11 agents (the 10 traders plus the-oracle). Each agent reads its
     current journal from disk in-prompt; we embed it here so the dispatched
     prompt is fully self-contained.
+
+    ``day_number`` defaults to None and is computed internally via
+    ``get_day_number()`` when not supplied. The trigger-doc call omits this
+    argument (the production contract); callers that already hold the day number
+    may still pass it explicitly to avoid the extra I/O.
     """
+    if day_number is None:
+        day_number = get_day_number()
     print("\n=== Step 7a: Build memory-update prompts ===")
     prompts: dict[str, str] = {}
     # Traders

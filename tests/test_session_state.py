@@ -27,12 +27,15 @@ from engine import agent_memory
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(autouse=True)
-def isolated_state_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Redirect _STATE_DIR to a tmp path so tests never touch real state."""
-    state_dir = tmp_path / "session_state"
-    monkeypatch.setattr(ss, "_STATE_DIR", state_dir)
-    return state_dir
+@pytest.fixture()
+def isolated_state_dir() -> Path:
+    """Return the session-state directory already redirected by conftest.
+
+    The conftest autouse fixture patches ``ss._STATE_DIR`` for every test;
+    this non-autouse fixture simply exposes that path to tests that need to
+    inspect files written there.
+    """
+    return ss._STATE_DIR
 
 
 @pytest.fixture()
