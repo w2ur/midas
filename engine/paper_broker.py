@@ -314,10 +314,11 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
 
     # --- Pass 1: process cancel requests ---
     # Note: within a single run, duplicate cancels targeting the same order_id
-    # are allowed to produce multiple inbox lines (first: CANCELLED_BY_AGENT,
-    # second: CANCEL_TARGET_NOT_FOUND). The cross-run idempotency guard (checking
-    # already_processed) handles re-runs: on the second run, the target_order_id
-    # will already be in the inbox and the cancel entries are skipped.
+    # are allowed to produce multiple inbox lines (the first removes/rejects,
+    # subsequent ones see the pending file already gone → CANCEL_TARGET_NOT_FOUND).
+    # The cross-run idempotency guard (checking already_processed) handles re-runs:
+    # on the second run, the target_order_id will already be in the inbox and the
+    # cancel entries are skipped.
     for cancel in read_cancels(trade_date):
         if cancel.target_order_id in already_processed:
             continue
@@ -429,7 +430,7 @@ def execute_triggered_order(
     # live in any date's inbox file — not just today's.
     # inbox_order_ids reads engine.orders.INBOX_DIR at call time, so
     # test monkeypatching of that attribute is respected automatically.
-    if order.order_id in inbox_order_ids(date=None):
+    if order.order_id in inbox_order_ids(None):
         logger.info(
             "execute_triggered_order: %s already in inbox — skipping", order.order_id
         )

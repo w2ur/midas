@@ -369,3 +369,86 @@ def test_fill_day_idempotent_randomized(broker_env):
     assert len(inbox_after_second) == len(inbox_after_first)
     second_ids = [f.order_id for f in inbox_after_second]
     assert len(second_ids) == len(set(second_ids)), "Duplicate order_ids in inbox"
+
+
+# ---------------------------------------------------------------------------
+# E. Cancel-channel cross-run idempotency
+#    Pending conditional order + a cancel for it; run fill_day twice.
+#    → Run 2 adds NO new inbox lines; exactly one CANCELLED_BY_AGENT line
+#      total; pending file stays deleted after both runs.
+# ---------------------------------------------------------------------------
+
+
+def test_fill_day_cancel_channel_idempotent(broker_env):
+    """Running fill_day twice when a cancel targets a pending conditional order
+    must not produce duplicate inbox lines on the second run."""
+    from engine.paper_broker import fill_day
+    from engine.triggers import (
+        CancelRequest,
+        append_cancel,
+        delete_pending,
+        list_pending,
+        save_pending,
+    )
+
+    _write_config(broker_env["config_dir"], "satoshi")
+    pm = _init_portfolio(
+        broker_env["pm_base"], "satoshi", cash=10_000.0, currency="EUR"
+    )
+
+    target_order_id = "ord_2026-04-10_satoshi_007"
+    cancel_date = date(2026, 4, 17)
+
+    # Seed a pending conditional order (authored in a prior session).
+    save_pending(
+        Order(
+            order_id=target_order_id,
+            ts=datetime(2026, 4, 10, 20, 0, 0, tzinfo=timezone.utc),
+            agent_id="satoshi",
+            action="BUY",
+            ticker="BTC-EUR",
+            shares=0.05,
+            reasoning="dip buy",
+            currency="EUR",
+            trigger={"op": "<=", "level": 75_000.0},
+            expires="2026-05-10",
+        )
+    )
+
+    # Today's session authors a cancel for that pending order.
+    append_cancel(
+        cancel_date,
+        CancelRequest(
+            request_id="cnl_2026-04-17_satoshi_001",
+            ts=datetime(2026, 4, 17, 20, 5, 0, tzinfo=timezone.utc),
+            agent_id="satoshi",
+            target_order_id=target_order_id,
+            reasoning="thesis changed",
+        ),
+    )
+
+    # First run — cancel fires, pending file is removed, inbox gets one entry.
+    fill_day(cancel_date, pm)
+    inbox_after_first = read_inbox(cancel_date)
+    cancelled_first = [f for f in inbox_after_first if f.order_id == target_order_id]
+    assert len(cancelled_first) == 1
+    assert cancelled_first[0].status == "rejected"
+    assert cancelled_first[0].reason == "CANCELLED_BY_AGENT"
+    assert list_pending() == [], "Pending file must be deleted after first run"
+
+    # Second run — must be a no-op on the cancel channel.
+    fill_day(cancel_date, pm)
+    inbox_after_second = read_inbox(cancel_date)
+
+    # No new inbox lines were added.
+    assert len(inbox_after_second) == len(inbox_after_first), (
+        f"Run 2 added {len(inbox_after_second) - len(inbox_after_first)} extra inbox line(s)"
+    )
+
+    # Still exactly one CANCELLED_BY_AGENT entry for this order_id.
+    cancelled_second = [f for f in inbox_after_second if f.order_id == target_order_id]
+    assert len(cancelled_second) == 1
+    assert cancelled_second[0].reason == "CANCELLED_BY_AGENT"
+
+    # Pending file must remain absent.
+    assert list_pending() == [], "Pending file must stay deleted after second run"
