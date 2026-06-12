@@ -22,58 +22,6 @@ _OHLCV_STORE = _REPO_ROOT / "data" / "market" / "ohlcv"
 
 
 # ---------------------------------------------------------------------------
-# NO_DATA sentinel — anti-fabrication primitives
-# ---------------------------------------------------------------------------
-
-
-class NoMarketDataError(Exception):
-    """Raised when a symbol is not present in the committed OHLCV store.
-
-    Carrying the symbol as a typed attribute lets callers log or surface it
-    precisely without parsing the message string.
-    """
-
-    def __init__(self, symbol: str) -> None:
-        self.symbol = symbol
-        super().__init__(
-            f"{symbol} not found in committed OHLCV store — "
-            "do not use fabricated or stale prices"
-        )
-
-
-def no_data_sentinel(symbol: str) -> str:
-    """Return a prompt-facing sentinel string for an unknown symbol.
-
-    Future agent-context builders embed this string so the LLM is explicitly
-    told not to invent a price rather than silently receiving an empty field.
-    The exact format is part of the public contract — do not change it.
-    """
-    return f"NO_DATA_AVAILABLE: {symbol} not in committed store — do not fabricate"
-
-
-def get_latest_price(symbol: str) -> float:
-    """Return the latest closing price for a single symbol from the committed store.
-
-    This is the strict single-symbol entrypoint for agent context builders.
-    Unlike the bulk helpers (fetch_current_prices, _latest_close_from_store),
-    this function NEVER returns None or silently degrades — it raises
-    NoMarketDataError when the symbol is absent. That loud failure is
-    intentional: an unknown symbol must never silently price at 0/empty
-    and feed fabricated context to an LLM.
-
-    Raises
-    ------
-    NoMarketDataError
-        If the symbol has no file in the committed OHLCV store, or if the
-        store file exists but contains no valid price rows.
-    """
-    price = _latest_close_from_store(symbol)
-    if price is None:
-        raise NoMarketDataError(symbol)
-    return price
-
-
-# ---------------------------------------------------------------------------
 # Benchmark ticker mapping
 # ---------------------------------------------------------------------------
 
@@ -172,6 +120,58 @@ def latest_close_and_date_from_store(ticker: str) -> tuple[float, str] | None:
     if val is None:
         return None
     return (float(val), str(latest["date"]))
+
+
+# ---------------------------------------------------------------------------
+# NO_DATA sentinel — anti-fabrication primitives
+# ---------------------------------------------------------------------------
+
+
+class NoMarketDataError(Exception):
+    """Raised when a symbol is not present in the committed OHLCV store.
+
+    Carrying the symbol as a typed attribute lets callers log or surface it
+    precisely without parsing the message string.
+    """
+
+    def __init__(self, symbol: str) -> None:
+        self.symbol = symbol
+        super().__init__(
+            f"{symbol} not found in committed OHLCV store — "
+            "do not use fabricated or stale prices"
+        )
+
+
+def no_data_sentinel(symbol: str) -> str:
+    """Return a prompt-facing sentinel string for an unknown symbol.
+
+    Future agent-context builders embed this string so the LLM is explicitly
+    told not to invent a price rather than silently receiving an empty field.
+    The exact format is part of the public contract — do not change it.
+    """
+    return f"NO_DATA_AVAILABLE: {symbol} not in committed store — do not fabricate"
+
+
+def get_latest_price(symbol: str) -> float:
+    """Return the latest closing price for a single symbol from the committed store.
+
+    This is the strict single-symbol entrypoint for agent context builders.
+    Unlike the bulk helpers (fetch_current_prices, _latest_close_from_store),
+    this function NEVER returns None or silently degrades — it raises
+    NoMarketDataError when the symbol is absent. That loud failure is
+    intentional: an unknown symbol must never silently price at 0/empty
+    and feed fabricated context to an LLM.
+
+    Raises
+    ------
+    NoMarketDataError
+        If the symbol has no file in the committed OHLCV store, or if the
+        store file exists but contains no valid price rows.
+    """
+    price = _latest_close_from_store(symbol)
+    if price is None:
+        raise NoMarketDataError(symbol)
+    return price
 
 
 class MarketDataFetcher:
