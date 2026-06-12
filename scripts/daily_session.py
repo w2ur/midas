@@ -718,10 +718,11 @@ def step_build_baselines() -> None:
 def step_git_commit_push(dry_run: bool = False) -> None:
     """Step 5 — Git commit and push data changes.
 
-    Not wrapped with @idempotent_step because it needs special behaviour on
-    success: call ``_clear_state()`` AFTER recording its own completion so
-    that a fully-completed session leaves a clean state directory (no file
-    left over). The skip/mark logic is implemented manually below.
+    Not wrapped with @idempotent_step because it calls ``_clear_state()`` on
+    success, which wipes the whole state file — so a post-clear ``_mark_done``
+    would be immediately lost.  Re-entry protection is still wired manually via
+    ``_is_done`` at the top; ``_mark_done`` is intentionally absent (the cleared
+    state file is the finished-session signal).
     """
     _step_name = "step_git_commit_push"
     if _is_done(_step_name):
