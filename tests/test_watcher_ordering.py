@@ -355,3 +355,64 @@ class TestCommitMessageContent:
         process_fired_order(order, fill, TODAY, fake_committer)
 
         assert received_ids == [oid]
+
+
+# ---------------------------------------------------------------------------
+# Portfolio directory included in per-fire commit pathspec
+# ---------------------------------------------------------------------------
+
+
+class TestCommitPathspecIncludesPortfolio:
+    def test_committer_receives_portfolio_dir(self, broker_env) -> None:
+        """Real-fill path: committer paths must include the agent's portfolio directory.
+
+        execute_triggered_order mutates portfolio.json and trades.json via
+        apply_trade. The per-fire commit must capture these mutations atomically,
+        so the agent's portfolio directory must appear in the pathspec.
+        """
+        from scripts.check_triggers import process_fired_order
+
+        order = _make_order()
+        save_pending(order)
+        fill = _make_fill()
+
+        captured_paths: list[list[str]] = []
+
+        def fake_committer(order_id: str, today: date, paths: list[str]) -> None:
+            captured_paths.append(list(paths))
+
+        process_fired_order(order, fill, TODAY, fake_committer)
+
+        assert captured_paths, "Committer was not called"
+        paths = captured_paths[0]
+        expected_fragment = f"portfolios/{order.agent_id}"
+        assert any(expected_fragment in p for p in paths), (
+            f"Expected a path containing '{expected_fragment}' in committer args {paths}. "
+            "Portfolio mutations from apply_trade must be included in the per-fire commit."
+        )
+
+    def test_zombie_cleanup_commit_excludes_portfolio(self, broker_env) -> None:
+        """None (zombie) path: committer paths must NOT include the portfolio directory.
+
+        When fill_or_none is None the order was already filled in a prior run —
+        no portfolio mutation occurs. Including the portfolio directory in the
+        pathspec would stage unrelated changes and violate the atomicity contract.
+        """
+        from scripts.check_triggers import process_fired_order
+
+        order = _make_order()
+        save_pending(order)
+
+        captured_paths: list[list[str]] = []
+
+        def fake_committer(order_id: str, today: date, paths: list[str]) -> None:
+            captured_paths.append(list(paths))
+
+        process_fired_order(order, None, TODAY, fake_committer)
+
+        assert captured_paths, "Committer was not called"
+        paths = captured_paths[0]
+        portfolio_fragment = f"portfolios/{order.agent_id}"
+        assert not any(portfolio_fragment in p for p in paths), (
+            f"Portfolio path must not appear in committer args on zombie cleanup: {paths}"
+        )

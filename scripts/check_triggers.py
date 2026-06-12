@@ -89,6 +89,13 @@ def process_fired_order(
         append_fill(today, fill_or_none)
         inbox_path = str(_orders.INBOX_DIR / f"{today.isoformat()}.jsonl")
         paths.append(inbox_path)
+        # execute_triggered_order mutates portfolio.json and trades.json via
+        # PortfolioManager.apply_trade. Include the agent's portfolio directory
+        # so the per-fire commit captures the full mutation set atomically.
+        # Directory-level add covers portfolio.json + trades.json (and any other
+        # files the fill may have touched in that directory).
+        portfolio_dir = str(_PROJECT_ROOT / "data" / "portfolios" / order.agent_id)
+        paths.append(portfolio_dir)
 
     # Remove the pending file regardless (fill or zombie cleanup).
     delete_pending(order.order_id)
