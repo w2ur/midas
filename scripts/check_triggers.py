@@ -114,7 +114,7 @@ def process_fired_order(
         # Push (or commit) failure must not stop processing of remaining orders.
         # The mutation is already on disk; the local commit exists if git-commit
         # succeeded. A trailing push attempt at the end of the watcher run will
-        # carry any un-pushed commits. See commit_per_fire for retry logic.
+        # carry any un-pushed commits. See _git_add_commit for retry logic.
         logger.warning(
             "committer raised for %s (non-fatal, remaining orders will be processed): %s",
             order.order_id,
@@ -140,7 +140,7 @@ def _git_add_commit(order_id: str, today: date, paths: list[str]) -> None:
         cwd=_PROJECT_ROOT,
     )
     if diff.returncode == 0:
-        logger.info("No staged changes for %s — skipping commit.", order_id)
+        logger.info("Nothing staged for %s — skipped commit.", order_id)
         return
 
     msg = f"chore(triggers): execute {order_id} {today.isoformat()}"
@@ -151,14 +151,19 @@ def _git_add_commit(order_id: str, today: date, paths: list[str]) -> None:
         cwd=_PROJECT_ROOT,
     )
     if result.returncode == 0:
+        logger.info("Committed + pushed %s.", order_id)
         return
 
     # Push failed — attempt a rebase-based retry once.
     logger.warning("Push failed for %s; retrying after git pull --rebase.", order_id)
-    subprocess.run(
+    rebase = subprocess.run(
         ["git", "pull", "--rebase", "origin", "main"],
         cwd=_PROJECT_ROOT,
     )
+    if rebase.returncode != 0:
+        subprocess.run(["git", "rebase", "--abort"], cwd=_PROJECT_ROOT)
+        logger.warning("Rebase failed for %s; aborted, commit stays local.", order_id)
+        return
     retry = subprocess.run(
         ["git", "push", "origin", "HEAD:main"],
         cwd=_PROJECT_ROOT,
@@ -294,9 +299,34 @@ def commit_and_push() -> None:
         f"chore(triggers): execute fired/expired conditions {date.today().isoformat()}"
     )
     subprocess.run(["git", "commit", "-m", msg], cwd=_PROJECT_ROOT, check=True)
-    subprocess.run(
-        ["git", "push", "origin", "HEAD:main"], cwd=_PROJECT_ROOT, check=True
+    result = subprocess.run(
+        ["git", "push", "origin", "HEAD:main"],
+        cwd=_PROJECT_ROOT,
     )
+    if result.returncode == 0:
+        logger.info("Committed + pushed tail (leaderboard/expired).")
+        return
+
+    logger.warning("Tail push failed; retrying after git pull --rebase.")
+    rebase = subprocess.run(
+        ["git", "pull", "--rebase", "origin", "main"],
+        cwd=_PROJECT_ROOT,
+    )
+    if rebase.returncode != 0:
+        subprocess.run(["git", "rebase", "--abort"], cwd=_PROJECT_ROOT)
+        logger.warning("Tail rebase failed; aborted, commit stays local.")
+        return
+    retry = subprocess.run(
+        ["git", "push", "origin", "HEAD:main"],
+        cwd=_PROJECT_ROOT,
+    )
+    if retry.returncode != 0:
+        logger.warning(
+            "Tail retry push also failed; commit exists locally and will be "
+            "carried by the next successful push attempt."
+        )
+    else:
+        logger.info("Committed + pushed tail after rebase (leaderboard/expired).")
 
 
 def main() -> None:
