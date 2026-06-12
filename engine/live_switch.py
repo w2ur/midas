@@ -42,6 +42,7 @@ def is_live_enabled(*, path: Path | None = None) -> bool:
         Defaults to False on any error.
     """
     try:
+        # Note: env can flip the committed default-OFF to ON; the broker worker's environment is the trust boundary.
         env_val = os.environ.get("MIDAS_LIVE", "").strip().lower()
         if env_val in _ENV_FALSE:
             return False

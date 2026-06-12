@@ -139,3 +139,26 @@ class TestFailSafe:
         # Calling with no arguments must not raise, regardless of file state.
         result = live_switch.is_live_enabled()
         assert isinstance(result, bool)
+
+
+# ---------------------------------------------------------------------------
+# Guard: committed default must always be OFF
+# ---------------------------------------------------------------------------
+
+
+class TestCommittedDefault:
+    def test_committed_default_is_off(self, monkeypatch):
+        """Guard CI against anyone committing live_enabled=true.
+
+        Uses the real data/agent_config/live_switch.json without any path
+        override, with MIDAS_LIVE absent so the file value is authoritative.
+        """
+        monkeypatch.delenv("MIDAS_LIVE", raising=False)
+        config_path = live_switch._DEFAULT_PATH
+        data = __import__("json").loads(config_path.read_text(encoding="utf-8"))
+        assert data.get("live_enabled") is False, (
+            "data/agent_config/live_switch.json must ship with live_enabled=false"
+        )
+        assert live_switch.is_live_enabled() is False, (
+            "is_live_enabled() must return False with no env override and the committed config"
+        )
