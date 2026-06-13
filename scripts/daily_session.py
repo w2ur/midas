@@ -10,6 +10,7 @@ Two modes:
    orchestrating Claude Code session that parallelises agent dispatch):
      - step_author_orders()                → data/orders/outbox/
      - step_fill_orders()                  → data/orders/inbox/ + portfolio mutation
+     - step_build_baseline_manager()       → data/portfolios/baseline-manager/ (Gate C)
      - step_build_post_prompts()           → prompts for the orchestrator
      - step_load_memories()                → dict[agent_id, str]
      - step_build_leaderboard()            → ranked rows (EUR mtm / €10k inception)
@@ -52,9 +53,18 @@ from engine.agent_memory import (
     load_journal,
     save_journal,
 )
+from engine.baseline_manager import (
+    INITIAL_CAPITAL_EUR,
+    POSITION_SIZE_EUR,
+    STRATEGY_ID,
+    eligible_tickers,
+    is_rebalance_day,
+    rebalance,
+)
 from engine.blog import build_oracle_prompt, save_daily_blog_draft
 from engine.ohlcv_store import latest_close_on_or_before
 from engine.orders import Order, append_order, make_order_id
+from engine.research_note import parse_research_note
 from engine.triggers import (
     CancelRequest,
     append_cancel,
@@ -325,6 +335,104 @@ def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> l
     rejected = sum(1 for f in fills if f.status == "rejected")
     print(f"  {filled} filled, {rejected} rejected out of {len(fills)}")
     return fills
+
+
+@idempotent_step(skip_return=None)
+def step_build_baseline_manager(
+    agent_results: dict[str, dict],
+    trade_date: date | None = None,
+    portfolios_dir: Path | None = None,
+    ohlcv_store: Path | None = None,
+) -> None:
+    """Step 3c — run the deterministic baseline-manager rebalance.
+
+    Internal Gate C benchmark portfolio. NOT a public trading agent.
+    Excluded from AGENT_POST_TIMES, AGENT_DISPLAY_NAMES, leaderboard, and
+    the public output bundle.
+
+    Parameters
+    ----------
+    agent_results:
+        {agent_id: result_dict} from the session's agent round. Each result
+        may contain a "research_note" key parsed by parse_research_note.
+    trade_date:
+        The session's trading date. Defaults to today.
+    portfolios_dir:
+        Override for data/portfolios/ (test monkeypatching). Derived from
+        _PROJECT_ROOT when None.
+    ohlcv_store:
+        Override for the OHLCV store path (test monkeypatching).
+
+    Rebalances only on the first weekday of each month, or on the very first
+    run (portfolio does not exist yet). On all other days, does nothing.
+    step_update_snapshots iterates portfolio dirs and will still snapshot
+    baseline-manager on non-rebalance days — which is intentional.
+    """
+    import engine.baseline_manager as bm_module
+
+    print("\n=== Step 3c: Baseline-manager rebalance ===")
+
+    if trade_date is None:
+        trade_date = date.today()
+
+    resolved_portfolios_dir = portfolios_dir or (_PROJECT_ROOT / "data" / "portfolios")
+    resolved_ohlcv_store = ohlcv_store or bm_module._OHLCV_STORE
+
+    manager = PortfolioManager(base_dir=resolved_portfolios_dir)
+    portfolio_exists = (
+        resolved_portfolios_dir / STRATEGY_ID / "portfolio.json"
+    ).exists()
+
+    is_first_run = not portfolio_exists
+    if is_first_run:
+        manager.initialize(
+            STRATEGY_ID, initial_capital=INITIAL_CAPITAL_EUR, currency="EUR"
+        )
+        print(f"  Initialized {STRATEGY_ID} portfolio (EUR {INITIAL_CAPITAL_EUR:.0f})")
+
+    if not is_first_run and not is_rebalance_day(trade_date):
+        print(
+            f"  {trade_date} is not a rebalance day — skipping (snapshots will still update)."
+        )
+        return
+
+    # Collect research notes from all agents.
+    notes: list[tuple[str, object]] = []
+    for agent_id, result in agent_results.items():
+        raw_note = result.get("research_note")
+        note = parse_research_note(raw_note)
+        if note is not None:
+            notes.append((agent_id, note))
+
+    target = eligible_tickers(notes)
+    print(f"  Eligible tickers ({len(target)}): {target if target else '(none)'}")
+
+    portfolio_dict = manager.load(STRATEGY_ID).to_dict()
+
+    def _price_lookup(ticker: str, on: date) -> float | None:
+        from engine.ohlcv_store import latest_close_on_or_before as _lcob
+
+        return _lcob(ticker, on, store=resolved_ohlcv_store)
+
+    trades = rebalance(
+        portfolio=portfolio_dict,
+        target_tickers=target,
+        price_lookup=_price_lookup,
+        on=trade_date,
+        position_size_eur=POSITION_SIZE_EUR,
+    )
+
+    for trade in trades:
+        try:
+            manager.apply_trade(STRATEGY_ID, trade)
+        except ValueError as exc:
+            print(
+                f"  [WARN] baseline-manager trade failed ({trade.ticker} {trade.action}): {exc}"
+            )
+
+    sells = sum(1 for t in trades if t.action == "SELL")
+    buys = sum(1 for t in trades if t.action == "BUY")
+    print(f"  Applied {sells} sell(s) + {buys} buy(s) to {STRATEGY_ID}")
 
 
 def step_build_post_prompts(
