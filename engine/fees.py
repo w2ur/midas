@@ -65,6 +65,10 @@ def classify_ticker(ticker: str) -> AssetClass:
     AssetClass
         One of "crypto", "fx", or "equity".
     """
+    # Normalize once so the function is safe to reuse outside the broker path
+    # (the OHLCV store is uppercase-by-convention, but a future fee-disclosure
+    # UI or the Manager context may call this with raw/None input).
+    ticker = (ticker or "").upper()
     if is_crypto_ticker(ticker):
         return "crypto"
     if ticker.endswith("=X"):
