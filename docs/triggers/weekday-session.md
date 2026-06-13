@@ -92,7 +92,12 @@ For each agent_id in ROSTER:
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
 they run in parallel. Collect agent_results = {agent_id: {"commentary":
-..., "trades": [...], "cancels": [...]}} (cancels optional).
+..., "trades": [...], "cancels": [...], "research_note": {...}}}
+(cancels optional). PRESERVE the FULL response dict per agent — in
+particular `research_note` is load-bearing: it is the ONLY input to the
+analysts+Manager pipeline (Step 4a/4b) and the public bundle. Dropping it
+does NOT crash anything — the Manager silently runs on zero signal and
+writes empty HOLD reviews while looking healthy. Keep every key the agent emits.
 
 TRADING_PROMPT (the task body — wrap_persona_prompt prepends the persona):
 """
@@ -126,7 +131,18 @@ Output JSON only, no other text:
   "cancels": [
     {"target_order_id": "ord_...", "reasoning": "..."}
     // OPTIONAL; only include if you want to remove a pending conditional from a prior session.
-  ]
+  ],
+  "research_note": {
+    "thesis": "1-2 sentence actionable view (<=280 chars)",
+    "conviction": 0,            // integer 0-10
+    "tickers": ["TICKER", ...], // instruments the thesis is about
+    "action_bias": "strong_buy"|"buy"|"hold"|"reduce"|"exit",
+    "horizon": "days"|"weeks"|"months",
+    "catalysts": "what would confirm/break the thesis (<=200 chars)",
+    "currency": "EUR"|"USD"     // the instruments' denomination
+  }
+  // research_note carries your VIEW (not sizing) for the Manager desk.
+  // ALWAYS include it. See your persona file for details.
 }
 """
 
@@ -164,7 +180,7 @@ After all 10 results arrive:
 #     ZERO manager data. Do NOT pass manager artifacts to any of them.
 #   - Manager fills land in data/orders/manager-inbox/ — NEVER the public inbox.
 # This runs AFTER fills+snapshots (so portfolios are current) and BEFORE the
-# Oracle (so the Oracle never sees it). All steps are non-LLM EXCEPT 4c's dispatch.
+# Oracle (so the Oracle never sees it). All steps are non-LLM EXCEPT 4b's dispatch.
     from scripts.daily_session import (
         step_resolve_manager_outcomes,
         step_build_baseline_manager,
@@ -186,7 +202,8 @@ After all 10 results arrive:
     # ^ model resolves to "opus" (the-manager.md frontmatter) — the only
     #   real-money-bound author; stakes justify the tier. Pass it through.
 Dispatch via Task with subagent_type="general-purpose", model=model,
-prompt=wrapped. The response is a single JSON object (ManagerDecision).
+prompt=wrapped. Capture the dispatch result into `response_text`. The
+response is a single JSON object (ManagerDecision).
     # 4b-apply — Parse (conviction gate enforced in code), write the
     #            manager-review audit artifact (EVERY day, even a HOLD),
     #            author non-HOLD orders to the manager channel, fill the
