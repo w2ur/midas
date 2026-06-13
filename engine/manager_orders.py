@@ -8,6 +8,10 @@ the-manager book.
 
 Sizing mirrors engine.baseline_manager: shares = size_eur / close_price (fractional
 shares allowed). Positions with action HOLD, or with no store price, are skipped.
+
+The manager channel is MARKET-ONLY: conditional (trigger) orders are not supported
+here because fill_day's pending/cancels sub-channels are not yet channel-scoped
+(Task D). manager_decision_to_orders never emits triggers.
 """
 
 from __future__ import annotations
@@ -24,6 +28,8 @@ logger = logging.getLogger(__name__)
 # the-manager runs a EUR book (Task C5 / real-money mandate: French tax resident).
 MANAGER_AGENT_ID = "the-manager"
 MANAGER_CURRENCY = "EUR"
+# Intentionally matches the baseline-manager book size for a fair Gate C comparison.
+MANAGER_INITIAL_CAPITAL_EUR = 2000.0
 
 
 def manager_decision_to_orders(
@@ -88,17 +94,23 @@ def manager_decision_to_orders(
             continue
 
         seq += 1
-        orders.append(
-            Order(
-                order_id=make_order_id(trade_date, MANAGER_AGENT_ID, seq),
-                ts=ts,
-                agent_id=MANAGER_AGENT_ID,
-                action=pos.action,
-                ticker=pos.ticker,
-                shares=shares,
-                reasoning=pos.reasoning,
-                currency=MANAGER_CURRENCY,
-            )
+        order = Order(
+            order_id=make_order_id(trade_date, MANAGER_AGENT_ID, seq),
+            ts=ts,
+            agent_id=MANAGER_AGENT_ID,
+            action=pos.action,
+            ticker=pos.ticker,
+            shares=shares,
+            reasoning=pos.reasoning,
+            currency=MANAGER_CURRENCY,
         )
+        # Defensive invariant: the manager channel is market-only (see module
+        # docstring). ManagerPosition has no trigger field so this can only fire
+        # if Order gains a default trigger in the future — catch it early.
+        assert order.trigger is None and order.expires is None, (
+            "manager_decision_to_orders must never emit trigger/expires orders "
+            "(market-only channel, Task D pending/cancels not yet channel-scoped)"
+        )
+        orders.append(order)
 
     return orders

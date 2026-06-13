@@ -66,6 +66,11 @@ from engine.baseline_manager import (
 )
 from engine.blog import build_oracle_prompt, save_daily_blog_draft
 from engine.ohlcv_store import latest_close_on_or_before
+from engine.manager_orders import (
+    MANAGER_AGENT_ID,
+    MANAGER_CURRENCY,
+    MANAGER_INITIAL_CAPITAL_EUR,
+)
 from engine.orders import Order, append_order, make_order_id
 from engine.research_note import parse_research_note
 from engine.triggers import (
@@ -448,9 +453,6 @@ def step_build_baseline_manager(
 # it never leaks into the narrative. The outcome-resolution loop is Task C5b.
 # ---------------------------------------------------------------------------
 
-MANAGER_AGENT_ID = "the-manager"
-MANAGER_INITIAL_CAPITAL_EUR = 2000.0
-
 
 def step_build_manager_prompt(
     agent_results: dict[str, dict],
@@ -533,7 +535,10 @@ def step_build_manager_prompt(
         price_lookup=price_lookup,
         ticker_registry=load_ticker_registry(),
         as_of=trade_date,
-        config={"initial_capital": MANAGER_INITIAL_CAPITAL_EUR, "currency": "EUR"},
+        config={
+            "initial_capital": MANAGER_INITIAL_CAPITAL_EUR,
+            "currency": MANAGER_CURRENCY,
+        },
     )
     rendered = render_manager_context(ctx)
     wrapped, _model = wrap_persona_prompt(MANAGER_AGENT_ID, rendered)
@@ -574,7 +579,7 @@ def step_apply_manager_decision(
         manager.initialize(
             MANAGER_AGENT_ID,
             initial_capital=MANAGER_INITIAL_CAPITAL_EUR,
-            currency="EUR",
+            currency=MANAGER_CURRENCY,
         )
         print(
             f"  Initialized {MANAGER_AGENT_ID} book (EUR {MANAGER_INITIAL_CAPITAL_EUR:.0f})"
@@ -942,6 +947,11 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
     """Step 4 — Append daily snapshots for all active portfolios.
 
     A portfolio is "active" if it has a portfolio.json on disk.
+
+    Note: this iterates portfolio dirs, so the internal `the-manager` and
+    `baseline-manager` books accrue committed snapshots here. That is intentional
+    private valuation tracking — both are excluded from every public surface by
+    roster absence (they are not in AGENT_POST_TIMES), so this is not a leak.
 
     Parameters
     ----------

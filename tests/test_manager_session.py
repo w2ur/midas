@@ -333,17 +333,19 @@ def test_apply_manager_idempotent(manager_env):
     assert len(fills) == 1
 
 
-def test_apply_manager_idempotent_at_fill_layer(manager_env, monkeypatch):
-    """Even if the step guard is bypassed, fill_day's order_id idempotency holds.
+def test_apply_manager_idempotent_at_fill_layer(manager_env):
+    """Even when the step guard is genuinely defeated, fill_day's order_id
+    idempotency holds.
 
-    Forces the @idempotent_step skip to be a no-op so the body runs twice, proving
-    the manager-inbox idempotency (not just the session-state guard) prevents a
-    double-fill.
+    The @idempotent_step decorator binds `is_done` at import time, so patching
+    the module name is a no-op (the body would only run once and the test would
+    pass for the wrong reason). Instead we CLEAR the per-day step state between
+    the two calls, forcing the body to truly execute twice — proving the
+    manager-inbox order_id idempotency (not just the session-state guard)
+    prevents a double-fill.
     """
     import scripts.session_state as ss
     from scripts.daily_session import step_apply_manager_decision
-
-    monkeypatch.setattr(ss, "is_done", lambda name: False)
 
     _seed_ohlcv(manager_env["ohlcv"], "AAPL", "2026-06-01", 200.0)
     raw = {
@@ -360,11 +362,51 @@ def test_apply_manager_idempotent_at_fill_layer(manager_env, monkeypatch):
     }
 
     step_apply_manager_decision(raw, TRADE_DATE)
+    pm = PortfolioManager(manager_env["portfolios"])
+    shares_after_first = pm.load("the-manager").positions[0].shares
+
+    # Defeat the step-state guard for real, then re-run the body.
+    ss.clear(TRADE_DATE)
     step_apply_manager_decision(raw, TRADE_DATE)
 
     fills = read_inbox(TRADE_DATE, inbox_dir=manager_env["manager_inbox"])
     filled = [f for f in fills if f.status == "filled"]
-    assert len(filled) == 1
+    assert len(filled) == 1  # fill-layer idempotency, not the step guard
+    # And the book is unchanged by the second run.
+    assert pm.load("the-manager").positions[0].shares == pytest.approx(
+        shares_after_first
+    )
+
+
+def test_apply_manager_unparseable_writes_placeholder_review(manager_env):
+    """Junk/None LLM output writes a placeholder review, authors no orders, and
+    leaves the-manager book untouched — never crashes (session-safety contract)."""
+    import json
+
+    from scripts.daily_session import step_apply_manager_decision
+    from engine.orders import read_outbox
+
+    review_dir = manager_env["manager_review"]
+
+    for raw in (None, {"garbage": 1}, "not even a dict"):
+        # Each iteration is a fresh session-day so the step body runs.
+        import scripts.session_state as ss
+
+        ss.clear(TRADE_DATE)
+        step_apply_manager_decision(raw, TRADE_DATE)  # must not raise
+
+        # Review artifact written every day, even on unparseable input.
+        review_path = review_dir / f"{TRADE_DATE.isoformat()}.json"
+        assert review_path.exists()
+        json.loads(review_path.read_text())  # valid JSON
+
+        # No orders authored.
+        assert read_outbox(TRADE_DATE, outbox_dir=manager_env["manager_outbox"]) == []
+
+    # the-manager book never created/mutated (no fills ever happened).
+    pm = PortfolioManager(manager_env["portfolios"])
+    mgr = pm.load("the-manager")
+    assert not mgr.positions
 
 
 # ---------------------------------------------------------------------------
