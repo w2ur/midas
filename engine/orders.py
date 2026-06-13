@@ -18,6 +18,17 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTBOX_DIR = _REPO_ROOT / "data" / "orders" / "outbox"
 INBOX_DIR = _REPO_ROOT / "data" / "orders" / "inbox"
 
+# Separate channel for the LLM Manager (Task C5). Its orders, fills, and the
+# decision-review audit artifact live here — NEVER in the public outbox/inbox the
+# site joins by order_id. Keeping the manager fully off every public surface is a
+# hard invariant (see CLAUDE.md / Manager design): the-manager is not in the
+# roster (engine.posts.AGENT_POST_TIMES), so it is auto-excluded from the output
+# bundle, leaderboard, and journals; routing its fills here keeps it off the
+# trade-card join as well.
+MANAGER_OUTBOX_DIR = _REPO_ROOT / "data" / "orders" / "manager-outbox"
+MANAGER_INBOX_DIR = _REPO_ROOT / "data" / "orders" / "manager-inbox"
+MANAGER_REVIEW_DIR = _REPO_ROOT / "data" / "orders" / "manager-review"
+
 TRIGGER_OPS: tuple[str, ...] = ("<=", ">=")
 
 
@@ -193,27 +204,39 @@ def _read_jsonl(path: Path) -> list[dict]:
             raise ValueError(f"Malformed JSON in {path}: {exc}") from exc
 
 
-def append_order(d: date, order: Order) -> None:
-    _append_jsonl(OUTBOX_DIR / f"{d.isoformat()}.jsonl", order.to_dict())
+def append_order(d: date, order: Order, outbox_dir: Path | None = None) -> None:
+    """Append an order to the outbox JSONL for date ``d``.
+
+    ``outbox_dir`` defaults to the public OUTBOX_DIR. Pass MANAGER_OUTBOX_DIR to
+    write to the separate Manager channel (Task C5). The default is resolved at
+    call time so test monkeypatching of OUTBOX_DIR is respected.
+    """
+    base = outbox_dir if outbox_dir is not None else OUTBOX_DIR
+    _append_jsonl(base / f"{d.isoformat()}.jsonl", order.to_dict())
 
 
-def read_outbox(d: date) -> list[Order]:
-    return [
-        Order.from_dict(r) for r in _read_jsonl(OUTBOX_DIR / f"{d.isoformat()}.jsonl")
-    ]
+def read_outbox(d: date, outbox_dir: Path | None = None) -> list[Order]:
+    base = outbox_dir if outbox_dir is not None else OUTBOX_DIR
+    return [Order.from_dict(r) for r in _read_jsonl(base / f"{d.isoformat()}.jsonl")]
 
 
-def append_fill(d: date, fill: Fill) -> None:
-    _append_jsonl(INBOX_DIR / f"{d.isoformat()}.jsonl", fill.to_dict())
+def append_fill(d: date, fill: Fill, inbox_dir: Path | None = None) -> None:
+    """Append a fill to the inbox JSONL for date ``d``.
+
+    ``inbox_dir`` defaults to the public INBOX_DIR. Pass MANAGER_INBOX_DIR to
+    write to the separate Manager channel (Task C5). The default is resolved at
+    call time so test monkeypatching of INBOX_DIR is respected.
+    """
+    base = inbox_dir if inbox_dir is not None else INBOX_DIR
+    _append_jsonl(base / f"{d.isoformat()}.jsonl", fill.to_dict())
 
 
-def read_inbox(d: date) -> list[Fill]:
-    return [
-        Fill.from_dict(r) for r in _read_jsonl(INBOX_DIR / f"{d.isoformat()}.jsonl")
-    ]
+def read_inbox(d: date, inbox_dir: Path | None = None) -> list[Fill]:
+    base = inbox_dir if inbox_dir is not None else INBOX_DIR
+    return [Fill.from_dict(r) for r in _read_jsonl(base / f"{d.isoformat()}.jsonl")]
 
 
-def inbox_order_ids(d: date | None = None) -> set[str]:
+def inbox_order_ids(d: date | None = None, inbox_dir: Path | None = None) -> set[str]:
     """Collect all order_ids already present in inbox JSONL files.
 
     If `d` is given, scan only that day's inbox file.
@@ -221,16 +244,21 @@ def inbox_order_ids(d: date | None = None) -> set[str]:
     must check the full history — a triggered order may have been authored days
     earlier and fired on a later date, landing in a different inbox file).
 
+    ``inbox_dir`` defaults to the public INBOX_DIR. Pass MANAGER_INBOX_DIR so the
+    idempotency check operates on the Manager channel (Task C5). The default is
+    resolved at call time so test monkeypatching of INBOX_DIR is respected.
+
     Reads raw JSONL lines and extracts the ``order_id`` field; silently skips
     malformed lines (the idempotency check is best-effort — a corrupt line
     cannot retroactively cause a double-fill if the original write succeeded).
     """
+    base = inbox_dir if inbox_dir is not None else INBOX_DIR
     if d is not None:
-        paths = [INBOX_DIR / f"{d.isoformat()}.jsonl"]
+        paths = [base / f"{d.isoformat()}.jsonl"]
     else:
-        if not INBOX_DIR.exists():
+        if not base.exists():
             return set()
-        paths = list(INBOX_DIR.glob("*.jsonl"))
+        paths = list(base.glob("*.jsonl"))
 
     ids: set[str] = set()
     for path in paths:

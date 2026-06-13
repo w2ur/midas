@@ -11,6 +11,9 @@ Two modes:
      - step_author_orders()                → data/orders/outbox/
      - step_fill_orders()                  → data/orders/inbox/ + portfolio mutation
      - step_build_baseline_manager()       → data/portfolios/baseline-manager/ (Gate C)
+     - step_build_manager_prompt()         → LLM Manager prompt (C3 context + persona)
+     - step_apply_manager_decision()       → data/orders/manager-{outbox,inbox,review}/
+                                             + data/portfolios/the-manager/ (PAPER, private)
      - step_build_post_prompts()           → prompts for the orchestrator
      - step_load_memories()                → dict[agent_id, str]
      - step_build_leaderboard()            → ranked rows (EUR mtm / €10k inception)
@@ -433,6 +436,207 @@ def step_build_baseline_manager(
     sells = sum(1 for t in trades if t.action == "SELL")
     buys = sum(1 for t in trades if t.action == "BUY")
     print(f"  Applied {sells} sell(s) + {buys} buy(s) to {STRATEGY_ID}")
+
+
+# ---------------------------------------------------------------------------
+# LLM Manager (Task C5) — PAPER, fully off every public surface.
+#
+# Authors to a SEPARATE manager-outbox, fills into a SEPARATE the-manager book,
+# and writes a manager-review audit artifact. the-manager is NOT in
+# AGENT_POST_TIMES / AGENT_DISPLAY_NAMES / roster.ts / the output bundle, and its
+# fills go to manager-inbox (NOT the public inbox the site joins by order_id), so
+# it never leaks into the narrative. The outcome-resolution loop is Task C5b.
+# ---------------------------------------------------------------------------
+
+MANAGER_AGENT_ID = "the-manager"
+MANAGER_INITIAL_CAPITAL_EUR = 2000.0
+
+
+def step_build_manager_prompt(
+    agent_results: dict[str, dict],
+    trade_date: date,
+    ohlcv_store: Path | None = None,
+) -> str:
+    """Step 3d — build the LLM Manager's decision prompt (mirror of the Oracle).
+
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects —
+    on resume it must rebuild the real prompt so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on step_apply_manager_decision.
+
+    Assembles the C3 manager context from each agent's research note, the
+    the-manager portfolio (empty book if absent), and resolved decisions
+    (always [] here — the outcome-resolution loop is Task C5b). Wraps the rendered
+    context with the the-manager persona via wrap_persona_prompt and returns the
+    prompt string. Does NOT call Claude.
+    """
+    from engine.manager_context import (
+        build_manager_context,
+        load_ticker_registry,
+        render_manager_context,
+    )
+    from engine.ohlcv_store import latest_close_on_or_before as _lcob
+    from engine.persona_dispatch import wrap_persona_prompt
+
+    print("\n=== Step 3d: Build Manager prompt ===")
+
+    portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
+    resolved_store = ohlcv_store
+
+    # Parse each agent's research note (drop None — same tolerance as the baseline).
+    notes: list[tuple[str, object]] = []
+    for agent_id, result in agent_results.items():
+        note = parse_research_note(result.get("research_note"))
+        notes.append((agent_id, note))
+
+    # Load the-manager portfolio if it exists, else None (→ empty book in C3).
+    portfolio: dict | None = None
+    manager_path = portfolios_dir / MANAGER_AGENT_ID / "portfolio.json"
+    if manager_path.exists():
+        manager = PortfolioManager(base_dir=portfolios_dir)
+        portfolio = manager.load(MANAGER_AGENT_ID).to_dict()
+
+    # Resolved decisions: C5b feeds this file; for C5a it is always empty.
+    resolved_decisions: list[dict] = []
+    resolved_path = (
+        _PROJECT_ROOT / "data" / "orders" / "manager-review" / "resolved.json"
+    )
+    if resolved_path.exists():
+        try:
+            resolved_decisions = json.loads(resolved_path.read_text(encoding="utf-8"))
+            if not isinstance(resolved_decisions, list):
+                resolved_decisions = []
+        except (json.JSONDecodeError, OSError):
+            resolved_decisions = []
+
+    # Build a price_lookup over every ticker in scope (notes + held positions).
+    scope: set[str] = set()
+    for _, note in notes:
+        if note is not None:
+            scope.update(note.tickers)
+    if portfolio is not None:
+        for pos in portfolio.get("positions", []):
+            scope.add(pos["ticker"])
+
+    price_lookup: dict[str, tuple[float, str]] = {}
+    for ticker in scope:
+        if resolved_store is not None:
+            close = _lcob(ticker, trade_date, store=resolved_store)
+        else:
+            close = _lcob(ticker, trade_date)
+        if close is not None:
+            price_lookup[ticker] = (close, trade_date.isoformat())
+
+    ctx = build_manager_context(
+        notes=notes,
+        portfolio=portfolio,
+        resolved_decisions=resolved_decisions,
+        price_lookup=price_lookup,
+        ticker_registry=load_ticker_registry(),
+        as_of=trade_date,
+        config={"initial_capital": MANAGER_INITIAL_CAPITAL_EUR, "currency": "EUR"},
+    )
+    rendered = render_manager_context(ctx)
+    wrapped, _model = wrap_persona_prompt(MANAGER_AGENT_ID, rendered)
+    print(f"  Built Manager prompt ({len(notes)} notes, {len(price_lookup)} priced)")
+    return wrapped
+
+
+@idempotent_step(skip_return=None)
+def step_apply_manager_decision(
+    raw_decision: dict | None,
+    trade_date: date,
+    ohlcv_store: Path | None = None,
+) -> None:
+    """Step 3e — apply the LLM Manager's decision to the PAPER the-manager book.
+
+    1. parse_manager_decision(raw_decision) — conviction gate applied in code.
+    2. Write the manager-review audit artifact (rendered decision + full
+       positions/reasoning/conviction). Written EVERY day, even on a hold — it is
+       the load-bearing record of what the Manager decided and why.
+    3. Convert non-HOLD positions to Orders, append to the manager-outbox.
+    4. fill_day against the manager channel (separate outbox/inbox) and a
+       PortfolioManager rooted at data/portfolios (the-manager book, init EUR 2000
+       if absent). All 14 rails + fees + idempotency apply identically.
+
+    Public surfaces are untouched: orders never enter the public outbox, fills
+    never enter the public inbox.
+    """
+    from engine import orders as orders_mod
+    from engine.manager_decision import parse_manager_decision, render_manager_decision
+    from engine.manager_orders import manager_decision_to_orders
+    from engine.ohlcv_store import latest_close_on_or_before as _lcob
+
+    print("\n=== Step 3e: Apply Manager decision ===")
+
+    portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
+    manager = PortfolioManager(base_dir=portfolios_dir)
+    if not (portfolios_dir / MANAGER_AGENT_ID / "portfolio.json").exists():
+        manager.initialize(
+            MANAGER_AGENT_ID,
+            initial_capital=MANAGER_INITIAL_CAPITAL_EUR,
+            currency="EUR",
+        )
+        print(
+            f"  Initialized {MANAGER_AGENT_ID} book (EUR {MANAGER_INITIAL_CAPITAL_EUR:.0f})"
+        )
+
+    decision = parse_manager_decision(raw_decision)
+
+    # --- Audit artifact: written every day, hold or trade. ---
+    review_dir = orders_mod.MANAGER_REVIEW_DIR
+    review_dir.mkdir(parents=True, exist_ok=True)
+    review_path = review_dir / f"{trade_date.isoformat()}.json"
+    if decision is None:
+        review_payload: dict = {
+            "date": trade_date.isoformat(),
+            "conviction": None,
+            "positions": [],
+            "hold_reasoning": "",
+            "render": "[Manager Decision] (no parseable decision)",
+        }
+    else:
+        review_payload = {
+            "date": trade_date.isoformat(),
+            "conviction": decision.conviction,
+            "positions": [p.to_dict() for p in decision.positions],
+            "hold_reasoning": decision.hold_reasoning,
+            "render": render_manager_decision(decision),
+        }
+    review_path.write_text(
+        json.dumps(review_payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"  Wrote manager review {review_path.name}")
+
+    if decision is None:
+        print("  No parseable decision — review written, no orders.")
+        return
+
+    # --- Convert non-HOLD positions to orders (skip unpriceable). ---
+    def _price(ticker: str) -> float | None:
+        if ohlcv_store is not None:
+            return _lcob(ticker, trade_date, store=ohlcv_store)
+        return _lcob(ticker, trade_date)
+
+    orders = manager_decision_to_orders(decision, trade_date, _price)
+    if not orders:
+        print("  Hold (or no priceable positions) — no orders authored.")
+        return
+
+    for order in orders:
+        append_order(trade_date, order, outbox_dir=orders_mod.MANAGER_OUTBOX_DIR)
+    print(f"  Authored {len(orders)} manager order(s) to manager-outbox")
+
+    # --- Fill on the SEPARATE manager channel. ---
+    fills = fill_day(
+        trade_date,
+        manager,
+        outbox_dir=orders_mod.MANAGER_OUTBOX_DIR,
+        inbox_dir=orders_mod.MANAGER_INBOX_DIR,
+    )
+    filled = sum(1 for f in fills if f.status == "filled")
+    rejected = sum(1 for f in fills if f.status == "rejected")
+    print(f"  Manager fills: {filled} filled, {rejected} rejected")
 
 
 def step_build_post_prompts(

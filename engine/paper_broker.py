@@ -165,19 +165,25 @@ def _reject(order_id: str, reason: str) -> Fill:
     )
 
 
-def _read_outbox_lines(trade_date: date) -> tuple[list[Order], list[str]]:
+def _read_outbox_lines(
+    trade_date: date, outbox_dir: Path | None = None
+) -> tuple[list[Order], list[str]]:
     """Read outbox JSONL with defensive parsing.
 
     Returns (orders, invalid_order_ids). Malformed lines (bad JSON or shares<=0
     or other Order validation failure) produce synthesized IDs in invalid_order_ids
     so they can be reported as INVALID_SHARES rejections instead of crashing.
+
+    ``outbox_dir`` defaults to the public OUTBOX_DIR (resolved at call time so test
+    monkeypatching is respected). Pass MANAGER_OUTBOX_DIR for the Manager channel.
     """
     # Delayed import — respects test monkeypatching of OUTBOX_DIR.
     from engine import orders as orders_module
 
     orders: list[Order] = []
     invalid_ids: list[str] = []
-    path = orders_module.OUTBOX_DIR / f"{trade_date.isoformat()}.jsonl"
+    base = outbox_dir if outbox_dir is not None else orders_module.OUTBOX_DIR
+    path = base / f"{trade_date.isoformat()}.jsonl"
     if not path.exists():
         return orders, invalid_ids
 
@@ -291,7 +297,12 @@ def _process_one(
     )
 
 
-def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill]:
+def fill_day(
+    trade_date: date,
+    portfolio_manager: PortfolioManager,
+    outbox_dir: Path | None = None,
+    inbox_dir: Path | None = None,
+) -> list[Fill]:
     """Fill all outbox orders for a trade date.
 
     Order of operations:
@@ -304,6 +315,15 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
 
     Malformed outbox lines (bad JSON or shares<=0) produce INVALID_SHARES rejections
     rather than crashing the pass.
+
+    ``outbox_dir`` / ``inbox_dir`` default to the public OUTBOX_DIR / INBOX_DIR.
+    Pass the Manager channel dirs (MANAGER_OUTBOX_DIR / MANAGER_INBOX_DIR, Task C5)
+    to fill a SEPARATE outbox into a SEPARATE inbox without touching the public
+    flow. The portfolio is still selected per order via the order's agent_id, so a
+    the-manager order routes to data/portfolios/the-manager/ via the passed
+    portfolio_manager. All 14 rails, fees, and idempotency apply identically on
+    either channel. With both args None the behaviour is byte-for-byte identical to
+    the legacy single-channel path.
     """
     fills: list[Fill] = []
 
@@ -311,9 +331,9 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
     # Any order_id found here is skipped silently — it was processed in a
     # prior run of fill_day for the same date (e.g. a session restart after
     # a push failure). This makes fill_day structurally idempotent.
-    # inbox_order_ids reads engine.orders.INBOX_DIR at call time, so
-    # test monkeypatching of that attribute is respected automatically.
-    already_processed: set[str] = inbox_order_ids(trade_date)
+    # inbox_order_ids reads engine.orders.INBOX_DIR at call time when inbox_dir
+    # is None, so test monkeypatching of that attribute is respected automatically.
+    already_processed: set[str] = inbox_order_ids(trade_date, inbox_dir=inbox_dir)
 
     # --- Pass 1: process cancel requests ---
     # Note: within a single run, duplicate cancels targeting the same order_id
@@ -329,16 +349,16 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
         reason = "CANCELLED_BY_AGENT" if removed else "CANCEL_TARGET_NOT_FOUND"
         f = _reject(cancel.target_order_id, reason)
         fills.append(f)
-        append_fill(trade_date, f)
+        append_fill(trade_date, f, inbox_dir=inbox_dir)
 
     # --- Pass 2: read outbox and split conditional vs market ---
-    orders, invalid_ids = _read_outbox_lines(trade_date)
+    orders, invalid_ids = _read_outbox_lines(trade_date, outbox_dir=outbox_dir)
     for oid in invalid_ids:
         if oid in already_processed:
             continue
         f = _reject(oid, "INVALID_SHARES")
         fills.append(f)
-        append_fill(trade_date, f)
+        append_fill(trade_date, f, inbox_dir=inbox_dir)
         already_processed.add(oid)
 
     market_orders: list[Order] = []
@@ -351,7 +371,7 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
         if o.expires is None:
             f = _reject(o.order_id, "TRIGGER_NO_EXPIRY")
             fills.append(f)
-            append_fill(trade_date, f)
+            append_fill(trade_date, f, inbox_dir=inbox_dir)
             already_processed.add(o.order_id)
             continue
         save_pending(o)
@@ -373,7 +393,7 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
             for o in agent_orders:
                 f = _reject(o.order_id, "DAILY_DRAWDOWN_HALT")
                 fills.append(f)
-                append_fill(trade_date, f)
+                append_fill(trade_date, f, inbox_dir=inbox_dir)
                 already_processed.add(o.order_id)
             continue
 
@@ -390,7 +410,7 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
                 o, config, portfolio_manager, trade_date, filled, allowed_tickers
             )
             fills.append(f)
-            append_fill(trade_date, f)
+            append_fill(trade_date, f, inbox_dir=inbox_dir)
             already_processed.add(o.order_id)
             if f.status == "filled":
                 filled += 1
