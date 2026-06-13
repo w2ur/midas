@@ -698,39 +698,9 @@ def test_result_sorted_deterministically(tmp_path):
     """Output is sorted (date, ticker, action) — deterministic order."""
     resolve_outcomes = _import()
 
-    review_dir = tmp_path / "manager-review"
-    store = tmp_path / "ohlcv"
-
-    for ticker in ("AAPL", "MSFT"):
-        _write_review(
-            review_dir,
-            "2026-05-01",
-            [
-                {
-                    "ticker": ticker,
-                    "action": "BUY",
-                    "size_eur": 400,
-                    "reasoning": "test",
-                    "entry_guidance": "",
-                    "stop_loss": None,
-                }
-            ]
-            if ticker == "AAPL"
-            else [
-                {
-                    "ticker": ticker,
-                    "action": "BUY",
-                    "size_eur": 400,
-                    "reasoning": "test",
-                    "entry_guidance": "",
-                    "stop_loss": None,
-                }
-            ],
-        )
-
-    # Need to write separate review files; one for each date for each ticker
-    # Let's use two different dates to make it simpler
-    review_dir2 = tmp_path / "manager-review2"
+    # Both tickers in the same review file in reverse-alpha order (MSFT before AAPL)
+    # to verify the sort, not the insertion order.
+    review_dir2 = tmp_path / "manager-review"
     _write_review(
         review_dir2,
         "2026-05-01",
@@ -753,6 +723,7 @@ def test_result_sorted_deterministically(tmp_path):
             },
         ],
     )
+    store = tmp_path / "ohlcv"
     _write_ohlcv(
         store,
         "AAPL",
@@ -814,3 +785,30 @@ def test_round_trip_via_write_resolved(tmp_path):
 
     read_back = json.loads(resolved_path.read_text(encoding="utf-8"))
     assert read_back == entries
+
+
+def test_malformed_and_empty_review_files_do_not_crash(tmp_path):
+    """Empty-positions and malformed-JSON review files are skipped, no crash."""
+    resolve_outcomes = _import()
+
+    review_dir = tmp_path / "manager-review"
+    review_dir.mkdir(parents=True)
+    store = tmp_path / "ohlcv"
+
+    # Malformed JSON — should be silently skipped.
+    (review_dir / "2026-05-01.json").write_text("not valid json", encoding="utf-8")
+
+    # Empty positions list — no entries to resolve.
+    _write_review(review_dir, "2026-05-02", [])
+
+    msci = _make_msci_series([("2026-05-01", 10000.0)])
+
+    result = resolve_outcomes(
+        review_dir=review_dir,
+        store=store,
+        msci_series=msci,
+        today=date(2026, 6, 1),
+        horizon_trading_days=5,
+    )
+
+    assert result == []

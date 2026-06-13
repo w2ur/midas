@@ -94,7 +94,30 @@ jobs:
             exit 0
           fi
 
-          # mode == "session" — original guard
+          # mode == "session" checks below.
+
+          fail=0
+
+          # Manager-outbox → manager-review: if a real manager order was authored, the
+          # audit artifact (review/{date}.json) MUST also be present. The review is the
+          # load-bearing record for the C5b outcome-resolution loop; a missing review
+          # means the outcome can never be resolved.
+          # NOTE: this check runs BEFORE the artifacts early-return so that a session
+          # commit that authors manager orders but publishes no posts/blog/output still
+          # fails here.  It is still scoped to session mode (weekend-refresh returned
+          # above at ~line 94).
+          if [[ $touches_manager_outbox -eq 1 && $touches_manager_review -eq 0 ]]; then
+            echo "::error::Session commit authors manager orders (data/orders/manager-outbox/) but does NOT write the manager-review audit artifact (data/orders/manager-review/)."
+            fail=1
+          fi
+
+          if [[ $fail -ne 0 ]]; then
+            echo ""
+            echo "See CLAUDE.md > Session Cadence > 'cadence-invariant pipeline rule' and 'load-bearing' notes."
+            exit 1
+          fi
+
+          # Original guard: posts/blog/output artifacts check.
           if [[ $touches_artifacts -eq 0 ]]; then
             echo "Session commit publishes no artifacts under data/posts|blog|output — nothing to check."
             exit 0
@@ -122,19 +145,10 @@ jobs:
             echo "::warning::Session commit does NOT write data/leaderboard/current.json in this commit — non-fatal (derived state; lands in a follow-up '… — leaderboard' commit or via the watcher)."
           fi
 
-          # Manager-outbox → manager-review: if a real manager order was authored, the
-          # audit artifact (review/{date}.json) MUST also be present. The review is the
-          # load-bearing record for the C5b outcome-resolution loop; a missing review
-          # means the outcome can never be resolved.
-          if [[ $touches_manager_outbox -eq 1 && $touches_manager_review -eq 0 ]]; then
-            echo "::error::Session commit authors manager orders (data/orders/manager-outbox/) but does NOT write the manager-review audit artifact (data/orders/manager-review/)."
-            fail=1
-          fi
-
           if [[ $fail -ne 0 ]]; then
             echo ""
             echo "See CLAUDE.md > Session Cadence > 'cadence-invariant pipeline rule' and 'load-bearing' notes."
             exit 1
           fi
 
-          echo "Session integrity OK: artifacts + journals + baselines + manager-review all present."
+          echo "Session integrity OK: manager-review (if authored) + artifacts + journals + baselines all present."

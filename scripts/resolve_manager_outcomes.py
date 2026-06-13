@@ -244,6 +244,11 @@ def _resolve_position(
     if msci_entry is not None and msci_exit is not None and msci_entry != 0.0:
         msci_return = (msci_exit / msci_entry - 1.0) * 100.0
     else:
+        # Deliberate: if MSCI reference data is missing for the window, alpha
+        # degrades to == realized_return rather than dropping the resolved
+        # outcome.  A resolved realized return with degraded alpha is more
+        # useful than no outcome at all.  Ticker price gaps DO skip (return
+        # None / leave pending above); only the alpha reference degrades here.
         msci_return = 0.0
 
     alpha_vs_msci_pct = realized_return_pct - msci_return

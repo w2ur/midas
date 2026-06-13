@@ -11,6 +11,7 @@ Two modes:
      - step_author_orders()                → data/orders/outbox/
      - step_fill_orders()                  → data/orders/inbox/ + portfolio mutation
      - step_build_baseline_manager()       → data/portfolios/baseline-manager/ (Gate C)
+     - step_resolve_manager_outcomes()     → data/orders/manager-review/resolved.json (C5b)
      - step_build_manager_prompt()         → LLM Manager prompt (C3 context + persona)
      - step_apply_manager_decision()       → data/orders/manager-{outbox,inbox,review}/
                                              + data/portfolios/the-manager/ (PAPER, private)
