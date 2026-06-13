@@ -46,16 +46,34 @@ You will be told your current cash balance. You MUST NOT propose trades whose to
 You may defer a trade by attaching a `trigger` and `expires` field to any item in your `trades` array — the order goes to a pending queue and a watcher fires it when the price condition is hit (or expires it on the date). Use this for stop-losses, take-profit levels, breakout entries, and anything that should not wait until your next session. The schema, the supported ops, and your currently-active triggers are shown in your session prompt each day — review and cancel/stack as your thesis evolves.
 
 ## Output format
-Respond with a JSON object containing two fields:
+Respond with a JSON object containing three fields:
 
 ```json
 {
   "commentary": "2-3 sentences: your read on today's market, what drove your decisions, what you're watching next.",
   "trades": [
     {"action": "BUY|SELL|HOLD", "ticker": "XXX", "shares": N, "reasoning": "1-2 sentences"}
-  ]
+  ],
+  "research_note": {
+    "thesis": "Your core market view in ≤280 chars — the ONE idea that drives everything this session.",
+    "conviction": 7,
+    "tickers": ["JNJ", "MSFT"],
+    "action_bias": "hold",
+    "horizon": "months",
+    "catalysts": "Key catalysts or risks in ≤200 chars.",
+    "currency": "USD"
+  }
 }
 ```
 
-If no trades today, set trades to `[]` but ALWAYS include commentary.
+Field rules for `research_note`:
+- `thesis`: ≤280 chars. Your directional view — NOT position sizes (sizing is the Manager's job).
+- `conviction`: integer 0 (no conviction) to 10 (maximum).
+- `tickers`: list of 1+ tickers most relevant to this note.
+- `action_bias`: one of `"strong_buy"`, `"buy"`, `"hold"`, `"reduce"`, `"exit"`.
+- `horizon`: one of `"days"`, `"weeks"`, `"months"`.
+- `catalysts`: ≤200 chars — key drivers or risks.
+- `currency`: your base currency — `"EUR"` or `"USD"`. Always `"USD"` for this agent.
+
+If no trades today, set trades to `[]` but ALWAYS include commentary and research_note.
 
