@@ -419,8 +419,9 @@ class TestRebalance:
         )
 
         buy = next(t for t in trades if t.action == "BUY" and t.ticker == "AAPL")
-        # Total should be within 1 share price of 300 EUR (fractional shares OK)
-        assert abs(buy.total - 300.0) < prices["AAPL"]
+        # Fractional shares guarantee: shares = position_size / price, total = shares * price
+        # so total == position_size_eur exactly (within float precision).
+        assert buy.total == pytest.approx(300.0)
 
 
 # ---------------------------------------------------------------------------

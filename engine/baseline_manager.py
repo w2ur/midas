@@ -13,6 +13,9 @@ Rules
   ticker alphabetical (deterministic tie-break).
 - Target: top 6 from the ranked eligible set.
 - Sizing: equal-weight EUR 300/position (6 × 300 = 1800, leaving ~200 buffer).
+  Held target positions are not trimmed or topped-up: equal-weight applies at
+  entry only; subsequent per-position drift is left intentionally to minimize
+  churn and fees.
 - Cadence: rebalance ONLY on the first weekday (Mon-Fri) of each calendar month,
   OR on the very first run (portfolio has never been rebalanced / does not exist).
 - Rebalance: SELL positions not in target; BUY each target up to ~EUR 300 at
@@ -28,14 +31,11 @@ from __future__ import annotations
 
 import logging
 import uuid
-from calendar import monthrange
 from datetime import date, datetime, timezone
-from pathlib import Path
 from typing import Callable
 
 from engine.fees import fee_for
 from engine.ohlcv_store import OHLCV_STORE as _DEFAULT_OHLCV_STORE
-from engine.ohlcv_store import latest_close_on_or_before
 from engine.research_note import ResearchNote
 from engine.types import Trade
 
@@ -142,7 +142,10 @@ def rebalance(
     -------
     list[Trade]
         Trades in execution order: SELLs first (to free cash), then BUYs.
-        No I/O — caller is responsible for applying trades via PortfolioManager.
+        Held target positions are not trimmed or topped-up: equal-weight applies
+        at entry only; subsequent per-position drift is left intentionally to
+        minimize churn and fees. No I/O — caller is responsible for applying
+        trades via PortfolioManager.
     """
     now = datetime.now(timezone.utc)
     existing_positions: dict[str, float] = {
