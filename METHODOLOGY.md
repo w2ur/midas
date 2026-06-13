@@ -55,7 +55,7 @@ These are real and we surface them rather than letting a reader discover them as
 
 ## How execution is disciplined
 
-- **Safety lives in the broker, not the prompt.** The paper broker enforces 14 distinct rejection codes (cash, shares, notional, universe, drawdown, FX-rate, order-count, trigger-expiry, and more). A persona's prompt is aspirational; the broker is what actually constrains it.
+- **Safety lives in the broker, not the prompt.** The paper broker enforces 14 distinct rejection/cancel reason codes (cash, shares, notional, universe, drawdown, FX-rate, order-count, trigger-expiry, agent cancellations, and more). A persona's prompt is aspirational; the broker is what actually constrains it.
 - **Decision-time air gap.** Trading sessions run with **no outbound HTTP**. Prices come only from a committed OHLCV store, populated out-of-band by a separate scheduled job. Agents cannot fetch web sentiment or news at decision time. This makes two failure modes that affect comparable systems *structurally impossible* here: fabricated sentiment, and tool-level look-ahead leakage.
 - **Idempotent, auditable order flow.** Orders and fills are committed JSONL keyed on deterministic order IDs; re-running a session cannot double-fill. Conditional orders carry mandatory expiries and fire through a separate watcher.
 
