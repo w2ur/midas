@@ -167,13 +167,13 @@ def test_crypto_disposal_computes_gain_in_crypto_regime_only():
 
 
 def test_crypto_gain_uses_pvct_method_label():
-    """Crypto output must carry the method label for transparency."""
+    """Crypto output must carry the per-coin-PRU-approx method label for transparency."""
     trades = [
         _make_buy("2026", "BTC-EUR", total=5000.0, fees=20.0),
         _make_sell("2026", "BTC-EUR", total=6000.0, fees=24.0),
     ]
     result = compute_tax_shadow(trades)
-    assert result["crypto"]["method"] == "global-PRU-approx"
+    assert result["crypto"]["method"] == "per-coin-PRU-approx"
 
 
 def test_empty_trades_zero_everything_no_crash():
@@ -321,6 +321,73 @@ def test_buy_only_no_realized_gain():
     result = compute_tax_shadow(trades)
     assert result["securities"]["lifetime_realized"] == pytest.approx(0.0, abs=0.001)
     assert result["securities"]["lifetime_pfu"] == pytest.approx(0.0, abs=0.001)
+
+
+def test_oversell_does_not_corrupt_pool():
+    """BUY 5 then SELL 10 — oversell must floor pool at 0, not go negative.
+
+    A subsequent BUY+SELL in the same year must compute a clean gain on the
+    fresh position without being tainted by the clamped oversell state.
+    """
+    # Step 1: buy 5 shares, then attempt to sell 10 (oversell by 5).
+    buy5 = {
+        "id": "ord_buy5",
+        "timestamp": "2026-01-10T10:00:00+00:00",
+        "action": "BUY",
+        "ticker": "AAPL",
+        "shares": 5.0,
+        "price": 100.0,
+        "total": 500.0,
+        "fees": 0.0,
+        "reasoning": "oversell test buy",
+    }
+    sell10 = {
+        "id": "ord_sell10",
+        "timestamp": "2026-02-10T10:00:00+00:00",
+        "action": "SELL",
+        "ticker": "AAPL",
+        "shares": 10.0,
+        "price": 110.0,
+        "total": 1100.0,
+        "fees": 0.0,
+        "reasoning": "oversell test sell",
+    }
+    # Step 2: fresh BUY+SELL at known prices so we can verify the gain exactly.
+    buy_fresh = {
+        "id": "ord_buy_fresh",
+        "timestamp": "2026-03-10T10:00:00+00:00",
+        "action": "BUY",
+        "ticker": "AAPL",
+        "shares": 10.0,
+        "price": 200.0,
+        "total": 2000.0,
+        "fees": 0.0,
+        "reasoning": "clean buy",
+    }
+    sell_fresh = {
+        "id": "ord_sell_fresh",
+        "timestamp": "2026-04-10T10:00:00+00:00",
+        "action": "SELL",
+        "ticker": "AAPL",
+        "shares": 10.0,
+        "price": 250.0,
+        "total": 2500.0,
+        "fees": 0.0,
+        "reasoning": "clean sell",
+    }
+
+    result = compute_tax_shadow([buy5, sell10, buy_fresh, sell_fresh])
+    sec = result["securities"]
+
+    # The pool must never go negative — the gain from the oversell SELL uses
+    # the capped fraction (5/5 = 1.0) so allocated_cost = full basis = 500.
+    # gain_oversell = 1100 - 500 = 600.
+    # The clean subsequent trade: avg_cost = 200, gain = 2500 - 2000 = 500.
+    # Total 2026 gain = 600 + 500 = 1100 (no negative basis corruption).
+    assert sec["lifetime_realized"] == pytest.approx(1100.0, abs=0.01)
+    assert sec["lifetime_pfu"] == pytest.approx(1100.0 * 0.30, abs=0.01)
+    # Verify no negative state leaked — lifetime_realized must be positive (not NaN/negative).
+    assert sec["lifetime_realized"] > 0
 
 
 import pytest

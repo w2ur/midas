@@ -58,13 +58,13 @@ def build_tax_shadow_all() -> list[str]:
 
         try:
             trades = json.loads(trades_path.read_text())
-        except Exception as exc:
+        except (KeyError, ValueError, TypeError, json.JSONDecodeError, OSError) as exc:
             print(f"  [WARN] {agent_id}: could not read trades.json — {exc}")
             continue
 
         try:
             result = compute_tax_shadow(trades, agent=agent_id)
-        except Exception as exc:
+        except (KeyError, ValueError, TypeError, json.JSONDecodeError, OSError) as exc:
             print(f"  [WARN] {agent_id}: compute_tax_shadow failed — {exc}")
             continue
 

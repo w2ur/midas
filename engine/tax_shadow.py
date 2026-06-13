@@ -36,7 +36,12 @@ securities gains or vice-versa:
    multi-coin portfolios it understates allocated cost on losing positions
    and overstates it on winning positions.  The real tax filing must use
    live portfolio FMV per disposal.  This approximation is labelled
-   ``method: "global-PRU-approx"`` in the output JSON.
+   ``method: "per-coin-PRU-approx"`` in the output JSON.
+
+   DEBT: before real-money go-live, replace per-coin pooling with the true
+   global crypto PVCT pool (live FMV per disposal) — today's €0 tax delta
+   vs statutory is an artifact of every crypto book being in a loss year,
+   not a structural guarantee.
 
    Note: under French *sursis d'imposition*, crypto-to-crypto swaps are
    tax-deferred.  The current agent universe trades crypto only against EUR
@@ -132,12 +137,15 @@ def compute_tax_shadow(trades: list[dict], agent: str = "") -> dict[str, Any]:
             proceeds_net = total - fees
             if p["shares"] > 0:
                 avg_cost_per_share = p["basis"] / p["shares"]
-                allocated_cost = avg_cost_per_share * shares
+                # Guard against oversell: cap fraction at 1.0 so basis/shares
+                # never go negative (e.g. if SELL qty exceeds recorded holdings).
+                # Use actual shares disposed (capped) for the allocated-cost calc.
+                fraction_sold = min(1.0, shares / p["shares"])
+                actual_shares_sold = min(shares, p["shares"])
+                allocated_cost = avg_cost_per_share * actual_shares_sold
                 gain = proceeds_net - allocated_cost
-                # Reduce remaining pool proportionally (fraction of shares sold).
-                fraction_sold = shares / p["shares"]
                 p["basis"] -= p["basis"] * fraction_sold
-                p["shares"] -= shares
+                p["shares"] = max(0.0, p["shares"] - shares)
             else:
                 # SELL with no prior BUY cost recorded — treat cost as zero.
                 gain = proceeds_net
@@ -150,7 +158,7 @@ def compute_tax_shadow(trades: list[dict], agent: str = "") -> dict[str, Any]:
     # -- Aggregate by year into gain / loss / PFU dicts --
     sec = _aggregate_regime(sec_by_year)
     crypto = _aggregate_regime(crypto_by_year)
-    crypto["method"] = "global-PRU-approx"
+    crypto["method"] = "per-coin-PRU-approx"
 
     now_iso = (
         datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
@@ -166,7 +174,7 @@ def compute_tax_shadow(trades: list[dict], agent: str = "") -> dict[str, Any]:
             "Securities: per-ticker weighted-average PRU cost basis.",
             (
                 "Crypto: per-coin weighted-average PRU used as v1 approximation of PVCT "
-                "(global-PRU-approx) — statutory formula requires live FMV at disposal; "
+                "(per-coin-PRU-approx) — statutory formula requires live FMV at disposal; "
                 "see module docstring for full caveat."
             ),
             "FX tickers (=X suffix) classified as securities regime.",
