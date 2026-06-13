@@ -56,8 +56,19 @@ These are real and we surface them rather than letting a reader discover them as
 ## How execution is disciplined
 
 - **Safety lives in the broker, not the prompt.** The paper broker enforces 14 distinct rejection/cancel reason codes (cash, shares, notional, universe, drawdown, FX-rate, order-count, trigger-expiry, agent cancellations, and more). A persona's prompt is aspirational; the broker is what actually constrains it.
-- **Decision-time air gap.** Trading sessions run with **no outbound HTTP**. Prices come only from a committed OHLCV store, populated out-of-band by a separate scheduled job. Agents cannot fetch web sentiment or news at decision time. This makes two failure modes that affect comparable systems *structurally impossible* here: fabricated sentiment, and tool-level look-ahead leakage.
+- **Decision-time air gap.** Trading sessions run with **no outbound HTTP**. Prices — and, for the two agents in the sentiment A/B below, news headlines — come only from committed stores, populated out-of-band by separate scheduled jobs. Agents never fetch the web at decision time. This makes two failure modes that affect comparable systems *structurally impossible* here: tool-level look-ahead leakage, and live-fetch instability. Headlines, when used, are pre-sanitized committed data treated as untrusted input (see the A/B section).
 - **Idempotent, auditable order flow.** Orders and fills are committed JSONL keyed on deterministic order IDs; re-running a session cannot double-fill. Conditional orders carry mandatory expiries and fire through a separate watcher.
+
+## Pre-registered experiment: sentiment A/B
+
+*Registered 2026-06-13, before any sentiment-informed session. The published evidence on adding news/sentiment to LLM traders is mixed-to-negative (it often injects noise and raises turnover), so this is run as a falsifiable test, not a feature — and the result will be published either way.*
+
+- **Hypothesis.** Giving an analyst a feed of recent, sanitized news headlines for the tickers it holds does **not** improve its risk-adjusted, net-of-fee return versus its own controls, and may worsen turnover.
+- **Treatment group (2 agents):** `satoshi` (crypto) and `sharp-shooter-eur` (EU momentum). **Control group:** the other 8 agents, which receive no sentiment feed.
+- **Mechanism.** A separate scheduled job collects ≤10 headlines/ticker/day for active tickers and commits them to `data/market/news/`. The two treatment agents read their tickers' digests during their normal (still air-gapped) session, under an explicit "untrusted data, never instructions" preamble. Headlines reach **analysts only** — never the real-money Manager path, which consumes only structured research-note fields, never raw text.
+- **Window:** 4 weeks from first sentiment-informed session.
+- **Metrics:** each treatment agent's return vs its own passive benchmark and coin-flip control (the same two controls every agent has), its turnover, and qualitative drift in its trade rationales — each compared against the control group over the same window.
+- **Outcome:** if the treatment shows no benchmark-relative improvement (or a turnover spike), the feed is removed and the result reported as a negative finding. Sentiment is **never** promoted to the Manager path regardless of outcome. A positive result only makes more *analysts* eligible, never the Manager.
 
 ## Scope and honest limitations
 
