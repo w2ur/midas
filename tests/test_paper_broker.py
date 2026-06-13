@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from engine.fees import fee_for
 from engine.orders import Fill, Order, append_order
 from engine.portfolio import PortfolioManager
 
@@ -129,7 +130,9 @@ def test_fills_valid_buy_and_updates_portfolio(broker_env):
     assert fills[0].fill_price == 500.0
     assert fills[0].notional_base == 2500.0
     p = pm.load("agent1")
-    assert p.cash == 5000.0 - 2500.0
+    # BUY debits notional + fee. fee_for(VOO, 2500) = max(1.25, 0.0005*2500) = 1.25 (floor binds).
+    assert fills[0].fees == fee_for("VOO", 2500.0)
+    assert p.cash == 5000.0 - 2500.0 - fee_for("VOO", 2500.0)
     assert len(p.positions) == 1
     assert p.positions[0].ticker == "VOO"
     assert p.positions[0].shares == 5
@@ -182,7 +185,9 @@ def test_fills_valid_sell_and_updates_portfolio(broker_env):
     assert len(fills) == 1
     assert fills[0].status == "filled"
     p_after = pm.load("agent1")
-    assert p_after.cash == cash_before + 2 * 500.0
+    # SELL credits notional - fee. fee_for(VOO, 1000) = max(1.25, 0.0005*1000) = 1.25 (floor binds).
+    assert fills[0].fees == fee_for("VOO", 1000.0)
+    assert p_after.cash == cash_before + 2 * 500.0 - fee_for("VOO", 1000.0)
     # After selling 2 of 5, 3 remain.
     assert p_after.positions[0].shares == 3
 

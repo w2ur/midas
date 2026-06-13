@@ -12,6 +12,7 @@ from pathlib import Path
 
 from engine.blog import BlogDraft
 from engine.posts import AGENT_POST_TIMES, PostPayload
+from engine.research_note import parse_research_note
 
 OUTPUT_DIR = Path(__file__).parent.parent / "data" / "output"
 
@@ -66,13 +67,16 @@ def assemble_output_bundle(
             agents[aid] = {
                 "commentary": None,
                 "trades": [],
+                "research_note": None,
                 "portfolio": portfolio_summaries.get(aid, {}),
                 "posts": [],
             }
         else:
+            note = parse_research_note(result.get("research_note"))
             agents[aid] = {
                 "commentary": result.get("commentary", ""),
                 "trades": result.get("trades", []),
+                "research_note": note.to_dict() if note is not None else None,
                 "portfolio": portfolio_summaries.get(aid, {}),
                 "posts": [p.to_dict() for p in agent_posts.get(aid, [])],
             }

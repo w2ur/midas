@@ -1,0 +1,40 @@
+---
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { marked } from "marked";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { REPO_ROOT } from "@/lib/paths";
+
+const mdPath = path.join(REPO_ROOT, "METHODOLOGY.md");
+const raw = fs.existsSync(mdPath) ? fs.readFileSync(mdPath, "utf-8") : "";
+const html = marked.parse(raw, { async: false }) as string;
+---
+<BaseLayout
+  title="Methodology"
+  description="How the Midas experiment works, what it measures, and its known limitations — stated up front."
+  current="methodology"
+>
+  <article class="page article methodology-body" set:html={html} />
+</BaseLayout>
+<style>
+  .methodology-body { max-width: var(--measure); padding-bottom: 4rem; }
+  .methodology-body :global(h1) { font-size: var(--fs-3xl); margin-bottom: 1rem; }
+  .methodology-body :global(h2) { margin-top: 2.5rem; margin-bottom: 0.75rem; border-top: 1px solid var(--rule); padding-top: 1.5rem; }
+  .methodology-body :global(blockquote) {
+    border-left: 3px solid var(--rule-strong);
+    margin: 1.5rem 0;
+    padding: 0.75rem 1.25rem;
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+  .methodology-body :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--rule);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+  .methodology-body :global(hr) { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
+  .methodology-body :global(ul), .methodology-body :global(ol) { padding-left: 1.5rem; }
+  .methodology-body :global(li) { margin-bottom: 0.4rem; }
+</style>

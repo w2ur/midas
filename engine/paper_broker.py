@@ -30,12 +30,13 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+from engine.fees import fee_for
 from engine.fx import convert as fx_convert
 from engine.ohlcv_store import (
     OHLCV_STORE as _DEFAULT_OHLCV_STORE,
     latest_close_on_or_before,
 )
-from engine.orders import Fill, Order, append_fill
+from engine.orders import Fill, Order, append_fill, inbox_order_ids
 from engine.triggers import (
     delete_pending,
     read_cancels,
@@ -164,19 +165,25 @@ def _reject(order_id: str, reason: str) -> Fill:
     )
 
 
-def _read_outbox_lines(trade_date: date) -> tuple[list[Order], list[str]]:
+def _read_outbox_lines(
+    trade_date: date, outbox_dir: Path | None = None
+) -> tuple[list[Order], list[str]]:
     """Read outbox JSONL with defensive parsing.
 
     Returns (orders, invalid_order_ids). Malformed lines (bad JSON or shares<=0
     or other Order validation failure) produce synthesized IDs in invalid_order_ids
     so they can be reported as INVALID_SHARES rejections instead of crashing.
+
+    ``outbox_dir`` defaults to the public OUTBOX_DIR (resolved at call time so test
+    monkeypatching is respected). Pass MANAGER_OUTBOX_DIR for the Manager channel.
     """
     # Delayed import — respects test monkeypatching of OUTBOX_DIR.
     from engine import orders as orders_module
 
     orders: list[Order] = []
     invalid_ids: list[str] = []
-    path = orders_module.OUTBOX_DIR / f"{trade_date.isoformat()}.jsonl"
+    base = outbox_dir if outbox_dir is not None else orders_module.OUTBOX_DIR
+    path = base / f"{trade_date.isoformat()}.jsonl"
     if not path.exists():
         return orders, invalid_ids
 
@@ -245,7 +252,9 @@ def _process_one(
     if notional_base > config.max_order_notional:
         return _reject(order.order_id, "MAX_ORDER_NOTIONAL")
 
-    if order.action == "BUY" and notional_base > portfolio.cash:
+    fee = fee_for(order.ticker, notional_base)
+
+    if order.action == "BUY" and notional_base + fee > portfolio.cash:
         return _reject(order.order_id, "INSUFFICIENT_CASH")
 
     if order.action == "SELL":
@@ -265,7 +274,7 @@ def _process_one(
         shares=order.shares,
         price=price,
         total=notional_base,
-        fees=0.0,
+        fees=fee,
         reasoning=order.reasoning,
     )
 
@@ -283,12 +292,17 @@ def _process_one(
         fill_price=price,
         fill_currency=ticker_ccy,
         notional_base=notional_base,
-        fees=0.0,
+        fees=fee,
         reason=None,
     )
 
 
-def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill]:
+def fill_day(
+    trade_date: date,
+    portfolio_manager: PortfolioManager,
+    outbox_dir: Path | None = None,
+    inbox_dir: Path | None = None,
+) -> list[Fill]:
     """Fill all outbox orders for a trade date.
 
     Order of operations:
@@ -301,33 +315,64 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
 
     Malformed outbox lines (bad JSON or shares<=0) produce INVALID_SHARES rejections
     rather than crashing the pass.
+
+    ``outbox_dir`` / ``inbox_dir`` default to the public OUTBOX_DIR / INBOX_DIR.
+    Pass the Manager channel dirs (MANAGER_OUTBOX_DIR / MANAGER_INBOX_DIR, Task C5)
+    to fill a SEPARATE outbox into a SEPARATE inbox without touching the public
+    flow. The portfolio is still selected per order via the order's agent_id, so a
+    the-manager order routes to data/portfolios/the-manager/ via the passed
+    portfolio_manager. All 14 rails, fees, and idempotency apply identically on
+    either channel. With both args None the behaviour is byte-for-byte identical to
+    the legacy single-channel path.
     """
     fills: list[Fill] = []
 
+    # Load order_ids already in today's inbox before processing anything.
+    # Any order_id found here is skipped silently — it was processed in a
+    # prior run of fill_day for the same date (e.g. a session restart after
+    # a push failure). This makes fill_day structurally idempotent.
+    # inbox_order_ids reads engine.orders.INBOX_DIR at call time when inbox_dir
+    # is None, so test monkeypatching of that attribute is respected automatically.
+    already_processed: set[str] = inbox_order_ids(trade_date, inbox_dir=inbox_dir)
+
     # --- Pass 1: process cancel requests ---
+    # Note: within a single run, duplicate cancels targeting the same order_id
+    # are allowed to produce multiple inbox lines (the first removes/rejects,
+    # subsequent ones see the pending file already gone → CANCEL_TARGET_NOT_FOUND).
+    # The cross-run idempotency guard (checking already_processed) handles re-runs:
+    # on the second run, the target_order_id will already be in the inbox and the
+    # cancel entries are skipped.
     for cancel in read_cancels(trade_date):
+        if cancel.target_order_id in already_processed:
+            continue
         removed = delete_pending(cancel.target_order_id)
         reason = "CANCELLED_BY_AGENT" if removed else "CANCEL_TARGET_NOT_FOUND"
         f = _reject(cancel.target_order_id, reason)
         fills.append(f)
-        append_fill(trade_date, f)
+        append_fill(trade_date, f, inbox_dir=inbox_dir)
 
     # --- Pass 2: read outbox and split conditional vs market ---
-    orders, invalid_ids = _read_outbox_lines(trade_date)
+    orders, invalid_ids = _read_outbox_lines(trade_date, outbox_dir=outbox_dir)
     for oid in invalid_ids:
+        if oid in already_processed:
+            continue
         f = _reject(oid, "INVALID_SHARES")
         fills.append(f)
-        append_fill(trade_date, f)
+        append_fill(trade_date, f, inbox_dir=inbox_dir)
+        already_processed.add(oid)
 
     market_orders: list[Order] = []
     for o in orders:
+        if o.order_id in already_processed:
+            continue
         if o.trigger is None:
             market_orders.append(o)
             continue
         if o.expires is None:
             f = _reject(o.order_id, "TRIGGER_NO_EXPIRY")
             fills.append(f)
-            append_fill(trade_date, f)
+            append_fill(trade_date, f, inbox_dir=inbox_dir)
+            already_processed.add(o.order_id)
             continue
         save_pending(o)
         # No inbox record on successful registration — the agent sees it
@@ -348,7 +393,8 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
             for o in agent_orders:
                 f = _reject(o.order_id, "DAILY_DRAWDOWN_HALT")
                 fills.append(f)
-                append_fill(trade_date, f)
+                append_fill(trade_date, f, inbox_dir=inbox_dir)
+                already_processed.add(o.order_id)
             continue
 
         allowed_tickers: set[str] = set()
@@ -364,7 +410,8 @@ def fill_day(trade_date: date, portfolio_manager: PortfolioManager) -> list[Fill
                 o, config, portfolio_manager, trade_date, filled, allowed_tickers
             )
             fills.append(f)
-            append_fill(trade_date, f)
+            append_fill(trade_date, f, inbox_dir=inbox_dir)
+            already_processed.add(o.order_id)
             if f.status == "filled":
                 filled += 1
 
@@ -376,7 +423,7 @@ def execute_triggered_order(
     trade_date: date,
     portfolio_manager: PortfolioManager,
     fire_price: float,
-) -> Fill:
+) -> Fill | None:
     """Execute a fired conditional order through the same safety rails as market orders.
 
     Differences from market-order processing:
@@ -395,7 +442,23 @@ def execute_triggered_order(
 
     Caller is responsible for appending the returned Fill to the inbox and removing
     the pending file (so the watcher can decide policy if it wants).
+
+    Returns None if the order_id already appears in ANY inbox file (any date),
+    meaning this order was already filled or rejected in a prior watcher run.
+    The caller must treat None as a no-op: do not write a second inbox line,
+    do not mutate the portfolio, do not remove the pending file again.
     """
+    # Idempotency check: scan all inbox files for this order_id before executing.
+    # Triggered orders may fire days after authoring, so the existing fill can
+    # live in any date's inbox file — not just today's.
+    # inbox_order_ids reads engine.orders.INBOX_DIR at call time, so
+    # test monkeypatching of that attribute is respected automatically.
+    if order.order_id in inbox_order_ids(None):
+        logger.info(
+            "execute_triggered_order: %s already in inbox — skipping", order.order_id
+        )
+        return None
+
     config = AgentConfig.load(order.agent_id)
     portfolio = portfolio_manager.load(order.agent_id)
     base_ccy = portfolio.currency
@@ -429,7 +492,9 @@ def execute_triggered_order(
         f.trigger_fired = True
         return f
 
-    if order.action == "BUY" and notional_base > portfolio.cash:
+    fee = fee_for(order.ticker, notional_base)
+
+    if order.action == "BUY" and notional_base + fee > portfolio.cash:
         f = _reject(order.order_id, "INSUFFICIENT_CASH")
         f.trigger_fired = True
         return f
@@ -455,7 +520,7 @@ def execute_triggered_order(
         shares=order.shares,
         price=fire_price,
         total=notional_base,
-        fees=0.0,
+        fees=fee,
         reasoning=order.reasoning,
     )
 
@@ -477,7 +542,7 @@ def execute_triggered_order(
         fill_price=fire_price,
         fill_currency=ticker_ccy,
         notional_base=notional_base,
-        fees=0.0,
+        fees=fee,
         reason=None,
         trigger_fired=True,
     )

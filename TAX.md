@@ -33,7 +33,7 @@ Every account held abroad must be declared annually on the French income-tax ret
 
 | Agent | Broker | Declaration form | Notes |
 |-------|--------|------------------|-------|
-| goldfinger | Interactive Brokers Ireland (IBIE) | Form 3916 | One form. IBIE issues an IFU (imprimé fiscal unique) — but a French taxpayer should not rely on it alone; IBIE does not file a French "2777" on your behalf. You pay PFU yourself. |
+| goldfinger | Interactive Brokers Ireland (IBIE) | Form 3916 | One form. IBIE does **not** issue an IFU (imprimé fiscal unique) and does not transmit trade-level data to the DGFiP. IBIE provides an annual **Activity Statement**; the taxpayer self-computes gains from it and self-declares on form **2074-CMV** (net carried to form 2042). IBIE reports only aggregate balances/proceeds to France via CRS — not trade-level detail. |
 | monsieur-forex | OANDA Europe (Ireland) | Form 3916 | Forex realized gains are calculated per closed position. OANDA issues an annual statement. |
 | satoshi | Kraken | Form 3916-bis | Every BUY→SELL is a taxable event. Kraken provides a CSV export; consider tools like Koinly, Waltio, or CoinTracking for French Cerfa-ready reports. |
 | sharp-shooter | Interactive Brokers Ireland (IBIE) | Form 3916 | Same account as goldfinger potentially — or separate sub-accounts. One form per distinct account. |

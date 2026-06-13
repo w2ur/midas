@@ -19,11 +19,12 @@ import subprocess
 import sys
 from datetime import date, datetime, time, timezone
 from pathlib import Path
+from typing import Callable
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from engine.orders import Fill, append_fill
+from engine.orders import Fill, Order, append_fill
 from engine.paper_broker import execute_triggered_order
 from engine.portfolio import PortfolioManager
 from engine.triggers import (
@@ -43,11 +44,136 @@ logger = logging.getLogger(__name__)
 BLACKOUT_START = time(19, 55)
 BLACKOUT_END = time(20, 30)
 
+# Type alias for the injectable committer used in process_fired_order.
+# Signature: (order_id, today, paths) -> None
+# paths is a list of absolute path strings to git-add before committing.
+Committer = Callable[[str, date, list[str]], None]
+
 
 def in_blackout(now: datetime) -> bool:
     """True if `now` (UTC) is inside the daily-session blackout window."""
     t = now.time()
     return BLACKOUT_START <= t <= BLACKOUT_END
+
+
+def process_fired_order(
+    order: Order,
+    fill_or_none: Fill | None,
+    today: date,
+    committer: Committer,
+) -> None:
+    """Process a single fired order: write fill, clean up pending, commit.
+
+    This is the per-fire durability unit. Each fired order is committed
+    (and pushed) immediately after its full mutation set, so the orphan-state
+    window between a fill and its git record is closed.
+
+    fill_or_none semantics:
+    - Real Fill: append to inbox, delete pending, call committer with both paths.
+    - None (idempotency skip from execute_triggered_order): the order was already
+      filled in a prior watcher run. The pending file is a zombie — delete it
+      and commit that cleanup (no inbox write, no portfolio mutation).
+
+    committer is called AFTER mutations so the commit captures real disk state.
+    If committer raises (e.g. push failure), the mutation is already on disk and
+    in a local git commit; the exception is caught and logged here — processing
+    of subsequent orders must continue.
+    """
+    from engine import orders as _orders
+    from engine import triggers as _triggers
+
+    paths: list[str] = []
+
+    if fill_or_none is not None:
+        # Real fill: write to inbox and include its path in the commit.
+        append_fill(today, fill_or_none)
+        inbox_path = str(_orders.INBOX_DIR / f"{today.isoformat()}.jsonl")
+        paths.append(inbox_path)
+        # execute_triggered_order mutates portfolio.json and trades.json via
+        # PortfolioManager.apply_trade. Include the agent's portfolio directory
+        # so the per-fire commit captures the full mutation set atomically.
+        # Directory-level add covers portfolio.json + trades.json (and any other
+        # files the fill may have touched in that directory).
+        portfolio_dir = str(_PROJECT_ROOT / "data" / "portfolios" / order.agent_id)
+        paths.append(portfolio_dir)
+
+    # Remove the pending file regardless (fill or zombie cleanup).
+    delete_pending(order.order_id)
+    pending_path = str(_triggers.PENDING_DIR / f"{order.order_id}.json")
+    paths.append(pending_path)
+
+    if fill_or_none is None:
+        logger.info(
+            "process_fired_order: %s already in inbox — zombie pending file cleaned up",
+            order.order_id,
+        )
+
+    try:
+        committer(order.order_id, today, paths)
+    except Exception as exc:
+        # Push (or commit) failure must not stop processing of remaining orders.
+        # The mutation is already on disk; the local commit exists if git-commit
+        # succeeded. A trailing push attempt at the end of the watcher run will
+        # carry any un-pushed commits. See _git_add_commit for retry logic.
+        logger.warning(
+            "committer raised for %s (non-fatal, remaining orders will be processed): %s",
+            order.order_id,
+            exc,
+        )
+
+
+def _git_add_commit(order_id: str, today: date, paths: list[str]) -> None:
+    """git-add the given paths, then commit with a per-order message.
+
+    Skips the commit if there are no staged changes (defensive — the pending
+    file may already be absent if a prior run cleaned it up).
+
+    Push strategy (failure-tolerant):
+    1. Try `git push origin HEAD:main`.
+    2. On failure, `git pull --rebase` then retry the push once.
+    3. If the retry still fails, log a warning and continue. The commit exists
+       locally; the next watcher fire or end-of-run push attempt will carry it.
+    """
+    subprocess.run(["git", "add", *paths], cwd=_PROJECT_ROOT, check=True)
+    diff = subprocess.run(
+        ["git", "diff", "--cached", "--quiet"],
+        cwd=_PROJECT_ROOT,
+    )
+    if diff.returncode == 0:
+        logger.info("Nothing staged for %s — skipped commit.", order_id)
+        return
+
+    msg = f"chore(triggers): execute {order_id} {today.isoformat()}"
+    subprocess.run(["git", "commit", "-m", msg], cwd=_PROJECT_ROOT, check=True)
+
+    result = subprocess.run(
+        ["git", "push", "origin", "HEAD:main"],
+        cwd=_PROJECT_ROOT,
+    )
+    if result.returncode == 0:
+        logger.info("Committed + pushed %s.", order_id)
+        return
+
+    # Push failed — attempt a rebase-based retry once.
+    logger.warning("Push failed for %s; retrying after git pull --rebase.", order_id)
+    rebase = subprocess.run(
+        ["git", "pull", "--rebase", "origin", "main"],
+        cwd=_PROJECT_ROOT,
+    )
+    if rebase.returncode != 0:
+        subprocess.run(["git", "rebase", "--abort"], cwd=_PROJECT_ROOT)
+        logger.warning("Rebase failed for %s; aborted, commit stays local.", order_id)
+        return
+    retry = subprocess.run(
+        ["git", "push", "origin", "HEAD:main"],
+        cwd=_PROJECT_ROOT,
+    )
+    if retry.returncode != 0:
+        logger.warning(
+            "Retry push also failed for %s; commit exists locally and will be "
+            "carried by the next successful push attempt.",
+            order_id,
+        )
 
 
 def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
@@ -114,10 +240,10 @@ def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
             summary["errors"] += 1
             continue
 
-        append_fill(today, f)
-        # Remove pending regardless of fill/reject — the rejection is the final word
-        # and we don't want indefinite retries. Agent can re-author next session.
-        delete_pending(order.order_id)
+        # Per-fire durability: commit immediately after this order's mutation set.
+        # If f is None the order was already in the inbox (idempotency skip);
+        # process_fired_order cleans up the zombie pending file and commits that.
+        process_fired_order(order, f, today, _git_add_commit)
         summary["fired"] += 1
 
     return summary
@@ -149,7 +275,12 @@ def refresh_leaderboard_artifact(trigger: str, on: date) -> None:
 
 
 def commit_and_push() -> None:
-    """Commit data/orders/{pending,inbox}/ and data/portfolios/ and data/leaderboard/ changes and push to origin/main."""
+    """Commit any remaining data/orders/ and data/leaderboard/ changes and push.
+
+    Called at end of run for: expired-order sweeps (batched, recoverable) and
+    the leaderboard artifact. Per-fire commits for triggered orders are handled
+    individually inside process_fired_order / _git_add_commit.
+    """
     data_dirs = [
         str(_PROJECT_ROOT / "data" / "orders" / "pending"),
         str(_PROJECT_ROOT / "data" / "orders" / "inbox"),
@@ -168,9 +299,34 @@ def commit_and_push() -> None:
         f"chore(triggers): execute fired/expired conditions {date.today().isoformat()}"
     )
     subprocess.run(["git", "commit", "-m", msg], cwd=_PROJECT_ROOT, check=True)
-    subprocess.run(
-        ["git", "push", "origin", "HEAD:main"], cwd=_PROJECT_ROOT, check=True
+    result = subprocess.run(
+        ["git", "push", "origin", "HEAD:main"],
+        cwd=_PROJECT_ROOT,
     )
+    if result.returncode == 0:
+        logger.info("Committed + pushed tail (leaderboard/expired).")
+        return
+
+    logger.warning("Tail push failed; retrying after git pull --rebase.")
+    rebase = subprocess.run(
+        ["git", "pull", "--rebase", "origin", "main"],
+        cwd=_PROJECT_ROOT,
+    )
+    if rebase.returncode != 0:
+        subprocess.run(["git", "rebase", "--abort"], cwd=_PROJECT_ROOT)
+        logger.warning("Tail rebase failed; aborted, commit stays local.")
+        return
+    retry = subprocess.run(
+        ["git", "push", "origin", "HEAD:main"],
+        cwd=_PROJECT_ROOT,
+    )
+    if retry.returncode != 0:
+        logger.warning(
+            "Tail retry push also failed; commit exists locally and will be "
+            "carried by the next successful push attempt."
+        )
+    else:
+        logger.info("Committed + pushed tail after rebase (leaderboard/expired).")
 
 
 def main() -> None:

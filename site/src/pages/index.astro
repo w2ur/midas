@@ -7,7 +7,7 @@ import { loadBlogLatest, excerpt } from "@/lib/blog";
 import { loadAllOrders, tickerSlug } from "@/lib/orders";
 import { isTradingAgent, getAgent } from "@/lib/roster";
 import { tickerName } from "@/lib/tickers";
-import { loadGlobalReference, loadBenchmark, returnPct } from "@/lib/baselines";
+import { loadGlobalReference, loadBenchmark, loadCoinFlip, returnPct } from "@/lib/baselines";
 
 const bundle = loadLatest();
 const current = loadCurrentLeaderboard();
@@ -24,6 +24,12 @@ const vsBenchByAgent: Record<string, number | null> = {};
 for (const row of bundle.leaderboard) {
   const benchPct = returnPct(loadBenchmark(row.agent));
   vsBenchByAgent[row.agent] = benchPct === null ? null : row.return_pct - benchPct;
+}
+
+const vsCoinflipByAgent: Record<string, number | null> = {};
+for (const row of bundle.leaderboard) {
+  const cfPct = returnPct(loadCoinFlip(row.agent));
+  vsCoinflipByAgent[row.agent] = cfPct === null ? null : row.return_pct - cfPct;
 }
 
 const recentTrades = loadAllOrders()
@@ -74,6 +80,8 @@ function fmtPrice(n: number | null, ccy: string | null): string {
       reference={{ label: "MSCI World (EUR)", return_pct: globalRefPct }}
       showVsBench
       vsBenchByAgent={vsBenchByAgent}
+      showVsCoinflip
+      vsCoinflipByAgent={vsCoinflipByAgent}
       updatedAt={updatedAt}
       trigger={trigger}
     />

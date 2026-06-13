@@ -92,7 +92,12 @@ For each agent_id in ROSTER:
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
 they run in parallel. Collect agent_results = {agent_id: {"commentary":
-..., "trades": [...], "cancels": [...]}} (cancels optional).
+..., "trades": [...], "cancels": [...], "research_note": {...}}}
+(cancels optional). PRESERVE the FULL response dict per agent — in
+particular `research_note` is load-bearing: it is the ONLY input to the
+analysts+Manager pipeline (Step 4a/4b) and the public bundle. Dropping it
+does NOT crash anything — the Manager silently runs on zero signal and
+writes empty HOLD reviews while looking healthy. Keep every key the agent emits.
 
 TRADING_PROMPT (the task body — wrap_persona_prompt prepends the persona):
 """
@@ -126,7 +131,18 @@ Output JSON only, no other text:
   "cancels": [
     {"target_order_id": "ord_...", "reasoning": "..."}
     // OPTIONAL; only include if you want to remove a pending conditional from a prior session.
-  ]
+  ],
+  "research_note": {
+    "thesis": "1-2 sentence actionable view (<=280 chars)",
+    "conviction": 0,            // integer 0-10
+    "tickers": ["TICKER", ...], // instruments the thesis is about
+    "action_bias": "strong_buy"|"buy"|"hold"|"reduce"|"exit",
+    "horizon": "days"|"weeks"|"months",
+    "catalysts": "what would confirm/break the thesis (<=200 chars)",
+    "currency": "EUR"|"USD"     // the instruments' denomination
+  }
+  // research_note carries your VIEW (not sizing) for the Manager desk.
+  // ALWAYS include it. See your persona file for details.
 }
 """
 
@@ -153,6 +169,57 @@ After all 10 results arrive:
     # Reused by Step 5 (leaderboard), Step 7 (save_content), Step 8
     # (memory rewrite). Single source of truth — do NOT recompute later.
     portfolio_summaries = build_portfolio_summaries()  # ALL 10 agents, carry-forward
+
+# Step 4a — Manager pipeline (PAPER, PRIVATE — the analysts+Manager pivot)
+# The 10 agents are RESEARCH ANALYSTS: their research_note fields feed a
+# deterministic baseline-manager and an LLM Manager that runs a small private
+# paper book (the-manager) on its OWN channel. NONE of this is public:
+#   - the-manager / baseline-manager are NOT in the roster, leaderboard,
+#     bundle, posts, journals, or site (verified: not in AGENT_POST_TIMES).
+#   - The Oracle (Step 5), posts (Step 6), and the bundle (Step 7) receive
+#     ZERO manager data. Do NOT pass manager artifacts to any of them.
+#   - Manager fills land in data/orders/manager-inbox/ — NEVER the public inbox.
+# This runs AFTER fills+snapshots (so portfolios are current) and BEFORE the
+# Oracle (so the Oracle never sees it). All steps are non-LLM EXCEPT 4b's dispatch.
+    from scripts.daily_session import (
+        step_resolve_manager_outcomes,
+        step_build_baseline_manager,
+        step_build_manager_prompt,
+        step_apply_manager_decision,
+    )
+    # 4a-i — Resolve matured past Manager decisions into numeric outcome memory
+    #        (return + alpha vs MSCI from the store). MUST run before the prompt
+    #        build so the Manager sees fresh memory. Non-LLM.
+    step_resolve_manager_outcomes(today)
+    # 4a-ii — Deterministic baseline-manager rebalance (the Gate C benchmark the
+    #         LLM Manager must beat). Reads the agents' research notes from
+    #         agent_results; rebalances only on the 1st weekday of the month. Non-LLM.
+    step_build_baseline_manager(agent_results, today)
+
+# Step 4b — LLM Manager (DISPATCH — one Task call to the-manager, opus)
+    manager_prompt = step_build_manager_prompt(agent_results, today)
+    wrapped, model = wrap_persona_prompt("the-manager", manager_prompt)
+    # ^ model resolves to "opus" (the-manager.md frontmatter) — the only
+    #   real-money-bound author; stakes justify the tier. Pass it through.
+Dispatch via Task with subagent_type="general-purpose", model=model,
+prompt=wrapped. Capture the dispatch result into `response_text`. The
+response is a single JSON object (ManagerDecision).
+    # 4b-apply — Parse (conviction gate enforced in code), write the
+    #            manager-review audit artifact (EVERY day, even a HOLD),
+    #            author non-HOLD orders to the manager channel, fill the
+    #            the-manager book with fees.
+    # IMPORTANT: step_apply_manager_decision takes a dict, NOT the raw text —
+    # json.loads the response first. A malformed/non-JSON response must
+    # degrade to None (→ placeholder review, no orders), never crash:
+    import json
+    try:
+        raw_decision = json.loads(response_text)
+    except (json.JSONDecodeError, TypeError):
+        raw_decision = None
+    step_apply_manager_decision(raw_decision, today)
+    # A HOLD / low-conviction / unparseable day is the EXPECTED normal: it
+    # still writes manager-review (audit), authors no orders. Do not treat an
+    # empty manager-outbox as an error.
 
 # Step 5 — Oracle narrative (DISPATCH — one Task call to the-oracle)
     from scripts.daily_session import (
@@ -246,6 +313,12 @@ If any are unchanged, that agent's dispatch was skipped — abort.
     step_build_baselines()
 data/baselines/* must be modified by this call. If git diff shows no
 change in data/baselines/, this step was skipped — abort.
+
+# Step 9a — After-tax shadow ledger (ALWAYS, after baselines)
+    from scripts.daily_session import step_build_tax_shadow
+    step_build_tax_shadow()
+# Reporting only — recomputes data/tax_shadow/{agent}.json (PFU 30% drag
+# estimate per agent). Never mutates portfolios. Cheap; safe to always run.
 
 # Step 9b — Live leaderboard artifact (ALWAYS)
     from scripts.daily_session import step_write_current_leaderboard

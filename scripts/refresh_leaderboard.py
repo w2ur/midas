@@ -31,8 +31,23 @@ from scripts.daily_session import (
     step_update_snapshots as _step_update_snapshots,
 )
 from engine.leaderboard import build_leaderboard_rows as _build_leaderboard_rows
+from scripts.build_tax_shadow import build_tax_shadow_all as _build_tax_shadow_all
 
 logger = logging.getLogger(__name__)
+
+
+def _step_build_tax_shadow() -> None:
+    """Wrapper that builds tax shadow ledgers using this module's _PROJECT_ROOT.
+
+    Defined locally (not imported from daily_session) so that monkeypatching
+    refresh_leaderboard._PROJECT_ROOT during tests redirects output to the
+    correct tmp directory — daily_session._PROJECT_ROOT is never read here.
+    """
+    written = _build_tax_shadow_all(
+        portfolios_dir=_PROJECT_ROOT / "data" / "portfolios",
+        output_dir=_PROJECT_ROOT / "data" / "tax_shadow",
+    )
+    logger.info("Tax shadow ledgers written: %d", len(written))
 
 
 def run(trigger: str, today: date | None = None) -> dict:
@@ -40,6 +55,7 @@ def run(trigger: str, today: date | None = None) -> dict:
     payload = _step_fetch_market_data()
     _step_update_snapshots(payload)
     _step_build_baselines()
+    _step_build_tax_shadow()
 
     summaries = _build_portfolio_summaries()
     rows = _build_leaderboard_rows(summaries, on=today)
@@ -63,6 +79,7 @@ def commit_and_push() -> None:
         str(_PROJECT_ROOT / "data" / "portfolios"),
         str(_PROJECT_ROOT / "data" / "baselines"),
         str(_PROJECT_ROOT / "data" / "leaderboard"),
+        str(_PROJECT_ROOT / "data" / "tax_shadow"),
     ]
     subprocess.run(["git", "add", *paths], cwd=_PROJECT_ROOT, check=True)
     diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=_PROJECT_ROOT)

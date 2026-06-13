@@ -10,6 +10,11 @@ Two modes:
    orchestrating Claude Code session that parallelises agent dispatch):
      - step_author_orders()                → data/orders/outbox/
      - step_fill_orders()                  → data/orders/inbox/ + portfolio mutation
+     - step_build_baseline_manager()       → data/portfolios/baseline-manager/ (Gate C)
+     - step_resolve_manager_outcomes()     → data/orders/manager-review/resolved.json (C5b)
+     - step_build_manager_prompt()         → LLM Manager prompt (C3 context + persona)
+     - step_apply_manager_decision()       → data/orders/manager-{outbox,inbox,review}/
+                                             + data/portfolios/the-manager/ (PAPER, private)
      - step_build_post_prompts()           → prompts for the orchestrator
      - step_load_memories()                → dict[agent_id, str]
      - step_build_leaderboard()            → ranked rows (EUR mtm / €10k inception)
@@ -19,6 +24,7 @@ Two modes:
      - step_build_memory_update_prompts()  → Ring 2 session-end rewrite prompts
      - step_save_memories()                → data/agent_memory/
      - step_build_baselines()              → data/baselines/ (idempotent recompute)
+     - step_build_tax_shadow()            → data/tax_shadow/ (reporting only, after baselines)
 
 Usage (snapshot-only):
     python scripts/daily_session.py
@@ -28,24 +34,46 @@ Usage (snapshot-only):
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import subprocess
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Any, Callable, TypeVar
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 # Add project root to sys.path so engine imports work when run directly.
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
+
+from scripts.session_state import clear as _clear_state
+from scripts.session_state import is_done as _is_done
+from scripts.session_state import mark_done as _mark_done
 
 from engine.agent_memory import (
     build_memory_update_prompt,
     load_journal,
     save_journal,
 )
+from engine.baseline_manager import (
+    INITIAL_CAPITAL_EUR,
+    POSITION_SIZE_EUR,
+    STRATEGY_ID,
+    eligible_tickers,
+    is_rebalance_day,
+    rebalance,
+)
 from engine.blog import build_oracle_prompt, save_daily_blog_draft
 from engine.ohlcv_store import latest_close_on_or_before
+from engine.manager_orders import (
+    MANAGER_AGENT_ID,
+    MANAGER_CURRENCY,
+    MANAGER_INITIAL_CAPITAL_EUR,
+)
 from engine.orders import Order, append_order, make_order_id
+from engine.research_note import parse_research_note
 from engine.triggers import (
     CancelRequest,
     append_cancel,
@@ -70,12 +98,53 @@ from scripts.fetch_market_data import fetch_and_save as fetch_market_data
 
 
 # ---------------------------------------------------------------------------
+# Idempotency decorator
+# ---------------------------------------------------------------------------
+
+
+def idempotent_step(skip_return: Any) -> Callable[[_F], _F]:
+    """Decorator that makes a ``step_*`` function resumable.
+
+    On entry, if the step's name is already recorded as done in the session
+    state for today, the body is skipped and ``skip_return`` is returned
+    immediately (log a message so the orchestrator sees the skip).
+
+    On successful completion, the step name is recorded via ``mark_done``.
+    On exception, nothing is recorded — the next run will retry.
+
+    ``skip_return`` should be the neutral/empty value appropriate for the
+    function's return type (e.g., ``{}`` for dict, ``[]`` for list, ``0``
+    for int, ``None`` for None).  Callers must tolerate receiving this value.
+    """
+
+    def decorator(fn: _F) -> _F:
+        step_name = fn.__name__
+
+        @functools.wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            if _is_done(step_name):
+                print(f"\n[SKIP] {step_name} already completed this session.")
+                return skip_return
+            result = fn(*args, **kwargs)
+            _mark_done(step_name)
+            return result
+
+        return wrapper  # type: ignore[return-value]
+
+    return decorator
+
+
+# ---------------------------------------------------------------------------
 # Step helpers
 # ---------------------------------------------------------------------------
 
 
 def step_fetch_market_data() -> dict:
-    """Step 1 — Fetch today's benchmark values."""
+    """Step 1 — Fetch today's benchmark values.
+
+    Not wrapped with @idempotent_step: no side effects; fresh data wanted on
+    resume; return feeds snapshots.
+    """
     print("\n=== Step 1: Fetch market data ===")
     return fetch_market_data()
 
@@ -91,6 +160,9 @@ def step_author_orders(
     agent_id: str, trades: list[dict], trade_date: date, currency: str
 ) -> int:
     """Step 3a — convert an agent's trades[] into outbox orders.
+
+    Not wrapped with @idempotent_step: per-agent inner helper invoked via
+    step_author_all; step-name would collide across agents.
 
     Parameters
     ----------
@@ -193,6 +265,9 @@ def step_author_cancels(
 ) -> int:
     """Step 3a-bis — convert an agent's cancels[] into cancel requests.
 
+    Not wrapped with @idempotent_step: per-agent inner helper invoked via
+    step_author_all; step-name would collide across agents.
+
     Each cancel dict requires `target_order_id` and optionally `reasoning`.
     Returns the number of cancels appended to data/orders/cancels/.
     """
@@ -216,6 +291,7 @@ def step_author_cancels(
     return len(cancels)
 
 
+@idempotent_step(skip_return={})
 def step_author_all(
     agent_results: dict[str, dict],
     trade_date: date,
@@ -254,6 +330,7 @@ def step_author_all(
     return summary
 
 
+@idempotent_step(skip_return=[])
 def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> list:
     """Step 3b — invoke the paper broker on the day's outbox.
 
@@ -269,11 +346,394 @@ def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> l
     return fills
 
 
+@idempotent_step(skip_return=None)
+def step_build_baseline_manager(
+    agent_results: dict[str, dict],
+    trade_date: date | None = None,
+    portfolios_dir: Path | None = None,
+    ohlcv_store: Path | None = None,
+) -> None:
+    """Step 3c — run the deterministic baseline-manager rebalance.
+
+    Internal Gate C benchmark portfolio. NOT a public trading agent.
+    Excluded from AGENT_POST_TIMES, AGENT_DISPLAY_NAMES, leaderboard, and
+    the public output bundle.
+
+    Parameters
+    ----------
+    agent_results:
+        {agent_id: result_dict} from the session's agent round. Each result
+        may contain a "research_note" key parsed by parse_research_note.
+    trade_date:
+        The session's trading date. Defaults to today.
+    portfolios_dir:
+        Override for data/portfolios/ (test monkeypatching). Derived from
+        _PROJECT_ROOT when None.
+    ohlcv_store:
+        Override for the OHLCV store path (test monkeypatching).
+
+    Rebalances only on the first weekday of each month, or on the very first
+    run (portfolio does not exist yet). On all other days, does nothing.
+    step_update_snapshots iterates portfolio dirs and will still snapshot
+    baseline-manager on non-rebalance days — which is intentional.
+    """
+    import engine.baseline_manager as bm_module
+
+    print("\n=== Step 3c: Baseline-manager rebalance ===")
+
+    if trade_date is None:
+        trade_date = date.today()
+
+    resolved_portfolios_dir = portfolios_dir or (_PROJECT_ROOT / "data" / "portfolios")
+    resolved_ohlcv_store = ohlcv_store or bm_module._OHLCV_STORE
+
+    manager = PortfolioManager(base_dir=resolved_portfolios_dir)
+    portfolio_exists = (
+        resolved_portfolios_dir / STRATEGY_ID / "portfolio.json"
+    ).exists()
+
+    is_first_run = not portfolio_exists
+    if is_first_run:
+        manager.initialize(
+            STRATEGY_ID, initial_capital=INITIAL_CAPITAL_EUR, currency="EUR"
+        )
+        print(f"  Initialized {STRATEGY_ID} portfolio (EUR {INITIAL_CAPITAL_EUR:.0f})")
+
+    if not is_first_run and not is_rebalance_day(trade_date):
+        print(
+            f"  {trade_date} is not a rebalance day — skipping (snapshots will still update)."
+        )
+        return
+
+    # Collect research notes from all agents.
+    notes: list[tuple[str, object]] = []
+    for agent_id, result in agent_results.items():
+        raw_note = result.get("research_note")
+        note = parse_research_note(raw_note)
+        if note is not None:
+            notes.append((agent_id, note))
+
+    target = eligible_tickers(notes)
+    print(f"  Eligible tickers ({len(target)}): {target if target else '(none)'}")
+
+    portfolio_dict = manager.load(STRATEGY_ID).to_dict()
+
+    def _price_lookup(ticker: str, on: date) -> float | None:
+        from engine.ohlcv_store import latest_close_on_or_before as _lcob
+
+        return _lcob(ticker, on, store=resolved_ohlcv_store)
+
+    trades = rebalance(
+        portfolio=portfolio_dict,
+        target_tickers=target,
+        price_lookup=_price_lookup,
+        on=trade_date,
+        position_size_eur=POSITION_SIZE_EUR,
+    )
+
+    for trade in trades:
+        try:
+            manager.apply_trade(STRATEGY_ID, trade)
+        except ValueError as exc:
+            print(
+                f"  [WARN] baseline-manager trade failed ({trade.ticker} {trade.action}): {exc}"
+            )
+
+    sells = sum(1 for t in trades if t.action == "SELL")
+    buys = sum(1 for t in trades if t.action == "BUY")
+    print(f"  Applied {sells} sell(s) + {buys} buy(s) to {STRATEGY_ID}")
+
+
+# ---------------------------------------------------------------------------
+# LLM Manager (Task C5) — PAPER, fully off every public surface.
+#
+# Authors to a SEPARATE manager-outbox, fills into a SEPARATE the-manager book,
+# and writes a manager-review audit artifact. the-manager is NOT in
+# AGENT_POST_TIMES / AGENT_DISPLAY_NAMES / roster.ts / the output bundle, and its
+# fills go to manager-inbox (NOT the public inbox the site joins by order_id), so
+# it never leaks into the narrative. The outcome-resolution loop (Task C5b) is
+# step_resolve_manager_outcomes, which runs at Step 3c-bis BEFORE this block.
+# ---------------------------------------------------------------------------
+
+
+@idempotent_step(skip_return=None)
+def step_resolve_manager_outcomes(
+    today: date,
+    review_dir: Path | None = None,
+    ohlcv_store: Path | None = None,
+    msci_path: Path | None = None,
+    resolved_path: Path | None = None,
+) -> None:
+    """Step 3c-bis — resolve matured Manager decisions into numeric outcome memory.
+
+    Must run BEFORE step_build_manager_prompt (Step 3d) so the Manager sees
+    freshly-matured outcomes in the same session that produced the underlying
+    decisions.
+
+    Reads every manager-review/{date}.json, computes forward return for each
+    non-HOLD position that has reached the horizon (10 trading days by default),
+    and writes the result atomically to manager-review/resolved.json.
+
+    Parameters
+    ----------
+    today:
+        The session's reference date (used to name the idempotency key and
+        passed through to resolve_outcomes as an informational bound).
+    review_dir:
+        Override for data/orders/manager-review/. Derived from _PROJECT_ROOT
+        when None (monkeypatch-friendly for tests).
+    ohlcv_store:
+        Override for the OHLCV store path. Derived from engine.ohlcv_store
+        when None.
+    msci_path:
+        Override for the MSCI World series JSON file path. Derived from
+        _PROJECT_ROOT when None.
+    resolved_path:
+        Override for the output resolved.json path. Defaults to
+        review_dir/resolved.json when None.
+    """
+    from engine.ohlcv_store import OHLCV_STORE
+    from scripts.resolve_manager_outcomes import (
+        load_existing_resolved,
+        resolve_outcomes,
+        write_resolved,
+    )
+
+    print("\n=== Step 3c-bis: Resolve manager outcomes ===")
+
+    resolved_review_dir = review_dir or (
+        _PROJECT_ROOT / "data" / "orders" / "manager-review"
+    )
+    resolved_store = ohlcv_store or OHLCV_STORE
+    resolved_msci_path = msci_path or (
+        _PROJECT_ROOT / "data" / "baselines" / "global" / "msci_world.json"
+    )
+    resolved_resolved_path = resolved_path or (resolved_review_dir / "resolved.json")
+
+    # Load MSCI series (graceful on missing/malformed).
+    try:
+        msci_series: list[dict] = json.loads(
+            resolved_msci_path.read_text(encoding="utf-8")
+        )
+        if not isinstance(msci_series, list):
+            msci_series = []
+    except (json.JSONDecodeError, OSError):
+        msci_series = []
+
+    existing = load_existing_resolved(resolved_resolved_path)
+    updated = resolve_outcomes(
+        review_dir=resolved_review_dir,
+        store=resolved_store,
+        msci_series=msci_series,
+        today=today,
+        existing_resolved=existing,
+    )
+    write_resolved(updated, resolved_resolved_path)
+    new_count = len(updated) - len(existing)
+    print(f"  Manager outcomes resolved: {new_count} new, {len(updated)} total.")
+
+
+def step_build_manager_prompt(
+    agent_results: dict[str, dict],
+    trade_date: date,
+    ohlcv_store: Path | None = None,
+) -> str:
+    """Step 3d — build the LLM Manager's decision prompt (mirror of the Oracle).
+
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects —
+    on resume it must rebuild the real prompt so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on step_apply_manager_decision.
+
+    Assembles the C3 manager context from each agent's research note, the
+    the-manager portfolio (empty book if absent), and resolved decisions
+    (always [] here — the outcome-resolution loop is Task C5b). Wraps the rendered
+    context with the the-manager persona via wrap_persona_prompt and returns the
+    prompt string. Does NOT call Claude.
+    """
+    from engine.manager_context import (
+        build_manager_context,
+        load_ticker_registry,
+        render_manager_context,
+    )
+    from engine.ohlcv_store import latest_close_on_or_before as _lcob
+    from engine.persona_dispatch import wrap_persona_prompt
+
+    print("\n=== Step 3d: Build Manager prompt ===")
+
+    portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
+    resolved_store = ohlcv_store
+
+    # Parse each agent's research note (drop None — same tolerance as the baseline).
+    notes: list[tuple[str, object]] = []
+    for agent_id, result in agent_results.items():
+        note = parse_research_note(result.get("research_note"))
+        notes.append((agent_id, note))
+
+    # Load the-manager portfolio if it exists, else None (→ empty book in C3).
+    portfolio: dict | None = None
+    manager_path = portfolios_dir / MANAGER_AGENT_ID / "portfolio.json"
+    if manager_path.exists():
+        manager = PortfolioManager(base_dir=portfolios_dir)
+        portfolio = manager.load(MANAGER_AGENT_ID).to_dict()
+
+    # Resolved decisions: written by step_resolve_manager_outcomes (Step 3c-bis, C5b).
+    # That step runs BEFORE this one, so resolved.json is already up-to-date.
+    resolved_decisions: list[dict] = []
+    resolved_path = (
+        _PROJECT_ROOT / "data" / "orders" / "manager-review" / "resolved.json"
+    )
+    if resolved_path.exists():
+        try:
+            resolved_decisions = json.loads(resolved_path.read_text(encoding="utf-8"))
+            if not isinstance(resolved_decisions, list):
+                resolved_decisions = []
+        except (json.JSONDecodeError, OSError):
+            resolved_decisions = []
+
+    # Build a price_lookup over every ticker in scope (notes + held positions).
+    scope: set[str] = set()
+    for _, note in notes:
+        if note is not None:
+            scope.update(note.tickers)
+    if portfolio is not None:
+        for pos in portfolio.get("positions", []):
+            scope.add(pos["ticker"])
+
+    price_lookup: dict[str, tuple[float, str]] = {}
+    for ticker in scope:
+        if resolved_store is not None:
+            close = _lcob(ticker, trade_date, store=resolved_store)
+        else:
+            close = _lcob(ticker, trade_date)
+        if close is not None:
+            price_lookup[ticker] = (close, trade_date.isoformat())
+
+    ctx = build_manager_context(
+        notes=notes,
+        portfolio=portfolio,
+        resolved_decisions=resolved_decisions,
+        price_lookup=price_lookup,
+        ticker_registry=load_ticker_registry(),
+        as_of=trade_date,
+        config={
+            "initial_capital": MANAGER_INITIAL_CAPITAL_EUR,
+            "currency": MANAGER_CURRENCY,
+        },
+    )
+    rendered = render_manager_context(ctx)
+    wrapped, _model = wrap_persona_prompt(MANAGER_AGENT_ID, rendered)
+    print(f"  Built Manager prompt ({len(notes)} notes, {len(price_lookup)} priced)")
+    return wrapped
+
+
+@idempotent_step(skip_return=None)
+def step_apply_manager_decision(
+    raw_decision: dict | None,
+    trade_date: date,
+    ohlcv_store: Path | None = None,
+) -> None:
+    """Step 3e — apply the LLM Manager's decision to the PAPER the-manager book.
+
+    1. parse_manager_decision(raw_decision) — conviction gate applied in code.
+    2. Write the manager-review audit artifact (rendered decision + full
+       positions/reasoning/conviction). Written EVERY day, even on a hold — it is
+       the load-bearing record of what the Manager decided and why.
+    3. Convert non-HOLD positions to Orders, append to the manager-outbox.
+    4. fill_day against the manager channel (separate outbox/inbox) and a
+       PortfolioManager rooted at data/portfolios (the-manager book, init EUR 2000
+       if absent). All 14 rails + fees + idempotency apply identically.
+
+    Public surfaces are untouched: orders never enter the public outbox, fills
+    never enter the public inbox.
+    """
+    from engine import orders as orders_mod
+    from engine.manager_decision import parse_manager_decision, render_manager_decision
+    from engine.manager_orders import manager_decision_to_orders
+    from engine.ohlcv_store import latest_close_on_or_before as _lcob
+
+    print("\n=== Step 3e: Apply Manager decision ===")
+
+    portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
+    manager = PortfolioManager(base_dir=portfolios_dir)
+    if not (portfolios_dir / MANAGER_AGENT_ID / "portfolio.json").exists():
+        manager.initialize(
+            MANAGER_AGENT_ID,
+            initial_capital=MANAGER_INITIAL_CAPITAL_EUR,
+            currency=MANAGER_CURRENCY,
+        )
+        print(
+            f"  Initialized {MANAGER_AGENT_ID} book (EUR {MANAGER_INITIAL_CAPITAL_EUR:.0f})"
+        )
+
+    decision = parse_manager_decision(raw_decision)
+
+    # --- Audit artifact: written every day, hold or trade. ---
+    review_dir = orders_mod.MANAGER_REVIEW_DIR
+    review_dir.mkdir(parents=True, exist_ok=True)
+    review_path = review_dir / f"{trade_date.isoformat()}.json"
+    if decision is None:
+        review_payload: dict = {
+            "date": trade_date.isoformat(),
+            "conviction": None,
+            "positions": [],
+            "hold_reasoning": "",
+            "render": "[Manager Decision] (no parseable decision)",
+        }
+    else:
+        review_payload = {
+            "date": trade_date.isoformat(),
+            "conviction": decision.conviction,
+            "positions": [p.to_dict() for p in decision.positions],
+            "hold_reasoning": decision.hold_reasoning,
+            "render": render_manager_decision(decision),
+        }
+    review_path.write_text(
+        json.dumps(review_payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"  Wrote manager review {review_path.name}")
+
+    if decision is None:
+        print("  No parseable decision — review written, no orders.")
+        return
+
+    # --- Convert non-HOLD positions to orders (skip unpriceable). ---
+    def _price(ticker: str) -> float | None:
+        if ohlcv_store is not None:
+            return _lcob(ticker, trade_date, store=ohlcv_store)
+        return _lcob(ticker, trade_date)
+
+    orders = manager_decision_to_orders(decision, trade_date, _price)
+    if not orders:
+        print("  Hold (or no priceable positions) — no orders authored.")
+        return
+
+    for order in orders:
+        append_order(trade_date, order, outbox_dir=orders_mod.MANAGER_OUTBOX_DIR)
+    print(f"  Authored {len(orders)} manager order(s) to manager-outbox")
+
+    # --- Fill on the SEPARATE manager channel. ---
+    fills = fill_day(
+        trade_date,
+        manager,
+        outbox_dir=orders_mod.MANAGER_OUTBOX_DIR,
+        inbox_dir=orders_mod.MANAGER_INBOX_DIR,
+    )
+    filled = sum(1 for f in fills if f.status == "filled")
+    rejected = sum(1 for f in fills if f.status == "rejected")
+    print(f"  Manager fills: {filled} filled, {rejected} rejected")
+
+
 def step_build_post_prompts(
     agent_results: dict[str, dict],
     oracle_blog: str | None = None,
 ) -> dict[str, str]:
     """Step 5a — build post-generation prompts for each trading agent.
+
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects
+    — on resume it must rebuild real prompts so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on the persisting steps
+    (step_save_content / step_save_memories).
 
     Does NOT call Claude. Returns a dict of {agent_id: prompt_str} the orchestrator
     dispatches to each agent. The Oracle is excluded — it gets a different prompt
@@ -300,6 +760,9 @@ def step_build_leaderboard(
 ) -> list[dict]:
     """Step 5a-bis — canonical leaderboard for the day.
 
+    Not wrapped with @idempotent_step: pure derivation from portfolios, cheap
+    to recompute, and downstream consumers need real rows on resume.
+
     Thin wrapper around engine.leaderboard.build_leaderboard_rows so the
     same logic powers the weekend refresh script and the watcher.
     """
@@ -316,10 +779,11 @@ def step_build_leaderboard(
     return rows
 
 
+@idempotent_step(skip_return=None)
 def step_write_current_leaderboard(
     rows: list[dict],
     trigger: str,
-) -> Path:
+) -> Path | None:
     """Step 9b — Write data/leaderboard/current.json.
 
     Live leaderboard artifact consumed by the site's homepage widget.
@@ -353,6 +817,11 @@ def step_build_oracle_prompt(
 ) -> str:
     """Step 5b — build The Oracle's daily narration prompt.
 
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects
+    — on resume it must rebuild real prompts so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on the persisting steps
+    (step_save_content / step_save_memories).
+
     Does NOT call Claude. Returns the prompt string the orchestrator dispatches
     to the-oracle agent. When `agent_memories` is provided, each agent's latest
     journal is digested into the prompt so The Oracle can quote specific entries.
@@ -374,6 +843,11 @@ def step_build_oracle_prompt(
 def step_load_memories(agent_ids: list[str]) -> dict[str, str]:
     """Step 5c — load each agent's journal from disk for Oracle prompt assembly.
 
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects
+    — on resume it must rebuild real prompts so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on the persisting steps
+    (step_save_content / step_save_memories).
+
     Returns a dict keyed by agent_id. Missing journals become empty strings so
     the Oracle prompt can still render a "first session" marker.
     """
@@ -388,15 +862,27 @@ def step_build_memory_update_prompts(
     agent_results: dict[str, dict],
     agent_posts: dict[str, list[dict]],
     portfolio_summaries: dict[str, dict],
-    day_number: int,
+    day_number: int | None = None,
 ) -> dict[str, str]:
     """Step 7a — build session-end journal-rewrite prompts for every agent.
+
+    Not wrapped with @idempotent_step: pure prompt builder with no side effects
+    — on resume it must rebuild real prompts so the orchestrator's untracked LLM
+    dispatch can re-run; idempotency lives on the persisting steps
+    (step_save_content / step_save_memories).
 
     Does NOT call Claude. Returns {agent_id: prompt} the orchestrator dispatches.
     Covers all 11 agents (the 10 traders plus the-oracle). Each agent reads its
     current journal from disk in-prompt; we embed it here so the dispatched
     prompt is fully self-contained.
+
+    ``day_number`` defaults to None and is computed internally via
+    ``get_day_number()`` when not supplied. The trigger-doc call omits this
+    argument (the production contract); callers that already hold the day number
+    may still pass it explicitly to avoid the extra I/O.
     """
+    if day_number is None:
+        day_number = get_day_number()
     print("\n=== Step 7a: Build memory-update prompts ===")
     prompts: dict[str, str] = {}
     # Traders
@@ -422,6 +908,7 @@ def step_build_memory_update_prompts(
     return prompts
 
 
+@idempotent_step(skip_return=0)
 def step_save_memories(new_journals: dict[str, str]) -> int:
     """Step 7b — persist rewritten journals back to data/agent_memory/.
 
@@ -479,6 +966,7 @@ def build_portfolio_summaries() -> dict[str, dict]:
     return summaries
 
 
+@idempotent_step(skip_return={})
 def step_save_content(
     bundle_date: date,
     market_data: dict,
@@ -534,10 +1022,16 @@ def _compute_positions_value(
     return total
 
 
+@idempotent_step(skip_return=[])
 def step_update_snapshots(market_payload: dict) -> list[str]:
     """Step 4 — Append daily snapshots for all active portfolios.
 
     A portfolio is "active" if it has a portfolio.json on disk.
+
+    Note: this iterates portfolio dirs, so the internal `the-manager` and
+    `baseline-manager` books accrue committed snapshots here. That is intentional
+    private valuation tracking — both are excluded from every public surface by
+    roster absence (they are not in AGENT_POST_TIMES), so this is not a leak.
 
     Parameters
     ----------
@@ -601,6 +1095,7 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
     return snapshotted
 
 
+@idempotent_step(skip_return=None)
 def step_build_baselines() -> None:
     """Step 9a — Baselines.
 
@@ -623,12 +1118,45 @@ def step_build_baselines() -> None:
     )
 
 
+@idempotent_step(skip_return=None)
+def step_build_tax_shadow() -> None:
+    """Step 9c — After-tax shadow ledger (reporting only).
+
+    Reads each agent's data/portfolios/{agent}/trades.json and writes
+    data/tax_shadow/{agent}.json with realized PFU estimates per French
+    tax law.  Runs AFTER step_build_baselines.  Pure computation — never
+    mutates portfolio state.
+    """
+    print("\n=== Step 9c: Build tax shadow ledgers ===")
+    from scripts.build_tax_shadow import build_tax_shadow_all
+
+    written = build_tax_shadow_all(
+        portfolios_dir=_PROJECT_ROOT / "data" / "portfolios",
+        output_dir=_PROJECT_ROOT / "data" / "tax_shadow",
+    )
+    print(f"  Wrote {len(written)} tax shadow ledger(s).")
+
+
 def step_git_commit_push(dry_run: bool = False) -> None:
-    """Step 5 — Git commit and push data changes."""
+    """Step 5 — Git commit and push data changes.
+
+    Not wrapped with @idempotent_step because it calls ``_clear_state()`` on
+    success, which wipes the whole state file — so a post-clear ``_mark_done``
+    would be immediately lost.  Re-entry protection is still wired manually via
+    ``_is_done`` at the top; ``_mark_done`` is intentionally absent (the cleared
+    state file is the finished-session signal).
+    """
+    _step_name = "step_git_commit_push"
+    if _is_done(_step_name):
+        print(f"\n[SKIP] {_step_name} already completed this session.")
+        return
+
     print("\n=== Step 5: Git commit and push ===")
 
     if dry_run:
         print("  [DRY RUN] Skipping git operations.")
+        # no _mark_done: _clear_state() below removes the whole state file — a finished session leaves no state
+        _clear_state()
         return
 
     data_dir = str(_PROJECT_ROOT / "data")
@@ -670,48 +1198,49 @@ def step_git_commit_push(dry_run: bool = False) -> None:
         )
         if int(ahead.stdout.strip() or "0") == 0:
             print("  Nothing to push — HEAD is at origin/main.")
-            return
+        else:
+            # Primary path: push directly to origin/main. Fallback path
+            # (added 2026-05-08 after the harness started 403'ing main pushes
+            # from cloud sandboxes): push the sandbox branch instead, and let
+            # .github/workflows/auto-merge-session.yml take the merge to main.
+            push_main = subprocess.run(
+                ["git", "push", "origin", "HEAD:main"],
+                cwd=_PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+            )
+            if push_main.returncode == 0:
+                print("  Pushed to origin/main.")
+            else:
+                stderr = (push_main.stderr or "").strip()
+                stdout = (push_main.stdout or "").strip()
+                print(f"  [WARN] Push to origin/main failed: {stderr or stdout}")
+                print(
+                    "  Falling back to push current branch — auto-merge-session.yml will take it to main."
+                )
 
-        # Primary path: push directly to origin/main. Fallback path
-        # (added 2026-05-08 after the harness started 403'ing main pushes
-        # from cloud sandboxes): push the sandbox branch instead, and let
-        # .github/workflows/auto-merge-session.yml take the merge to main.
-        push_main = subprocess.run(
-            ["git", "push", "origin", "HEAD:main"],
-            cwd=_PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
-        if push_main.returncode == 0:
-            print("  Pushed to origin/main.")
-            return
-
-        stderr = (push_main.stderr or "").strip()
-        stdout = (push_main.stdout or "").strip()
-        print(f"  [WARN] Push to origin/main failed: {stderr or stdout}")
-        print(
-            "  Falling back to push current branch — auto-merge-session.yml will take it to main."
-        )
-
-        subprocess.run(
-            ["git", "push", "origin", "HEAD"],
-            cwd=_PROJECT_ROOT,
-            check=True,
-        )
-        branch_name = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=_PROJECT_ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-        print(
-            f"  Pushed to sandbox branch '{branch_name}'. Watch for auto-merge-session workflow on GitHub."
-        )
+                subprocess.run(
+                    ["git", "push", "origin", "HEAD"],
+                    cwd=_PROJECT_ROOT,
+                    check=True,
+                )
+                branch_name = subprocess.run(
+                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    cwd=_PROJECT_ROOT,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+                print(
+                    f"  Pushed to sandbox branch '{branch_name}'. Watch for auto-merge-session workflow on GitHub."
+                )
 
     except subprocess.CalledProcessError as exc:
         print(f"  [ERROR] Git operation failed: {exc}")
         raise
+
+    # no _mark_done: _clear_state() below removes the whole state file — a finished session leaves no state
+    _clear_state()
 
 
 # ---------------------------------------------------------------------------
@@ -732,6 +1261,7 @@ def run_daily_session(dry_run: bool = False) -> None:
     market_payload = step_fetch_market_data()
     step_update_snapshots(market_payload)
     step_build_baselines()
+    step_build_tax_shadow()
     step_git_commit_push(dry_run=dry_run)
 
     print("\n=== Snapshot complete ===")
