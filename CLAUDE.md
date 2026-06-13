@@ -30,7 +30,7 @@ streamlit run app/main.py
 ## Project Structure
 - `engine/` — Core trading logic: types, market data, bt adapter, backtest runner
 - `engine/orders.py` — Order/Fill types + outbox/inbox JSONL serde (Brain/Hands primitive)
-- `engine/paper_broker.py` — Hands side: 9 safety rails + fill logic + portfolio update
+- `engine/paper_broker.py` — Hands side: 14 rejection/cancel reason codes + fill logic + portfolio update
 - `engine/posts.py` — post types, 11-agent display names + schedule (single source of truth)
 - `engine/blog.py` — Oracle prompt builder + response parser + blog draft saver
 - `engine/agent_memory.py` — Ring 2 per-agent journal I/O + digest/excerpt helpers + session-end rewrite prompt
@@ -64,8 +64,9 @@ All external-world integrations in Midas follow a **Brain / Hands split**:
 
 First application (Ring 1): trade execution.
 - Agents write orders to `data/orders/outbox/YYYY-MM-DD.jsonl`.
-- `engine/paper_broker.py` applies 9 safety rails, fills at end-of-day close from the OHLCV store, writes to `data/orders/inbox/YYYY-MM-DD.jsonl`.
+- `engine/paper_broker.py` enforces 14 rejection/cancel reason codes (safety checks), fills at end-of-day close from the OHLCV store, writes to `data/orders/inbox/YYYY-MM-DD.jsonl`.
 - Fills with `status="filled"` mutate portfolios via `PortfolioManager.apply_trade`; rejections carry a reason code.
+- Paper fills carry a realistic per-asset-class fee model (`engine/fees.py`, IBIE/Kraken/FX rates). An after-tax shadow ledger (`engine/tax_shadow.py` → `data/tax_shadow/`) estimates PFU drag as a reporting signal — it does not alter portfolio cash.
 
 **Safety rails live in the Hands, not agent prompts.** The agent persona is aspirational; the broker is enforcing.
 
