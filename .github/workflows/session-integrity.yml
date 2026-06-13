@@ -5,6 +5,10 @@ name: session-integrity
 #    rewrite agent journals (Step 9) and refresh baselines (Step 9a).
 #  - A weekend-refresh commit MUST update data/baselines/ AND
 #    data/leaderboard/current.json.
+#  - A session commit that authors real manager orders (data/orders/manager-outbox/)
+#    MUST also write the manager-review audit artifact (data/orders/manager-review/).
+#    This ensures every Manager trade is traceable: the decision record is load-bearing
+#    for the C5b outcome-resolution loop.
 # Past silent skips: Apr 20-22 (journals), Apr 25 (baselines).
 #
 # Scope: commits whose subject starts with
@@ -49,6 +53,8 @@ jobs:
           touches_journals=0
           touches_baselines=0
           touches_leaderboard=0
+          touches_manager_outbox=0
+          touches_manager_review=0
 
           if echo "$files" | grep -Eq '^data/(posts|blog|output)/'; then
             touches_artifacts=1
@@ -61,6 +67,12 @@ jobs:
           fi
           if echo "$files" | grep -Eq '^data/leaderboard/current\.json$'; then
             touches_leaderboard=1
+          fi
+          if echo "$files" | grep -Eq '^data/orders/manager-outbox/'; then
+            touches_manager_outbox=1
+          fi
+          if echo "$files" | grep -Eq '^data/orders/manager-review/'; then
+            touches_manager_review=1
           fi
 
           if [[ "$mode" == "refresh" ]]; then
@@ -110,10 +122,19 @@ jobs:
             echo "::warning::Session commit does NOT write data/leaderboard/current.json in this commit — non-fatal (derived state; lands in a follow-up '… — leaderboard' commit or via the watcher)."
           fi
 
+          # Manager-outbox → manager-review: if a real manager order was authored, the
+          # audit artifact (review/{date}.json) MUST also be present. The review is the
+          # load-bearing record for the C5b outcome-resolution loop; a missing review
+          # means the outcome can never be resolved.
+          if [[ $touches_manager_outbox -eq 1 && $touches_manager_review -eq 0 ]]; then
+            echo "::error::Session commit authors manager orders (data/orders/manager-outbox/) but does NOT write the manager-review audit artifact (data/orders/manager-review/)."
+            fail=1
+          fi
+
           if [[ $fail -ne 0 ]]; then
             echo ""
             echo "See CLAUDE.md > Session Cadence > 'cadence-invariant pipeline rule' and 'load-bearing' notes."
             exit 1
           fi
 
-          echo "Session integrity OK: artifacts + journals + baselines all present."
+          echo "Session integrity OK: artifacts + journals + baselines + manager-review all present."

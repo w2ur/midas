@@ -450,8 +450,86 @@ def step_build_baseline_manager(
 # and writes a manager-review audit artifact. the-manager is NOT in
 # AGENT_POST_TIMES / AGENT_DISPLAY_NAMES / roster.ts / the output bundle, and its
 # fills go to manager-inbox (NOT the public inbox the site joins by order_id), so
-# it never leaks into the narrative. The outcome-resolution loop is Task C5b.
+# it never leaks into the narrative. The outcome-resolution loop (Task C5b) is
+# step_resolve_manager_outcomes, which runs at Step 3c-bis BEFORE this block.
 # ---------------------------------------------------------------------------
+
+
+@idempotent_step(skip_return=None)
+def step_resolve_manager_outcomes(
+    today: date,
+    review_dir: Path | None = None,
+    ohlcv_store: Path | None = None,
+    msci_path: Path | None = None,
+    resolved_path: Path | None = None,
+) -> None:
+    """Step 3c-bis — resolve matured Manager decisions into numeric outcome memory.
+
+    Must run BEFORE step_build_manager_prompt (Step 3d) so the Manager sees
+    freshly-matured outcomes in the same session that produced the underlying
+    decisions.
+
+    Reads every manager-review/{date}.json, computes forward return for each
+    non-HOLD position that has reached the horizon (10 trading days by default),
+    and writes the result atomically to manager-review/resolved.json.
+
+    Parameters
+    ----------
+    today:
+        The session's reference date (used to name the idempotency key and
+        passed through to resolve_outcomes as an informational bound).
+    review_dir:
+        Override for data/orders/manager-review/. Derived from _PROJECT_ROOT
+        when None (monkeypatch-friendly for tests).
+    ohlcv_store:
+        Override for the OHLCV store path. Derived from engine.ohlcv_store
+        when None.
+    msci_path:
+        Override for the MSCI World series JSON file path. Derived from
+        _PROJECT_ROOT when None.
+    resolved_path:
+        Override for the output resolved.json path. Defaults to
+        review_dir/resolved.json when None.
+    """
+    from engine.ohlcv_store import OHLCV_STORE
+    from scripts.resolve_manager_outcomes import (
+        load_existing_resolved,
+        resolve_outcomes,
+        write_resolved,
+    )
+
+    print("\n=== Step 3c-bis: Resolve manager outcomes ===")
+
+    resolved_review_dir = review_dir or (
+        _PROJECT_ROOT / "data" / "orders" / "manager-review"
+    )
+    resolved_store = ohlcv_store or OHLCV_STORE
+    resolved_msci_path = msci_path or (
+        _PROJECT_ROOT / "data" / "baselines" / "global" / "msci_world.json"
+    )
+    resolved_resolved_path = resolved_path or (resolved_review_dir / "resolved.json")
+
+    # Load MSCI series (graceful on missing/malformed).
+    try:
+        msci_series: list[dict] = json.loads(
+            resolved_msci_path.read_text(encoding="utf-8")
+        )
+        if not isinstance(msci_series, list):
+            msci_series = []
+    except (json.JSONDecodeError, OSError):
+        msci_series = []
+
+    existing = load_existing_resolved(resolved_resolved_path)
+    updated = resolve_outcomes(
+        review_dir=resolved_review_dir,
+        store=resolved_store,
+        msci_series=msci_series,
+        today=today,
+        existing_resolved=existing,
+    )
+    write_resolved(updated, resolved_resolved_path)
+    new_count = len(updated) - len(existing)
+    print(f"  Manager outcomes resolved: {new_count} new, {len(updated)} total.")
 
 
 def step_build_manager_prompt(
@@ -497,7 +575,8 @@ def step_build_manager_prompt(
         manager = PortfolioManager(base_dir=portfolios_dir)
         portfolio = manager.load(MANAGER_AGENT_ID).to_dict()
 
-    # Resolved decisions: C5b feeds this file; for C5a it is always empty.
+    # Resolved decisions: written by step_resolve_manager_outcomes (Step 3c-bis, C5b).
+    # That step runs BEFORE this one, so resolved.json is already up-to-date.
     resolved_decisions: list[dict] = []
     resolved_path = (
         _PROJECT_ROOT / "data" / "orders" / "manager-review" / "resolved.json"
