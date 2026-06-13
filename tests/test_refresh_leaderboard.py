@@ -1,7 +1,9 @@
 import json
 from datetime import date
+from pathlib import Path
 
-import pytest
+# Resolve project root so we can probe the committed tax_shadow dir.
+_REAL_PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_refresh_leaderboard_writes_current_json(tmp_path, monkeypatch):
@@ -38,6 +40,19 @@ def test_refresh_leaderboard_writes_current_json(tmp_path, monkeypatch):
         lambda summaries, on: [{"rank": 1, "agent": "satoshi", "return_pct": 3.0}],
     )
 
+    # Capture mtimes of committed tax_shadow files before the run to prove
+    # isolation: _step_build_tax_shadow must NOT touch the real data directory.
+    real_tax_shadow_dir = _REAL_PROJECT_ROOT / "data" / "tax_shadow"
+    real_mtimes_before = (
+        {
+            p.name: p.stat().st_mtime
+            for p in real_tax_shadow_dir.iterdir()
+            if p.is_file()
+        }
+        if real_tax_shadow_dir.exists()
+        else {}
+    )
+
     refresh_leaderboard.run(
         trigger="scheduled-weekend-refresh", today=date(2026, 5, 23)
     )
@@ -50,3 +65,18 @@ def test_refresh_leaderboard_writes_current_json(tmp_path, monkeypatch):
     assert payload["trigger"] == "scheduled-weekend-refresh"
     assert payload["rows"][0]["agent"] == "satoshi"
     assert payload["updated_at"].endswith("Z")
+
+    # Isolation check: committed tax_shadow files must be untouched.
+    real_mtimes_after = (
+        {
+            p.name: p.stat().st_mtime
+            for p in real_tax_shadow_dir.iterdir()
+            if p.is_file()
+        }
+        if real_tax_shadow_dir.exists()
+        else {}
+    )
+    assert real_mtimes_before == real_mtimes_after, (
+        "_step_build_tax_shadow wrote to the real data/tax_shadow/ directory "
+        "instead of the tmp_path sandbox — path injection is broken."
+    )

@@ -28,23 +28,40 @@ _OUTPUT_DIR = _PROJECT_ROOT / "data" / "tax_shadow"
 _NON_AGENT_DIRS = {"baseline-manager", "the-manager"}
 
 
-def build_tax_shadow_all() -> list[str]:
+def build_tax_shadow_all(
+    portfolios_dir: Path | None = None,
+    output_dir: Path | None = None,
+) -> list[str]:
     """Compute and write tax shadow ledgers for all trading agents.
+
+    Parameters
+    ----------
+    portfolios_dir:
+        Directory containing per-agent portfolio subdirectories.  Defaults to
+        ``data/portfolios/`` relative to the project root.  Pass an explicit
+        path to redirect output (e.g. in tests).
+    output_dir:
+        Directory to write ``{agent}.json`` ledger files.  Defaults to
+        ``data/tax_shadow/`` relative to the project root.  Pass an explicit
+        path alongside ``portfolios_dir`` to keep all output in a tmp tree.
 
     Returns
     -------
     list[str]
         Agent IDs for which a ledger was written.
     """
-    if not _PORTFOLIOS_DIR.exists():
+    portfolios_dir = portfolios_dir if portfolios_dir is not None else _PORTFOLIOS_DIR
+    output_dir = output_dir if output_dir is not None else _OUTPUT_DIR
+
+    if not portfolios_dir.exists():
         print("  No portfolios directory found — skipping.")
         return []
 
-    _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     written: list[str] = []
 
-    for agent_dir in sorted(_PORTFOLIOS_DIR.iterdir()):
+    for agent_dir in sorted(portfolios_dir.iterdir()):
         if not agent_dir.is_dir():
             continue
         agent_id = agent_dir.name
@@ -68,7 +85,7 @@ def build_tax_shadow_all() -> list[str]:
             print(f"  [WARN] {agent_id}: compute_tax_shadow failed — {exc}")
             continue
 
-        out_path = _OUTPUT_DIR / f"{agent_id}.json"
+        out_path = output_dir / f"{agent_id}.json"
         out_path.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
 
         sec_pfu = result["securities"]["lifetime_pfu"]

@@ -728,7 +728,10 @@ def step_build_tax_shadow() -> None:
     print("\n=== Step 9c: Build tax shadow ledgers ===")
     from scripts.build_tax_shadow import build_tax_shadow_all
 
-    written = build_tax_shadow_all()
+    written = build_tax_shadow_all(
+        portfolios_dir=_PROJECT_ROOT / "data" / "portfolios",
+        output_dir=_PROJECT_ROOT / "data" / "tax_shadow",
+    )
     print(f"  Wrote {len(written)} tax shadow ledger(s).")
 
 
