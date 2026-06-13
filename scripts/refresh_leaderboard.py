@@ -27,6 +27,7 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 from scripts.daily_session import (
     build_portfolio_summaries as _build_portfolio_summaries,
     step_build_baselines as _step_build_baselines,
+    step_build_tax_shadow as _step_build_tax_shadow,
     step_fetch_market_data as _step_fetch_market_data,
     step_update_snapshots as _step_update_snapshots,
 )
@@ -40,6 +41,7 @@ def run(trigger: str, today: date | None = None) -> dict:
     payload = _step_fetch_market_data()
     _step_update_snapshots(payload)
     _step_build_baselines()
+    _step_build_tax_shadow()
 
     summaries = _build_portfolio_summaries()
     rows = _build_leaderboard_rows(summaries, on=today)
@@ -63,6 +65,7 @@ def commit_and_push() -> None:
         str(_PROJECT_ROOT / "data" / "portfolios"),
         str(_PROJECT_ROOT / "data" / "baselines"),
         str(_PROJECT_ROOT / "data" / "leaderboard"),
+        str(_PROJECT_ROOT / "data" / "tax_shadow"),
     ]
     subprocess.run(["git", "add", *paths], cwd=_PROJECT_ROOT, check=True)
     diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=_PROJECT_ROOT)

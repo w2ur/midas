@@ -19,6 +19,7 @@ Two modes:
      - step_build_memory_update_prompts()  → Ring 2 session-end rewrite prompts
      - step_save_memories()                → data/agent_memory/
      - step_build_baselines()              → data/baselines/ (idempotent recompute)
+     - step_build_tax_shadow()            → data/tax_shadow/ (reporting only, after baselines)
 
 Usage (snapshot-only):
     python scripts/daily_session.py
@@ -715,6 +716,22 @@ def step_build_baselines() -> None:
     )
 
 
+@idempotent_step(skip_return=None)
+def step_build_tax_shadow() -> None:
+    """Step 9c — After-tax shadow ledger (reporting only).
+
+    Reads each agent's data/portfolios/{agent}/trades.json and writes
+    data/tax_shadow/{agent}.json with realized PFU estimates per French
+    tax law.  Runs AFTER step_build_baselines.  Pure computation — never
+    mutates portfolio state.
+    """
+    print("\n=== Step 9c: Build tax shadow ledgers ===")
+    from scripts.build_tax_shadow import build_tax_shadow_all
+
+    written = build_tax_shadow_all()
+    print(f"  Wrote {len(written)} tax shadow ledger(s).")
+
+
 def step_git_commit_push(dry_run: bool = False) -> None:
     """Step 5 — Git commit and push data changes.
 
@@ -839,6 +856,7 @@ def run_daily_session(dry_run: bool = False) -> None:
     market_payload = step_fetch_market_data()
     step_update_snapshots(market_payload)
     step_build_baselines()
+    step_build_tax_shadow()
     step_git_commit_push(dry_run=dry_run)
 
     print("\n=== Snapshot complete ===")
