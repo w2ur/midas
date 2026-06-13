@@ -51,10 +51,32 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_TICKERS_PATH = _REPO_ROOT / "data" / "tickers.json"
 
 # ---------------------------------------------------------------------------
-# Static policy constants (French tax resident, IBIE + Kraken + OANDA)
+# Structured risk limits and PRIIPs blocklist — single source of truth.
+# Task D safety rails and the C4 Manager IMPORT these; do NOT re-hardcode.
 # ---------------------------------------------------------------------------
 
-FEE_TAX_POLICY: str = """
+RISK_BUDGET_LIMITS: dict = {
+    "max_positions": 6,
+    "per_position_cap_eur": 400,
+    "cash_floor_eur": 150,
+    "max_trades_per_week": 2,
+    "min_conviction": 7,
+}
+
+# US-domiciled leveraged/inverse ETFs blocked for EU retail via IBKR (PRIIPs KID).
+# Use UCITS substitutes (3USS.L, QQQS.L) or 1x inverse (SH, PSQ) only.
+PRIIPS_BLOCKLIST: frozenset = frozenset(
+    {"SQQQ", "SPXS", "SPXU", "TQQQ", "UPRO", "SOXL"}
+)
+
+# ---------------------------------------------------------------------------
+# Static policy constants (French tax resident, IBIE + Kraken + OANDA)
+# Built from structured constants above so prose and machine values cannot diverge.
+# ---------------------------------------------------------------------------
+
+_PRIIPS_BLOCKLIST_STR = ", ".join(sorted(PRIIPS_BLOCKLIST))
+
+FEE_TAX_POLICY: str = f"""
 FEE AND TAX POLICY (French tax resident — these are GIVEN facts, not suggestions)
 
 TAX
@@ -76,18 +98,17 @@ FEES (round-trip cost the trade must exceed by ~2x to be worth doing)
 - FX (OANDA Europe): ~0.002%.
 
 PRIIPS BLOCKLIST — NOT buyable by EU retail via IBKR
-These US-domiciled leveraged/inverse ETFs are blocked: SQQQ, SPXS, SPXU, TQQQ,
-UPRO, SOXL. Use UCITS substitutes (3USS.L, QQQS.L) or 1x inverse (SH, PSQ) only.
+These US-domiciled leveraged/inverse ETFs are blocked: {_PRIIPS_BLOCKLIST_STR}. Use UCITS substitutes (3USS.L, QQQS.L) or 1x inverse (SH, PSQ) only.
 """.strip()
 
-RISK_BUDGET: str = """
+RISK_BUDGET: str = f"""
 RISK BUDGET (hard constraints — DEFAULT ACTION IS HOLD)
 
-- Maximum open positions: 6
-- Per-position cap: ~EUR 400 (≈25% of a ~EUR 2,000 book)
-- Cash floor: EUR 150 must remain uninvested at all times
-- Turnover limit: ≤2 trades per week
-- Conviction threshold: conviction < 7 → do NOT trade; hold cash instead
+- Maximum open positions: {RISK_BUDGET_LIMITS["max_positions"]}
+- Per-position cap: ~EUR {RISK_BUDGET_LIMITS["per_position_cap_eur"]} (≈25% of a ~EUR 2,000 book)
+- Cash floor: EUR {RISK_BUDGET_LIMITS["cash_floor_eur"]} must remain uninvested at all times
+- Turnover limit: ≤{RISK_BUDGET_LIMITS["max_trades_per_week"]} trades per week
+- Conviction threshold: conviction < {RISK_BUDGET_LIMITS["min_conviction"]} → do NOT trade; hold cash instead
 - When in doubt, HOLD. A missed opportunity costs nothing; a bad trade costs capital.
 """.strip()
 
@@ -104,9 +125,6 @@ SNAPSHOT_TRUTH_INSTRUCTION: str = (
 # Maximum same-ticker and cross-ticker outcome memory entries shown to Manager
 _MAX_SAME_TICKER_MEMORY: int = 5
 _MAX_OTHER_TICKER_MEMORY: int = 3
-
-# Fields stripped from resolved_decisions before inclusion in outcome_memory
-_STRIP_FIELDS: frozenset[str] = frozenset({"reasoning", "thesis", "rationale", "notes"})
 
 
 @dataclass
@@ -265,8 +283,8 @@ def build_manager_context(
     market_snapshot: list[dict[str, Any]] = []
     for ticker in sorted(all_tickers):
         reg_entry = ticker_registry.get(ticker, {})
-        name = reg_entry.get("name") if reg_entry else None
-        type_ = reg_entry.get("type") if reg_entry else None
+        name = (reg_entry.get("name") or None) if reg_entry else None
+        type_ = (reg_entry.get("type") or None) if reg_entry else None
 
         if ticker in price_lookup:
             close, as_of_date = price_lookup[ticker]
@@ -371,9 +389,12 @@ def _build_outcome_memory(
         return []
 
     # Separate into same-ticker (currently held) and cross-ticker decisions.
-    # Sort descending by date so we take the most recent N.
+    # Sort descending by (date, ticker, action) for determinism: same-date entries
+    # always appear in the same order regardless of input-list permutation.
     sorted_decisions = sorted(
-        resolved_decisions, key=lambda d: d.get("date", ""), reverse=True
+        resolved_decisions,
+        key=lambda d: (d.get("date", ""), d.get("ticker", ""), d.get("action", "")),
+        reverse=True,
     )
 
     same_ticker: list[dict[str, Any]] = []

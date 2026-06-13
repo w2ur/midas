@@ -22,7 +22,9 @@ import pytest
 
 from engine.manager_context import (
     FEE_TAX_POLICY,
+    PRIIPS_BLOCKLIST,
     RISK_BUDGET,
+    RISK_BUDGET_LIMITS,
     SNAPSHOT_TRUTH_INSTRUCTION,
     ManagerContext,
     build_manager_context,
@@ -674,3 +676,213 @@ class TestLoadTickerRegistry:
         bad_file.write_text("not valid json {{{")
         registry = load_ticker_registry(path=bad_file)
         assert registry == {}
+
+
+# ---------------------------------------------------------------------------
+# Deterministic outcome memory — same input, different order → identical output
+# ---------------------------------------------------------------------------
+
+
+class TestOutcomeMemoryDeterminism:
+    """_build_outcome_memory must produce the same result regardless of input order."""
+
+    def _make_decisions(self) -> list[dict]:
+        """Return a set of resolved decisions that includes same-date entries."""
+        return [
+            {
+                "date": "2026-05-10",
+                "ticker": "AAPL",
+                "action": "BUY",
+                "realized_return_pct": 2.0,
+                "alpha_vs_msci_pct": 1.0,
+                "reasoning": "secret A",
+            },
+            {
+                "date": "2026-05-10",
+                "ticker": "MSFT",
+                "action": "SELL",
+                "realized_return_pct": -1.0,
+                "alpha_vs_msci_pct": -0.5,
+                "reasoning": "secret B",
+            },
+            {
+                "date": "2026-05-10",
+                "ticker": "AAPL",
+                "action": "HOLD",
+                "realized_return_pct": 0.5,
+                "alpha_vs_msci_pct": 0.1,
+                "reasoning": "secret C",
+            },
+            {
+                "date": "2026-04-01",
+                "ticker": "BTC-EUR",
+                "action": "BUY",
+                "realized_return_pct": 5.0,
+                "alpha_vs_msci_pct": 3.0,
+                "reasoning": "secret D",
+            },
+            {
+                "date": "2026-03-15",
+                "ticker": "ETH-EUR",
+                "action": "SELL",
+                "realized_return_pct": -2.0,
+                "alpha_vs_msci_pct": -1.0,
+                "reasoning": "secret E",
+            },
+        ]
+
+    def _build_ctx(self, decisions: list[dict]) -> ManagerContext:
+        return build_manager_context(
+            notes=[],
+            portfolio=_make_portfolio(),
+            resolved_decisions=decisions,
+            price_lookup={},
+            ticker_registry={},
+            as_of=date(2026, 6, 12),
+            config=_DEFAULT_CONFIG,
+        )
+
+    def test_outcome_memory_deterministic_across_input_order(self) -> None:
+        """Shuffled input must yield identical outcome_memory and identical render."""
+        import random
+
+        decisions = self._make_decisions()
+
+        # Build reference context with original order
+        ctx_original = self._build_ctx(decisions)
+
+        # Try several different shuffles
+        rng = random.Random(42)
+        for _ in range(10):
+            shuffled = decisions[:]
+            rng.shuffle(shuffled)
+            ctx_shuffled = self._build_ctx(shuffled)
+            assert ctx_shuffled.outcome_memory == ctx_original.outcome_memory, (
+                "outcome_memory differs between input orderings"
+            )
+            assert render_manager_context(ctx_shuffled) == render_manager_context(
+                ctx_original
+            ), "rendered output differs between input orderings"
+
+
+# ---------------------------------------------------------------------------
+# Structured constants — prose derived from machine values
+# ---------------------------------------------------------------------------
+
+
+class TestStructuredConstants:
+    def test_risk_budget_limits_has_required_keys(self) -> None:
+        required = {
+            "max_positions",
+            "per_position_cap_eur",
+            "cash_floor_eur",
+            "max_trades_per_week",
+            "min_conviction",
+        }
+        assert required <= set(RISK_BUDGET_LIMITS.keys())
+
+    def test_priips_blocklist_is_frozenset(self) -> None:
+        assert isinstance(PRIIPS_BLOCKLIST, frozenset)
+        assert len(PRIIPS_BLOCKLIST) > 0
+
+    def test_priips_blocklist_contains_known_tickers(self) -> None:
+        expected = {"SQQQ", "SPXS", "SPXU", "TQQQ", "UPRO", "SOXL"}
+        assert expected <= PRIIPS_BLOCKLIST
+
+    def test_risk_budget_prose_contains_limit_values(self) -> None:
+        """RISK_BUDGET string must reflect the numbers in RISK_BUDGET_LIMITS."""
+        assert str(RISK_BUDGET_LIMITS["max_positions"]) in RISK_BUDGET
+        assert str(RISK_BUDGET_LIMITS["per_position_cap_eur"]) in RISK_BUDGET
+        assert str(RISK_BUDGET_LIMITS["cash_floor_eur"]) in RISK_BUDGET
+        assert str(RISK_BUDGET_LIMITS["max_trades_per_week"]) in RISK_BUDGET
+        assert str(RISK_BUDGET_LIMITS["min_conviction"]) in RISK_BUDGET
+
+    def test_fee_tax_policy_prose_contains_all_priips_tickers(self) -> None:
+        """FEE_TAX_POLICY string must reference every ticker in PRIIPS_BLOCKLIST."""
+        for ticker in PRIIPS_BLOCKLIST:
+            assert ticker in FEE_TAX_POLICY, (
+                f"PRIIPS_BLOCKLIST ticker {ticker!r} missing from FEE_TAX_POLICY prose"
+            )
+
+    def test_risk_budget_limits_importable(self) -> None:
+        """Verify importability for Task D."""
+        from engine.manager_context import RISK_BUDGET_LIMITS as rbl
+
+        assert rbl["max_positions"] == 6
+
+    def test_priips_blocklist_importable(self) -> None:
+        """Verify importability for Task D."""
+        from engine.manager_context import PRIIPS_BLOCKLIST as pbl
+
+        assert isinstance(pbl, frozenset)
+
+
+# ---------------------------------------------------------------------------
+# Registry normalization — empty string values become None
+# ---------------------------------------------------------------------------
+
+
+class TestRegistryNormalization:
+    def test_empty_name_in_registry_normalized_to_none(self) -> None:
+        notes = [("agent-a", _make_note(["AAPL"]))]
+        # Registry entry has empty string name (not None)
+        registry = {"AAPL": {"name": "", "type": "equity"}}
+        ctx = build_manager_context(
+            notes=notes,
+            portfolio=_make_portfolio(),
+            resolved_decisions=[],
+            price_lookup={"AAPL": (150.0, "2026-06-12")},
+            ticker_registry=registry,
+            as_of=date(2026, 6, 12),
+            config=_DEFAULT_CONFIG,
+        )
+        entry = next(e for e in ctx.market_snapshot if e["ticker"] == "AAPL")
+        assert entry["name"] is None
+
+    def test_empty_type_in_registry_normalized_to_none(self) -> None:
+        notes = [("agent-a", _make_note(["AAPL"]))]
+        registry = {"AAPL": {"name": "Apple Inc.", "type": ""}}
+        ctx = build_manager_context(
+            notes=notes,
+            portfolio=_make_portfolio(),
+            resolved_decisions=[],
+            price_lookup={"AAPL": (150.0, "2026-06-12")},
+            ticker_registry=registry,
+            as_of=date(2026, 6, 12),
+            config=_DEFAULT_CONFIG,
+        )
+        entry = next(e for e in ctx.market_snapshot if e["ticker"] == "AAPL")
+        assert entry["type"] is None
+
+    def test_none_name_in_registry_stays_none(self) -> None:
+        notes = [("agent-a", _make_note(["AAPL"]))]
+        registry = {"AAPL": {"name": None, "type": "equity"}}
+        ctx = build_manager_context(
+            notes=notes,
+            portfolio=_make_portfolio(),
+            resolved_decisions=[],
+            price_lookup={"AAPL": (150.0, "2026-06-12")},
+            ticker_registry=registry,
+            as_of=date(2026, 6, 12),
+            config=_DEFAULT_CONFIG,
+        )
+        entry = next(e for e in ctx.market_snapshot if e["ticker"] == "AAPL")
+        assert entry["name"] is None
+
+    def test_empty_registry_values_suppress_name_in_render(self) -> None:
+        """Empty name/type must not produce a dangling ' — ' or '[]' in render."""
+        notes = [("agent-a", _make_note(["AAPL"]))]
+        registry = {"AAPL": {"name": "", "type": ""}}
+        ctx = build_manager_context(
+            notes=notes,
+            portfolio=_make_portfolio(),
+            resolved_decisions=[],
+            price_lookup={"AAPL": (150.0, "2026-06-12")},
+            ticker_registry=registry,
+            as_of=date(2026, 6, 12),
+            config=_DEFAULT_CONFIG,
+        )
+        rendered = render_manager_context(ctx)
+        # Should not contain a dangling em-dash with nothing after it
+        assert " — \n" not in rendered
+        assert " []" not in rendered
