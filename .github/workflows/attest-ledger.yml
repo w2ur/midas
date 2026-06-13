@@ -1,0 +1,133 @@
+name: attest-ledger
+
+# Daily ledger attestation via annotated git tags.
+#
+# Tamper-evidence mechanism
+# --------------------------
+# This workflow creates an annotated git tag on the current main HEAD whose
+# message contains a deterministic SHA-256 digest of the committed trade
+# ledger (data/orders/, data/portfolios/, data/leaderboard/current.json).
+# The tag is then pushed to GitHub.
+#
+# Third-party attestation = GitHub's immutable push timestamp on the tag +
+# the hash recorded in the retained Actions run log/summary.  A
+# "you backdated your git history" accusation would require compromising:
+#   1. GitHub's tag push event timeline (immutable after the fact), AND
+#   2. The GitHub Actions run log (immutable after execution).
+#
+# Why NOT GPG signing?
+# True GPG signing (git tag -s) is NOT available on stock GitHub-hosted
+# runners — the runner has no private key material.  An annotated tag whose
+# message carries the digest, pushed to GitHub, is the practical equivalent:
+# the commitment is GitHub's server-side timestamp, not a cryptographic
+# signature.
+#
+# Tag naming: attest/<YYYY-MM-DD>  (one per calendar day, UTC)
+#
+# Idempotency (re-run on the same day)
+# We delete and recreate the tag if it already exists.  This is intentional:
+# a re-run on the same day (e.g. after a manual trigger or a failed first
+# attempt) should reflect the LATEST committed ledger state, not the stale
+# one from the first run.  The force-push is safe because the tag namespace
+# `attest/*` is exclusively owned by this workflow; no human workflow depends
+# on tag immutability here (the run log itself is immutable and records both
+# the old and new hash if a re-run happens).
+#
+# Schedule: 23:00 UTC — after the 20:00 UTC session and clear of the
+# 19:55–20:30 watcher blackout.
+
+on:
+  schedule:
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write  # needed to push an annotated tag
+
+concurrency:
+  group: attest-ledger
+  cancel-in-progress: false
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          # Full history is needed so `git tag` can operate on the correct
+          # commit and we can verify the HEAD is up to date.
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Compute ledger digest
+        id: digest
+        run: |
+          # Capture the full rendered attestation block for the tag message
+          ATTESTATION=$(python scripts/attest_ledger.py)
+          echo "attestation<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$ATTESTATION" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          # Extract just the digest_root line for the step summary header
+          DIGEST_ROOT=$(python scripts/attest_ledger.py --json | python -c "import sys,json; d=json.load(sys.stdin); print(d['digest_root'])")
+          echo "digest_root=$DIGEST_ROOT" >> "$GITHUB_OUTPUT"
+
+          # Date for the tag name
+          DATE=$(date -u +%Y-%m-%d)
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+
+      - name: Write step summary
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY_EOF'
+          ## Midas Ledger Attestation
+          SUMMARY_EOF
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          python scripts/attest_ledger.py >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create and push annotated tag
+        env:
+          TAG_DATE: ${{ steps.digest.outputs.date }}
+          ATTESTATION: ${{ steps.digest.outputs.attestation }}
+        run: |
+          TAG_NAME="attest/${TAG_DATE}"
+
+          # Delete the tag locally and remotely if it already exists (idempotent
+          # re-run: recreate with the latest ledger state rather than keeping a
+          # stale first-run tag).  Suppress errors if the tag does not exist.
+          git tag -d "$TAG_NAME" 2>/dev/null || true
+          git push origin ":refs/tags/${TAG_NAME}" 2>/dev/null || true
+
+          # Create the annotated tag on the current HEAD with the attestation
+          # block as the message.  The message is passed via a file to avoid
+          # shell quoting issues with multi-line content.
+          TMPFILE=$(mktemp)
+          printf '%s' "$ATTESTATION" > "$TMPFILE"
+          git tag -a "$TAG_NAME" -F "$TMPFILE"
+          rm -f "$TMPFILE"
+
+          # Push the tag to GitHub — this is the immutable timestamped record.
+          git push origin "refs/tags/${TAG_NAME}"
+
+          echo "Pushed tag: ${TAG_NAME}"
+          echo "Digest root: ${{ steps.digest.outputs.digest_root }}"
