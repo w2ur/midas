@@ -1,0 +1,637 @@
+"""Tests for engine/manager_decision.py — ManagerDecision schema + conviction gate.
+
+TDD: these tests are written BEFORE the implementation and drive the design.
+"""
+
+from __future__ import annotations
+
+import pytest
+
+from engine.manager_context import RISK_BUDGET_LIMITS
+from engine.manager_decision import (
+    ManagerDecision,
+    ManagerPosition,
+    is_hold,
+    parse_manager_decision,
+    render_manager_decision,
+)
+
+
+# ---------------------------------------------------------------------------
+# ManagerPosition construction
+# ---------------------------------------------------------------------------
+
+
+class TestManagerPosition:
+    def test_valid_buy(self) -> None:
+        pos = ManagerPosition(
+            ticker="BTC-EUR",
+            action="BUY",
+            size_eur=300,
+            entry_guidance="Market order at open",
+            stop_loss=25000.0,
+            reasoning="Strong momentum breakout.",
+        )
+        assert pos.ticker == "BTC-EUR"
+        assert pos.action == "BUY"
+        assert pos.size_eur == 300
+
+    def test_valid_sell(self) -> None:
+        pos = ManagerPosition(
+            ticker="ETH-EUR",
+            action="SELL",
+            size_eur=0,
+            entry_guidance="Close entire position",
+            stop_loss=None,
+            reasoning="Stop-loss hit.",
+        )
+        assert pos.action == "SELL"
+        assert pos.stop_loss is None
+
+    def test_valid_hold(self) -> None:
+        pos = ManagerPosition(
+            ticker="AAPL",
+            action="HOLD",
+            size_eur=0,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="No new catalyst.",
+        )
+        assert pos.action == "HOLD"
+
+    def test_invalid_action_raises(self) -> None:
+        with pytest.raises(ValueError, match="action"):
+            ManagerPosition(
+                ticker="BTC-EUR",
+                action="SHORT",
+                size_eur=200,
+                entry_guidance="",
+                stop_loss=None,
+                reasoning="Test.",
+            )
+
+    def test_negative_size_eur_raises(self) -> None:
+        with pytest.raises(ValueError, match="size_eur"):
+            ManagerPosition(
+                ticker="BTC-EUR",
+                action="BUY",
+                size_eur=-100,
+                entry_guidance="",
+                stop_loss=None,
+                reasoning="Test.",
+            )
+
+    def test_non_int_size_eur_raises(self) -> None:
+        with pytest.raises(ValueError, match="size_eur"):
+            ManagerPosition(
+                ticker="BTC-EUR",
+                action="BUY",
+                size_eur=200.5,  # type: ignore[arg-type]
+                entry_guidance="",
+                stop_loss=None,
+                reasoning="Test.",
+            )
+
+    def test_empty_ticker_raises(self) -> None:
+        with pytest.raises(ValueError, match="ticker"):
+            ManagerPosition(
+                ticker="",
+                action="BUY",
+                size_eur=200,
+                entry_guidance="",
+                stop_loss=None,
+                reasoning="Test.",
+            )
+
+    def test_empty_reasoning_raises(self) -> None:
+        with pytest.raises(ValueError, match="reasoning"):
+            ManagerPosition(
+                ticker="BTC-EUR",
+                action="BUY",
+                size_eur=200,
+                entry_guidance="",
+                stop_loss=None,
+                reasoning="",
+            )
+
+    def test_zero_size_eur_allowed(self) -> None:
+        # HOLD and SELL can have 0 size
+        pos = ManagerPosition(
+            ticker="BTC-EUR",
+            action="HOLD",
+            size_eur=0,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="Monitoring only.",
+        )
+        assert pos.size_eur == 0
+
+
+# ---------------------------------------------------------------------------
+# ManagerDecision construction
+# ---------------------------------------------------------------------------
+
+
+class TestManagerDecision:
+    def _make_position(
+        self, ticker: str = "BTC-EUR", action: str = "BUY"
+    ) -> ManagerPosition:
+        return ManagerPosition(
+            ticker=ticker,
+            action=action,
+            size_eur=300,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="Consensus breakout.",
+        )
+
+    def test_valid_with_positions(self) -> None:
+        decision = ManagerDecision(
+            positions=[self._make_position()],
+            conviction=8,
+            hold_reasoning="",
+        )
+        assert decision.conviction == 8
+        assert len(decision.positions) == 1
+
+    def test_valid_hold_no_positions(self) -> None:
+        decision = ManagerDecision(
+            positions=[],
+            conviction=4,
+            hold_reasoning="Low conviction — holding.",
+        )
+        assert decision.positions == []
+
+    def test_conviction_above_10_raises(self) -> None:
+        with pytest.raises(ValueError, match="conviction"):
+            ManagerDecision(
+                positions=[],
+                conviction=11,
+                hold_reasoning="Test.",
+            )
+
+    def test_conviction_below_0_raises(self) -> None:
+        with pytest.raises(ValueError, match="conviction"):
+            ManagerDecision(
+                positions=[],
+                conviction=-1,
+                hold_reasoning="Test.",
+            )
+
+    def test_non_int_conviction_raises(self) -> None:
+        with pytest.raises(ValueError, match="conviction"):
+            ManagerDecision(
+                positions=[],
+                conviction=7.5,  # type: ignore[arg-type]
+                hold_reasoning="Test.",
+            )
+
+
+# ---------------------------------------------------------------------------
+# Conviction gate — critical test
+# ---------------------------------------------------------------------------
+
+
+class TestConvictionGate:
+    """The conviction gate MUST drop positions regardless of LLM output."""
+
+    def test_low_conviction_drops_positions(self) -> None:
+        """parse_manager_decision with conviction=5 and positions → positions=[]."""
+        raw = {
+            "positions": [
+                {
+                    "ticker": "BTC-EUR",
+                    "action": "BUY",
+                    "size_eur": 300,
+                    "entry_guidance": "Market order",
+                    "stop_loss": None,
+                    "reasoning": "Breakout.",
+                }
+            ],
+            "conviction": 5,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert decision.positions == [], "Low-conviction positions must be dropped"
+        assert decision.hold_reasoning, (
+            "hold_reasoning must be populated when gate fires"
+        )
+
+    def test_low_conviction_synthesises_hold_reasoning(self) -> None:
+        """When model leaves hold_reasoning blank and conviction is low, synthesise one."""
+        raw = {
+            "positions": [
+                {
+                    "ticker": "ETH-EUR",
+                    "action": "BUY",
+                    "size_eur": 250,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Thesis.",
+                }
+            ],
+            "conviction": 3,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert decision.hold_reasoning  # must be non-empty
+
+    def test_at_threshold_conviction_retains_positions(self) -> None:
+        """conviction == min_conviction → positions are retained."""
+        min_c = RISK_BUDGET_LIMITS["min_conviction"]
+        raw = {
+            "positions": [
+                {
+                    "ticker": "BTC-EUR",
+                    "action": "BUY",
+                    "size_eur": 300,
+                    "entry_guidance": "Limit 30k",
+                    "stop_loss": 27000.0,
+                    "reasoning": "Strong analyst consensus.",
+                }
+            ],
+            "conviction": min_c,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert len(decision.positions) == 1, (
+            "Positions must be retained at threshold conviction"
+        )
+
+    def test_high_conviction_retains_positions(self) -> None:
+        """conviction=9 → positions are retained."""
+        raw = {
+            "positions": [
+                {
+                    "ticker": "SOL-EUR",
+                    "action": "BUY",
+                    "size_eur": 350,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Strong breakout.",
+                }
+            ],
+            "conviction": 9,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert len(decision.positions) == 1
+
+    def test_gate_uses_risk_budget_limits_min_conviction(self) -> None:
+        """The gate threshold must equal RISK_BUDGET_LIMITS['min_conviction']."""
+        min_c = RISK_BUDGET_LIMITS["min_conviction"]
+        # One below threshold drops positions
+        raw_below = {
+            "positions": [
+                {
+                    "ticker": "BTC-EUR",
+                    "action": "BUY",
+                    "size_eur": 300,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Test.",
+                }
+            ],
+            "conviction": min_c - 1,
+            "hold_reasoning": "",
+        }
+        below = parse_manager_decision(raw_below)
+        assert below is not None
+        assert below.positions == []
+
+        # At threshold retains
+        raw_at = {
+            "positions": [
+                {
+                    "ticker": "BTC-EUR",
+                    "action": "BUY",
+                    "size_eur": 300,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Test.",
+                }
+            ],
+            "conviction": min_c,
+            "hold_reasoning": "",
+        }
+        at = parse_manager_decision(raw_at)
+        assert at is not None
+        assert len(at.positions) == 1
+
+
+# ---------------------------------------------------------------------------
+# Tolerant parse — never raises
+# ---------------------------------------------------------------------------
+
+
+class TestParseManagerDecisionTolerant:
+    def test_none_input_returns_none(self) -> None:
+        assert parse_manager_decision(None) is None
+
+    def test_empty_dict_returns_none(self) -> None:
+        assert parse_manager_decision({}) is None
+
+    def test_non_dict_returns_none(self) -> None:
+        assert parse_manager_decision("not a dict") is None  # type: ignore[arg-type]
+        assert parse_manager_decision(42) is None  # type: ignore[arg-type]
+        assert parse_manager_decision([]) is None  # type: ignore[arg-type]
+
+    def test_garbage_conviction_is_clamped(self) -> None:
+        raw = {
+            "positions": [],
+            "conviction": 999,
+            "hold_reasoning": "Test.",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert decision.conviction == 10
+
+    def test_negative_conviction_is_clamped(self) -> None:
+        raw = {
+            "positions": [],
+            "conviction": -50,
+            "hold_reasoning": "Test.",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert decision.conviction == 0
+
+    def test_non_numeric_conviction_defaults(self) -> None:
+        raw = {
+            "positions": [],
+            "conviction": "high",
+            "hold_reasoning": "Test.",
+        }
+        decision = parse_manager_decision(raw)
+        # Should not raise; conviction defaults to something valid
+        assert decision is not None
+        assert 0 <= decision.conviction <= 10
+
+    def test_malformed_position_is_dropped_others_kept(self) -> None:
+        raw = {
+            "positions": [
+                {
+                    "ticker": "",  # invalid — empty ticker
+                    "action": "BUY",
+                    "size_eur": 300,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Test.",
+                },
+                {
+                    "ticker": "SOL-EUR",
+                    "action": "BUY",
+                    "size_eur": 300,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Valid position.",
+                },
+            ],
+            "conviction": 8,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert len(decision.positions) == 1
+        assert decision.positions[0].ticker == "SOL-EUR"
+
+    def test_bad_action_position_is_dropped(self) -> None:
+        raw = {
+            "positions": [
+                {
+                    "ticker": "BTC-EUR",
+                    "action": "LONG",  # invalid enum
+                    "size_eur": 300,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Test.",
+                },
+            ],
+            "conviction": 8,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert decision.positions == []
+
+    def test_negative_size_eur_position_is_dropped(self) -> None:
+        raw = {
+            "positions": [
+                {
+                    "ticker": "BTC-EUR",
+                    "action": "BUY",
+                    "size_eur": -200,  # invalid
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Test.",
+                },
+            ],
+            "conviction": 8,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert decision.positions == []
+
+    def test_positions_not_a_list_returns_empty_positions(self) -> None:
+        raw = {
+            "positions": "not a list",
+            "conviction": 8,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert decision.positions == []
+
+    def test_missing_conviction_defaults(self) -> None:
+        raw = {
+            "positions": [],
+            "hold_reasoning": "No signal.",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert 0 <= decision.conviction <= 10
+
+
+# ---------------------------------------------------------------------------
+# is_hold helper
+# ---------------------------------------------------------------------------
+
+
+class TestIsHold:
+    def test_empty_positions_is_hold(self) -> None:
+        decision = ManagerDecision(
+            positions=[], conviction=3, hold_reasoning="Holding."
+        )
+        assert is_hold(decision) is True
+
+    def test_all_hold_actions_is_hold(self) -> None:
+        pos = ManagerPosition(
+            ticker="BTC-EUR",
+            action="HOLD",
+            size_eur=0,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="No catalyst.",
+        )
+        decision = ManagerDecision(positions=[pos], conviction=6, hold_reasoning="")
+        assert is_hold(decision) is True
+
+    def test_buy_action_is_not_hold(self) -> None:
+        pos = ManagerPosition(
+            ticker="BTC-EUR",
+            action="BUY",
+            size_eur=300,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="Breakout.",
+        )
+        decision = ManagerDecision(positions=[pos], conviction=8, hold_reasoning="")
+        assert is_hold(decision) is False
+
+    def test_sell_action_is_not_hold(self) -> None:
+        pos = ManagerPosition(
+            ticker="ETH-EUR",
+            action="SELL",
+            size_eur=0,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="Stop hit.",
+        )
+        decision = ManagerDecision(positions=[pos], conviction=9, hold_reasoning="")
+        assert is_hold(decision) is False
+
+    def test_mixed_hold_and_buy_is_not_hold(self) -> None:
+        hold_pos = ManagerPosition(
+            ticker="BTC-EUR",
+            action="HOLD",
+            size_eur=0,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="No change.",
+        )
+        buy_pos = ManagerPosition(
+            ticker="SOL-EUR",
+            action="BUY",
+            size_eur=250,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="New position.",
+        )
+        decision = ManagerDecision(
+            positions=[hold_pos, buy_pos], conviction=8, hold_reasoning=""
+        )
+        assert is_hold(decision) is False
+
+
+# ---------------------------------------------------------------------------
+# render_manager_decision
+# ---------------------------------------------------------------------------
+
+
+class TestRenderManagerDecision:
+    def test_render_contains_conviction(self) -> None:
+        decision = ManagerDecision(
+            positions=[], conviction=4, hold_reasoning="Low conviction."
+        )
+        rendered = render_manager_decision(decision)
+        assert "4" in rendered
+
+    def test_render_hold_reasoning_shown_when_no_positions(self) -> None:
+        decision = ManagerDecision(
+            positions=[], conviction=3, hold_reasoning="No trades today."
+        )
+        rendered = render_manager_decision(decision)
+        assert "No trades today." in rendered
+
+    def test_render_shows_ticker_when_positions(self) -> None:
+        pos = ManagerPosition(
+            ticker="BTC-EUR",
+            action="BUY",
+            size_eur=300,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="Strong buy.",
+        )
+        decision = ManagerDecision(positions=[pos], conviction=8, hold_reasoning="")
+        rendered = render_manager_decision(decision)
+        assert "BTC-EUR" in rendered
+
+    def test_render_shows_action(self) -> None:
+        pos = ManagerPosition(
+            ticker="ETH-EUR",
+            action="SELL",
+            size_eur=0,
+            entry_guidance="",
+            stop_loss=None,
+            reasoning="Exit on stop.",
+        )
+        decision = ManagerDecision(positions=[pos], conviction=9, hold_reasoning="")
+        rendered = render_manager_decision(decision)
+        assert "SELL" in rendered
+
+
+# ---------------------------------------------------------------------------
+# to_dict / from_dict round-trip
+# ---------------------------------------------------------------------------
+
+
+class TestRoundTrip:
+    def _make_decision(self) -> ManagerDecision:
+        pos = ManagerPosition(
+            ticker="BTC-EUR",
+            action="BUY",
+            size_eur=300,
+            entry_guidance="Limit 30k",
+            stop_loss=27000.0,
+            reasoning="Analyst consensus.",
+        )
+        return ManagerDecision(positions=[pos], conviction=8, hold_reasoning="")
+
+    def test_to_dict_keys(self) -> None:
+        d = self._make_decision().to_dict()
+        assert "positions" in d
+        assert "conviction" in d
+        assert "hold_reasoning" in d
+
+    def test_position_to_dict_keys(self) -> None:
+        pos = ManagerPosition(
+            ticker="BTC-EUR",
+            action="BUY",
+            size_eur=300,
+            entry_guidance="Limit",
+            stop_loss=None,
+            reasoning="Thesis.",
+        )
+        d = pos.to_dict()
+        assert set(d.keys()) == {
+            "ticker",
+            "action",
+            "size_eur",
+            "entry_guidance",
+            "stop_loss",
+            "reasoning",
+        }
+
+    def test_round_trip(self) -> None:
+        original = self._make_decision()
+        restored = ManagerDecision.from_dict(original.to_dict())
+        assert restored.conviction == original.conviction
+        assert len(restored.positions) == len(original.positions)
+        restored_pos = restored.positions[0]
+        original_pos = original.positions[0]
+        assert restored_pos.ticker == original_pos.ticker
+        assert restored_pos.action == original_pos.action
+        assert restored_pos.size_eur == original_pos.size_eur
+        assert restored_pos.stop_loss == original_pos.stop_loss
+
+    def test_from_dict_validates(self) -> None:
+        """from_dict is strict — bad data raises ValueError."""
+        d = self._make_decision().to_dict()
+        d["conviction"] = 15  # invalid
+        with pytest.raises(ValueError):
+            ManagerDecision.from_dict(d)
