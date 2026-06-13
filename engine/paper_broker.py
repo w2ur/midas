@@ -30,6 +30,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+from engine.fees import fee_for
 from engine.fx import convert as fx_convert
 from engine.ohlcv_store import (
     OHLCV_STORE as _DEFAULT_OHLCV_STORE,
@@ -245,7 +246,9 @@ def _process_one(
     if notional_base > config.max_order_notional:
         return _reject(order.order_id, "MAX_ORDER_NOTIONAL")
 
-    if order.action == "BUY" and notional_base > portfolio.cash:
+    fee = fee_for(order.ticker, notional_base)
+
+    if order.action == "BUY" and notional_base + fee > portfolio.cash:
         return _reject(order.order_id, "INSUFFICIENT_CASH")
 
     if order.action == "SELL":
@@ -265,7 +268,7 @@ def _process_one(
         shares=order.shares,
         price=price,
         total=notional_base,
-        fees=0.0,
+        fees=fee,
         reasoning=order.reasoning,
     )
 
@@ -283,7 +286,7 @@ def _process_one(
         fill_price=price,
         fill_currency=ticker_ccy,
         notional_base=notional_base,
-        fees=0.0,
+        fees=fee,
         reason=None,
     )
 
@@ -469,7 +472,9 @@ def execute_triggered_order(
         f.trigger_fired = True
         return f
 
-    if order.action == "BUY" and notional_base > portfolio.cash:
+    fee = fee_for(order.ticker, notional_base)
+
+    if order.action == "BUY" and notional_base + fee > portfolio.cash:
         f = _reject(order.order_id, "INSUFFICIENT_CASH")
         f.trigger_fired = True
         return f
@@ -495,7 +500,7 @@ def execute_triggered_order(
         shares=order.shares,
         price=fire_price,
         total=notional_base,
-        fees=0.0,
+        fees=fee,
         reasoning=order.reasoning,
     )
 
@@ -517,7 +522,7 @@ def execute_triggered_order(
         fill_price=fire_price,
         fill_currency=ticker_ccy,
         notional_base=notional_base,
-        fees=0.0,
+        fees=fee,
         reason=None,
         trigger_fired=True,
     )
