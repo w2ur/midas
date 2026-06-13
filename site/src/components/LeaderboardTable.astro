@@ -7,11 +7,13 @@ interface Props {
   reference?: { label: string; return_pct: number | null };
   showVsBench?: boolean;
   vsBenchByAgent?: Record<string, number | null>;
+  showVsCoinflip?: boolean;
+  vsCoinflipByAgent?: Record<string, number | null>;
   updatedAt?: string;
   trigger?: string;
 }
 
-const { rows, reference, showVsBench, vsBenchByAgent, updatedAt, trigger } = Astro.props;
+const { rows, reference, showVsBench, vsBenchByAgent, showVsCoinflip, vsCoinflipByAgent, updatedAt, trigger } = Astro.props;
 
 function fmtPct(n: number): string {
   const sign = n > 0 ? "+" : n < 0 ? "" : "";
@@ -55,6 +57,7 @@ function formatTrigger(t: string): string {
       <th>Archetype</th>
       <th class="num">Return (EUR)</th>
       {showVsBench && <th class="num">vs Bench</th>}
+      {showVsCoinflip && <th class="num">vs Coin-flip</th>}
     </tr>
   </thead>
   <tbody>
@@ -64,6 +67,7 @@ function formatTrigger(t: string): string {
       const arch = tradingAgent?.archetype ?? "";
       const cls = row.return_pct > 0 ? "pos" : row.return_pct < 0 ? "neg" : "";
       const vs = vsBenchByAgent?.[row.agent];
+      const vcf = vsCoinflipByAgent?.[row.agent];
       return (
         <tr>
           <td class="num">{row.rank}</td>
@@ -71,6 +75,7 @@ function formatTrigger(t: string): string {
           <td>{arch}</td>
           <td class={`num ${cls}`}>{fmtPct(row.return_pct)}</td>
           {showVsBench && <td class={`num ${deltaCls(vs)}`}>{fmtDelta(vs)}</td>}
+          {showVsCoinflip && <td class={`num ${deltaCls(vcf)}`}>{fmtDelta(vcf)}</td>}
         </tr>
       );
     })}
@@ -84,16 +89,29 @@ function formatTrigger(t: string): string {
           {reference.return_pct === null ? "—" : fmtPct(reference.return_pct)}
         </td>
         {showVsBench && <td></td>}
+        {showVsCoinflip && <td></td>}
       </tr>
     </tfoot>
   )}
 </table>
+<p class="leaderboard-disclaimer">
+  ~8 weeks of data — statistical noise, not skill. Each agent is shown vs a passive benchmark and a random-trade (coin-flip) control.
+  <a href="/methodology">See Methodology.</a>
+</p>
 <style>
   .leaderboard-meta {
     margin: 0 0 0.5rem 0;
     font-size: 0.85rem;
     color: var(--ink-muted);
   }
+  .leaderboard-disclaimer {
+    margin: 0.75rem 0 0;
+    font-size: var(--fs-sm);
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+  .leaderboard-disclaimer a { color: var(--ink-muted); }
+  .leaderboard-disclaimer a:hover { color: var(--accent); }
   .reference-row td { color: var(--ink-muted); border-top: 2px solid var(--rule); }
   .reference-row em { font-style: italic; }
   .reference-row .muted { font-style: italic; }
