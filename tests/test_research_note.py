@@ -1,7 +1,5 @@
 """Tests for engine.research_note."""
 
-import warnings
-
 import pytest
 
 from engine.research_note import (
@@ -320,3 +318,72 @@ class TestRenderResearchNote:
     def test_render_is_string(self) -> None:
         note = _valid_note()
         assert isinstance(render_research_note(note), str)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests — contract violations caught by code review
+# ---------------------------------------------------------------------------
+
+
+class TestParseResearchNoteContractViolations:
+    """parse_research_note must NEVER raise on any JSON-decodable input."""
+
+    # --- Non-dict raw input ---
+
+    def test_string_input_returns_none_no_raise(self) -> None:
+        # Regression: non-dict truthy input hit .get() and raised AttributeError.
+        result = parse_research_note("skipped")  # type: ignore[arg-type]
+        assert result is None
+
+    def test_list_input_returns_none_no_raise(self) -> None:
+        result = parse_research_note([1, 2, 3])  # type: ignore[arg-type]
+        assert result is None
+
+    def test_int_input_returns_none_no_raise(self) -> None:
+        result = parse_research_note(42)  # type: ignore[arg-type]
+        assert result is None
+
+    def test_bool_input_returns_none_no_raise(self) -> None:
+        # True is truthy and an int subclass — must not reach .get().
+        result = parse_research_note(True)  # type: ignore[arg-type]
+        assert result is None
+
+    # --- Non-string thesis / catalysts ---
+
+    def test_int_thesis_does_not_raise(self) -> None:
+        # Regression: int thesis hit len() before the try block → TypeError.
+        raw = _valid_dict(thesis=999)
+        result = parse_research_note(raw)
+        # Acceptable outcomes: None (meaningless numeric thesis) or a coerced valid note.
+        # Must not raise.
+        assert result is None or isinstance(result, ResearchNote)  # noqa: E501
+
+    def test_int_catalysts_does_not_raise(self) -> None:
+        # Regression: int catalysts hit len() before the try block → TypeError.
+        raw = _valid_dict(catalysts=42)
+        result = parse_research_note(raw)
+        assert result is None or isinstance(result, ResearchNote)
+
+    # --- Bare-string tickers ---
+
+    def test_bare_string_ticker_is_not_exploded(self) -> None:
+        # Regression: list("AAPL") → ["A","A","P","L"] — silent corruption.
+        raw = _valid_dict(tickers="AAPL")
+        result = parse_research_note(raw)
+        # Must be either ["AAPL"] (single-element) or None — NOT a 4-element char list.
+        if result is not None:
+            assert result.tickers != list("AAPL"), (
+                "bare string ticker was character-exploded into a list"
+            )
+            assert result.tickers == ["AAPL"]
+
+    # --- bool conviction in __post_init__ ---
+
+    def test_conviction_true_raises_value_error(self) -> None:
+        # Regression: isinstance(True, int) → True, so True was accepted as conviction=1.
+        with pytest.raises(ValueError, match="conviction"):
+            _valid_note(conviction=True)  # type: ignore[arg-type]
+
+    def test_conviction_false_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="conviction"):
+            _valid_note(conviction=False)  # type: ignore[arg-type]

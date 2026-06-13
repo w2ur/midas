@@ -165,6 +165,27 @@ class TestAssembleOutputBundle:
             assert bundle["agents"][aid]["commentary"] is None
             assert bundle["agents"][aid]["portfolio"] == {}
 
+    def test_non_running_agent_has_research_note_key(self) -> None:
+        """Regression: non-running agent dict omitted 'research_note' key while
+        running agents included it — latent KeyError footgun for consumers.
+        Bundle shape must be invariant regardless of which agents ran."""
+        blog = BlogDraft(title="X", body_md="x", slug="x")
+        bundle = assemble_output_bundle(
+            bundle_date=date(2026, 4, 26),
+            market_data={},
+            agent_results={},
+            agent_posts={},
+            portfolio_summaries={},
+            leaderboard=[],
+            blog_draft=blog,
+            oracle_posts=[],
+        )
+        for aid in ROSTER:
+            assert "research_note" in bundle["agents"][aid], (
+                f"non-running agent {aid!r} is missing 'research_note' key"
+            )
+            assert bundle["agents"][aid]["research_note"] is None
+
 
 class TestSaveOutputBundle:
     def test_save_and_read(self, tmp_path: Path, monkeypatch) -> None:

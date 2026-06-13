@@ -20,9 +20,7 @@ HORIZON_VALUES as canonical sets (single source of truth).
 from __future__ import annotations
 
 import logging
-import warnings
 from dataclasses import dataclass
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +85,7 @@ class ResearchNote:
                 f"ResearchNote.thesis must be ≤{_THESIS_MAX_LEN} chars, "
                 f"got {len(self.thesis)}"
             )
-        if not isinstance(self.conviction, int) or not (0 <= self.conviction <= 10):
+        if type(self.conviction) is not int or not (0 <= self.conviction <= 10):
             raise ValueError(
                 f"ResearchNote.conviction must be an int 0-10, got {self.conviction!r}"
             )
@@ -162,8 +160,16 @@ def parse_research_note(raw: dict | None) -> ResearchNote | None:
     if not raw:
         return None
 
+    if not isinstance(raw, dict):
+        logger.warning(
+            "parse_research_note: expected dict, got %s — skipping note",
+            type(raw).__name__,
+        )
+        return None
+
     # --- Required field checks (unrecoverable) ---
-    thesis = raw.get("thesis")
+    # Coerce to str so that numeric values don't raise on len() below.
+    thesis = str(raw.get("thesis") or "")
     if not thesis:
         logger.warning("parse_research_note: missing or empty 'thesis' — skipping note")
         return None
@@ -172,6 +178,23 @@ def parse_research_note(raw: dict | None) -> ResearchNote | None:
     if not tickers:
         logger.warning(
             "parse_research_note: missing or empty 'tickers' — skipping note"
+        )
+        return None
+
+    # Guard bare-string tickers (single ticker passed as "AAPL" instead of ["AAPL"]).
+    if isinstance(tickers, str):
+        tickers = [tickers]
+    elif not isinstance(tickers, list):
+        logger.warning(
+            "parse_research_note: 'tickers' must be a list or string, got %s — skipping note",
+            type(tickers).__name__,
+        )
+        return None
+    # Ensure all elements are strings; skip non-string elements with a warning.
+    tickers = [t for t in tickers if isinstance(t, str)]
+    if not tickers:
+        logger.warning(
+            "parse_research_note: 'tickers' list contained no valid string elements — skipping note"
         )
         return None
 
@@ -211,7 +234,8 @@ def parse_research_note(raw: dict | None) -> ResearchNote | None:
         )
         thesis = thesis[:_THESIS_MAX_LEN]
 
-    catalysts = raw.get("catalysts", "")
+    # Coerce to str so that numeric catalysts don't raise on len() below.
+    catalysts = str(raw.get("catalysts") or "")
     if len(catalysts) > _CATALYSTS_MAX_LEN:
         logger.warning(
             "parse_research_note: catalysts length %d > %d — truncating",
@@ -221,6 +245,7 @@ def parse_research_note(raw: dict | None) -> ResearchNote | None:
         catalysts = catalysts[:_CATALYSTS_MAX_LEN]
 
     try:
+        # int() truncates floats intentionally (e.g. 7.9 → 7).
         conviction = int(raw.get("conviction", 5))
     except (TypeError, ValueError):
         conviction = 5

@@ -67,6 +67,7 @@ def assemble_output_bundle(
             agents[aid] = {
                 "commentary": None,
                 "trades": [],
+                "research_note": None,
                 "portfolio": portfolio_summaries.get(aid, {}),
                 "posts": [],
             }
