@@ -54,25 +54,46 @@ def sanitize_headline(raw: str | None) -> str:
     """Return a clean, safe headline string suitable for LLM context.
 
     Strips URLs, HTML tags, markdown link syntax, and control characters.
-    Collapses whitespace. Hard-caps at 200 characters.
+    Collapses whitespace (including newlines — the load-bearing anti-injection
+    framing step). Hard-caps at 200 characters.
 
     This text will later reach analyst LLMs (S2) — it must be clean DATA,
     never a vector for injected instructions.
+
+    Ordering matters:
+    1. Markdown links first — preserves visible link text before URL removal.
+    2. HTML tags (fixpoint loop) — must run BEFORE URL strip so that
+       attributes like href="http://..." are removed with the tag and cannot
+       leave unstrippable fragments behind.
+    3. URLs — catches bare URLs that remain after tag removal.
+    4. Control characters.
+    5. Whitespace collapse (newlines included — anti-prompt-injection framing).
+    6. 200-char cap.
     """
     if not raw:
         return ""
     text = str(raw)
-    # Strip markdown link syntax first (before URL stripping, preserves link text)
+    # 1. Strip markdown link syntax (preserves link text)
     text = _RE_MD_LINK.sub(r"\1", text)
-    # Strip bare URLs
+    # 2. Strip HTML tags — fixpoint loop to handle nested/malformed tags
+    #    e.g. "<scr<script>ipt>bad": first pass removes <script>, leaving
+    #    "<scr" prefix and "ipt>" suffix as orphaned fragments. After the
+    #    fixpoint loop converges, remaining lone '<' and '>' are stripped too.
+    #    Capped at 10 iterations to avoid pathological loops on adversarial input.
+    for _ in range(10):
+        stripped = _RE_HTML_TAG.sub("", text)
+        if stripped == text:
+            break
+        text = stripped
+    # Remove orphaned angle brackets left by nested/malformed markup
+    text = text.replace("<", "").replace(">", "")
+    # 3. Strip bare URLs (after tags so href="..." attrs are already gone)
     text = _RE_URL.sub("", text)
-    # Strip HTML tags
-    text = _RE_HTML_TAG.sub("", text)
-    # Strip control characters
+    # 4. Strip control characters
     text = _RE_CONTROL.sub("", text)
-    # Collapse whitespace
+    # 5. Collapse whitespace (newlines, tabs → single space — anti-injection framing)
     text = _RE_WHITESPACE.sub(" ", text).strip()
-    # Hard cap
+    # 6. Hard cap
     return text[:_MAX_TITLE_LEN]
 
 

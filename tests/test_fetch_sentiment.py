@@ -133,6 +133,44 @@ class TestSanitizeHeadline:
             assert ch not in result
         assert "Normal" in result
 
+    def test_html_attr_url_does_not_leak(self) -> None:
+        """Regression: tag-fragment leak when URL in HTML attribute.
+
+        Old order (URL strip before tag strip): _RE_URL consumed greedily
+        through the closing '>', leaving '<a href="' as an unstrippable fragment.
+        Fix: strip HTML tags BEFORE URLs so the attribute is removed with the tag.
+        """
+        from scripts.fetch_sentiment import sanitize_headline
+
+        raw = '<a href="http://evil.com">text</a>'
+        result = sanitize_headline(raw)
+        assert "<" not in result
+        assert "href" not in result
+        assert "evil.com" not in result
+        assert "http" not in result
+        assert "text" in result
+
+    def test_nested_malformed_tag_does_not_leak(self) -> None:
+        """Regression: nested/malformed tag bypass with single-pass strip.
+
+        Single-pass '<[^>]+>' against '<scr<script>ipt>bad' produces 'ipt>bad'
+        because the regex matches '<scr<script>' (first '<' to first '>'),
+        leaving 'ipt>bad' with a dangling '>'.
+        Fix: iterate tag-strip until stable (fixpoint loop) then strip orphaned
+        angle brackets. The key invariant is no '<' or '>' in the output —
+        the residual text 'ipt' is harmless (it is not markup, not a URL, not
+        a control char, and cannot frame an injection boundary on its own).
+        """
+        from scripts.fetch_sentiment import sanitize_headline
+
+        raw = "<scr<script>ipt>bad"
+        result = sanitize_headline(raw)
+        # No angle brackets must survive — these are the injection-relevant chars
+        assert "<" not in result
+        assert ">" not in result
+        # The meaningful word 'bad' (the non-tag text content) survives
+        assert "bad" in result
+
 
 # ---------------------------------------------------------------------------
 # Active-ticker scoping: _collect_active_tickers
