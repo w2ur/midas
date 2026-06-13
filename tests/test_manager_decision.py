@@ -635,3 +635,122 @@ class TestRoundTrip:
         d["conviction"] = 15  # invalid
         with pytest.raises(ValueError):
             ManagerDecision.from_dict(d)
+
+
+# ---------------------------------------------------------------------------
+# size_eur coercion — pinned regression tests
+# ---------------------------------------------------------------------------
+
+
+def _position_raw(size_eur: object) -> dict:
+    """Minimal valid position raw dict with a custom size_eur value."""
+    return {
+        "ticker": "BTC-EUR",
+        "action": "BUY",
+        "size_eur": size_eur,
+        "entry_guidance": "",
+        "stop_loss": None,
+        "reasoning": "Coercion test.",
+    }
+
+
+def _parse_with_size(size_eur: object) -> "ManagerDecision | None":
+    raw = {
+        "positions": [_position_raw(size_eur)],
+        "conviction": 9,
+        "hold_reasoning": "",
+    }
+    return parse_manager_decision(raw)
+
+
+class TestSizeEurCoercion:
+    """Pin the documented coercion asymmetry so a refactor cannot silently regress."""
+
+    def test_int_like_float_300_0_accepted(self) -> None:
+        """300.0 (float) → size_eur=300 (int), position kept."""
+        decision = _parse_with_size(300.0)
+        assert decision is not None
+        assert len(decision.positions) == 1
+        assert decision.positions[0].size_eur == 300
+
+    def test_integer_string_300_accepted(self) -> None:
+        """ "300" (string) → size_eur=300 (int), position kept."""
+        decision = _parse_with_size("300")
+        assert decision is not None
+        assert len(decision.positions) == 1
+        assert decision.positions[0].size_eur == 300
+
+    def test_float_string_300_0_dropped(self) -> None:
+        """ "300.0" (float-shaped string) → position dropped (safe asymmetry)."""
+        decision = _parse_with_size("300.0")
+        assert decision is not None
+        assert decision.positions == [], "float-shaped string must be dropped"
+
+    def test_bool_true_dropped(self) -> None:
+        """True (bool) → position dropped (True→1 would be a EUR 1 order)."""
+        decision = _parse_with_size(True)
+        assert decision is not None
+        assert decision.positions == [], "bool size_eur must be dropped"
+
+    def test_bool_false_dropped(self) -> None:
+        """False (bool) → position dropped (bools rejected regardless of value)."""
+        decision = _parse_with_size(False)
+        assert decision is not None
+        assert decision.positions == [], "bool size_eur must be dropped"
+
+
+# ---------------------------------------------------------------------------
+# Non-string ticker and numeric reasoning coercion
+# ---------------------------------------------------------------------------
+
+
+class TestTickerAndReasoningCoercion:
+    """Pin ticker and reasoning coercion behaviors."""
+
+    def test_numeric_ticker_coerced_to_string(self) -> None:
+        """A numeric ticker value (123) is coerced to string "123".
+
+        The parser does str(raw.get("ticker") or ""), so any truthy non-string
+        is stringified and kept rather than dropped.
+        """
+        raw = {
+            "positions": [
+                {
+                    "ticker": 123,
+                    "action": "BUY",
+                    "size_eur": 300,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Numeric ticker test.",
+                }
+            ],
+            "conviction": 9,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        # Numeric ticker is either coerced to "123" (kept) or dropped.
+        # Current behaviour: coerced and kept.
+        if decision.positions:
+            assert decision.positions[0].ticker == "123"
+
+    def test_numeric_reasoning_coerced_to_string(self) -> None:
+        """A numeric reasoning value is coerced to a non-empty string and kept."""
+        raw = {
+            "positions": [
+                {
+                    "ticker": "BTC-EUR",
+                    "action": "BUY",
+                    "size_eur": 300,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": 42,
+                }
+            ],
+            "conviction": 9,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert len(decision.positions) == 1
+        assert decision.positions[0].reasoning == "42"

@@ -13,8 +13,10 @@ RISK_BUDGET_LIMITS["min_conviction"]. If conviction < threshold:
   - positions is forced to [] regardless of what the LLM returned.
   - hold_reasoning is synthesised if the model left it blank.
 
-This is a Hands-side rail (see CLAUDE.md Brain/Hands principle): the persona
-prompt also explains the gate, but enforcement lives here, not in the prompt.
+The conviction gate fires here, in parse_manager_decision — Brain-side, at the
+single parse choke point. Orders that fail the gate never reach the outbox.
+The separate Hands/broker layer (notional cap, cash floor, etc., added in Task D)
+is a distinct safety rail that runs downstream.
 """
 
 from __future__ import annotations
@@ -98,7 +100,11 @@ class ManagerPosition:
 
     @classmethod
     def from_dict(cls, d: dict) -> "ManagerPosition":
-        """Deserialize from a dictionary. Validates strictly (raises on bad data)."""
+        """Deserialize from a dictionary. Validates strictly (raises on bad data).
+
+        Strict serde for trusted internal round-trips — does NOT apply the
+        conviction gate. Use parse_manager_decision() for untrusted LLM output.
+        """
         return cls(
             ticker=str(d["ticker"]),
             action=str(d["action"]),
@@ -151,7 +157,11 @@ class ManagerDecision:
 
     @classmethod
     def from_dict(cls, d: dict) -> "ManagerDecision":
-        """Deserialize from a dictionary. Validates strictly (raises on bad data)."""
+        """Deserialize from a dictionary. Validates strictly (raises on bad data).
+
+        Strict serde for trusted internal round-trips — does NOT apply the
+        conviction gate. Use parse_manager_decision() for untrusted LLM output.
+        """
         positions = [ManagerPosition.from_dict(p) for p in d.get("positions", [])]
         return cls(
             positions=positions,
@@ -192,8 +202,19 @@ def _parse_position(raw: object) -> ManagerPosition | None:
         )
         return None
 
-    # size_eur must be a non-negative integer. Accept int-like floats (e.g. 300.0 → 300).
+    # size_eur must be a non-negative integer.
+    # Coercion asymmetry (by design — a dropped order is safe):
+    #   - int-like floats (300.0 → 300) are accepted
+    #   - integer-shaped strings ("300" → 300) are accepted
+    #   - float-shaped strings ("300.0") are NOT accepted and result in a drop
+    #   - bools are explicitly rejected (True → 1 would be a EUR 1 order)
     raw_size = raw.get("size_eur", 0)
+    if isinstance(raw_size, bool):
+        logger.warning(
+            "parse_manager_decision: size_eur %r is a bool — dropping position",
+            raw_size,
+        )
+        return None
     try:
         size_eur = int(raw_size)
         if size_eur != float(raw_size):

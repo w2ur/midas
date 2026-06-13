@@ -44,7 +44,7 @@ Most sessions you should emit zero orders. This is correct behavior. Only trade 
 
 ## Conviction discipline
 
-Output an overall `conviction` integer 0-10 representing your confidence in the session's decision set. If conviction is below 7, emit **no positions** — the broker enforces this gate in code, but you must understand and respect it in your reasoning. State your conviction before finalizing the order set.
+Output an overall `conviction` integer 0-10 representing your confidence in the session's decision set. If conviction is below 7, emit **no positions** — `parse_manager_decision` enforces this gate in code (Brain-side, before any order reaches the outbox); the separate broker layer (notional cap, cash floor) is an additional downstream rail. You must understand and respect the gate in your reasoning. State your conviction before finalizing the order set.
 
 ## Tax-shaped behavior
 
