@@ -57,8 +57,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
         with:
-          # Full history is needed so `git tag` can operate on the correct
-          # commit and we can verify the HEAD is up to date.
+          # Full history is needed so `git tag` can operate on the correct commit.
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -81,34 +80,29 @@ jobs:
       - name: Compute ledger digest
         id: digest
         run: |
-          # Capture the full rendered attestation block for the tag message
-          ATTESTATION=$(python scripts/attest_ledger.py)
-          echo "attestation<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$ATTESTATION" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          # Compute the digest exactly ONCE and save it to digest.json.
+          # All downstream steps (summary, tag message, tag name) read from
+          # this single file so that date, content, and tag name can never
+          # disagree across a midnight boundary.
+          python scripts/attest_ledger.py --json > digest.json
 
-          # Extract just the digest_root line for the step summary header
-          DIGEST_ROOT=$(python scripts/attest_ledger.py --json | python -c "import sys,json; d=json.load(sys.stdin); print(d['digest_root'])")
+          # Extract fields for use in later steps.
+          TAG_DATE=$(jq -r '.generated_for_date' digest.json)
+          DIGEST_ROOT=$(jq -r '.digest_root' digest.json)
+          echo "date=$TAG_DATE" >> "$GITHUB_OUTPUT"
           echo "digest_root=$DIGEST_ROOT" >> "$GITHUB_OUTPUT"
-
-          # Date for the tag name
-          DATE=$(date -u +%Y-%m-%d)
-          echo "date=$DATE" >> "$GITHUB_OUTPUT"
 
       - name: Write step summary
         run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY_EOF'
-          ## Midas Ledger Attestation
-          SUMMARY_EOF
+          echo "## Midas Ledger Attestation" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          python scripts/attest_ledger.py >> "$GITHUB_STEP_SUMMARY"
+          python scripts/attest_ledger.py --render-from digest.json >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create and push annotated tag
         env:
           TAG_DATE: ${{ steps.digest.outputs.date }}
-          ATTESTATION: ${{ steps.digest.outputs.attestation }}
         run: |
           TAG_NAME="attest/${TAG_DATE}"
 
@@ -118,11 +112,11 @@ jobs:
           git tag -d "$TAG_NAME" 2>/dev/null || true
           git push origin ":refs/tags/${TAG_NAME}" 2>/dev/null || true
 
-          # Create the annotated tag on the current HEAD with the attestation
-          # block as the message.  The message is passed via a file to avoid
-          # shell quoting issues with multi-line content.
+          # Render the attestation block from the saved digest (same object used
+          # for the step summary — no recomputation, no midnight-boundary skew).
+          # Pass the message via a file to avoid shell quoting issues.
           TMPFILE=$(mktemp)
-          printf '%s' "$ATTESTATION" > "$TMPFILE"
+          python scripts/attest_ledger.py --render-from digest.json > "$TMPFILE"
           git tag -a "$TAG_NAME" -F "$TMPFILE"
           rm -f "$TMPFILE"
 

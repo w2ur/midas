@@ -39,10 +39,14 @@ concatenation hash that is sufficient for tamper detection.
 
 Usage
 -----
-    python scripts/attest_ledger.py [--date YYYY-MM-DD] [--json]
+    python scripts/attest_ledger.py [--date YYYY-MM-DD] [--json] [--root DIR]
+    python scripts/attest_ledger.py --render-from FILE
 
 With no flags, prints the rendered attestation block + digest_root.
 With ``--json``, prints the full digest JSON.
+With ``--render-from FILE``, reads a saved digest JSON and prints the rendered
+attestation block (no recomputation — guarantees the tag message and the step
+summary are derived from the identical digest object).
 """
 
 from __future__ import annotations
@@ -136,7 +140,7 @@ def compute_ledger_digest(root: Path) -> dict:
     roll_up_input = "".join(
         f"{relpath}:{file_hash}\n" for relpath, file_hash in sorted(per_file.items())
     )
-    digest_root = hashlib.sha256(roll_up_input.encode()).hexdigest()
+    digest_root = hashlib.sha256(roll_up_input.encode("utf-8")).hexdigest()
 
     return {
         "generated_for_date": datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"),
@@ -153,7 +157,7 @@ def compute_ledger_digest(root: Path) -> dict:
 
 
 def _subtotals(digest: dict) -> dict[str, dict]:
-    """Compute per top-level-directory file_count and total_bytes from the digest."""
+    """Compute per top-level-directory file_count from the digest."""
     # Group by the first two path components (e.g. "data/orders")
     buckets: dict[str, dict] = {}
     for relpath, _hash in digest["files"].items():
@@ -161,13 +165,8 @@ def _subtotals(digest: dict) -> dict[str, dict]:
         # Use the first two components as the bucket key, fall back to parts[0]
         bucket_key = "/".join(parts[:2]) if len(parts) >= 2 else parts[0]
         if bucket_key not in buckets:
-            buckets[bucket_key] = {"file_count": 0, "total_bytes": 0}
-        file_path = Path(relpath)
-        # We need the root to get the actual size — but we computed total_bytes
-        # already from the file objects; here we only have relpaths in the
-        # digest dict.  For rendering we approximate per-dir bytes by looking
-        # at what we have stored: we don't have per-file sizes in the digest
-        # dict, so we only report file counts in the subtotals and omit bytes.
+            buckets[bucket_key] = {"file_count": 0}
+        # Per-file sizes are not stored in the digest dict; only counts are reported.
         buckets[bucket_key]["file_count"] += 1
 
     return buckets
@@ -243,12 +242,28 @@ def _build_parser() -> argparse.ArgumentParser:
         default=_PROJECT_ROOT,
         help="Repository root (default: project root derived from this script's location).",
     )
+    parser.add_argument(
+        "--render-from",
+        metavar="FILE",
+        dest="render_from",
+        help=(
+            "Read a saved digest JSON (produced by --json) and print the rendered "
+            "attestation block.  No recomputation — guarantees tag message and step "
+            "summary are derived from the identical digest object."
+        ),
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> None:
     parser = _build_parser()
     args = parser.parse_args(argv)
+
+    if args.render_from:
+        with open(args.render_from, encoding="utf-8") as f:
+            digest = json.load(f)
+        print(render_attestation(digest))
+        return
 
     root: Path = args.root.resolve()
     digest = compute_ledger_digest(root)

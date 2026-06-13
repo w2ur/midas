@@ -11,9 +11,11 @@ TDD: failing tests written before the implementation.
 
 from __future__ import annotations
 
+import io
 import json
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -21,7 +23,7 @@ import pytest
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from scripts.attest_ledger import compute_ledger_digest, render_attestation
+from scripts.attest_ledger import compute_ledger_digest, main, render_attestation
 
 
 # ---------------------------------------------------------------------------
@@ -268,3 +270,34 @@ def test_files_outside_ledger_dirs_excluded(tmp_path: Path) -> None:
         assert not relpath.startswith("data/market"), (
             f"market file leaked into digest: {relpath}"
         )
+
+
+# ---------------------------------------------------------------------------
+# --render-from: reads a saved digest JSON and produces identical rendering
+# ---------------------------------------------------------------------------
+
+
+def test_render_from_produces_same_output_as_direct_render(tmp_path: Path) -> None:
+    """--render-from FILE must produce the same rendered block as render_attestation(digest).
+
+    This verifies the single-digest guarantee: the workflow can save digest.json
+    once and render from it for both the step summary and the tag message without
+    recomputing (and risking a midnight-boundary date skew).
+    """
+    root = _build_fixture_tree(tmp_path)
+    digest = compute_ledger_digest(root)
+
+    # Save digest to a JSON file as the workflow does
+    digest_file = tmp_path / "digest.json"
+    digest_file.write_text(json.dumps(digest, indent=2), encoding="utf-8")
+
+    # Render directly from the in-memory digest
+    expected = render_attestation(digest)
+
+    # Render via --render-from (captures stdout)
+    captured = io.StringIO()
+    with patch("sys.stdout", captured):
+        main(["--render-from", str(digest_file)])
+    actual = captured.getvalue().rstrip("\n")
+
+    assert actual == expected
