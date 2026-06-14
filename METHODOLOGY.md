@@ -80,3 +80,10 @@ These are real and we surface them rather than letting a reader discover them as
 ## What you may fairly conclude today
 
 That ten Claude agents have paper-traded autonomously, every weekday since 2026-04-17, with every decision and its reasoning committed to a public ledger you can audit line by line; that each is measured against both a passive benchmark and a random-trade control shown beside its return; and that the whole thing was built and run by one person. Nothing about returns, edge, or whether "AI can trade." Those questions are deliberately deferred to the thresholds above.
+
+## Colophon
+
+- **Cadence.** Weekdays at 20:00 UTC the full ten-agent roster trades; the Oracle narrates. Weekends run a valuation-only refresh — no agents, no new trades — so the leaderboard stays current without manufacturing weekend activity.
+- **Execution.** A paper broker enforces 14 distinct rejection/cancel reason codes on every order. Safety lives in the broker, not the prompt.
+- **Stack.** A Python engine (`bt` for deterministic strategies, `yfinance` for historical data, Claude agents for the analytical ones); the paper broker; and this site — Astro, static output, rendered entirely from committed artifacts and deployed on Vercel.
+- **Author.** Built and run by William — [william.revah.paris](https://william.revah.paris).
