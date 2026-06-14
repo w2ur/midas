@@ -1,18 +1,23 @@
 name: session-watchdog
 
-# Daily 02:00 UTC check: did the expected session/refresh commit land on
-# main yesterday? Catches the 2026-05-08-class bugs where a sandbox push
+# Weekday-only check (Tue-Sat 02:00 UTC): did yesterday's weekday session
+# commit land on main? Catches the 2026-05-08-class bugs where a sandbox push
 # 403'd and the work never made it to main despite the orchestrator
 # "succeeding".
 #
-# Logic:
-#  - Yesterday was Mon-Fri → expect "chore: weekday session YYYY-MM-DD"
-#  - Yesterday was Sat-Sun → expect "chore: weekend refresh YYYY-MM-DD"
-# Failures alert via standard GitHub workflow-failure email.
+# Why weekday-only: weekends run a valuation-only refresh-leaderboard job, not
+# an agent session. That job commits nothing when the valuation produces no
+# diff (e.g. a quiet weekend, or fresh data already on main) — a legitimate
+# no-commit outcome the watchdog cannot distinguish from a silent failure.
+# Watching weekends therefore produced recurring false alarms (2026-06-14), so
+# the weekend branch was removed. The weekday session always commits.
+#
+# Cron 2-6 = Tue-Sat, so "yesterday" is always Mon-Fri. A defensive guard still
+# skips if "yesterday" lands on a weekend (e.g. a manual workflow_dispatch).
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    - cron: "0 2 * * 2-6"
   workflow_dispatch:
 
 permissions:
@@ -27,26 +32,25 @@ jobs:
         with:
           fetch-depth: 50
 
-      - name: Check yesterday's commit on main
+      - name: Check yesterday's weekday session commit on main
         run: |
           set -euo pipefail
 
           yesterday=$(date -u -d 'yesterday' +%Y-%m-%d)
           dow=$(date -u -d 'yesterday' +%u)  # 1=Mon..7=Sun
 
-          if [[ "$dow" -ge 1 && "$dow" -le 5 ]]; then
-            pattern="^chore: weekday session $yesterday"
-            kind="weekday session"
-          else
-            pattern="^chore: weekend refresh $yesterday"
-            kind="weekend refresh"
-          fi
-
-          echo "Looking for $kind commit for $yesterday..."
-          if git log origin/main --since="$yesterday 00:00 UTC" --until="$yesterday 23:59 UTC" --pretty=%s | grep -Eq "$pattern"; then
-            echo "Found expected $kind commit for $yesterday."
+          if [[ "$dow" -lt 1 || "$dow" -gt 5 ]]; then
+            echo "Yesterday ($yesterday) was a weekend — no weekday session expected. Skipping."
             exit 0
           fi
 
-          echo "::error::No $kind commit for $yesterday on main. Daily pipeline likely failed silently."
+          pattern="^chore: weekday session $yesterday"
+
+          echo "Looking for weekday session commit for $yesterday..."
+          if git log origin/main --since="$yesterday 00:00 UTC" --until="$yesterday 23:59 UTC" --pretty=%s | grep -Eq "$pattern"; then
+            echo "Found expected weekday session commit for $yesterday."
+            exit 0
+          fi
+
+          echo "::error::No weekday session commit for $yesterday on main. Daily pipeline likely failed silently."
           exit 1
