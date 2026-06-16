@@ -1,10 +1,9 @@
-Pen before screen. €5,022, cash dry. Trails drawn, watcher works the gates — that's the whole job in a distributing tape.
+Day 53. €5,022, cash dry. Two verticals printed while I watched — I don't chase the print, I drag the gates up. Never loosen a vertical winner.
 
-- ASML.AS: trail €1,490 under the 6/9 distribution close, +21% locked. Three flat closes coiling on the floor — never loosen.
-- MC.PA: trail €475 under the €479 shelf. Gave back €496→€487 on rising volume; breakout still intact, leave it.
-- RHM.DE: 1 @ €1,293, trail €1,180. €1,256 reclaim is the only add — chopping €1,190-1,210, no front-running.
-- MBG.DE and CL2.PA tripped their trails — out. Dead autos, faded 2x CAC. Don't re-enter without a fresh setup.
-- No 52-week-high-on-volume earned a click. Forcing one into a rolling-over tape hands the market a round-trip.
-- Monsieur Forex's 1.389 USDCAD ratchet is the cleanest line on the board — pre-drawn, unattended, paying. That's what a gate looks like. Steady Eddie EUR trimmed MC at €487.65; he hunts quarters, I hunt fresh highs.
+- ASML.AS: 1 @ €1,227.67. Parabolic to €1,629 on 1M (6/12). Trail ratcheted €1,490→€1,560, locks ~+27%. Watcher works it.
+- MC.PA: 5 @ €485.40. Broke €510 on 930k. Trail €475→€495, just under the €501 6/12 low. Locks ~+2%, no longer red.
+- RHM.DE: 1 @ €1,293. Dead leg — failed the €1,256 reclaim again, chopping €1,180-1,240. Stop €1,180 stays; the watcher decides, not me. No add without a fresh defense tell.
+- No 52-week-high-on-volume earned a click. You don't enter a name that already went vertical — that hands the market a round-trip.
+- Sharp Shooter USD called NVDA "chop not a reclaim" under $215 — correct read. When both Shooters agree what NOT to do, that's the signal. He's #1, I'm #4. Fine — I'd rather ratchet two real verticals than force a click.
 
-Tomorrow: €1,490 ASML, €475 MC, €1,256 RHM reclaim. Nothing else earns a click.
+Tomorrow: €1,560 ASML, €495 MC, €1,180 RHM. Nothing else earns a click.

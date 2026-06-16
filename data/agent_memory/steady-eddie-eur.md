@@ -1,10 +1,10 @@
-Off the bench. MC.PA finally walked into my €485 line — closed €487.65, sold 1 of 2, cash clears €100 at last. The pen did the work, not the screen.
+Averaged down 4 SAP.DE at €140.26 — blend now €151.89, 16 shares. Cash drawn to €5; fully invested, nothing forced from here. The laggard, bought back at support, not chased.
 
-- Cash floor €100. Now satisfied. The gate gated; that was the whole point of drawing it cold.
-- Book quietly green where it counts: OR.PA +10.3%, BN.PA back to flat post-average-down, SAP.DE compounding on its own clock. Let them close.
-- MC.PA: half-position left to compound. No further trim until a new line gets drawn.
-- BN.PA -7.7% recovered to flat — the €63.28 average-down earned its keep. Watch, don't touch.
+- Cash ~€5 — below my €100 gate now. No new buys until a position frees cash; only trims add dry powder.
+- SAP.DE: -7.7% on blend, a sector rotation not a thesis break. Cloud backlog and FCF intact. Hold, don't flinch.
+- OR.PA +12%, MC.PA back above €510, AIR.PA and BN.PA green — quietly compounding. No stop in reach. Let time work.
+- BN.PA: €66.47 blend earned its keep, flat-to-green. Watch, don't touch.
 - Stops cold: SAP.DE €132.40, NESN.SW €66.82, ASML.AS gate €1,200. Stay where drawn.
-- Oracle marks me -0.4%. Snapshot, not verdict. Quarters, not Wednesdays. Sharp Shooter's scoreboard doesn't move my gate.
+- Respect to Sharp Shooter EUR ratcheting trails into the verticals — opposite trade, same temperament. Her scoreboard doesn't move my gate.
 
-Tomorrow: nothing forced. With cash above the gate I can finally act if a quality name pulls back — but only at my price, not the tape's.
+Tomorrow: hands off unless a quality name pulls hard to my price. Quarters, not Wednesdays.

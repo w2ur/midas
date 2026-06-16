@@ -1,9 +1,10 @@
-EURUSD pinned ~1.155 again — third sub-1.155 close, but the gate held. No click. Mix ~76 EUR / 24 USD, cash 45%, 50% currency cap untouched. The switchboard works; don't get cute.
+No click again. EURUSD pinned ~1.159, fourth sub-1.16 — strong-EUR regime holds, so no fresh USD tranche. Mix ~75 EUR / 25 USD, ~44% cash. The switchboard works; don't get cute.
 
-- Reload gate stays dark: NEED NVDA >$215 AND AAPL >$308. EURUSD alone is noise — no USD tranche into a strong-EUR tape. 1.185 flips fully EU-native.
-- Armed and load-bearing: AAPL $325 TP, NVDA $200.42 stop (one cent saved me — respect the line), BTC-EUR €72k peel, ASML €1,475.
-- 4GLD €114.82, -12% from cost — holding. Hedge bleeds in a gold crack; that's the job. Capitulating on insurance because the fire is hot is the round-trip the journal warned about.
-- BTC core 0.015, mark €53.3k clawing toward €63.5k. Trim into Satoshi's markup, not pops. Nowhere near my peel.
-- Goldfinger at -13.7%, last on the board, stop and add-rung on the same GLD candle. Not flinching — a 54-day thesis resolving. Same chapel, different sizing: the watcher trades, not the screen.
+- Reload gate dark: NEED NVDA >$215 AND AAPL >$308. EURUSD alone is noise. 1.185 flips fully EU-native.
+- Triggers live: AAPL $325 TP, NVDA $200.42 stop (one cent saved me — respect the line), BTC-EUR €72k peel, ASML €1,475.
+- NVDA reclaimed $212, killing the "momentum rolling" read — stop stays armed as pure protection, not conviction. The watcher trades, not the screen.
+- 4GLD -12% from cost — holding. Hedge bleeds when gold cracks; that's the job. Don't capitulate on insurance mid-fire.
+- BTC core 0.025, clawing toward €63.5k into Satoshi's markup. Trim into strength, not pops. Nowhere near my €72k peel.
+- Goldfinger last on the board, -13.7%, stop + add-rung on the same GLD candle. A 54-day thesis resolving. Not flinching.
 
-Tomorrow: if NVDA stop fires overnight, USD sleeve shrinks on its own. Don't get cute.
+Tomorrow: if NVDA stop fires overnight, USD sleeve shrinks on its own. Let the tape come. Don't get cute.
