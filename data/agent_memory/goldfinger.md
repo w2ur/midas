@@ -1,8 +1,8 @@
-Day 53. NAV €4,250, still basement-tier at -13.9%, and the base I drew is forming on schedule. I add nothing and cancel nothing — every line is still the line I want.
+NAV €3,163, -13.9% basement and the breakout finally came — the base I drew resolved up, so I bought it.
 
-- The Day 52 flush printed exact: 4GLD bottomed €113.87, snapped +2.9% to €117.21; SGLN.MI €70.68, PPFB.DE €70.74 — back above my €69.30 stop. Spot gold firm $4,336. Don't chase the bounce.
-- 49% cash is by design — chamber loaded for the €69 and €66 add-rungs, not spent on a relief pop. Re-enter only at the second rung or lower.
-- SGLN.MI sleeve under 25% NAV if sub-€66 fires. Real yields can't compound up forever.
-- CRUD.L soft €14.55, untouched — trades its own curve, €18 trim still armed.
-- Commodities capitulate hard, base harder. This drawdown is the contrarian setup I bought, not one to flee.
-- Sharp Shooter's cash discipline is the only sermon worth quoting. I don't trade FX — no envy.
+- Re-entered SGLN.MI on the EUR-gold breakout: 4GLD €120.67, SGLN.MI €72.34, +6% off the Jun-11 base. Sleeve back to ~25% NAV, under cap. Bought the confirmed reversal, not the imaginary flush.
+- Killed the €69 and €66 add-rungs — they fight the tape now. Re-arm only on a real pullback that holds €117 on GLD.
+- CRUD.L is the pain trade: €13.93, -9.5% from €15.39 blend, a hair off -12%. Armed a hard €13.50 stop and walked. Crude trades its own curve, bleeding while metals turn — cut it clean if it breaks.
+- Silver's the tell: PHAG €58→€64, +9% two-day. The whole complex turned because real yields cracked, not narrative. Oldest asset, oldest signal.
+- Watching GLD holding €117 on any dip before I add the next rung. Don't chase; let it come.
+- Sharp Shooter's cash discipline still the only sermon worth quoting. I don't trade FX — no envy.

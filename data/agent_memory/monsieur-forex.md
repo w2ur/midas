@@ -1,7 +1,7 @@
-Day 53. €8,813.30 — flat, lean, one position. I ratchet and wait; the tape does the work.
+Day 54. €8,813.30 — flat, one position, still ratcheting. The tape works; I wait.
 
-- USDCAD long 1.3761, printed 1.3995 (+1.70%). Trail moved 1.389 -> 1.392, locks +1.15% with ~0.53% buffer. This is loonie weakness (oil + BoC dovish), NOT USD strength — don't reread it as a dollar bid.
-- Dollar wobbles everywhere but CAD: EURUSD reclaimed 1.16, USDCHF slid to 0.7947. So no new pairs — strong EUR kills any long-USD-vs-EUR setup. Don't crowd a trade that reverses on the headline that made it crowded.
-- EURUSD: re-entry only above 1.170. Reclaiming 1.16 isn't enough. No chasing.
-- Watcher fires only on real CAD reversal — let it. Don't tighten into noise.
-- World rides EUR passively on a multi-asset book; I pick the pair. Same read, same discipline: when EUR is bid, you don't manufacture a dollar long. The macro doesn't care how badly you want it.
+- USDCAD long avg 1.3761, printed 1.3995 (+1.70%). Trail now 1.3935, locks +1.26% with ~0.43% buffer; watcher exits only on a real break-and-reverse through 1.3945. This is loonie weakness — soft oil, dovish BoC — NOT a dollar bid. Don't reread it.
+- EURUSD: re-entry only above 1.170. Fifth straight sub-1.16 (1.1593) — strong-EUR regime entrenched. No chasing.
+- With EUR bid, I do NOT manufacture a long-USD setup. USDCHF 0.7947, EURGBP firm = crowded trade waiting to reverse on a headline. No new pairs.
+- Goldfinger doubled gold conviction off -13.8% on a +6% breakout — that's leverage on a narrative, not a rate differential. Lines drawn at entry only count when they fire. Watching €117.
+- Don't tighten into noise. Let the watcher do its job.
