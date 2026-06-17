@@ -1,9 +1,41 @@
+import math
 from datetime import date, datetime, timezone
 
 from engine.leaderboard import (
+    annualized_sharpe,
     build_current_leaderboard_artifact,
     build_leaderboard_rows,
 )
+
+
+def test_annualized_sharpe_none_when_too_few_points():
+    # Fewer than 3 NAV points -> fewer than 2 returns -> undefined.
+    assert annualized_sharpe([10000.0]) is None
+    assert annualized_sharpe([10000.0, 10100.0]) is None
+
+
+def test_annualized_sharpe_none_when_zero_variance():
+    # A perfectly flat book (e.g. the Manager holding 100% cash) has no return
+    # dispersion -> Sharpe undefined. This is the realistic degenerate case.
+    assert annualized_sharpe([2000.0, 2000.0, 2000.0, 2000.0]) is None
+
+
+def test_annualized_sharpe_matches_manual_formula():
+    values = [10000.0, 10100.0, 10050.0, 10200.0, 10150.0]
+    returns = [b / a - 1.0 for a, b in zip(values, values[1:])]
+    n = len(returns)
+    mean = sum(returns) / n
+    var = sum((r - mean) ** 2 for r in returns) / (n - 1)
+    expected = mean / math.sqrt(var) * math.sqrt(252)
+    assert annualized_sharpe(values) == expected
+
+
+def test_annualized_sharpe_survives_zero_priced_point():
+    # A zero NAV would divide-by-zero on the step *out* of it; the ``if prev``
+    # guard drops that one return rather than crashing. The result is still a
+    # finite number (or None), never an exception.
+    result = annualized_sharpe([10000.0, 0.0, 10100.0, 10200.0, 10150.0])
+    assert result is None or math.isfinite(result)
 
 
 def test_build_leaderboard_rows_sorts_by_eur_mtm_descending(monkeypatch):

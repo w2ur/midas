@@ -12,6 +12,39 @@ from datetime import date, datetime, timezone
 
 from engine.valuation import portfolio_mtm_eur
 
+# Trading days per year — annualization factor for the daily Sharpe ratio,
+# matching the ``daily_sharpe`` convention bt/ffn use on the backtest path
+# (``engine.backtest``), so live and backtest Sharpe values are comparable.
+_TRADING_DAYS = 252
+
+
+def annualized_sharpe(values: list[float], risk_free: float = 0.0) -> float | None:
+    """Annualized Sharpe ratio of a NAV series (EUR risk-free ~0).
+
+    Computes period-over-period returns from ``values`` (a portfolio-value
+    series, oldest first), then ``mean / stdev * sqrt(252)``. Returns ``None``
+    when there are fewer than two returns or the returns have zero variance —
+    cases where a Sharpe ratio is undefined rather than zero.
+    """
+    if len(values) < 3:
+        return None
+
+    returns: list[float] = []
+    for prev, curr in zip(values, values[1:]):
+        if prev:
+            returns.append(curr / prev - 1.0)
+
+    n = len(returns)
+    if n < 2:
+        return None
+
+    mean = sum(returns) / n
+    variance = sum((r - mean) ** 2 for r in returns) / (n - 1)  # sample stdev
+    if variance <= 0:
+        return None
+
+    return (mean - risk_free) / (variance**0.5) * (_TRADING_DAYS**0.5)
+
 
 def build_leaderboard_rows(
     portfolio_summaries: dict[str, dict],

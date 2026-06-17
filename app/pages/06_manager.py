@@ -16,11 +16,18 @@ this file is a thin pandas/plotly view over those helpers.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+
+# Streamlit runs pages with ``app/pages`` on ``sys.path``, not the repo root,
+# so the ``engine`` package is not importable unless we add the root ourselves.
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from engine.manager_report import (
     build_manager_summary,
@@ -34,7 +41,6 @@ from engine.manager_report import (
 # Paths + constants
 # ---------------------------------------------------------------------------
 
-_ROOT = Path(__file__).resolve().parents[2]
 _PORTFOLIOS_DIR = _ROOT / "data" / "portfolios"
 _REVIEW_DIR = _ROOT / "data" / "orders" / "manager-review"
 

@@ -57,7 +57,7 @@ def _load_all_trades() -> pd.DataFrame:
 
     combined = pd.concat(frames, ignore_index=True)
     if "timestamp" in combined.columns:
-        combined["timestamp"] = pd.to_datetime(combined["timestamp"])
+        combined["timestamp"] = pd.to_datetime(combined["timestamp"], utc=True)
         combined = combined.sort_values("timestamp", ascending=False)
     return combined
 
@@ -66,8 +66,7 @@ df_all = _load_all_trades()
 
 if df_all.empty:
     st.info(
-        "No trades found. "
-        "Trades are recorded when a strategy executes a buy or sell."
+        "No trades found. Trades are recorded when a strategy executes a buy or sell."
     )
     st.stop()
 
@@ -108,9 +107,11 @@ if selected_strategy != "ALL":
     filtered = filtered[filtered["strategy_id"] == selected_strategy]
 
 if date_range and len(date_range) == 2 and "timestamp" in filtered.columns:
-    start_dt = pd.Timestamp(date_range[0])
-    end_dt = pd.Timestamp(date_range[1]) + pd.Timedelta(days=1)
-    filtered = filtered[(filtered["timestamp"] >= start_dt) & (filtered["timestamp"] < end_dt)]
+    start_dt = pd.Timestamp(date_range[0], tz="UTC")
+    end_dt = pd.Timestamp(date_range[1], tz="UTC") + pd.Timedelta(days=1)
+    filtered = filtered[
+        (filtered["timestamp"] >= start_dt) & (filtered["timestamp"] < end_dt)
+    ]
 
 if selected_action != "ALL" and "action" in filtered.columns:
     filtered = filtered[filtered["action"] == selected_action]
@@ -122,7 +123,16 @@ if selected_action != "ALL" and "action" in filtered.columns:
 st.caption(f"{len(filtered)} trade(s) shown")
 
 # Column order: timestamp, strategy, action, ticker, shares, price, reasoning
-priority_cols = ["timestamp", "strategy_id", "action", "ticker", "shares", "price", "total", "reasoning"]
+priority_cols = [
+    "timestamp",
+    "strategy_id",
+    "action",
+    "ticker",
+    "shares",
+    "price",
+    "total",
+    "reasoning",
+]
 other_cols = [c for c in filtered.columns if c not in priority_cols]
 ordered_cols = [c for c in priority_cols if c in filtered.columns] + other_cols
 filtered = filtered[ordered_cols]
