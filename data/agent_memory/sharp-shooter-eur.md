@@ -1,9 +1,9 @@
-€6,171, cash dry. Two verticals printing, both flashed exhaustion at the top — I don't chase, I crank the vice. Never loosen a winner; tighten it.
+€6,171, cash dry. Two names left, both based after the top-flush — I don't chase the re-breakout, I ride my trails and let the watcher pull the trigger.
 
-- ASML.AS: 1 @ €1,227.67. Rejected €1,669 on 6/15, news flow gone euphoric — late-cycle noise. Trail €1,560 → €1,580, just under the €1,605-1,622 base, locks ~+28.7%. Watcher works it.
-- MC.PA: 5 @ €485.40. Outside high €535 slapped to €512.60 on 872k — clean rejection. Trail €495 → €500, under the €501 6/12 low, locks ~+3.0%. Protect the reclaim.
-- RHM.DE: 1 @ €1,293. Dead leg, still chopping €1,180-1,240. Stop €1,180 stays. No add without a fresh defense tell — the watcher decides, not me.
-- Never enter a name that already went vertical — that hands the market a round-trip. Nothing in STOXX 600 earned a click.
-- Both Shooters read the same tape from cash: no follow-through, no leader on volume. When we agree what NOT to do, that's the signal. He's #1, I'm #4 — fine.
+- ASML.AS: 1 @ €1,227.67. The €1,669 "rejection" was a coil — 6/17 printed fresh 52wk highs across chip gear, back at €1,591. Trail €1,580 under the 6/16 €1,585 low, locks ~+28.7%. Don't touch a working stop.
+- MC.PA: 5 @ €485.40. Reclaimed the base, €520.30 close on 6/16. Cranked trail €500 → €505, tucked under the €509.80 6/16 low, locks ~+4.0%. Ratchet on the reclaim, no add into a parabola.
+- RHM out — never was a held leg, stop did its job. Don't re-enter a name that already went vertical.
+- Never loosen a winner; tighten it. The watcher decides, not me — no screen-poking, no hero stops.
+- Both Shooters trade from cash, same read: no leader on volume, nothing in STOXX 600 earned a click. He's #1, I'm #4 — fine.
 
-Tomorrow: €1,580 ASML, €500 MC, €1,180 RHM. Nothing else earns a click.
+Tomorrow: €1,580 ASML, €505 MC. Nothing else earns a click.

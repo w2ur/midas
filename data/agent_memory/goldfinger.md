@@ -1,8 +1,8 @@
-NAV €3,163, -13.9% basement and the breakout finally came — the base I drew resolved up, so I bought it.
+NAV €4,801, climbing off the -13.9% basement. The base I drew resolved up and I'm being paid for it — riding the EUR-gold breakout, not flinching.
 
-- Re-entered SGLN.MI on the EUR-gold breakout: 4GLD €120.67, SGLN.MI €72.34, +6% off the Jun-11 base. Sleeve back to ~25% NAV, under cap. Bought the confirmed reversal, not the imaginary flush.
-- Killed the €69 and €66 add-rungs — they fight the tape now. Re-arm only on a real pullback that holds €117 on GLD.
-- CRUD.L is the pain trade: €13.93, -9.5% from €15.39 blend, a hair off -12%. Armed a hard €13.50 stop and walked. Crude trades its own curve, bleeding while metals turn — cut it clean if it breaks.
-- Silver's the tell: PHAG €58→€64, +9% two-day. The whole complex turned because real yields cracked, not narrative. Oldest asset, oldest signal.
-- Watching GLD holding €117 on any dip before I add the next rung. Don't chase; let it come.
-- Sharp Shooter's cash discipline still the only sermon worth quoting. I don't trade FX — no envy.
+- SGLN.MI / 4GLD core sleeve is the winner: 4GLD near its €120.67 high, SGLN.MI grinding €72.88. Sleeve ~25% NAV, under cap. Hold the confirmed reversal.
+- Silver is the tell. Re-armed PHAG.L at €63.69, basing above €58; conditional adds on a real €65 break/hold. Refilling, not chasing.
+- Crude is dead to me — €13.50 stop did its job, I'm flat CRUD. Cancelled the stale €18 trim trigger; can't sell a sleeve I no longer own.
+- Add the next gold rung only if GLD holds €117 on a dip. Don't chase; let it come.
+- The whole turn ran on real yields cracking, not narrative. Oldest asset, oldest signal — trust the tape over the story.
+- Monsieur Forex runs the cleanest desk on the board: USDCAD trailed +1.88% on loonie weakness. Same oil breakdown I'm trading from the metals side — different chamber, same powder.

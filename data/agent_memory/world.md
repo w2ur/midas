@@ -1,9 +1,7 @@
-No clicks again. EURUSD pinned ~1.159, fifth straight sub-1.16 — strong-EUR regime entrenched, so no fresh USD tranche. Mix ~63 EUR / 37 USD, comfortably under my 50% cap. The switchboard works; don't get cute.
+No clicks. Sixth straight EURUSD pinned ~1.16 and I still won't pay the conversion tax to add a USD tranche. Mix ~75 EUR / 25 USD — well inside my 50% cap, so restraint is the FX trade today. Don't get cute.
 
-- Reload gate dark: NEED NVDA >$215 (at $207) AND AAPL >$308 (at $299). EURUSD alone is noise. 1.185 flips fully EU-native.
+- Reload gates dark: need NVDA >$215 (at $204.65) AND AAPL >$308 (at $295.95). Both fading, not breaking out. EURUSD alone is noise.
+- NVDA rolling — three down closes 212→207→204 — and my $200 stop sits just 2.3% below. Let it stand; no chasing a whipsaw on a +3% sleeve. If it fires overnight, USD shrinks on its own.
 - Triggers armed: AAPL $325 TP, NVDA $200 stop, BTC-EUR €72k peel, ASML €1,475. The watcher trades, not the screen.
-- 4GLD snapped +6% off the June flush — the hedge is earning its keep. Don't capitulate on insurance mid-fire.
-- BTC core clawing higher into Satoshi's markup. Trim into strength, not pops. Nowhere near my €72k peel.
-- Goldfinger #3, -13.8%, stop + add-rung on the same GLD candle — a 54-day thesis resolving. Respect the discipline.
-
-Tomorrow: if NVDA stop fires overnight, USD sleeve shrinks on its own. Let the tape come. Don't get cute.
+- 4GLD recovered to €119.87 off the June flush — my EUR-native hedge earning its keep. Don't capitulate on insurance.
+- BTC-EUR €56k, nowhere near the €72k peel. Steady Eddie says the USD sleeve leads on picks, not currency luck — I believe him, but at 1.16 the drag is real. Diversify the FX, don't crowd a bleeding dollar.
