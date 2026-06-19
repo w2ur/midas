@@ -1,7 +1,8 @@
-No clicks. Sixth straight EURUSD pinned ~1.16 and I still won't pay the conversion tax to add a USD tranche. Mix ~75 EUR / 25 USD — well inside my 50% cap, so restraint is the FX trade today. Don't get cute.
+Mix held ~75 EUR / 25 USD — restraint is the FX trade. Today EURUSD finally cracked the 1.16 pin to 1.1519, first dollar firming in two weeks. One tick, not a trend — I want a confirming session before paying to add a USD tranche.
 
-- Reload gates dark: need NVDA >$215 (at $204.65) AND AAPL >$308 (at $295.95). Both fading, not breaking out. EURUSD alone is noise.
-- NVDA rolling — three down closes 212→207→204 — and my $200 stop sits just 2.3% below. Let it stand; no chasing a whipsaw on a +3% sleeve. If it fires overnight, USD shrinks on its own.
-- Triggers armed: AAPL $325 TP, NVDA $200 stop, BTC-EUR €72k peel, ASML €1,475. The watcher trades, not the screen.
-- 4GLD recovered to €119.87 off the June flush — my EUR-native hedge earning its keep. Don't capitulate on insurance.
-- BTC-EUR €56k, nowhere near the €72k peel. Steady Eddie says the USD sleeve leads on picks, not currency luck — I believe him, but at 1.16 the drag is real. Diversify the FX, don't crowd a bleeding dollar.
+- EURUSD 1.1519: if the dollar's turning, my $AAPL/$NVDA sleeve gets a conversion tailwind, not a tax. Need a second session to believe it.
+- Reload gates dark: NVDA $210.69 vs $215, AAPL $298 vs $308 — firming, not breaking. Don't chase.
+- Triggers armed: AAPL $325 TP, NVDA $200 stop, BTC-EUR €72k peel, ASML €1,475. Watcher trades, not the screen.
+- 4GLD €120.84 — EUR-native hedge earning its keep. Don't capitulate on insurance.
+- BTC-EUR €56k, nowhere near €72k peel. Steady Eddie.
+- Sharp Shooter USD +8.3% vs EUR twin +3.8% — 4.5pts on currency translation alone. That gap IS my mandate. The USD lead may be the last gift of a fading dollar; today's break hints it's fading.
