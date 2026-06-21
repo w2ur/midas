@@ -22,7 +22,7 @@ _FACTOR_RESEARCH = _ROOT / "data" / "factor-research.json"
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from engine.leaderboard import annualized_sharpe  # noqa: E402
+from engine.leaderboard import annualized_sharpe, max_drawdown  # noqa: E402
 
 _BASELINE_ID = "coin-flip-baseline"
 
@@ -75,18 +75,16 @@ def _load_live_snapshots() -> pd.DataFrame | None:
             last_val = df["portfolio_value"].iloc[-1]
             total_return = (last_val / first_val - 1) if first_val else 0.0
 
-            # Simple drawdown: max peak-to-trough.
-            rolling_max = df["portfolio_value"].cummax()
-            drawdown = ((df["portfolio_value"] - rolling_max) / rolling_max).min()
-
-            sharpe = annualized_sharpe(df["portfolio_value"].tolist())
+            nav = df["portfolio_value"].tolist()
+            drawdown = max_drawdown(nav)
+            sharpe = annualized_sharpe(nav)
 
             rows.append(
                 {
                     "id": portfolio_dir.name,
                     "source": "live",
                     "total_return": total_return,
-                    "max_drawdown": drawdown,
+                    "max_drawdown": drawdown if drawdown is not None else float("nan"),
                     "sharpe": sharpe if sharpe is not None else float("nan"),
                 }
             )

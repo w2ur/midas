@@ -46,6 +46,37 @@ def annualized_sharpe(values: list[float], risk_free: float = 0.0) -> float | No
     return (mean - risk_free) / (variance**0.5) * (_TRADING_DAYS**0.5)
 
 
+def max_drawdown(values: list[float]) -> float | None:
+    """Maximum peak-to-trough decline of a NAV series, as a negative fraction.
+
+    Walks ``values`` (a portfolio-value series, oldest first) tracking the
+    running peak, and returns the most negative ``(value - peak) / peak`` ratio
+    seen — measured against the peak *prior* to each trough, never the global
+    maximum. A book that only ever climbs (or is flat) returns ``0.0``: a real,
+    well-defined "no drawdown", unlike Sharpe which is undefined on a flat book.
+
+    Returns ``None`` when there are fewer than two points, or when the running
+    peak is never positive (no valid reference to measure a decline against —
+    avoids dividing by zero).
+    """
+    if len(values) < 2:
+        return None
+
+    peak = values[0]
+    worst = 0.0
+    seen_positive_peak = False
+    for v in values:
+        if v > peak:
+            peak = v
+        if peak > 0:
+            seen_positive_peak = True
+            drawdown = (v - peak) / peak
+            if drawdown < worst:
+                worst = drawdown
+
+    return worst if seen_positive_peak else None
+
+
 def build_leaderboard_rows(
     portfolio_summaries: dict[str, dict],
     on: date | None,
