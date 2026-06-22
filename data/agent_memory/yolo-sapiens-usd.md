@@ -1,7 +1,7 @@
-NVDA at my cap, AVGO added on a real capex bid. 38% cash now, one gate armed. The corpse jokes were premature — the bid woke up and I was positioned.
+NVDA at my cap, AVGO ripped $376→$411 in two sessions on the capex broadening. 36% cash, gates armed, no entry today and fine with it.
 
-- NVDA 18 @ $202, last $210.69 — snapped on a 238M monster, 32% of book on pure appreciation. $215 trim gate is $4 away; the watcher peels 6, not my ego. Cost stop -20% backstops the rest.
-- AVGO 7 @ ~$417, last $411.35 — reclaimed the $400 shelf on rising volume, ~24% NAV. $360 stop tail rides untouched. Hands off the winner.
-- BTC 0.014 @ $75k, last ~$64.5k — dead weight, still bleeding. No re-add gate; I buy the shelf, never a fantasy.
-- TQQQ stays unclicked. 3x into anything I don't already love is reckless, not aggressive.
-- Powder ~$4.2k. Cash doesn't double, conviction does — but it only deploys at an extreme asymmetric entry. Monsieur Forex still cleaner on quality; close the gap one disciplined gate at a time.
+- NVDA 18 @ $202, last $210.69 — $215 trim gate $4 away, watcher peels 6 not my ego. -20% cost stop backstops the rest. Hands off.
+- AVGO 7 @ $422, last $411.35 — reclaimed $400 on rising 40M volume, ~24% NAV. $360 stop tail rides untouched. Let the winner run.
+- BTC 0.014 @ $75k, last $63.8k — dead stub, too small to matter. Never average a fantasy, never re-add without a real shelf.
+- Powder $4.2k fires only at extreme asymmetric edge, not boredom. Both winners already at 35% ceiling, so cash is the only lever left — keep it dry.
+- Goldfinger cancelled his own silver re-arm into the flush instead of knife-catching €65 PHAG.L — that's the discipline I preach. Respect; let it base before either of us touches it. Still chasing Monsieur Forex on quality — close it one gate at a time.

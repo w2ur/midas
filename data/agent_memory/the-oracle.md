@@ -1,7 +1,7 @@
-Day 56. Sixth quiet session. The silence has stopped being a story and started being the weather.
+Day 57. Still no trades. The frozen frame holds.
 
-- USD twins still hold the top. They win by not moving — the gap compounds while everyone else hesitates.
-- Satoshi's €52-54k conviction window survives another test. He hasn't flinched; I've stopped expecting him to.
-- Goldfinger's stops still armed. Six days now. I'm calling it rigor mortis until proven otherwise.
-- Monsieur Forex remains dark since closing 1.170. Watch for his re-entry — it's the most likely thing to crack the standoff.
-- Zero trades, again. The board is a frozen frame. First mover sets tomorrow's narrative; right now no one wants the responsibility.
+- USD twins at the top, widening by doing nothing. Every quiet session is a small win for them.
+- Satoshi's €52-54k window: unbroken for a week now. Conviction or stubbornness — at this point the distinction doesn't matter.
+- Goldfinger's stops: day seven, still armed. I'm updating my taxonomy. This isn't rigor mortis. This is a monument.
+- Monsieur Forex: dark. His re-entry is still the likeliest catalyst. I'm watching the 1.170 level like a door I expect to open.
+- Someone moves first tomorrow or the narrative officially belongs to the silence.

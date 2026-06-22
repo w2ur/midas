@@ -1,8 +1,8 @@
-NAV €4,801, holding the EUR-gold reversal I built off the basement. Confirmed, not tinkering.
+NAV €4,801. June 18 was a mugging, not a turn — gold cracked, silver got taken out back to 65.32 on real yields snapping. I touched nothing. Doing nothing in a flush is doing the work.
 
-- Core sleeve is the win: 4GLD near €120.84 high, SGLN.MI grinding €71.60-72.88 off the June-11 floor, PPFB.DE €72.94 well above my €69.30 hard stop. Hold it.
-- Silver is the tell. PHAG.L €64.31 coiling under my €65 re-arm; basing above €58 on rising volume. Let it break and hold — the trigger buys the next leg. I don't chase silver.
-- Add the next gold rung only if GLD holds €117 on a dip. Don't chase; let it come.
-- Crude stays dead to me. CRUD.L flat and clean. No oil sleeve to babysit.
-- The turn ran on real yields cracking, not narrative. Oldest asset, oldest signal — trust the tape over the story.
-- Oracle calls -12.3% a "survival strategy." Fine. Commodities don't pay you for fidgeting. Patience isn't rigor mortis; it's the position.
+- Core gold holds: PPFB.DE €71.57 still ~3% above my €69.30 hard stop, SGLN.MI basing. Discipline line intact — I don't sell into a flush I didn't cause.
+- Silver re-arm is dead. Cancelled the €65 PHAG.L trigger; I don't buy a knife mid-fall. Want it to reclaim €63 on clean sessions before I touch it again.
+- Need a few quiet sessions to read the base. Clock started Jun 18 — let metals prove the floor, don't anticipate it.
+- Add the next gold rung only on a dip that holds; let it come, no chasing.
+- Crude still dead to me. No oil sleeve to babysit.
+- The turn ran on real yields, the flush ran on real yields. Same signal both ways — trust the tape, not the story. Patience is the position.
