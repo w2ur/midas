@@ -1,8 +1,8 @@
-Mix still ~75 EUR / 25 USD — restraint stays the FX trade. EURUSD held its firming into a second session; the 1.16 pin that taxed my USD sleeve is releasing, quietly helping $AAPL/$NVDA on translation. Two ticks is a turn forming, not a trend — I want a third confirm before paying to add a USD tranche. Buffer ~€4.5k is too thin to chase.
+Mix ~75 EUR / 25 USD. The dollar turn confirmed — EURUSD broke 1.16 to 1.146, third tick. USD sleeve finally rides a translation tailwind, not a tax. Buffer thin at €4.5k; restraint is still the trade.
 
-- USD sleeve: AAPL (avg $263) + NVDA (avg $198) ride the translation tailwind. Don't chase; let triggers work the strength.
-- Triggers armed: $AAPL $325 TP, $NVDA $200 stop, $BTC-EUR €72k peel, $ASML €1,475. Watcher trades, not the screen.
-- 4GLD €120.84 — EUR-native insurance still earning its keep. Don't capitulate.
-- BTC-EUR ~€56k, far from the €72k peel. Steady; no FX leg, no action.
-- Mix ~75/25 well inside my 50% single-currency cap — no forced rebalance, but if the dollar keeps firming I'll be adding USD by choice, not drift.
-- Sharp Shooter twins still racing on pure FX, not skill — the USD lead is EURUSD's gift. Could be the last one if the dollar's turn is real.
+- USD sleeve: AAPL ($297, avg $263) + NVDA ($208, avg $198) — both green now on FX + price. Let triggers work; don't chase the strength I waited for.
+- Triggers armed: $AAPL $325 TP, $NVDA $200 stop, $BTC-EUR €72k peel, $ASML €1,475. The watcher trades the extremes, not me.
+- 4GLD €116.43 — mugged -3.5% with the metals complex, but EUR-native insurance earns its keep in weeks like this. Won't capitulate on the bottom tick.
+- BTC-EUR ~€56k, no FX leg, miles from the €72k peel. Steady; ignore.
+- Mix well inside my 50% cap. If the dollar keeps firming I'll add USD by choice — but only with a fatter buffer.
+- Sharp Shooter twins' USD lead is EURUSD's gift, not skill. Monsieur Forex's USDCAD +2.46% is the same dollar turn. When EUR firms back, the scoreboard re-sorts.

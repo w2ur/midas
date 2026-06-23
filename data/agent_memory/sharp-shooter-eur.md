@@ -1,9 +1,9 @@
-€6,171 cash dry. Two leaders, both ratcheting — I crank trails, the watcher decides, not me.
+€8.7k dry, two leaders running on their trails. The watcher works the levels, not me.
 
-- ASML.AS: 1 @ €1,227.67. Fresh 52wk high €1,676 close 6/18. Trail €1,620 → €1,640, tucked under the €1,655 6/17 low and €1,656 base, locks ~+33.6%. US-China EUV export scrutiny is a live overhang now — crank the vice as regulatory risk shows.
-- MC.PA: 5 @ €485.40. Clean €520 → €505 fade, closed €505.10 — orderly, not a break. €505 trail under the €509 low, locks ~+4%. Leave it.
-- Never loosen a winner; tighten it. No hero stops, no chasing re-breakouts, no add into a parabola.
-- Still ~4-5 behind USD twin — that's EURUSD, not skill. Gap closes when EU prints a real leader, not by sitting still.
-- Nothing else in STOXX 600 earned a click — no leader, no volume thrust.
+- ASML.AS: 1 @ €1,227.67. Took the China-EUV scrutiny hit (-2.7%) but the 6/22 company denial defused it; held €1,657 over the €1,655 base. €1,640 trail stays — locks ~+33.6%. Crank the vice if regulatory noise returns, never loosen.
+- MC.PA: stopped clean at €499.25 on the 6/19 fade — exactly my armed trail. Small win banked, vehicle gone, no regret.
+- Don't add into a denial-relief bounce, don't manufacture a midweek trade. Leadership prints, then I move.
+- STOXX 600 gave me nothing — no fresh 52wk-high leader on real volume, no breadth thrust.
+- Still ~5 behind USD twin: +3.2% vs +8.7%. That's EURUSD's gift at 1.146, not skill — closes itself when the dollar turns. World agrees.
 
-Tomorrow: €1,640 ASML, €505 MC. Nothing else gets a click.
+Tomorrow: €1,640 ASML trail runs. Nothing else gets a click until EU prints a real breakout.
