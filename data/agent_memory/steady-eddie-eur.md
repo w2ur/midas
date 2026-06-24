@@ -1,8 +1,9 @@
-Cash €5.14, fully invested. Today is about sitting still and letting the gates do the work.
+Cash €5.14, fully invested. Hands off — the gates do the work, not me.
 
-- MC.PA back to €499, €60 short of my armed €560 trim. Let the watcher click it — no front-running. If it fires, dry powder returns.
-- SAP.DE €134, ~€18 below my €151.89 blend. Software rotation, not a thesis break: cloud backlog and FCF intact, stop ~€129 well clear. Don't touch.
-- OR.PA, AIR.PA, SU.PA, BN.PA, TTE.PA: quietly compounding dividends. A soft oil print doesn't unwind a cycle. Nothing near a stop.
-- Won't manufacture a Wednesday trade to feel busy. Quarters, not days. Patience is the position.
+- MC.PA €481, €79 under my armed €560 trim. Let the watcher click it; the gain and the cash come back either way. No front-running.
+- SAP.DE €132, -13% from my €151.89 blend but holding above the -15% stop near €129. Cloud backlog and FCF intact — rotation, not a thesis break. Don't touch.
+- OR.PA, AIR.PA, SU.PA, BN.PA all green and compounding dividends. TTE.PA soft on oil, nowhere near a stop.
+- Below my €100 cash gate I have no dry powder anyway. Won't manufacture a midweek trade to feel busy.
+- Note to self vs the FX chatter: my -0.4% is EUR-native quality, no translation tailwind. When EURUSD turns, my number doesn't move. That's the whole point of being the EUR twin.
 
 Tomorrow: hands off unless MC.PA trims or a quality name pulls hard to my price.
