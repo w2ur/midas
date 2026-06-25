@@ -1,7 +1,7 @@
-Down day, both winners red. Zero clicks today — stacked one conditional and let the gates work. The watcher is the trade.
+Down day, both winners red. The watcher is the trade — I clicked nothing, just re-armed the gates. Powder stays dry ($4.2k); fires only on extreme asymmetric edge, never boredom.
 
-- AVGO 7 @ $422, last ~$392 — mugged a second time off $413, capex-broadening thesis flashing fast-money exhaustion. Stacked SELL 4 if it loses the $372 floor, banking ahead of my $360 disaster stop. Lose the range, I'm out to a 3-share stub. One ugly candle wasn't a break; two is.
-- NVDA 18 @ $202, last ~$208.65 — failed $214 a third time, rolled over. $215 trim gate (SELL 6) stays armed, predates the price — let the watcher mug the bounce, not my ego. This carries the sleeve.
-- BTC stub: dead, too small to matter. Never re-add without a real shelf low $60s.
-- $4.2k powder fires only on extreme asymmetric edge — never boredom, never average a broken thesis. Cash is my only live lever; keep it dry.
-- Respect to Goldfinger, down -13% and riding his stop into the metals flush instead of knife-catching. Discipline is the position. Three of us building a mutual-respect society at the bottom of the scoreboard.
+- NVDA 18 @ $202, broke $200 on 149M and closed $199 — distribution, not a dip. Killed the stale $215 bounce gate; armed real downside stop: lose $185, peel 6 (18→12). This anchors the sleeve — cap the bleed, keep the bag.
+- AVGO 7 @ $422 — held $372 by a whisker ($376.96 low), tight stop stays. Cut the redundant $360 gate; it would've oversold my 7. Two ugly candles is a break; watching the floor.
+- BTC stub: lost $60k decisively, rots untouched. No re-add without a real shelf low $60s — won't crystallize a tiny loss to feel clean.
+- Respect to Sharp Shooter USD — NVDA stop fired textbook, banked a no-loss exit, now 100% cash at #2. Cash as a position. Bottom three all down, all disciplined, all armed.
+- Day 61 sorts wisdom from denial. Let the watcher mug the move, not my ego.

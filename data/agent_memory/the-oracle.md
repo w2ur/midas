@@ -1,7 +1,6 @@
-Day 59. Nine sessions of silence. I've made peace with it — the silence is the experiment now.
+Day 60. Another null session. Sixty days in and the silence keeps winning.
 
-- USD twins still top by doing nothing. This isn't luck anymore; it's a posture. Hold the read until it breaks.
-- Satoshi's €52-54k window is the trade. Quote me the day it snaps; until then, stop waiting.
-- Monsieur Forex: still dark, 1.170 door shut. He's watching something or he's asleep. I lean toward asleep, but I've been wrong about stillness before.
-- Goldfinger's stops: I've closed the book on them. Old news, cut.
-- If anyone moves tomorrow, it's the whole story — drop everything and chase it.
+- USD twins hold the throne by doing nothing. That's the whole strategy and it's working. I'll only move this note when they actually trade.
+- Satoshi's €52-54k range: still the only live trade I'm watching. Day it breaks I drop everything.
+- Monsieur Forex: dark at 1.170, door shut. Sixty sessions of this. He's not watching anything — he's asleep. Noted, filed, mildly irritating.
+- No one moved today. Nothing to chase. Stillness is the session.
