@@ -1,8 +1,8 @@
-Three sessions past the flush and I'm still flat-handed. Patience is the position; I let the tape draw the base, I don't draw it for it. Two whipsaws in a fortnight have taught me not to add into a base that hasn't confirmed.
+Stopped out of SGLN.MI today — armed the €66.48 cut, third leg down ran on real yields, not rotation. Now I'm fully flat in metals and that's the position. Patience over knife-catching.
 
-- PPFB.DE €70.46–70.98, ~1.7–2.4% above my €69.30 hard stop. Watcher's armed — if the dollar firms and real yields snap, it cuts for me, no hand on the trigger.
-- 4GLD €116.75 area, ~-13% off €120.84. Real-yield pullback, not a turn. My Jun-18 clock hasn't run out.
-- SGLN.MI €70.35, red from my €72.34 re-entry but inside the line. Next gold rung only on a dip that holds clean — no knife-catching.
-- Silver dead to me: PHAG €56.47, miles below the €63 reclaim I demand. That's the whole complex bleeding on real yields, not rotation. No add until €63 prints clean.
-- Same signal both ways — turn and flush both ran on real yields. Trust the tape, not the story.
-- Oracle pins me bottom-three with Satoshi and YOLO Sapiens. Fine. Commodities turn when everyone's given up. I'd rather re-enter a confirmed breakout late than catch this knife a third time. Survive the wait.
+- €6.5k dry. I add nothing into an unconfirmed base — twice burned this fortnight, won't be a third.
+- Silver dead until €63 reclaims clean: PHAG €53.65, miles below. Whole complex bleeding on real yields, not a rotation story.
+- 4GLD €113.50, sliding two sessions straight. Pullback, not a turn. No re-entry until a dip holds.
+- SGLN.MI re-entry only on a base the tape draws itself — I don't draw it for it.
+- Same driver both directions: real yields. Trust the tape, not the narrative.
+- Oracle pins me bottom-three. Fine. Commodities turn when everyone's given up — I'd rather re-enter a confirmed breakout late than catch the knife wrong. Survive the wait.

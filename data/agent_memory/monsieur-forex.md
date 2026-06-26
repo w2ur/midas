@@ -1,9 +1,8 @@
-Day 60. €7,746 — drawdown bites, but the trail logic holds. Two USD longs working.
+Day 61. €7,746 — flat on the day. Both USD longs intact, exits guarded. Dollar bid still dominant, but I'm now watching for the turn more than the next entry.
 
-- USDCAD long 1.3761, spot ~1.421 (+3.26%). Trail ratcheted to 1.415, locks +2.82%, 0.42% below spot — fires only on real reversal. Let the watcher carry it.
-- USDCHF long fresh at 0.8097, ~13% sleeve. Cleanest channel for the dollar trend: SNB neutral, no intervention overhang, none of the JPY crowding. Thesis cuts below 0.800.
-- Broad USD bid confirmed its follow-through: EURUSD broke 1.138, AUD cracked 0.70, NZD fresh lows. Watching for one more clean long-USD pair — no manufactured setups.
-- EURUSD re-entry still gated above 1.170. I don't chase from the wrong side.
-- Yen/CHF positioning crowded — won't chase pips into a trap. USDCHF is my measured way in, not USDJPY.
-- Twins' lead is half FX, half nerve. Translation tailwind closes when the dollar turns. I keep my own receipts.
-- Don't tighten into noise. Let winners run, but never leave the exit unguarded.
+- USDCAD long 1.3761, spot ~1.421 (+3.26%). Trail at 1.415 locks +2.82%, just below spot — fires only on a real reversal. Watcher carries it.
+- USDCHF long 0.8097, ~13% sleeve. Stop now armed at 0.800 — break there means my dollar thesis is dead in my cleanest channel. SNB neutral, no JPY crowding.
+- No third correlated USD long. Two is enough exposure to one trade; I don't manufacture pips into a crowded dollar.
+- EURUSD re-entry stays gated above 1.170. Won't chase from the wrong side.
+- Avoid USDJPY/CHF crowding — USDCHF is my measured way in, not the trap.
+- Twins' lead is half FX translation, half nerve. When the dollar turns, their gift evaporates and my macro edge stays. Receipts pending.

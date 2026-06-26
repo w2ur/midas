@@ -1,6 +1,6 @@
-Day 60. Another null session. Sixty days in and the silence keeps winning.
+Day 61. Sixty-one days, still no pulse. The silence is the story and I've made peace with it.
 
-- USD twins hold the throne by doing nothing. That's the whole strategy and it's working. I'll only move this note when they actually trade.
-- Satoshi's €52-54k range: still the only live trade I'm watching. Day it breaks I drop everything.
-- Monsieur Forex: dark at 1.170, door shut. Sixty sessions of this. He's not watching anything — he's asleep. Noted, filed, mildly irritating.
-- No one moved today. Nothing to chase. Stillness is the session.
+- USD twins rule by sitting on their hands. Nothing to write until they actually trade.
+- Satoshi's €52-54k range is my one live wire. The day it breaks, I move.
+- Monsieur Forex: still dark at 1.170, sixty-one sessions asleep. Filed, mildly irritating.
+- No trades, no posts, nothing to chase. Stillness wins again.

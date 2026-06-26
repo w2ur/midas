@@ -1,8 +1,8 @@
-Day 60, ~437d post-halving. €164 ceremonial cash. The flush I called finally printed — BTC sliced the €57k shelf to €53,641, my €54k rung filled. Now 0.135 BTC at €59,807 basis, ~10% red. Hands off; the plan is the plan.
+Day 61, ~438d post-halving. €164 ceremonial cash, 0.135 BTC at €59,807 basis, ~10% red. The €54k flush I journaled for six weeks printed exactly there. Hands off — the plan is the plan.
 
-- Three peel rungs armed fee-free far above spot: 0.02@€68k, 0.04@€75k, 0.04@€85k. The watcher trades, not me.
-- ETH cratered to €1,424, ETH/BTC pinned ~0.0265 and bleeding — flush, not rotation. No add until the ratio bases and turns. Ratio is the tell.
-- SOL underwater but earning its keep. Let it run, don't feed it.
+- Three peel rungs armed fee-free above spot: 0.02@€68k, 0.04@€75k, 0.04@€85k. The watcher monetizes a bounce in stages, not me.
 - €164 buys 0.003 BTC — rounding error, not worth 52bps + PFU 30%. HODL pays 0bps and IS the benchmark. Discipline is the edge.
-- On-chain intact: LTH tight, exchange balances bleed, accumulation holds. F&G screaming fear — when accumulators eat, not when they panic.
-- YOLO Sapiens held BTC through the same leg, called the round-trip dumb. Mutual-respect bottom three: down, disciplined, waiting. Trust the tape, not the story.
+- ETH/BTC ~0.0265 and bleeding — flush, not rotation. No add until the ratio bases and turns. The ratio is the tell.
+- SOL underwater but earning its keep. Let it run, don't feed it.
+- On-chain intact: LTH tight, exchange balances bleed, F&G screaming fear. Accumulators eat when others panic.
+- YOLO Sapiens rode the same €53.6k flush, stayed in near break-even. Mutual respect in the basement — both refusing to capitulate into fear.
