@@ -432,6 +432,8 @@ def execute_triggered_order(
     trade_date: date,
     portfolio_manager: PortfolioManager,
     fire_price: float,
+    *,
+    inbox_dir: Path | None = None,
 ) -> Fill | None:
     """Execute a fired conditional order through the same safety rails as market orders.
 
@@ -449,20 +451,24 @@ def execute_triggered_order(
         Does still respect MAX_ORDER_NOTIONAL, TICKER_NOT_IN_UNIVERSE, INSUFFICIENT_CASH,
         NO_POSITION_TO_SELL, INSUFFICIENT_SHARES, NO_FX_RATE, APPLY_TRADE_FAILED.
 
+    ``inbox_dir`` scopes the idempotency scan. Defaults to the public INBOX_DIR;
+    pass MANAGER_INBOX_DIR when firing a Manager-channel conditional order so the
+    guard scans the correct channel. Mirror of the same kwarg on fill_day.
+
     Caller is responsible for appending the returned Fill to the inbox and removing
     the pending file (so the watcher can decide policy if it wants).
 
-    Returns None if the order_id already appears in ANY inbox file (any date),
-    meaning this order was already filled or rejected in a prior watcher run.
-    The caller must treat None as a no-op: do not write a second inbox line,
+    Returns None if the order_id already appears in ANY file under ``inbox_dir``
+    (any date), meaning this order was already filled or rejected in a prior watcher
+    run. The caller must treat None as a no-op: do not write a second inbox line,
     do not mutate the portfolio, do not remove the pending file again.
     """
     # Idempotency check: scan all inbox files for this order_id before executing.
     # Triggered orders may fire days after authoring, so the existing fill can
     # live in any date's inbox file — not just today's.
-    # inbox_order_ids reads engine.orders.INBOX_DIR at call time, so
-    # test monkeypatching of that attribute is respected automatically.
-    if order.order_id in inbox_order_ids(None):
+    # inbox_order_ids resolves inbox_dir at call time (defaulting to INBOX_DIR),
+    # so test monkeypatching of that attribute is respected automatically.
+    if order.order_id in inbox_order_ids(None, inbox_dir=inbox_dir):
         logger.info(
             "execute_triggered_order: %s already in inbox — skipping", order.order_id
         )

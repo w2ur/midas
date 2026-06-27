@@ -301,6 +301,79 @@ def test_execute_triggered_order_skips_when_in_different_day_inbox(broker_env):
 
 
 # ---------------------------------------------------------------------------
+# C2. execute_triggered_order idempotency is scoped to the given inbox_dir
+#     A fill in the Manager inbox must suppress a re-fire when inbox_dir=manager_inbox.
+#     The same fill must NOT suppress execution when the default (public) inbox is used.
+# ---------------------------------------------------------------------------
+
+
+def test_execute_triggered_order_idempotency_respects_inbox_dir(broker_env, tmp_path):
+    """inbox_dir kwarg scopes the idempotency scan.
+
+    - Fill in manager_inbox + inbox_dir=manager_inbox → returns None (skip).
+    - Same fill in manager_inbox, but inbox_dir omitted (public default) → does NOT
+      skip (returns a Fill, since the order is not in the public inbox).
+    """
+    from engine.paper_broker import execute_triggered_order
+    from engine.orders import append_fill, MANAGER_INBOX_DIR
+
+    manager_inbox = tmp_path / "manager-inbox"
+    manager_inbox.mkdir()
+
+    _seed_ohlcv(broker_env["ohlcv"], "BTC-EUR", [("2026-04-17", 80_000.0)])
+    _write_config(broker_env["config_dir"], "satoshi")
+    _init_portfolio(broker_env["pm_base"], "satoshi", cash=5_000.0, currency="EUR")
+
+    order = Order(
+        order_id="ord_2026-04-17_satoshi_mgr001",
+        ts=datetime(2026, 4, 17, 20, 0, 0, tzinfo=timezone.utc),
+        agent_id="satoshi",
+        action="BUY",
+        ticker="BTC-EUR",
+        shares=0.05,
+        reasoning="manager conditional dip",
+        currency="EUR",
+        trigger={"op": "<=", "level": 80_000.0},
+        expires="2026-05-17",
+    )
+
+    # Simulate a prior fill already in the MANAGER inbox (written there by the watcher).
+    prior_fill = Fill(
+        order_id="ord_2026-04-17_satoshi_mgr001",
+        ts_filled=datetime(2026, 4, 17, 21, 0, 0, tzinfo=timezone.utc),
+        status="filled",
+        fill_price=80_000.0,
+        fill_currency="EUR",
+        notional_base=4_000.0,
+        fees=0.0,
+        reason=None,
+        trigger_fired=True,
+    )
+    append_fill(TRADE_DATE, prior_fill, inbox_dir=manager_inbox)
+
+    # --- Case 1: with inbox_dir=manager_inbox → scan finds the fill → skip (None) ---
+    pm = _init_portfolio(broker_env["pm_base"], "satoshi", cash=5_000.0, currency="EUR")
+    result_manager = execute_triggered_order(
+        order, TRADE_DATE, pm, fire_price=80_000.0, inbox_dir=manager_inbox
+    )
+    assert result_manager is None, (
+        "Expected idempotency skip (None) when fill is in the manager inbox "
+        f"and inbox_dir=manager_inbox; got {result_manager}"
+    )
+
+    # --- Case 2: inbox_dir omitted (public default) → fill NOT found → executes ---
+    # Re-init portfolio so we have enough cash for the BUY to succeed.
+    pm2 = _init_portfolio(
+        broker_env["pm_base"], "satoshi", cash=5_000.0, currency="EUR"
+    )
+    result_public = execute_triggered_order(order, TRADE_DATE, pm2, fire_price=80_000.0)
+    assert result_public is not None, (
+        "Expected a real Fill when using the public inbox (fill lives only in manager "
+        "inbox); got None — guard over-scanned and blocked a valid second channel"
+    )
+
+
+# ---------------------------------------------------------------------------
 # D. Seed-based randomized test: random sequence of valid orders,
 #    fill_day once vs twice → identical end state
 # ---------------------------------------------------------------------------
