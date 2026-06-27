@@ -192,6 +192,63 @@ class TestIsCryptoTicker:
         assert is_crypto_ticker("PEPE-EUR") is False
 
 
+class TestChannelScopedPending:
+    """Channel-scoped pending dir: manager orders must not leak into global channel."""
+
+    def test_pending_roundtrip_manager_dir(self, tmp_path: Path) -> None:
+        from engine import triggers
+
+        manager_dir = tmp_path / "manager-pending"
+        o = _make_order(order_id="ord_2026-06-27_manager_001")
+
+        # Save to manager dir
+        save_pending(o, pending_dir=manager_dir)
+
+        # File must exist under manager_dir
+        assert (manager_dir / f"{o.order_id}.json").exists()
+
+        # Global PENDING_DIR must NOT contain the file
+        assert not (triggers.PENDING_DIR / f"{o.order_id}.json").exists()
+
+        # list_pending with manager dir must return it
+        listed = list_pending(pending_dir=manager_dir)
+        assert len(listed) == 1
+        assert listed[0].order_id == o.order_id
+
+        # Global list_pending() must NOT see it
+        global_listed = [x for x in list_pending() if x.order_id == o.order_id]
+        assert global_listed == []
+
+        # delete_pending with manager dir must return True and remove
+        assert delete_pending(o.order_id, pending_dir=manager_dir) is True
+        assert not (manager_dir / f"{o.order_id}.json").exists()
+
+    def test_cancels_roundtrip_manager_dir(self, tmp_path: Path) -> None:
+        from engine import triggers
+
+        manager_dir = tmp_path / "manager-cancels"
+        d = date(2026, 6, 27)
+        c = CancelRequest(
+            request_id="cnl_2026-06-27_manager_001",
+            ts=datetime(2026, 6, 27, 20, 5, tzinfo=timezone.utc),
+            agent_id="manager",
+            target_order_id="ord_2026-06-20_manager_003",
+            reasoning="strategy rebalance",
+        )
+
+        # Append to manager cancels dir
+        append_cancel(d, c, cancels_dir=manager_dir)
+
+        # Read back from manager dir must return it
+        back = read_cancels(d, cancels_dir=manager_dir)
+        assert len(back) == 1
+        assert back[0].request_id == c.request_id
+
+        # Global read_cancels must NOT see it
+        global_back = [x for x in read_cancels(d) if x.request_id == c.request_id]
+        assert global_back == []
+
+
 class TestGetCurrentPrice:
     def test_equity_falls_through_to_ohlcv(self, monkeypatch) -> None:
         from engine import triggers

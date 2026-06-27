@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 PENDING_DIR = _REPO_ROOT / "data" / "orders" / "pending"
 CANCELS_DIR = _REPO_ROOT / "data" / "orders" / "cancels"
+MANAGER_PENDING_DIR = _REPO_ROOT / "data" / "orders" / "manager-pending"
+MANAGER_CANCELS_DIR = _REPO_ROOT / "data" / "orders" / "manager-cancels"
 
 
 @dataclass
@@ -66,23 +68,25 @@ class CancelRequest:
 # ---------- Pending order storage ----------
 
 
-def save_pending(order: Order) -> None:
+def save_pending(order: Order, pending_dir: Path | None = None) -> None:
     """Persist a conditional order to its per-order JSON file. Overwrites if same order_id."""
     if order.trigger is None:
         raise ValueError(
             f"save_pending requires order.trigger, got None for {order.order_id}"
         )
-    PENDING_DIR.mkdir(parents=True, exist_ok=True)
-    path = PENDING_DIR / f"{order.order_id}.json"
+    base = pending_dir if pending_dir is not None else PENDING_DIR
+    base.mkdir(parents=True, exist_ok=True)
+    path = base / f"{order.order_id}.json"
     path.write_text(json.dumps(order.to_dict(), indent=2), encoding="utf-8")
 
 
-def list_pending() -> list[Order]:
+def list_pending(pending_dir: Path | None = None) -> list[Order]:
     """Return all pending conditional orders, deterministic by order_id."""
-    if not PENDING_DIR.exists():
+    base = pending_dir if pending_dir is not None else PENDING_DIR
+    if not base.exists():
         return []
     out: list[Order] = []
-    for path in sorted(PENDING_DIR.glob("*.json")):
+    for path in sorted(base.glob("*.json")):
         try:
             out.append(Order.from_dict(json.loads(path.read_text(encoding="utf-8"))))
         except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
@@ -91,9 +95,10 @@ def list_pending() -> list[Order]:
     return out
 
 
-def delete_pending(order_id: str) -> bool:
+def delete_pending(order_id: str, pending_dir: Path | None = None) -> bool:
     """Remove a pending order's file. Returns True if removed, False if absent."""
-    path = PENDING_DIR / f"{order_id}.json"
+    base = pending_dir if pending_dir is not None else PENDING_DIR
+    path = base / f"{order_id}.json"
     if not path.exists():
         return False
     path.unlink()
@@ -109,12 +114,16 @@ def _append_jsonl(path: Path, obj: dict) -> None:
         f.write(json.dumps(obj) + "\n")
 
 
-def append_cancel(d: date, cancel: CancelRequest) -> None:
-    _append_jsonl(CANCELS_DIR / f"{d.isoformat()}.jsonl", cancel.to_dict())
+def append_cancel(
+    d: date, cancel: CancelRequest, cancels_dir: Path | None = None
+) -> None:
+    base = cancels_dir if cancels_dir is not None else CANCELS_DIR
+    _append_jsonl(base / f"{d.isoformat()}.jsonl", cancel.to_dict())
 
 
-def read_cancels(d: date) -> list[CancelRequest]:
-    path = CANCELS_DIR / f"{d.isoformat()}.jsonl"
+def read_cancels(d: date, cancels_dir: Path | None = None) -> list[CancelRequest]:
+    base = cancels_dir if cancels_dir is not None else CANCELS_DIR
+    path = base / f"{d.isoformat()}.jsonl"
     if not path.exists():
         return []
     out: list[CancelRequest] = []
