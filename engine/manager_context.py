@@ -40,10 +40,13 @@ import logging
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from engine.market_data import no_data_sentinel
 from engine.research_note import ResearchNote
+
+if TYPE_CHECKING:
+    from engine.orders import Order
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +159,7 @@ class ManagerContext:
     portfolio_state: dict[str, Any]
     outcome_memory: list[dict[str, Any]]
     config: dict[str, Any] = field(default_factory=dict)
+    active_triggers: list["Order"] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -230,6 +234,7 @@ def build_manager_context(
     ticker_registry: dict[str, dict],
     as_of: date,
     config: dict[str, Any],
+    active_triggers: "list[Order] | None" = None,
 ) -> ManagerContext:
     """Assemble a ManagerContext from its constituent inputs.
 
@@ -315,6 +320,7 @@ def build_manager_context(
         portfolio_state=portfolio_state,
         outcome_memory=outcome_memory,
         config=config,
+        active_triggers=list(active_triggers) if active_triggers else [],
     )
 
 
@@ -559,5 +565,23 @@ def render_manager_context(ctx: ManagerContext) -> str:
                 f"return={ret}  alpha={alpha}"
             )
         parts.append("\n".join(memory_lines))
+
+    # ------------------------------------------------------------------
+    # Section 7: ACTIVE TRIGGERS (only if non-empty — no section when absent)
+    # ------------------------------------------------------------------
+    if ctx.active_triggers:
+        trigger_lines = [
+            "=== ACTIVE TRIGGERS (already parked — do NOT re-author these) ==="
+        ]
+        for order in ctx.active_triggers:
+            trig = order.trigger or {}
+            op = trig.get("op", "?")
+            level = trig.get("level", "?")
+            expires = order.expires or "?"
+            trigger_lines.append(
+                f"  {order.ticker:<12} {order.action} if {op} {level}"
+                f"  |  {order.shares} shares  |  expires {expires}"
+            )
+        parts.append("\n".join(trigger_lines))
 
     return "\n\n".join(parts)

@@ -559,6 +559,7 @@ def step_build_manager_prompt(
     )
     from engine.ohlcv_store import latest_close_on_or_before as _lcob
     from engine.persona_dispatch import wrap_persona_prompt
+    from engine.triggers import MANAGER_PENDING_DIR, list_pending
 
     print("\n=== Step 3d: Build Manager prompt ===")
 
@@ -610,6 +611,8 @@ def step_build_manager_prompt(
         if close is not None:
             price_lookup[ticker] = (close, trade_date.isoformat())
 
+    active_triggers = list_pending(pending_dir=MANAGER_PENDING_DIR)
+
     ctx = build_manager_context(
         notes=notes,
         portfolio=portfolio,
@@ -621,10 +624,14 @@ def step_build_manager_prompt(
             "initial_capital": MANAGER_INITIAL_CAPITAL_EUR,
             "currency": MANAGER_CURRENCY,
         },
+        active_triggers=active_triggers,
     )
     rendered = render_manager_context(ctx)
     wrapped, _model = wrap_persona_prompt(MANAGER_AGENT_ID, rendered)
-    print(f"  Built Manager prompt ({len(notes)} notes, {len(price_lookup)} priced)")
+    print(
+        f"  Built Manager prompt ({len(notes)} notes, {len(price_lookup)} priced,"
+        f" {len(active_triggers)} active trigger(s))"
+    )
     return wrapped
 
 

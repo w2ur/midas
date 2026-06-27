@@ -11,11 +11,12 @@ Covers:
 - FEE_TAX_POLICY and RISK_BUDGET constants present in rendered output
 - absent portfolio → initial empty book (cash=full capital, no positions)
 - Oracle-Fallacy guard: prior reasoning text NEVER appears in the rendered memory block
+- active_triggers → ACTIVE TRIGGERS section in render; absent/empty → no section
 """
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Any
 
 import pytest
@@ -31,6 +32,7 @@ from engine.manager_context import (
     load_ticker_registry,
     render_manager_context,
 )
+from engine.orders import Order
 from engine.research_note import ResearchNote
 
 
@@ -886,3 +888,102 @@ class TestRegistryNormalization:
         # Should not contain a dangling em-dash with nothing after it
         assert " — \n" not in rendered
         assert " []" not in rendered
+
+
+# ---------------------------------------------------------------------------
+# active_triggers — ACTIVE TRIGGERS section
+# ---------------------------------------------------------------------------
+
+
+def _make_pending_order(
+    ticker: str = "BTC-EUR",
+    action: str = "BUY",
+    shares: float = 0.005,
+    op: str = ">=",
+    level: float = 60000.0,
+    expires: str = "2026-07-05",
+    agent_id: str = "the-manager",
+) -> Order:
+    return Order(
+        order_id="mgr-test-001",
+        ts=datetime(2026, 6, 27, 20, 0, 0, tzinfo=timezone.utc),
+        agent_id=agent_id,
+        action=action,
+        ticker=ticker,
+        shares=shares,
+        reasoning="Waiting for breakout confirmation.",
+        currency="EUR",
+        trigger={"op": op, "level": level},
+        expires=expires,
+    )
+
+
+class TestActiveTriggers:
+    """Active triggers surface in the rendered context; absent/empty → no section."""
+
+    def _build_ctx_with_triggers(
+        self, triggers: list[Order] | None = None
+    ) -> ManagerContext:
+        notes = [("satoshi", _make_note(["BTC-EUR"]))]
+        price_lookup = {"BTC-EUR": (58000.0, "2026-06-27")}
+        registry = {"BTC-EUR": {"name": "Bitcoin EUR", "type": "crypto"}}
+        return build_manager_context(
+            notes=notes,
+            portfolio=_make_portfolio(),
+            resolved_decisions=[],
+            price_lookup=price_lookup,
+            ticker_registry=registry,
+            as_of=date(2026, 6, 27),
+            config=_DEFAULT_CONFIG,
+            active_triggers=triggers,
+        )
+
+    def test_context_renders_active_triggers(self) -> None:
+        """One pending Order → rendered output contains ticker, level, and expires."""
+        order = _make_pending_order(
+            ticker="BTC-EUR", op=">=", level=60000.0, expires="2026-07-05"
+        )
+        ctx = self._build_ctx_with_triggers([order])
+        rendered = render_manager_context(ctx)
+        assert "ACTIVE TRIGGERS" in rendered
+        assert "BTC-EUR" in rendered
+        assert "60000" in rendered
+        assert "2026-07-05" in rendered
+
+    def test_no_active_triggers_no_header(self) -> None:
+        """Empty/omitted active_triggers → ACTIVE TRIGGERS header absent (legacy-identical)."""
+        ctx_none = self._build_ctx_with_triggers(None)
+        ctx_empty = self._build_ctx_with_triggers([])
+        for ctx in (ctx_none, ctx_empty):
+            rendered = render_manager_context(ctx)
+            assert "ACTIVE TRIGGERS" not in rendered
+
+    def test_active_triggers_stored_on_context(self) -> None:
+        """active_triggers are carried on the ManagerContext dataclass."""
+        order = _make_pending_order()
+        ctx = self._build_ctx_with_triggers([order])
+        assert len(ctx.active_triggers) == 1
+        assert ctx.active_triggers[0].ticker == "BTC-EUR"
+
+    def test_active_triggers_default_empty(self) -> None:
+        """build_manager_context with no active_triggers kwarg → empty list on ctx."""
+        notes = [("satoshi", _make_note(["BTC-EUR"]))]
+        ctx = build_manager_context(
+            notes=notes,
+            portfolio=_make_portfolio(),
+            resolved_decisions=[],
+            price_lookup={},
+            ticker_registry={},
+            as_of=date(2026, 6, 27),
+            config=_DEFAULT_CONFIG,
+        )
+        assert ctx.active_triggers == []
+
+    def test_render_shows_trigger_op_and_action(self) -> None:
+        """Rendered line contains the action, op, and level for each trigger."""
+        order = _make_pending_order(action="BUY", op=">=", level=60000.0)
+        ctx = self._build_ctx_with_triggers([order])
+        rendered = render_manager_context(ctx)
+        # Expect something describing "BUY if >= 60000"
+        assert "BUY" in rendered
+        assert ">=" in rendered
