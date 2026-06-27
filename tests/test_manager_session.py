@@ -529,6 +529,78 @@ def test_output_bundle_excludes_the_manager():
     assert "the-manager" not in bundle["agents"]
 
 
+# ---------------------------------------------------------------------------
+# Task 4: Manager conditional orders route to the Manager pending channel
+# ---------------------------------------------------------------------------
+
+
+def test_manager_conditional_order_routes_to_manager_pending(
+    manager_env, monkeypatch
+) -> None:
+    """A Manager conditional order (trigger+expires) must land in MANAGER_PENDING_DIR,
+    NOT in the public PENDING_DIR, and write no fill to the public INBOX_DIR.
+
+    Isolation contract:
+    - pending file present in manager_pending
+    - public pending dir remains empty
+    - public inbox receives no fill
+    """
+    import datetime as dt
+
+    from engine.orders import Order, append_order, read_inbox
+    from engine.paper_broker import fill_day
+
+    # Redirect public pending to an isolated dir so we can assert isolation.
+    public_pending = manager_env["tmp_path"] / "orders" / "public-pending"
+    public_pending.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr("engine.triggers.PENDING_DIR", public_pending)
+
+    # Dedicated manager pending/cancels dirs in tmp space.
+    manager_pending = manager_env["tmp_path"] / "orders" / "manager-pending"
+    manager_cancels = manager_env["tmp_path"] / "orders" / "manager-cancels"
+    manager_pending.mkdir(parents=True, exist_ok=True)
+    manager_cancels.mkdir(parents=True, exist_ok=True)
+
+    order = Order(
+        order_id="ord_2026-06-01_the-manager_conditional_001",
+        ts=dt.datetime(2026, 6, 1, 20, 0, 0, tzinfo=dt.timezone.utc),
+        agent_id="the-manager",
+        action="BUY",
+        ticker="AAPL",
+        shares=1.0,
+        reasoning="buy on breakout",
+        currency="EUR",
+        trigger={"op": ">=", "level": 210.0},
+        expires="2026-07-01",
+    )
+    append_order(TRADE_DATE, order, outbox_dir=manager_env["manager_outbox"])
+
+    pm = PortfolioManager(manager_env["portfolios"])
+    pm.initialize("the-manager", initial_capital=2000.0, currency="EUR")
+
+    # Call fill_day with all four Manager channel dirs — this is the NEW signature.
+    fills = fill_day(
+        TRADE_DATE,
+        pm,
+        outbox_dir=manager_env["manager_outbox"],
+        inbox_dir=manager_env["manager_inbox"],
+        pending_dir=manager_pending,
+        cancels_dir=manager_cancels,
+    )
+
+    # Conditional order does not produce a fill record.
+    assert not any(f.order_id == order.order_id for f in fills)
+
+    # Pending file is in manager_pending (not public).
+    assert (manager_pending / f"{order.order_id}.json").exists()
+
+    # Public pending dir has no file (isolation).
+    assert list(public_pending.iterdir()) == []
+
+    # Public inbox has no fill (isolation).
+    assert read_inbox(TRADE_DATE, inbox_dir=manager_env["public_inbox"]) == []
+
+
 def test_public_inbox_has_no_manager_orders(manager_env):
     from scripts.daily_session import step_apply_manager_decision
     from engine.orders import inbox_order_ids

@@ -76,6 +76,8 @@ from engine.orders import Order, append_order, make_order_id
 from engine.research_note import parse_research_note
 from engine.triggers import (
     CancelRequest,
+    MANAGER_CANCELS_DIR,
+    MANAGER_PENDING_DIR,
     append_cancel,
     list_pending,
 )
@@ -718,6 +720,8 @@ def step_apply_manager_decision(
         manager,
         outbox_dir=orders_mod.MANAGER_OUTBOX_DIR,
         inbox_dir=orders_mod.MANAGER_INBOX_DIR,
+        pending_dir=MANAGER_PENDING_DIR,
+        cancels_dir=MANAGER_CANCELS_DIR,
     )
     filled = sum(1 for f in fills if f.status == "filled")
     rejected = sum(1 for f in fills if f.status == "rejected")

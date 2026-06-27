@@ -302,6 +302,8 @@ def fill_day(
     portfolio_manager: PortfolioManager,
     outbox_dir: Path | None = None,
     inbox_dir: Path | None = None,
+    pending_dir: Path | None = None,
+    cancels_dir: Path | None = None,
 ) -> list[Fill]:
     """Fill all outbox orders for a trade date.
 
@@ -319,11 +321,18 @@ def fill_day(
     ``outbox_dir`` / ``inbox_dir`` default to the public OUTBOX_DIR / INBOX_DIR.
     Pass the Manager channel dirs (MANAGER_OUTBOX_DIR / MANAGER_INBOX_DIR, Task C5)
     to fill a SEPARATE outbox into a SEPARATE inbox without touching the public
-    flow. The portfolio is still selected per order via the order's agent_id, so a
+    flow.
+
+    ``pending_dir`` / ``cancels_dir`` default to the public PENDING_DIR / CANCELS_DIR.
+    Pass MANAGER_PENDING_DIR / MANAGER_CANCELS_DIR (from engine.triggers) to route
+    conditional orders and cancel requests on the Manager channel to their own dirs,
+    keeping them isolated from the public trigger watcher's files.
+
+    The portfolio is still selected per order via the order's agent_id, so a
     the-manager order routes to data/portfolios/the-manager/ via the passed
     portfolio_manager. All 14 rails, fees, and idempotency apply identically on
-    either channel. With both args None the behaviour is byte-for-byte identical to
-    the legacy single-channel path.
+    either channel. With all four channel args None the behaviour is byte-for-byte
+    identical to the legacy single-channel path.
     """
     fills: list[Fill] = []
 
@@ -342,10 +351,10 @@ def fill_day(
     # The cross-run idempotency guard (checking already_processed) handles re-runs:
     # on the second run, the target_order_id will already be in the inbox and the
     # cancel entries are skipped.
-    for cancel in read_cancels(trade_date):
+    for cancel in read_cancels(trade_date, cancels_dir=cancels_dir):
         if cancel.target_order_id in already_processed:
             continue
-        removed = delete_pending(cancel.target_order_id)
+        removed = delete_pending(cancel.target_order_id, pending_dir=pending_dir)
         reason = "CANCELLED_BY_AGENT" if removed else "CANCEL_TARGET_NOT_FOUND"
         f = _reject(cancel.target_order_id, reason)
         fills.append(f)
@@ -374,7 +383,7 @@ def fill_day(
             append_fill(trade_date, f, inbox_dir=inbox_dir)
             already_processed.add(o.order_id)
             continue
-        save_pending(o)
+        save_pending(o, pending_dir=pending_dir)
         # No inbox record on successful registration — the agent sees it
         # next session in their "Active triggers" prompt section.
 
