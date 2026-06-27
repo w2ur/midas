@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import date
 
 from engine.manager_context import RISK_BUDGET_LIMITS
 from engine.orders import TRIGGER_OPS
@@ -308,6 +309,23 @@ def _parse_position(raw: object) -> ManagerPosition | None:
                 op,
                 TRIGGER_OPS,
                 ticker,
+            )
+            return None
+        # ISO-parseability check: a present-but-malformed expires (e.g. "July 15",
+        # "2026-7-15") would pass the non-empty check above but later crash in
+        # Order.__post_init__ when date.fromisoformat raises ValueError.  Drop it
+        # here at the parse choke point (conservative — never fabricate a date).
+        # Past-date rejection is deferred to the broker's existing TRIGGER_EXPIRED
+        # rail (which rejects at fire time) — _parse_position has no reference date
+        # in scope and date.today() is avoided in library code.
+        try:
+            date.fromisoformat(raw_expires)
+        except ValueError:
+            logger.warning(
+                "parse_manager_decision: position %s has malformed expires %r — "
+                "dropping (INVALID_TRIGGER)",
+                ticker,
+                raw_expires,
             )
             return None
         trigger = raw_trigger

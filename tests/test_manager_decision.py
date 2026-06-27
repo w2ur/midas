@@ -872,3 +872,75 @@ class TestTickerAndReasoningCoercion:
         assert decision is not None
         assert len(decision.positions) == 1
         assert decision.positions[0].reasoning == "42"
+
+
+# ---------------------------------------------------------------------------
+# Trigger expires ISO validation — crash-robustness fix
+# ---------------------------------------------------------------------------
+
+
+class TestTriggerExpiresValidation:
+    """Malformed expires strings must be dropped at parse time, not crash at Order creation."""
+
+    def _parse(self, **overrides: object) -> "ManagerDecision | None":
+        base: dict = {
+            "ticker": "PHAG.L",
+            "action": "BUY",
+            "size_eur": 300,
+            "entry_guidance": "",
+            "stop_loss": None,
+            "reasoning": "ISO validation test.",
+        }
+        base.update(overrides)
+        raw = {
+            "positions": [base],
+            "conviction": 9,
+            "hold_reasoning": "",
+        }
+        return parse_manager_decision(raw)
+
+    def test_trigger_malformed_expires_dropped(self) -> None:
+        """trigger present but expires is not a valid ISO date → position dropped (INVALID_TRIGGER).
+
+        Previously the non-empty check passed "not-a-date" through; the crash only surfaced
+        downstream in Order.__post_init__ when date.fromisoformat raised ValueError.
+        """
+        decision = self._parse(
+            trigger={"op": ">=", "level": 65.0},
+            expires="not-a-date",
+        )
+        assert decision is not None
+        assert decision.positions == [], (
+            "malformed expires must be dropped at parse time"
+        )
+
+    def test_trigger_malformed_expires_non_zero_padded_dropped(self) -> None:
+        """expires='2026-7-15' (non-zero-padded month) is not a valid ISO date → dropped."""
+        decision = self._parse(
+            trigger={"op": ">=", "level": 65.0},
+            expires="2026-7-15",
+        )
+        assert decision is not None
+        assert decision.positions == [], "non-zero-padded ISO date must be dropped"
+
+    def test_trigger_valid_expires_kept(self) -> None:
+        """Valid ISO date expires + valid trigger → position retained (regression guard)."""
+        decision = self._parse(
+            trigger={"op": ">=", "level": 65.0},
+            expires="2026-07-15",
+        )
+        assert decision is not None
+        assert len(decision.positions) == 1
+        assert decision.positions[0].expires == "2026-07-15"
+
+    def test_non_dict_trigger_dropped(self) -> None:
+        """trigger is a string (not a dict) → position dropped (INVALID_TRIGGER).
+
+        This closes the untested non-dict-trigger drop path.
+        """
+        decision = self._parse(
+            trigger=">=65",
+            expires="2026-07-15",
+        )
+        assert decision is not None
+        assert decision.positions == [], "non-dict trigger must be dropped"
