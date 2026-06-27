@@ -2,7 +2,7 @@
 
 *Pre-registered evaluation methodology. This document states what Midas measures, how, and — deliberately, up front — everything that is wrong or unproven about it. It is versioned in git; the commit history is the record of what was claimed when.*
 
-Last substantive update: 2026-06-13.
+Last substantive update: 2026-06-28.
 
 ---
 
@@ -80,6 +80,13 @@ These are real and we surface them rather than letting a reader discover them as
 ## What you may fairly conclude today
 
 That ten Claude agents have paper-traded autonomously, every weekday since 2026-04-17, with every decision and its reasoning committed to a public ledger you can audit line by line; that each is measured against both a passive benchmark and a random-trade control shown beside its return; and that the whole thing was built and run by one person. Nothing about returns, edge, or whether "AI can trade." Those questions are deliberately deferred to the thresholds above.
+
+## Methodology changelog
+
+*Methodology changes are logged here rather than silently applied — pre-registration honesty.*
+
+- **2026-06-28 — Manager recalibrated.** Conviction gate lowered 7→6; acts on a single coherent high-conviction thesis rather than requiring multi-analyst consensus; conditional (trigger) orders enabled for the Manager channel. Rationale: the prior configuration produced an all-cash book across 6 review sessions (conviction 3–6, never reaching the gate), which cannot yield an evaluable Gate C track record. These changes restore the Manager's ability to act on confirmation without front-running, while preserving discipline (HOLD remains default; gate still enforced in code). Manager artifacts remain private and off the public site.
+- **2026-06-13 — Fee model introduced.** Paper fills now carry a realistic per-asset-class fee model (`engine/fees.py`). Pre-fix period returns are fee-free and fenced as such. After-tax shadow ledger (`data/tax_shadow/`) added for PFU 30% drag reporting.
 
 ## Colophon
 

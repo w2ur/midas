@@ -45,6 +45,7 @@ streamlit run app/main.py
 - `data/agent_config/` — per-agent safety rails (committed)
 - `data/ticker_currencies.json` — ticker → ISO currency override map (committed)
 - `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (committed)
+- `data/orders/{manager-pending,manager-cancels,manager-inbox}/` — Manager channel conditional orders (pending/cancels) and fills (committed, isolated from the public inbox the site reads)
 - `data/agent_memory/` — Ring 2 per-agent journals, 11 markdown files, first-person + biased, rewritten each session (committed)
 - `data/baselines/` — per-agent passive benchmark + coin-flip phantom portfolios, plus `global/msci_world.json`; same snapshot shape as `data/portfolios/`; written by `scripts/backfill_baselines.py` (one-shot) and refreshed by Step 9a of the daily session (committed)
 - `data/universes/` — committed index/alt universes (sp500, dow30, nasdaq100, cac40, dax, ftse100, stoxx600, congressional, insider, high-short). File presence is authoritative; resolvers never hit Wikipedia at runtime. Refresh out-of-band via `scripts/refresh_universes.py` or the weekly workflow.
@@ -82,6 +83,7 @@ Agents may author conditional orders that defer execution until a price conditio
 - Cancellations live as a separate channel: `data/orders/cancels/YYYY-MM-DD.jsonl`. Agents emit a `cancels: [{target_order_id, reasoning}]` field alongside their `trades`. The broker processes cancels at the start of `fill_day`, removes the target pending file, and writes a `CANCELLED_BY_AGENT` rejection to inbox.
 - The watcher is blacked out 19:55–20:30 UTC to avoid commit-races with the 20:00 UTC daily session.
 - Supported trigger ops (v1): `>=`, `<=`. Expiry is mandatory; orders without `expires` are rejected at the broker with `TRIGGER_NO_EXPIRY`. Expiry is inclusive — an order with `expires=2026-05-17` is `TRIGGER_EXPIRED` on 2026-05-17.
+- **Manager channel isolation.** The Manager (`the-manager`) has its own parallel sub-channels: `data/orders/manager-pending/`, `data/orders/manager-cancels/`, and `data/orders/manager-inbox/`. The broker routes Manager trigger orders to `manager-pending` (not the public `pending/`); the watcher fires them into `manager-inbox` (never the public `inbox/`); idempotency is scoped to the order's target inbox. Manager fills stay off the public site and leaderboard by design.
 
 Same Brain/Hands invariant: safety rails live in the broker (now both at market-fill time and trigger-fire time), not the persona.
 
