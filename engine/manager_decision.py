@@ -25,6 +25,7 @@ import logging
 from dataclasses import dataclass
 
 from engine.manager_context import RISK_BUDGET_LIMITS
+from engine.orders import TRIGGER_OPS
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,8 @@ class ManagerPosition:
     entry_guidance: str
     stop_loss: float | None
     reasoning: str
+    trigger: dict | None = None
+    expires: str | None = None
 
     def __post_init__(self) -> None:
         if not self.ticker:
@@ -86,10 +89,22 @@ class ManagerPosition:
             )
         if not self.reasoning:
             raise ValueError("ManagerPosition.reasoning must be a non-empty string")
+        if self.expires is not None and self.trigger is None:
+            raise ValueError("ManagerPosition.expires requires trigger to be set")
+        if self.trigger is not None:
+            if not self.expires:
+                raise ValueError(
+                    "ManagerPosition with trigger requires a non-empty expires (ISO date)"
+                )
+            op = self.trigger.get("op") if isinstance(self.trigger, dict) else None
+            if op not in TRIGGER_OPS:
+                raise ValueError(
+                    f"ManagerPosition.trigger.op must be one of {TRIGGER_OPS}, got {op!r}"
+                )
 
     def to_dict(self) -> dict:
         """Serialize to a JSON-safe dictionary."""
-        return {
+        d: dict = {
             "ticker": self.ticker,
             "action": self.action,
             "size_eur": self.size_eur,
@@ -97,6 +112,11 @@ class ManagerPosition:
             "stop_loss": self.stop_loss,
             "reasoning": self.reasoning,
         }
+        if self.trigger is not None:
+            d["trigger"] = self.trigger
+        if self.expires is not None:
+            d["expires"] = self.expires
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ManagerPosition":
@@ -112,6 +132,8 @@ class ManagerPosition:
             entry_guidance=str(d.get("entry_guidance", "")),
             stop_loss=float(d["stop_loss"]) if d.get("stop_loss") is not None else None,
             reasoning=str(d["reasoning"]),
+            trigger=d.get("trigger"),
+            expires=d.get("expires"),
         )
 
 
@@ -259,6 +281,38 @@ def _parse_position(raw: object) -> ManagerPosition | None:
 
     entry_guidance = str(raw.get("entry_guidance") or "")
 
+    # --- trigger + expires (optional; conservative — drop on any invalidity) ---
+    trigger: dict | None = None
+    expires: str | None = None
+    raw_trigger = raw.get("trigger")
+    if raw_trigger is not None:
+        raw_expires = str(raw.get("expires") or "")
+        if not raw_expires:
+            logger.warning(
+                "parse_manager_decision: INVALID_TRIGGER — trigger present but expires "
+                "missing for %s — dropping",
+                ticker,
+            )
+            return None
+        if not isinstance(raw_trigger, dict):
+            logger.warning(
+                "parse_manager_decision: INVALID_TRIGGER — trigger is not a dict for "
+                "%s — dropping",
+                ticker,
+            )
+            return None
+        op = raw_trigger.get("op")
+        if op not in TRIGGER_OPS:
+            logger.warning(
+                "parse_manager_decision: INVALID_TRIGGER — op %r not in %s for %s — dropping",
+                op,
+                TRIGGER_OPS,
+                ticker,
+            )
+            return None
+        trigger = raw_trigger
+        expires = raw_expires
+
     try:
         return ManagerPosition(
             ticker=ticker,
@@ -267,6 +321,8 @@ def _parse_position(raw: object) -> ManagerPosition | None:
             entry_guidance=entry_guidance,
             stop_loss=stop_loss,
             reasoning=reasoning,
+            trigger=trigger,
+            expires=expires,
         )
     except (ValueError, TypeError) as exc:
         logger.warning(

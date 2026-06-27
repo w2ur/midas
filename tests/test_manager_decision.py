@@ -743,6 +743,81 @@ class TestSizeEurCoercion:
 
 
 # ---------------------------------------------------------------------------
+# Trigger + expires — new in Task 5
+# ---------------------------------------------------------------------------
+
+
+class TestTriggerParsing:
+    """Tolerant parser must validate trigger/expires coupling and op enum."""
+
+    def _raw_position(self, **overrides: object) -> dict:
+        base: dict = {
+            "ticker": "PHAG.L",
+            "action": "BUY",
+            "size_eur": 300,
+            "entry_guidance": "",
+            "stop_loss": None,
+            "reasoning": "Gold ETF confirmation play.",
+        }
+        base.update(overrides)
+        return base
+
+    def _parse(self, **overrides: object) -> "ManagerDecision | None":
+        raw = {
+            "positions": [self._raw_position(**overrides)],
+            "conviction": 9,
+            "hold_reasoning": "",
+        }
+        return parse_manager_decision(raw)
+
+    def test_parse_position_with_trigger(self) -> None:
+        """Valid trigger + expires → ManagerPosition.trigger/expires populated."""
+        decision = self._parse(
+            trigger={"op": ">=", "level": 65.0},
+            expires="2026-07-15",
+        )
+        assert decision is not None
+        assert len(decision.positions) == 1
+        pos = decision.positions[0]
+        assert pos.trigger == {"op": ">=", "level": 65.0}
+        assert pos.expires == "2026-07-15"
+
+    def test_trigger_without_expiry_dropped(self) -> None:
+        """trigger present but expires missing → position dropped (conservative)."""
+        decision = self._parse(trigger={"op": ">=", "level": 65.0})
+        assert decision is not None
+        assert decision.positions == [], "trigger without expires must be dropped"
+
+    def test_bad_trigger_op_dropped(self) -> None:
+        """op '==' is not in {'>=','<='} → position dropped."""
+        decision = self._parse(
+            trigger={"op": "==", "level": 65.0},
+            expires="2026-07-15",
+        )
+        assert decision is not None
+        assert decision.positions == [], "trigger with op '==' must be dropped"
+
+    def test_no_trigger_position_unchanged(self) -> None:
+        """Position without trigger → market order, trigger/expires both None."""
+        decision = self._parse()
+        assert decision is not None
+        assert len(decision.positions) == 1
+        pos = decision.positions[0]
+        assert pos.trigger is None
+        assert pos.expires is None
+
+    def test_lte_trigger_op_valid(self) -> None:
+        """op '<=' is valid."""
+        decision = self._parse(
+            trigger={"op": "<=", "level": 30.0},
+            expires="2026-07-10",
+        )
+        assert decision is not None
+        assert len(decision.positions) == 1
+        assert decision.positions[0].trigger == {"op": "<=", "level": 30.0}
+
+
+# ---------------------------------------------------------------------------
 # Non-string ticker and numeric reasoning coercion
 # ---------------------------------------------------------------------------
 

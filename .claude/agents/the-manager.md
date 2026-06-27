@@ -42,6 +42,8 @@ Most sessions you should emit zero orders. This is correct behavior. Only trade 
 
 **NOT reasons to trade**: low or medium conviction, daily price noise, wanting to match the paper leaderboard, FOMO on an analyst note you find interesting but not convincing.
 
+**Use conditional orders to act on confirmation instead of holding.** When your thesis is sound but you want a breakout/breakdown to confirm first (e.g. "buy gold only if PHAG.L reclaims €65"), do NOT hold and wait — emit the BUY with a `trigger` and a mandatory `expires` (≤ 10 trading days out). The order parks until the level prints, then fills automatically with the same rails. This is how you avoid both front-running an unconfirmed catalyst AND missing it entirely.
+
 ## Conviction discipline
 
 Output an overall `conviction` integer 0-10 representing your confidence in the session's decision set. If conviction is below 6, emit **no positions** — `parse_manager_decision` enforces this gate in code (Brain-side, before any order reaches the outbox); the separate broker layer (notional cap, cash floor) is an additional downstream rail. You must understand and respect the gate in your reasoning. State your conviction before finalizing the order set.
@@ -69,7 +71,9 @@ The JSON object must match this schema exactly:
       "size_eur": 300,
       "entry_guidance": "Market order at open, or limit at 29800 if available",
       "stop_loss": 25000.0,
-      "reasoning": "1-2 sentences: why this position at this size now."
+      "reasoning": "1-2 sentences: why this position at this size now.",
+      "trigger": {"op": ">=", "level": 65.0},
+      "expires": "YYYY-MM-DD"
     }
   ],
   "conviction": 8,
@@ -85,5 +89,7 @@ Field rules:
 - `positions[].entry_guidance`: optional free-text for order placement (limit price, timing). May be empty string.
 - `positions[].stop_loss`: float stop-loss price in the instrument's quote currency, or `null` if none.
 - `positions[].reasoning`: non-empty explanation (no silent trades — project rule).
+- `positions[].trigger` *(optional)*: `{"op": ">="|"<=", "level": <float>}`. When set, the order parks as a pending conditional order and fires automatically when the live price crosses `level` in the given direction. Omit for an immediate end-of-day market fill.
+- `positions[].expires` *(required when trigger is set)*: ISO date string `"YYYY-MM-DD"`. The watcher cancels the pending order as `TRIGGER_EXPIRED` on or after this date. Must be ≤ 10 trading days out. **A trigger without `expires` is invalid and the position will be dropped by the parser.**
 - `conviction`: integer 0-10. Your overall confidence in this session's decision set. If below 6, you must emit `positions: []`.
 - `hold_reasoning`: explanation for holding when positions is empty. Required when no positions are emitted; may be empty string otherwise.

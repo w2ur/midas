@@ -9,9 +9,10 @@ the-manager book.
 Sizing mirrors engine.baseline_manager: shares = size_eur / close_price (fractional
 shares allowed). Positions with action HOLD, or with no store price, are skipped.
 
-The manager channel is MARKET-ONLY: conditional (trigger) orders are not supported
-here because fill_day's pending/cancels sub-channels are not yet channel-scoped
-(Task D). manager_decision_to_orders never emits triggers.
+Conditional (trigger) orders are supported: when a ManagerPosition carries a
+trigger+expires, the resulting Order carries them too and the paper broker routes
+it to the pending channel instead of filling immediately (same watcher path as
+agent trigger orders, Task 5).
 """
 
 from __future__ import annotations
@@ -103,13 +104,8 @@ def manager_decision_to_orders(
             shares=shares,
             reasoning=pos.reasoning,
             currency=MANAGER_CURRENCY,
-        )
-        # Defensive invariant: the manager channel is market-only (see module
-        # docstring). ManagerPosition has no trigger field so this can only fire
-        # if Order gains a default trigger in the future — catch it early.
-        assert order.trigger is None and order.expires is None, (
-            "manager_decision_to_orders must never emit trigger/expires orders "
-            "(market-only channel, Task D pending/cancels not yet channel-scoped)"
+            trigger=pos.trigger,
+            expires=pos.expires,
         )
         orders.append(order)
 
