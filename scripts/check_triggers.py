@@ -61,6 +61,9 @@ def process_fired_order(
     fill_or_none: Fill | None,
     today: date,
     committer: Committer,
+    *,
+    inbox_dir: Path | None = None,
+    pending_dir: Path | None = None,
 ) -> None:
     """Process a single fired order: write fill, clean up pending, commit.
 
@@ -78,6 +81,11 @@ def process_fired_order(
     If committer raises (e.g. push failure), the mutation is already on disk and
     in a local git commit; the exception is caught and logged here — processing
     of subsequent orders must continue.
+
+    ``inbox_dir`` / ``pending_dir`` select the channel. Defaults of None preserve
+    byte-identical public behavior (public INBOX_DIR / PENDING_DIR). The Manager
+    channel passes MANAGER_INBOX_DIR / MANAGER_PENDING_DIR so its fills are
+    isolated from the public inbox the site joins by order_id.
     """
     from engine import orders as _orders
     from engine import triggers as _triggers
@@ -86,8 +94,9 @@ def process_fired_order(
 
     if fill_or_none is not None:
         # Real fill: write to inbox and include its path in the commit.
-        append_fill(today, fill_or_none)
-        inbox_path = str(_orders.INBOX_DIR / f"{today.isoformat()}.jsonl")
+        append_fill(today, fill_or_none, inbox_dir=inbox_dir)
+        base_inbox = inbox_dir or _orders.INBOX_DIR
+        inbox_path = str(base_inbox / f"{today.isoformat()}.jsonl")
         paths.append(inbox_path)
         # execute_triggered_order mutates portfolio.json and trades.json via
         # PortfolioManager.apply_trade. Include the agent's portfolio directory
@@ -98,8 +107,9 @@ def process_fired_order(
         paths.append(portfolio_dir)
 
     # Remove the pending file regardless (fill or zombie cleanup).
-    delete_pending(order.order_id)
-    pending_path = str(_triggers.PENDING_DIR / f"{order.order_id}.json")
+    delete_pending(order.order_id, pending_dir=pending_dir)
+    base_pending = pending_dir or _triggers.PENDING_DIR
+    pending_path = str(base_pending / f"{order.order_id}.json")
     paths.append(pending_path)
 
     if fill_or_none is None:
@@ -176,13 +186,92 @@ def _git_add_commit(order_id: str, today: date, paths: list[str]) -> None:
         )
 
 
-def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
-    """Process all pending orders. Returns a summary dict for logging.
+def _process_channel(
+    pending: list[Order],
+    now: datetime,
+    today: date,
+    portfolio_manager: PortfolioManager | None,
+    summary: dict,
+    *,
+    inbox_dir: Path | None = None,
+    pending_dir: Path | None = None,
+) -> None:
+    """Process one channel's pending orders into the shared summary.
 
-    portfolio_manager may be None ONLY during blackout (we short-circuit before use).
+    ``inbox_dir`` / ``pending_dir`` select the channel: None → public channel
+    (byte-identical legacy behavior); MANAGER_INBOX_DIR / MANAGER_PENDING_DIR →
+    the isolated Manager channel. The same ``portfolio_manager`` serves both — it
+    is keyed by ``order.agent_id`` (the Manager book lives at
+    data/portfolios/the-manager).
     """
     # Late binding: tests monkeypatch `engine.triggers.get_current_price` so we
     # must call it through the module attribute, not the imported name.
+    from engine import triggers as _triggers
+
+    for order in pending:
+        if is_expired(order, today):
+            f = Fill(
+                order_id=order.order_id,
+                ts_filled=now,
+                status="rejected",
+                fill_price=None,
+                fill_currency=None,
+                notional_base=None,
+                fees=None,
+                reason="TRIGGER_EXPIRED",
+                trigger_fired=True,
+            )
+            append_fill(today, f, inbox_dir=inbox_dir)
+            delete_pending(order.order_id, pending_dir=pending_dir)
+            summary["expired"] += 1
+            continue
+
+        price = _triggers.get_current_price(order.ticker, today=today)
+        if price is None:
+            summary["carried"] += 1
+            continue
+        if not evaluate_trigger(price, order.trigger):
+            summary["carried"] += 1
+            continue
+
+        # Trigger hit — execute through the broker safety rails. Pass inbox_dir so
+        # the idempotency scan is scoped to the correct channel.
+        try:
+            f = execute_triggered_order(
+                order, today, portfolio_manager, fire_price=price, inbox_dir=inbox_dir
+            )
+        except Exception as exc:
+            logger.exception(
+                "execute_triggered_order failed for %s: %s", order.order_id, exc
+            )
+            summary["errors"] += 1
+            continue
+
+        # Per-fire durability: commit immediately after this order's mutation set.
+        # If f is None the order was already in the inbox (idempotency skip);
+        # process_fired_order cleans up the zombie pending file and commits that.
+        process_fired_order(
+            order,
+            f,
+            today,
+            _git_add_commit,
+            inbox_dir=inbox_dir,
+            pending_dir=pending_dir,
+        )
+        summary["fired"] += 1
+
+
+def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
+    """Process all pending orders across both channels. Returns a summary dict.
+
+    Two channels are processed into ONE summary: the public channel (default
+    dirs) first, then the isolated Manager channel (MANAGER_PENDING_DIR →
+    MANAGER_INBOX_DIR). The blackout check and leaderboard refresh stay single
+    (the latter in main()).
+
+    portfolio_manager may be None ONLY during blackout (we short-circuit before use).
+    """
+    from engine import orders as _orders
     from engine import triggers as _triggers
 
     summary = {
@@ -199,52 +288,24 @@ def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
         return summary
 
     today = now.date()
-    pending = list_pending()
-    summary["checked"] = len(pending)
 
-    for order in pending:
-        if is_expired(order, today):
-            f = Fill(
-                order_id=order.order_id,
-                ts_filled=now,
-                status="rejected",
-                fill_price=None,
-                fill_currency=None,
-                notional_base=None,
-                fees=None,
-                reason="TRIGGER_EXPIRED",
-                trigger_fired=True,
-            )
-            append_fill(today, f)
-            delete_pending(order.order_id)
-            summary["expired"] += 1
-            continue
+    # Public channel — default dirs, byte-identical legacy behavior.
+    public_pending = list_pending()
+    # Manager channel — isolated pending/inbox; the-manager fills never reach the
+    # public inbox the site joins by order_id.
+    manager_pending = list_pending(pending_dir=_triggers.MANAGER_PENDING_DIR)
+    summary["checked"] = len(public_pending) + len(manager_pending)
 
-        price = _triggers.get_current_price(order.ticker, today=today)
-        if price is None:
-            summary["carried"] += 1
-            continue
-        if not evaluate_trigger(price, order.trigger):
-            summary["carried"] += 1
-            continue
-
-        # Trigger hit — execute through the broker safety rails.
-        try:
-            f = execute_triggered_order(
-                order, today, portfolio_manager, fire_price=price
-            )
-        except Exception as exc:
-            logger.exception(
-                "execute_triggered_order failed for %s: %s", order.order_id, exc
-            )
-            summary["errors"] += 1
-            continue
-
-        # Per-fire durability: commit immediately after this order's mutation set.
-        # If f is None the order was already in the inbox (idempotency skip);
-        # process_fired_order cleans up the zombie pending file and commits that.
-        process_fired_order(order, f, today, _git_add_commit)
-        summary["fired"] += 1
+    _process_channel(public_pending, now, today, portfolio_manager, summary)
+    _process_channel(
+        manager_pending,
+        now,
+        today,
+        portfolio_manager,
+        summary,
+        inbox_dir=_orders.MANAGER_INBOX_DIR,
+        pending_dir=_triggers.MANAGER_PENDING_DIR,
+    )
 
     return summary
 
@@ -284,6 +345,8 @@ def commit_and_push() -> None:
     data_dirs = [
         str(_PROJECT_ROOT / "data" / "orders" / "pending"),
         str(_PROJECT_ROOT / "data" / "orders" / "inbox"),
+        str(_PROJECT_ROOT / "data" / "orders" / "manager-pending"),
+        str(_PROJECT_ROOT / "data" / "orders" / "manager-inbox"),
         str(_PROJECT_ROOT / "data" / "portfolios"),
         str(_PROJECT_ROOT / "data" / "leaderboard"),
     ]

@@ -34,13 +34,17 @@ def broker_env(tmp_path, monkeypatch):
     pm_base.mkdir()
     pending_dir = tmp_path / "pending"
     cancels_dir = tmp_path / "cancels"
+    manager_inbox = tmp_path / "manager-inbox"
+    manager_pending = tmp_path / "manager-pending"
     monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", ohlcv)
     monkeypatch.setattr("engine.paper_broker.AGENT_CONFIG_DIR", config_dir)
     monkeypatch.setattr("engine.paper_broker.TICKER_CURRENCIES_PATH", ticker_ccy_path)
     monkeypatch.setattr("engine.paper_broker._TICKER_CURRENCY_OVERRIDES", None)
     monkeypatch.setattr("engine.orders.OUTBOX_DIR", outbox)
     monkeypatch.setattr("engine.orders.INBOX_DIR", inbox)
+    monkeypatch.setattr("engine.orders.MANAGER_INBOX_DIR", manager_inbox)
     monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
+    monkeypatch.setattr("engine.triggers.MANAGER_PENDING_DIR", manager_pending)
     monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
     return {
         "ohlcv": ohlcv,
@@ -51,6 +55,8 @@ def broker_env(tmp_path, monkeypatch):
         "pm_base": pm_base,
         "pending": pending_dir,
         "cancels": cancels_dir,
+        "manager_inbox": manager_inbox,
+        "manager_pending": manager_pending,
     }
 
 
@@ -266,3 +272,109 @@ class TestBrokerRailsApplyOnFire:
         assert any(
             f.status == "rejected" and f.reason == "INSUFFICIENT_CASH" for f in fills
         )
+
+
+# ---------------------------------------------------------------------------
+# Manager channel isolation: the watcher fires Manager pending orders into the
+# Manager's OWN inbox, never the public one the site joins by order_id.
+# ---------------------------------------------------------------------------
+
+
+class TestManagerChannelIsolation:
+    def test_manager_pending_fires_into_manager_inbox(
+        self, broker_env, monkeypatch
+    ) -> None:
+        from scripts import check_triggers
+        from engine import triggers as triggers_mod
+        from engine.triggers import MANAGER_PENDING_DIR, save_pending
+
+        # A Manager conditional BUY whose trigger is already satisfied at fire price.
+        order = Order(
+            order_id="ord_2026-05-10_the-manager_001",
+            ts=datetime(2026, 5, 10, 20, 2, tzinfo=timezone.utc),
+            agent_id="the-manager",
+            action="BUY",
+            ticker="BTC-EUR",
+            shares=0.01,
+            reasoning="accumulate on dip",
+            currency="EUR",
+            trigger={"op": "<=", "level": 90000.0},
+            expires="2026-06-10",
+        )
+        save_pending(order, pending_dir=MANAGER_PENDING_DIR)
+
+        _write_config(broker_env["config_dir"], "the-manager")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "the-manager", cash=10_000.0, currency="EUR"
+        )
+        cash_before = pm.load("the-manager").cash
+
+        monkeypatch.setattr(triggers_mod, "get_current_price", lambda t, today: 80000.0)
+        fake_now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        check_triggers.run(now=fake_now, portfolio_manager=pm)
+
+        # (a) Filled fill lands in the MANAGER inbox.
+        manager_fills = read_inbox(
+            fake_now.date(), inbox_dir=broker_env["manager_inbox"]
+        )
+        triggered = [f for f in manager_fills if f.order_id == order.order_id]
+        assert len(triggered) == 1
+        assert triggered[0].status == "filled"
+        assert triggered[0].trigger_fired is True
+        assert triggered[0].fill_price == 80000.0
+
+        # (b) NOTHING leaks into the public inbox.
+        assert read_inbox(fake_now.date()) == []
+
+        # (c) the-manager book mutated: cash down, position opened.
+        book = pm.load("the-manager")
+        assert book.cash < cash_before
+        assert any(p.ticker == "BTC-EUR" and p.shares > 0 for p in book.positions)
+
+        # (d) Manager pending file deleted; public pending untouched (empty).
+        assert list_pending(pending_dir=MANAGER_PENDING_DIR) == []
+        assert list_pending() == []
+
+    def test_public_channel_unchanged(self, broker_env, monkeypatch) -> None:
+        """Regression guard: a public pending order still fires into the public inbox."""
+        from scripts import check_triggers
+        from engine import triggers as triggers_mod
+        from engine.triggers import MANAGER_PENDING_DIR
+
+        o = _seed_pending(broker_env)
+        _write_config(broker_env["config_dir"], "satoshi")
+        pm = _init_portfolio(
+            broker_env["pm_base"], "satoshi", cash=8000.0, currency="EUR"
+        )
+        from engine.types import Trade
+
+        pm.apply_trade(
+            "satoshi",
+            Trade(
+                id="seed_001",
+                timestamp=datetime(2026, 5, 1, tzinfo=timezone.utc),
+                action="BUY",
+                ticker="BTC-EUR",
+                shares=0.1,
+                price=70000.0,
+                total=7000.0,
+                fees=0.0,
+                reasoning="seed",
+            ),
+        )
+        monkeypatch.setattr(
+            triggers_mod, "get_current_price", lambda t, today: 85123.45
+        )
+        fake_now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        check_triggers.run(now=fake_now, portfolio_manager=pm)
+
+        # Public fill lands in the public inbox exactly as before.
+        fills = read_inbox(fake_now.date())
+        triggered = [f for f in fills if f.order_id == o.order_id]
+        assert len(triggered) == 1
+        assert triggered[0].status == "filled"
+        assert triggered[0].fill_price == 85123.45
+        assert list_pending() == []
+        # Manager inbox stays empty for a public fire.
+        assert read_inbox(fake_now.date(), inbox_dir=broker_env["manager_inbox"]) == []
+        assert list_pending(pending_dir=MANAGER_PENDING_DIR) == []
