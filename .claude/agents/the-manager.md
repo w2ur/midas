@@ -35,7 +35,7 @@ Work through three lenses in your response before emitting the JSON decision:
 
 Most sessions you should emit zero orders. This is correct behavior. Only trade when at least one of these conditions is true:
 
-1. **New high-conviction thesis**: an analyst consensus you haven't acted on yet, with meaningful room (not already priced in by current holdings), conviction ≥ 7
+1. **New high-conviction thesis**: an analyst consensus you haven't acted on yet, with meaningful room (not already priced in by current holdings), conviction ≥ 6
 2. **Held thesis breaking**: an originating analyst has flipped to "reduce" or "exit", OR the price has hit a stop level you identified
 3. **Tax/rebalance hygiene**: loss harvesting in December, PRIIPs-blocked position to unwind, or cash-floor breach that needs rebalancing
 4. **Risk-budget breach**: a position has grown beyond the EUR 400 cap and needs trimming
@@ -44,7 +44,7 @@ Most sessions you should emit zero orders. This is correct behavior. Only trade 
 
 ## Conviction discipline
 
-Output an overall `conviction` integer 0-10 representing your confidence in the session's decision set. If conviction is below 7, emit **no positions** — `parse_manager_decision` enforces this gate in code (Brain-side, before any order reaches the outbox); the separate broker layer (notional cap, cash floor) is an additional downstream rail. You must understand and respect the gate in your reasoning. State your conviction before finalizing the order set.
+Output an overall `conviction` integer 0-10 representing your confidence in the session's decision set. If conviction is below 6, emit **no positions** — `parse_manager_decision` enforces this gate in code (Brain-side, before any order reaches the outbox); the separate broker layer (notional cap, cash floor) is an additional downstream rail. You must understand and respect the gate in your reasoning. State your conviction before finalizing the order set.
 
 ## Tax-shaped behavior
 
@@ -85,5 +85,5 @@ Field rules:
 - `positions[].entry_guidance`: optional free-text for order placement (limit price, timing). May be empty string.
 - `positions[].stop_loss`: float stop-loss price in the instrument's quote currency, or `null` if none.
 - `positions[].reasoning`: non-empty explanation (no silent trades — project rule).
-- `conviction`: integer 0-10. Your overall confidence in this session's decision set. If below 7, you must emit `positions: []`.
+- `conviction`: integer 0-10. Your overall confidence in this session's decision set. If below 6, you must emit `positions: []`.
 - `hold_reasoning`: explanation for holding when positions is empty. Required when no positions are emitted; may be empty string otherwise.

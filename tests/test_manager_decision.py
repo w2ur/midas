@@ -281,6 +281,49 @@ class TestConvictionGate:
         assert decision is not None
         assert len(decision.positions) == 1
 
+    def test_conviction_6_now_passes_gate(self) -> None:
+        """conviction=6 with a BUY position → positions retained (length 1), conviction==6."""
+        raw = {
+            "positions": [
+                {
+                    "ticker": "BTC-EUR",
+                    "action": "BUY",
+                    "size_eur": 300,
+                    "entry_guidance": "Limit 30k",
+                    "stop_loss": 27000.0,
+                    "reasoning": "Strong consensus across analysts.",
+                }
+            ],
+            "conviction": 6,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert len(decision.positions) == 1, "conviction=6 must pass the gate"
+        assert decision.conviction == 6
+
+    def test_conviction_5_still_held(self) -> None:
+        """conviction=5 with a BUY position → positions dropped (gate still blocks 5)."""
+        raw = {
+            "positions": [
+                {
+                    "ticker": "ETH-EUR",
+                    "action": "BUY",
+                    "size_eur": 250,
+                    "entry_guidance": "",
+                    "stop_loss": None,
+                    "reasoning": "Moderate thesis.",
+                }
+            ],
+            "conviction": 5,
+            "hold_reasoning": "",
+        }
+        decision = parse_manager_decision(raw)
+        assert decision is not None
+        assert decision.positions == [], (
+            "conviction=5 must still be blocked by the gate"
+        )
+
     def test_gate_uses_risk_budget_limits_min_conviction(self) -> None:
         """The gate threshold must equal RISK_BUDGET_LIMITS['min_conviction']."""
         min_c = RISK_BUDGET_LIMITS["min_conviction"]

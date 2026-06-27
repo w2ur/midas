@@ -60,7 +60,7 @@ RISK_BUDGET_LIMITS: dict = {
     "per_position_cap_eur": 400,
     "cash_floor_eur": 150,
     "max_trades_per_week": 2,
-    "min_conviction": 7,
+    "min_conviction": 6,
 }
 
 # US-domiciled leveraged/inverse ETFs blocked for EU retail via IBKR (PRIIPs KID).
