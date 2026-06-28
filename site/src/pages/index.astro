@@ -1,11 +1,13 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import AgentCrest from "@/components/AgentCrest.astro";
 import LeaderboardTable from "@/components/LeaderboardTable.astro";
 import { loadLatest } from "@/lib/output";
 import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 import { loadBlogLatest, excerpt } from "@/lib/blog";
 import { loadAllOrders, tickerSlug } from "@/lib/orders";
-import { isTradingAgent, getAgent, getAgentMonogram, type AgentId } from "@/lib/roster";
+import { isTradingAgent, getAgent } from "@/lib/roster";
+import { isCrestId } from "@/lib/crests";
 import { tickerName } from "@/lib/tickers";
 import { loadGlobalReference, loadBenchmark, loadCoinFlip, returnPct } from "@/lib/baselines";
 import { currentDayNumber } from "@/lib/session";
@@ -85,10 +87,6 @@ function agentName(id: string): string {
   return isTradingAgent(id) ? getAgent(id).display_name : id;
 }
 
-function readoutMono(id: string): string {
-  return isTradingAgent(id) ? getAgentMonogram(id as AgentId) : id.charAt(0).toUpperCase();
-}
-
 function fmtShares(n: number): string {
   if (Math.abs(n) >= 100) return n.toFixed(0);
   if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
@@ -133,8 +131,8 @@ function fmtPrice(n: number | null, ccy: string | null): string {
         <div class="ro-leadL">
           <div class="ro-lab">Leader</div>
           <div class="ro-name">
-            {leader && (
-              <span class="chipm" data-agent={leader.agent} aria-hidden="true">{readoutMono(leader.agent)}</span>
+            {leader && isTradingAgent(leader.agent) && (
+              <AgentCrest id={leader.agent} size={26} />
             )}
             <span class="ro-name-text">{leader ? agentName(leader.agent) : "—"}</span>
           </div>
@@ -180,6 +178,7 @@ function fmtPrice(n: number | null, ccy: string | null): string {
         {recentTrades.map((o) => (
           <li class="tape-row">
             <span class="when">{o.date}</span>
+            {isCrestId(o.agent_id) && <AgentCrest id={o.agent_id} size={18} />}
             <a class="who" href={`/arena/${o.agent_id}`}>{agentName(o.agent_id)}</a>
             <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
             <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`} title={tickerName(o.ticker) ?? undefined}>{o.ticker}</a>
@@ -230,23 +229,6 @@ function fmtPrice(n: number | null, ccy: string | null): string {
     border-radius: 1.5px;
     background: var(--accent);
     flex: none;
-  }
-
-  /* kit-color monogram chip — initials stay in the kit color (never white-on-kit) */
-  .chipm {
-    width: 26px;
-    height: 26px;
-    border-radius: var(--r-sm);
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: var(--fs-xs);
-    color: var(--agent-color, var(--accent));
-    background: var(--bg-elev2);
-    border: 1px solid var(--agent-color, var(--rule));
   }
 
   /* ── 1. INSTRUMENT HERO ── */
@@ -435,6 +417,7 @@ function fmtPrice(n: number | null, ccy: string | null): string {
     font-size: var(--fs-sm);
   }
   .tape-row .when { color: var(--ink-muted); font-size: var(--fs-xs); letter-spacing: 0.04em; min-width: 5.5rem; }
+  .tape-row .agent-crest { align-self: center; }
   .tape-row .who { color: var(--ink); text-decoration: none; font-family: var(--font-display); font-weight: 600; }
   .tape-row .who:hover { color: var(--accent); }
   .tape-row .side {
