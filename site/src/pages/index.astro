@@ -334,10 +334,18 @@ function fmtPrice(n: number | null, ccy: string | null): string {
   }
   .ro-leader {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--sp-4);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-2);
     margin-top: var(--sp-4);
+  }
+  @media (min-width: 24rem) {
+    .ro-leader {
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--sp-4);
+    }
   }
   .ro-leadL { min-width: 0; }
   .ro-lab {
@@ -360,7 +368,6 @@ function fmtPrice(n: number | null, ccy: string | null): string {
     font-size: var(--fs-md);
     color: var(--ink);
     white-space: normal;
-    overflow-wrap: anywhere;
     min-width: 0;
   }
   .ro-fig {
