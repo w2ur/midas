@@ -1,6 +1,7 @@
 ---
 import type { LeaderboardRow } from "@/lib/output";
-import { getAgent, isTradingAgent, getAgentMonogram, type AgentId } from "@/lib/roster";
+import { getAgent, isTradingAgent, type AgentId } from "@/lib/roster";
+import AgentCrest from "@/components/AgentCrest.astro";
 
 interface Props {
   rows: LeaderboardRow[];
@@ -47,10 +48,6 @@ function fmtStampShort(iso: string): string {
   const hh = String(d.getUTCHours()).padStart(2, "0");
   const mm = String(d.getUTCMinutes()).padStart(2, "0");
   return `${day} ${MONTHS[d.getUTCMonth()].toUpperCase()} · ${hh}:${mm} UTC`;
-}
-
-function mono(id: string): string {
-  return isTradingAgent(id) ? getAgentMonogram(id as AgentId) : id.charAt(0).toUpperCase();
 }
 
 // "LIVE" only for an intraday conditional-order fire; every settled writer is "CLOSED".
@@ -110,7 +107,10 @@ const refW = refPct === null ? 0 : barWidth(refPct);
       <div class={`lrow ${isLeader ? "leader" : ""}`.trim()} role="row" data-agent={row.agent}>
         <div class="l-id" role="presentation">
           <span class="l-rank" role="cell">{row.rank}</span>
-          <span class="l-chip" aria-hidden="true">{mono(row.agent)}</span>
+          {tradingAgent
+            ? <AgentCrest id={row.agent as AgentId} size={30} />
+            : <span class="l-chip" aria-hidden="true">{row.agent.charAt(0).toUpperCase()}</span>
+          }
           <div class="l-agent" role="cell">
             <a class="l-nm" href={`/arena/${row.agent}`}>{display}</a>
             {arch && <span class="l-arch">{arch}</span>}
