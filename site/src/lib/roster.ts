@@ -54,7 +54,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Aggressive US momentum",
     base_currency: "USD",
     universe_summary: "S&P 500 + S&P 400 momentum",
-    signatureColor: { light: "#c0481f", dark: "#e0673e" },
+    signatureColor: { light: "#5a7012", dark: "#aec43f" },
   },
   {
     id: "yolo-sapiens-eur",
@@ -86,7 +86,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Central-banker whisperer",
     base_currency: "EUR",
     universe_summary: "Major and minor FX pairs",
-    signatureColor: { light: "#15707c", dark: "#5bc8d4" },
+    signatureColor: { light: "#3a5bcf", dark: "#6f8fe6" },
   },
   {
     id: "goldfinger",
