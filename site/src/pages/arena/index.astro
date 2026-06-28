@@ -3,6 +3,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import { TRADING_AGENTS } from "@/lib/roster";
 import { loadLatest } from "@/lib/output";
 import { loadBenchmark, returnPct } from "@/lib/baselines";
+import AgentCrest from "@/components/AgentCrest.astro";
 
 const bundle = loadLatest();
 const pctByAgent = new Map(bundle.leaderboard.map((r) => [r.agent, r.return_pct]));
@@ -21,10 +22,6 @@ function fmtPct(n: number): string {
   const sign = n > 0 ? "+" : "";
   return `${sign}${n.toFixed(2)}%`;
 }
-function monogram(name: string): string {
-  const parts = name.split(/\s+/);
-  return parts.map((p) => p[0]).join("").slice(0, 2).toUpperCase();
-}
 ---
 <BaseLayout title="The Arena" current="arena">
   <section class="page arena-head">
@@ -39,7 +36,7 @@ function monogram(name: string): string {
       const vs = vsBenchByAgent[agent.id];
       return (
         <a class="arena-tile" href={`/arena/${agent.id}`} data-agent={agent.id}>
-          <span class="tile-monogram" aria-hidden="true">{monogram(agent.display_name)}</span>
+          <AgentCrest id={agent.id} size={40} />
           <span class="tile-name">{agent.display_name}</span>
           <span class="tile-arch">{agent.archetype} · {agent.base_currency}</span>
           <span class={`tile-ret ${cls}`}>{fmtPct(pct)}</span>
@@ -75,13 +72,6 @@ function monogram(name: string): string {
   /* Tile internals — scoped names so they never collide with the shared
      .arena-tile child styling in global.css. data-agent on the tile resolves
      --agent-color (the kit colour) for the monogram. */
-  .tile-monogram {
-    font-family: var(--font-display);
-    font-size: var(--fs-xl);
-    line-height: 1;
-    color: var(--agent-color, var(--ink));
-    margin-bottom: var(--sp-1, 0.25rem);
-  }
   .tile-name {
     font-family: var(--font-display);
     font-size: var(--fs-lg);
