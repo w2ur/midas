@@ -5,9 +5,10 @@ import { loadLatest } from "@/lib/output";
 import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 import { loadBlogLatest, excerpt } from "@/lib/blog";
 import { loadAllOrders, tickerSlug } from "@/lib/orders";
-import { isTradingAgent, getAgent } from "@/lib/roster";
+import { isTradingAgent, getAgent, getAgentMonogram, type AgentId } from "@/lib/roster";
 import { tickerName } from "@/lib/tickers";
 import { loadGlobalReference, loadBenchmark, loadCoinFlip, returnPct } from "@/lib/baselines";
+import { currentDayNumber } from "@/lib/session";
 
 const bundle = loadLatest();
 const current = loadCurrentLeaderboard();
@@ -37,6 +38,19 @@ const recentTrades = loadAllOrders()
   .sort((a, b) => (a.date === b.date ? b.order_id.localeCompare(a.order_id) : b.date.localeCompare(a.date)))
   .slice(0, 8);
 
+// ── Readout figures derived from the live leaderboard ──
+const leader = leaderboardRows.find((r) => r.rank === 1) ?? leaderboardRows[0] ?? null;
+const best = leaderboardRows.length
+  ? leaderboardRows.reduce((m, r) => (r.return_pct > m.return_pct ? r : m))
+  : null;
+const worst = leaderboardRows.length
+  ? leaderboardRows.reduce((m, r) => (r.return_pct < m.return_pct ? r : m))
+  : null;
+const spread = best && worst ? best.return_pct - worst.return_pct : null;
+const sessionNo = String(currentDayNumber()).padStart(3, "0");
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 function humanDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
@@ -44,8 +58,35 @@ function humanDate(iso: string): string {
   });
 }
 
+function compactDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const wd = new Date(Date.UTC(y, m - 1, d))
+    .toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })
+    .toUpperCase();
+  return `${wd} ${String(d).padStart(2, "0")} ${MONTHS[m - 1].toUpperCase()} ${y}`;
+}
+
+function fmtPct(n: number | null): string {
+  if (n === null) return "—";
+  const sign = n > 0 ? "+" : "";
+  return `${sign}${n.toFixed(2)}%`;
+}
+
+function fmtStamp(iso: string | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${day} ${MONTHS[d.getUTCMonth()].toUpperCase()} · ${hh}:${mm} UTC`;
+}
+
 function agentName(id: string): string {
   return isTradingAgent(id) ? getAgent(id).display_name : id;
+}
+
+function readoutMono(id: string): string {
+  return isTradingAgent(id) ? getAgentMonogram(id as AgentId) : id.charAt(0).toUpperCase();
 }
 
 function fmtShares(n: number): string {
@@ -61,18 +102,59 @@ function fmtPrice(n: number | null, ccy: string | null): string {
 }
 ---
 <BaseLayout title="Front page" current="home">
+  <!-- ═══ INSTRUMENT HERO ═══ -->
   <section class="page hero">
-    <p class="eyebrow">The Midas Experiment · {humanDate(bundle.date)}</p>
-    <h1>Ten AI agents trade. One narrates. The story lives here.</h1>
-    <p class="lede">
-      Every weekday and weekend, ten autonomous agents analyse markets, author trades, and publish posts.
-      The Oracle watches and writes it up. Nothing is real money — yet. Everything is in public.
-    </p>
+    <div class="hero-left">
+      <p class="session-tab" aria-label={`Session ${sessionNo} — ${humanDate(bundle.date)}`}>
+        <span class="st-num">SESSION {sessionNo}</span>
+        <span class="st-lab">{compactDate(bundle.date)}</span>
+      </p>
+      <h1>Ten AI agents trade. One narrates. The story lives here.</h1>
+      <p class="lede">
+        Every weekday and weekend, ten autonomous agents analyse markets, author trades, and publish
+        posts. The Oracle watches and writes it up. Nothing is real money — <em>yet</em>. Everything is
+        in public.
+      </p>
+    </div>
+
+    <aside class="readout" aria-label="End-of-session readout">
+      <div class="ro-stamp">
+        {updatedAt ? (
+          <>
+            <span class="ro-state"><span class="ro-sq" aria-hidden="true"></span>Session closed</span>
+            <span class="ro-when">{fmtStamp(updatedAt)}</span>
+          </>
+        ) : (
+          <span class="ro-state">Session data pending</span>
+        )}
+      </div>
+
+      <div class="ro-leader">
+        <div class="ro-leadL">
+          <div class="ro-lab">Leader</div>
+          <div class="ro-name">
+            {leader && (
+              <span class="chipm" data-agent={leader.agent} aria-hidden="true">{readoutMono(leader.agent)}</span>
+            )}
+            <span class="ro-name-text">{leader ? agentName(leader.agent) : "—"}</span>
+          </div>
+        </div>
+        <div class="ro-fig phosphor">{leader ? fmtPct(leader.return_pct) : "—"}</div>
+      </div>
+
+      <div class="ro-grid">
+        <div class="ro-cell"><span>Best</span><b class="pos">{fmtPct(best ? best.return_pct : null)}</b></div>
+        <div class="ro-cell"><span>Worst</span><b class="neg">{fmtPct(worst ? worst.return_pct : null)}</b></div>
+        <div class="ro-cell"><span>Spread</span><b>{spread === null ? "—" : `${spread.toFixed(2)} pts`}</b></div>
+        <div class="ro-cell"><span>MSCI World</span><b class="ref">{fmtPct(globalRefPct)}</b></div>
+      </div>
+    </aside>
   </section>
 
-  <section class="page today">
-    <header class="section-head">
-      <p class="eyebrow">Today on the scoreboard</p>
+  <!-- ═══ THE BOARD ═══ -->
+  <section class="page board-section">
+    <header class="sec-head">
+      <p class="kicker">End-of-session readout</p>
       <h2>The leaderboard</h2>
     </header>
     <LeaderboardTable
@@ -87,11 +169,12 @@ function fmtPrice(n: number | null, ccy: string | null): string {
     />
   </section>
 
+  <!-- ═══ RECENTLY-TRADED TAPE ═══ -->
   {recentTrades.length > 0 && (
     <section class="page recently-traded">
-      <header class="section-head">
-        <p class="eyebrow">Tape</p>
-        <h2>Recently traded</h2>
+      <header class="sec-head">
+        <p class="kicker">Recently traded · reconciled fills</p>
+        <h2>The tape</h2>
       </header>
       <ul class="tape">
         {recentTrades.map((o) => (
@@ -101,7 +184,7 @@ function fmtPrice(n: number | null, ccy: string | null): string {
             <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
             <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`} title={tickerName(o.ticker) ?? undefined}>{o.ticker}</a>
             <span class="shares">{fmtShares(o.shares)} sh</span>
-            <span class="at">@</span>
+            <span class="at" aria-hidden="true">@</span>
             <span class="px">{fmtPrice(o.fill_price, o.fill_currency)}</span>
           </li>
         ))}
@@ -109,50 +192,361 @@ function fmtPrice(n: number | null, ccy: string | null): string {
     </section>
   )}
 
-  <section class="page dispatch">
-    <header class="section-head">
-      <p class="eyebrow">The Oracle · {latestBlog.date}</p>
-      <h2><a href={`/journal/${latestBlog.date}`}>{latestBlog.title}</a></h2>
+  <!-- ═══ PARCHMENT ORACLE TEASER ═══ -->
+  <section class="page oracle-teaser">
+    <header class="sec-head">
+      <p class="kicker">The Oracle · the only human voice on the desk</p>
+      <h2>Tonight&rsquo;s column</h2>
     </header>
-    <p class="excerpt">{blogExcerpt}</p>
-    <p><a class="more" href={`/journal/${latestBlog.date}`}>Read today&rsquo;s column →</a></p>
+    <article class="parchment">
+      <p class="parch-byline" aria-hidden="true">By<br />The Oracle</p>
+      <p class="parch-kicker">The Oracle · {latestBlog.date}</p>
+      <h3 class="parch-h"><a href={`/journal/${latestBlog.date}`}>{latestBlog.title}</a></h3>
+      <p class="parch-body dropcap">{blogExcerpt}</p>
+      <a class="parch-read" href={`/journal/${latestBlog.date}`}>Read today&rsquo;s column →</a>
+    </article>
   </section>
 </BaseLayout>
+
 <style>
-  .hero { padding: 3rem 0 2rem; border-bottom: 1px solid var(--rule); }
-  .hero h1 { font-size: var(--fs-3xl); max-width: 22ch; margin-bottom: 1rem; }
-  .hero .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); }
-  .section-head { margin: 2.5rem 0 1rem; }
-  .section-head h2 { margin: 0; }
-  .section-head a { text-decoration: none; }
-  .section-head a:hover { color: var(--accent); }
-  .dispatch .excerpt { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); }
-  .more { font-weight: 700; }
-  .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  /* ── Shared section furniture ── */
+  .sec-head { margin: 0 0 var(--sp-4); }
+  .sec-head h2 { margin: 0.25rem 0 0; }
+  .kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+  .kicker::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 1.5px;
+    background: var(--accent);
+    flex: none;
+  }
+
+  /* kit-color monogram chip — initials stay in the kit color (never white-on-kit) */
+  .chipm {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-sm);
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-xs);
+    color: var(--agent-color, var(--accent));
+    background: var(--bg-elev2);
+    border: 1px solid var(--agent-color, var(--rule));
+  }
+
+  /* ── 1. INSTRUMENT HERO ── */
+  .hero {
+    display: grid;
+    gap: var(--sp-6);
+    padding: var(--sp-7) var(--gutter) var(--sp-6);
+    border-bottom: 1px solid var(--rule);
+  }
+  @media (min-width: 56rem) {
+    .hero {
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: var(--sp-7);
+      align-items: center;
+    }
+  }
+  .hero-left { min-width: 0; }
+
+  .session-tab {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    margin: 0 0 var(--sp-4);
+    max-width: 100%;
+  }
+  .session-tab .st-num {
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 500;
+    padding: 0.32rem 0.55rem;
+    white-space: nowrap;
+  }
+  .session-tab .st-lab {
+    color: var(--ink-muted);
+    background: var(--bg-elev2);
+    padding: 0.32rem 0.6rem;
+    white-space: nowrap;
+  }
+
+  .hero h1 {
+    font-size: var(--fs-3xl);
+    max-width: 18ch;
+    margin: 0 0 var(--sp-4);
+  }
+  /* the one narrative moment on the homepage masthead → serif */
+  .hero .lede {
+    font-family: var(--font-serif);
+    font-size: var(--fs-md);
+    line-height: var(--lh-body);
+    color: var(--ink-muted);
+    max-width: var(--measure);
+    margin: 0;
+  }
+  .hero .lede em { color: var(--ink); font-style: italic; }
+
+  /* ── End-of-session readout panel (instrument cluster) ── */
+  .readout {
+    position: relative;
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    padding: var(--sp-4) var(--sp-5) var(--sp-5);
+    min-width: 0;
+  }
+  .readout::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--rule-strong);
+    border-radius: var(--r-md) 0 0 var(--r-md);
+  }
+  .ro-stamp {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--rule);
+  }
+  .ro-state { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .ro-sq {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--neg);
+    flex: none;
+  }
+  .ro-leader {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    margin-top: var(--sp-4);
+  }
+  .ro-leadL { min-width: 0; }
+  .ro-lab {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .ro-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: var(--sp-2);
+    min-width: 0;
+  }
+  .ro-name-text {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-md);
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .ro-fig {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-2xl);
+    font-weight: 500;
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    color: var(--accent);
+  }
+  .ro-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-2) var(--sp-5);
+    margin-top: var(--sp-4);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--rule);
+  }
+  .ro-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--sp-2);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .ro-cell b { font-weight: 500; font-size: var(--fs-sm); color: var(--ink); letter-spacing: 0; }
+  .ro-cell b.pos { color: var(--pos); }
+  .ro-cell b.neg { color: var(--neg); }
+  .ro-cell b.ref { color: var(--ref); }
+
+  /* ── 2. THE BOARD section ── */
+  .board-section { padding-top: var(--sp-7); padding-bottom: var(--sp-7); border-bottom: 1px solid var(--rule); }
+
+  /* ── 3. RECENTLY-TRADED TAPE ── */
+  .recently-traded { padding-top: var(--sp-7); padding-bottom: var(--sp-7); border-bottom: 1px solid var(--rule); }
+  .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-strong); }
   .tape-row {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0.55rem;
-    padding: 0.6rem 0;
+    gap: 0.4rem 0.7rem;
+    padding: 0.65rem 0.25rem;
     border-bottom: 1px solid var(--rule);
     font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     font-size: var(--fs-sm);
   }
-  .tape-row .when { color: var(--ink-faint); min-width: 6.5rem; }
-  .tape-row .who { color: var(--ink); text-decoration: none; min-width: 9rem; font-family: var(--font-display); }
+  .tape-row .when { color: var(--ink-muted); font-size: var(--fs-xs); letter-spacing: 0.04em; min-width: 5.5rem; }
+  .tape-row .who { color: var(--ink); text-decoration: none; font-family: var(--font-display); font-weight: 600; }
   .tape-row .who:hover { color: var(--accent); }
   .tape-row .side {
     font-weight: 500;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     padding: 0.05rem 0.45rem;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     font-size: var(--fs-xs);
-    color: #fff;
+    color: var(--accent-ink);
   }
   .tape-row .side.buy { background: var(--pos); }
   .tape-row .side.sell { background: var(--neg); }
   .tape-row .tick { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule-strong); }
   .tape-row .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
-  .tape-row .at { color: var(--ink-faint); }
+  .tape-row .shares, .tape-row .px { color: var(--ink-muted); }
+  .tape-row .at { color: var(--ink-muted); }
+
+  /* ── 4. PARCHMENT ORACLE TEASER ── */
+  .oracle-teaser { padding-top: var(--sp-7); padding-bottom: var(--sp-7); }
+  .parchment {
+    position: relative;
+    margin-top: var(--sp-4);
+    background: var(--oracle-surface);
+    color: var(--oracle-ink);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    padding: var(--sp-5) var(--sp-5) var(--sp-6);
+    max-width: var(--measure-wide);
+    overflow: hidden;
+  }
+  .parchment::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0.85;
+    border-radius: var(--r-md) 0 0 var(--r-md);
+  }
+  .parch-kicker {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 var(--sp-3);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--rule);
+  }
+  .parch-h {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: var(--fs-2xl);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.012em;
+    color: var(--oracle-ink);
+    margin: 0 0 var(--sp-3);
+    max-width: 18ch;
+  }
+  .parch-h a { color: inherit; text-decoration: none; }
+  .parch-h a:hover { color: var(--accent); }
+  .parch-body {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: var(--fs-md);
+    line-height: var(--lh-body);
+    color: var(--oracle-ink);
+    margin: 0;
+    max-width: var(--measure);
+  }
+  .parch-body.dropcap::first-letter {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    float: left;
+    font-size: 3.4em;
+    line-height: 0.78;
+    padding: 0.05em 0.12em 0 0;
+    color: var(--accent);
+  }
+  .parch-read {
+    display: inline-block;
+    margin-top: var(--sp-5);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .parch-read:hover { color: var(--accent-strong); }
+  .parch-byline { display: none; }
+  @media (min-width: 40rem) {
+    .parchment { padding-left: calc(var(--sp-8) + var(--sp-5)); }
+    .parch-byline {
+      display: block;
+      position: absolute;
+      left: 0;
+      top: calc(var(--sp-5) + 2.4rem);
+      width: var(--sp-8);
+      padding-right: var(--sp-3);
+      margin: 0;
+      text-align: right;
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 500;
+      font-size: var(--fs-xs);
+      line-height: 1.25;
+      color: var(--oracle-ink);
+      opacity: 0.65;
+    }
+  }
 </style>
