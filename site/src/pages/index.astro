@@ -359,9 +359,8 @@ function fmtPrice(n: number | null, ccy: string | null): string {
     font-weight: 700;
     font-size: var(--fs-md);
     color: var(--ink);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
     min-width: 0;
   }
   .ro-fig {
