@@ -146,6 +146,11 @@ class Fill:
     fees: float | None
     reason: str | None
     trigger_fired: bool = False
+    # Provenance: the git HEAD commit the broker was executing against when this
+    # fill was produced. Tamper-evident audit trail — `git checkout <executed_sha>`
+    # re-derives the exact outbox order and price store the broker saw. Stamped by
+    # the broker (engine.paper_broker); None when run outside a git repo.
+    executed_sha: str | None = None
 
     def __post_init__(self) -> None:
         if self.status not in ("filled", "rejected"):
@@ -166,6 +171,8 @@ class Fill:
         }
         if self.trigger_fired:
             d["trigger_fired"] = True
+        if self.executed_sha is not None:
+            d["executed_sha"] = self.executed_sha
         return d
 
     @classmethod
@@ -180,6 +187,7 @@ class Fill:
             fees=d.get("fees"),
             reason=d.get("reason"),
             trigger_fired=bool(d.get("trigger_fired", False)),
+            executed_sha=d.get("executed_sha"),
         )
 
 

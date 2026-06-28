@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -150,6 +151,30 @@ def _drawdown_pct(
     if prev_value == 0:
         return 0.0
     return (today_value - prev_value) / prev_value * 100.0
+
+
+def _current_commit_sha() -> str | None:
+    """HEAD commit SHA the broker is executing against, or None outside a git repo.
+
+    Stamped onto every Fill (engine.orders.Fill.executed_sha) for tamper-evident
+    provenance: anyone can ``git checkout <sha>`` and re-derive the exact outbox
+    order and price store the broker saw. Returns None — never raises — when git
+    is unavailable or the working tree is not a repo, so the audit stamp can
+    degrade silently without ever blocking a fill.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parent,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+    sha = result.stdout.strip()
+    return sha or None
 
 
 def _reject(order_id: str, reason: str) -> Fill:
@@ -336,6 +361,16 @@ def fill_day(
     """
     fills: list[Fill] = []
 
+    # Resolve the executing commit once per batch — every fill in this pass was
+    # produced against the same HEAD. _emit stamps it before the disk write so the
+    # provenance lands in the committed JSONL, not just the in-memory list.
+    executed_sha = _current_commit_sha()
+
+    def _emit(f: Fill) -> None:
+        f.executed_sha = executed_sha
+        fills.append(f)
+        append_fill(trade_date, f, inbox_dir=inbox_dir)
+
     # Load order_ids already in today's inbox before processing anything.
     # Any order_id found here is skipped silently — it was processed in a
     # prior run of fill_day for the same date (e.g. a session restart after
@@ -356,18 +391,14 @@ def fill_day(
             continue
         removed = delete_pending(cancel.target_order_id, pending_dir=pending_dir)
         reason = "CANCELLED_BY_AGENT" if removed else "CANCEL_TARGET_NOT_FOUND"
-        f = _reject(cancel.target_order_id, reason)
-        fills.append(f)
-        append_fill(trade_date, f, inbox_dir=inbox_dir)
+        _emit(_reject(cancel.target_order_id, reason))
 
     # --- Pass 2: read outbox and split conditional vs market ---
     orders, invalid_ids = _read_outbox_lines(trade_date, outbox_dir=outbox_dir)
     for oid in invalid_ids:
         if oid in already_processed:
             continue
-        f = _reject(oid, "INVALID_SHARES")
-        fills.append(f)
-        append_fill(trade_date, f, inbox_dir=inbox_dir)
+        _emit(_reject(oid, "INVALID_SHARES"))
         already_processed.add(oid)
 
     market_orders: list[Order] = []
@@ -378,9 +409,7 @@ def fill_day(
             market_orders.append(o)
             continue
         if o.expires is None:
-            f = _reject(o.order_id, "TRIGGER_NO_EXPIRY")
-            fills.append(f)
-            append_fill(trade_date, f, inbox_dir=inbox_dir)
+            _emit(_reject(o.order_id, "TRIGGER_NO_EXPIRY"))
             already_processed.add(o.order_id)
             continue
         save_pending(o, pending_dir=pending_dir)
@@ -400,9 +429,7 @@ def fill_day(
             < config.daily_drawdown_halt_pct
         ):
             for o in agent_orders:
-                f = _reject(o.order_id, "DAILY_DRAWDOWN_HALT")
-                fills.append(f)
-                append_fill(trade_date, f, inbox_dir=inbox_dir)
+                _emit(_reject(o.order_id, "DAILY_DRAWDOWN_HALT"))
                 already_processed.add(o.order_id)
             continue
 
@@ -418,8 +445,7 @@ def fill_day(
             f = _process_one(
                 o, config, portfolio_manager, trade_date, filled, allowed_tickers
             )
-            fills.append(f)
-            append_fill(trade_date, f, inbox_dir=inbox_dir)
+            _emit(f)
             already_processed.add(o.order_id)
             if f.status == "filled":
                 filled += 1
@@ -428,6 +454,29 @@ def fill_day(
 
 
 def execute_triggered_order(
+    order: Order,
+    trade_date: date,
+    portfolio_manager: PortfolioManager,
+    fire_price: float,
+    *,
+    inbox_dir: Path | None = None,
+) -> Fill | None:
+    """Run the rails, then stamp the executing commit SHA on the resulting Fill.
+
+    Thin public wrapper around _execute_triggered_order so the watcher's fired
+    fills carry the same git provenance (Fill.executed_sha) as same-session market
+    fills. A None result (idempotent no-op — already in inbox) is passed through
+    unstamped: there is no fill to attribute.
+    """
+    fill = _execute_triggered_order(
+        order, trade_date, portfolio_manager, fire_price, inbox_dir=inbox_dir
+    )
+    if fill is not None:
+        fill.executed_sha = _current_commit_sha()
+    return fill
+
+
+def _execute_triggered_order(
     order: Order,
     trade_date: date,
     portfolio_manager: PortfolioManager,

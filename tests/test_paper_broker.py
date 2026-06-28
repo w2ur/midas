@@ -896,3 +896,95 @@ class TestCancelRequestProcessing:
         targeting = [f for f in fills if f.order_id == "ord_2026-05-10_satoshi_003"]
         reasons = sorted(f.reason for f in targeting)
         assert reasons == ["CANCELLED_BY_AGENT", "CANCEL_TARGET_NOT_FOUND"]
+
+
+# ---------------------------------------------------------------------------
+# executed_sha provenance — stamp the HEAD commit the broker ran against
+# ---------------------------------------------------------------------------
+
+
+def test_fill_day_stamps_executed_sha(broker_env, monkeypatch):
+    from engine import paper_broker
+    from engine.paper_broker import fill_day
+
+    monkeypatch.setattr(paper_broker, "_current_commit_sha", lambda: "f" * 40)
+
+    _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
+    _write_config(broker_env["config_dir"], "agent1", allowed_universe=["single-voo"])
+    pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=5000.0, currency="USD")
+
+    append_order(TRADE_DATE, _make_order("ord_001", "agent1", "BUY", "VOO", 5))
+
+    fills = fill_day(TRADE_DATE, pm)
+
+    assert len(fills) == 1
+    assert fills[0].executed_sha == "f" * 40
+
+
+def test_fill_day_stamps_executed_sha_on_rejections(broker_env, monkeypatch):
+    """Provenance must cover rejections too, not just filled orders."""
+    from engine import paper_broker
+    from engine.paper_broker import fill_day
+
+    monkeypatch.setattr(paper_broker, "_current_commit_sha", lambda: "a" * 40)
+
+    _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
+    _write_config(broker_env["config_dir"], "agent1", allowed_universe=["single-voo"])
+    pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=10.0, currency="USD")
+
+    # Cash far below notional -> INSUFFICIENT_CASH rejection.
+    append_order(TRADE_DATE, _make_order("ord_001", "agent1", "BUY", "VOO", 5))
+
+    fills = fill_day(TRADE_DATE, pm)
+
+    assert len(fills) == 1
+    assert fills[0].status == "rejected"
+    assert fills[0].executed_sha == "a" * 40
+
+
+def test_fill_day_executed_sha_none_when_not_a_git_repo(broker_env, monkeypatch):
+    """Graceful degradation: a None SHA leaves the field unset, never crashes."""
+    from engine import paper_broker
+    from engine.paper_broker import fill_day
+
+    monkeypatch.setattr(paper_broker, "_current_commit_sha", lambda: None)
+
+    _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
+    _write_config(broker_env["config_dir"], "agent1", allowed_universe=["single-voo"])
+    pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=5000.0, currency="USD")
+
+    append_order(TRADE_DATE, _make_order("ord_001", "agent1", "BUY", "VOO", 5))
+
+    fills = fill_day(TRADE_DATE, pm)
+
+    assert fills[0].executed_sha is None
+    assert "executed_sha" not in fills[0].to_dict()
+
+
+def test_execute_triggered_order_stamps_executed_sha(broker_env, monkeypatch):
+    from engine import paper_broker
+    from engine.paper_broker import execute_triggered_order
+
+    monkeypatch.setattr(paper_broker, "_current_commit_sha", lambda: "c" * 40)
+
+    _seed_ohlcv(broker_env["ohlcv"], "VOO", [("2026-04-17", 500.0)])
+    _write_config(broker_env["config_dir"], "agent1", allowed_universe=["single-voo"])
+    pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=5000.0, currency="USD")
+
+    order = Order(
+        order_id="ord_2026-04-17_agent1_001",
+        ts=datetime(2026, 4, 17, 20, 0, 0, tzinfo=timezone.utc),
+        agent_id="agent1",
+        action="BUY",
+        ticker="VOO",
+        shares=2,
+        reasoning="trigger buy",
+        currency="USD",
+        trigger={"op": "<=", "level": 500.0},
+        expires="2026-05-17",
+    )
+
+    fill = execute_triggered_order(order, TRADE_DATE, pm, fire_price=500.0)
+
+    assert fill is not None
+    assert fill.executed_sha == "c" * 40

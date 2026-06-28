@@ -449,3 +449,50 @@ class TestFillTriggerFiredField:
         )
         back = read_inbox(d)
         assert back[0].trigger_fired is False
+
+
+class TestFillExecutedShaField:
+    """executed_sha — the HEAD commit the broker executed against (audit provenance)."""
+
+    def _fill(self, **kw) -> Fill:
+        base = dict(
+            order_id="ord_x",
+            ts_filled=datetime.now(timezone.utc),
+            status="filled",
+            fill_price=100.0,
+            fill_currency="EUR",
+            notional_base=100.0,
+            fees=0.0,
+            reason=None,
+        )
+        base.update(kw)
+        return Fill(**base)
+
+    def test_default_is_none(self) -> None:
+        assert self._fill().executed_sha is None
+
+    def test_omitted_from_dict_when_none(self) -> None:
+        """A null SHA must not pollute the committed JSONL payload."""
+        assert "executed_sha" not in self._fill().to_dict()
+
+    def test_present_in_dict_when_set(self) -> None:
+        d = self._fill(executed_sha="a" * 40).to_dict()
+        assert d["executed_sha"] == "a" * 40
+
+    def test_serde_round_trip(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setattr("engine.orders.INBOX_DIR", tmp_path)
+        d = date(2026, 5, 17)
+        append_fill(d, self._fill(executed_sha="deadbeef" + "0" * 32))
+        back = read_inbox(d)
+        assert back[0].executed_sha == "deadbeef" + "0" * 32
+
+    def test_serde_round_trip_legacy_inbox(self, tmp_path: Path, monkeypatch) -> None:
+        """An inbox file written before executed_sha existed must parse, defaulting to None."""
+        monkeypatch.setattr("engine.orders.INBOX_DIR", tmp_path)
+        d = date(2026, 4, 17)
+        (tmp_path / f"{d.isoformat()}.jsonl").write_text(
+            '{"order_id":"ord_x","ts_filled":"2026-04-17T20:02:17Z","status":"filled",'
+            '"fill_price":64320.5,"fill_currency":"EUR","notional_base":643.2,"fees":0.0,"reason":null}\n'
+        )
+        back = read_inbox(d)
+        assert back[0].executed_sha is None
