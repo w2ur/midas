@@ -213,7 +213,7 @@ const refW = refPct === null ? 0 : barWidth(refPct);
     opacity: 0.9;
   }
 
-  /* line 1 — rank + monogram chip + name + archetype */
+  /* line 1 — rank + crest + name + archetype */
   .l-id { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
   .l-rank {
     font-family: var(--font-mono);
@@ -224,7 +224,7 @@ const refW = refPct === null ? 0 : barWidth(refPct);
     flex: none;
     min-width: 1.2rem;
   }
-  /* kit-color monogram chip — initials stay in the kit color (never white-on-kit) */
+  /* reference-row letter chip (e.g. MSCI World "M") — initial stays in the row colour */
   .l-chip {
     width: 30px;
     height: 30px;

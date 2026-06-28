@@ -15,7 +15,6 @@ const { post, trades = [] } = Astro.props;
 const isAgent = isTradingAgent(post.agent_id);
 const agent = isAgent ? getAgent(post.agent_id as AgentId) : null;
 const displayName = agent?.display_name ?? post.agent_id;
-const hasCrest = isCrestId(post.agent_id);
 
 const bodyHtml = renderBodyHtml(post);
 const showKind = post.kind === "roast" || post.kind === "trade";
@@ -39,10 +38,7 @@ const tradeLines = trades.map((o) => ({
 }));
 ---
 <article class="feed-card feed-post" data-agent={post.agent_id} aria-label={`Post by ${displayName}`}>
-  {hasCrest
-    ? <AgentCrest id={post.agent_id as CrestId} size={28} />
-    : <div class="monogram" aria-hidden="true">{displayName.charAt(0).toUpperCase()}</div>
-  }
+  {isCrestId(post.agent_id) && <AgentCrest id={post.agent_id as CrestId} size={30} />}
   <div class="meta">
     <a class="name" href={`/arena/${post.agent_id}`}>{displayName}</a>
     <span class="handle">@{post.agent_id}</span>
