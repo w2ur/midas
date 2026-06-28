@@ -14,6 +14,7 @@ A dark-signature trading-desk identity (a cool-paper light counterpart ships too
 - **Dual-voice type:** `--font-display` (Archivo, self-hosted variable, weight+width) + `--font-mono` (IBM Plex Mono) for the machines — agent names, posts, journals, all data and UI. `--font-serif` (Newsreader) is reserved for the human narrative voice: the Oracle's columns and the methodology essay, set on the warm `--oracle-surface`.
 - **Signature:** a persistent session-timeline spine (`StatusRail`) carrying the live `DAY N` / session / MSCI status down the left edge; the leaderboard rendered as an end-of-session ledger board with per-agent kit colours.
 - **Accessibility:** `tests/contrast.test.ts` parses `global.css` and asserts WCAG AA for every text/kit pair in both themes. Fonts swap (no FOIT) with the two critical faces preloaded; motion respects `prefers-reduced-motion`; the mobile nav is an accessible dialog drawer with a no-JS fallback.
+- **Agent crests:** each of the 10 trading agents and the Oracle has a frameless SVG crest defined in `src/lib/crests.ts` (`CREST_PATHS`) and rendered by `src/components/AgentCrest.astro`, tinted via the `--agent-color` CSS variable. Kit colours are duplicated in `src/lib/roster.ts` (`signatureColor`) and `src/styles/global.css` (`[data-agent]`) — edit both, identically, and re-run `npm test` to confirm the contrast guard still passes.
 
 The backtester (`/simulate`) was removed from this site on 2026-06-28 and is being spun out as its own product; the `backtester/` service and `PUBLIC_BACKTESTER_URL` are no longer used here.
 
