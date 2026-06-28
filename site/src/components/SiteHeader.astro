@@ -10,105 +10,338 @@ const nav = [
 ];
 ---
 <header class="site-header">
-  <div class="page inner">
-    <a class="brand" href="/">MIDAS</a>
-    <nav aria-label="Primary">
+  <div class="masthead">
+    <a class="wordmark" href="/">MIDAS</a>
+
+    <nav class="primary-nav" aria-label="Primary">
       <ul>
         {nav.map((item) => (
-          <li><a href={item.href} aria-current={current === item.key ? "page" : undefined}>{item.label}</a></li>
+          <li>
+            <a href={item.href} aria-current={current === item.key ? "page" : undefined}>{item.label}</a>
+          </li>
         ))}
       </ul>
     </nav>
+
     <button
       id="theme-toggle"
       type="button"
       class="theme-toggle"
-      aria-label="Toggle dark mode"
-      title="Toggle dark mode"
+      data-scheme="dark"
+      aria-label="Switch to light theme"
     >
-      <span class="theme-icon theme-icon-sun" aria-hidden="true">☀</span>
-      <span class="theme-icon theme-icon-moon" aria-hidden="true">☾</span>
+      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+      </svg>
+      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+      </svg>
+    </button>
+
+    <button
+      id="nav-toggle"
+      type="button"
+      class="nav-toggle"
+      aria-label="Open menu"
+      aria-controls="nav-drawer"
+      aria-expanded="false"
+      hidden
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <path d="M3 6h18M3 12h18M3 18h18" />
+      </svg>
     </button>
   </div>
 </header>
+
+<!-- Mobile drawer — progressive enhancement. Without JS it stays hidden and the
+     primary nav above remains visible and usable. -->
+<div id="nav-drawer" class="nav-drawer" role="dialog" aria-modal="true" aria-labelledby="nav-drawer-title" hidden>
+  <div class="drawer-head">
+    <p id="nav-drawer-title" class="drawer-title">Menu</p>
+    <button id="drawer-close" type="button" class="drawer-close" aria-label="Close menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+        <path d="M6 6l12 12M18 6L6 18" />
+      </svg>
+    </button>
+  </div>
+  <nav aria-label="Site menu">
+    <ul>
+      {nav.map((item) => (
+        <li>
+          <a href={item.href} aria-current={current === item.key ? "page" : undefined}>{item.label}</a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+</div>
+
 <script is:inline>
   (function () {
+    /* ── Theme toggle — drives color-scheme on :root ── */
     var btn = document.getElementById("theme-toggle");
-    if (!btn) return;
-    function current() {
-      var set = document.documentElement.getAttribute("data-theme");
-      if (set === "dark" || set === "light") return set;
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    if (btn) {
+      var effective = function () {
+        var cs = document.documentElement.style.colorScheme;
+        if (cs === "dark" || cs === "light") return cs;
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      };
+      var render = function () {
+        var scheme = effective();
+        btn.setAttribute("data-scheme", scheme);
+        btn.setAttribute(
+          "aria-label",
+          scheme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+        );
+      };
+      btn.addEventListener("click", function () {
+        var next = effective() === "dark" ? "light" : "dark";
+        document.documentElement.style.colorScheme = next;
+        try { localStorage.setItem("midas-theme", next); } catch (_) {}
+        render();
+      });
+      render();
     }
-    function apply() {
-      btn.setAttribute("data-theme-state", current());
+
+    /* ── Mobile drawer — accessible dialog, progressive enhancement ── */
+    var toggle = document.getElementById("nav-toggle");
+    var drawer = document.getElementById("nav-drawer");
+    var closeBtn = document.getElementById("drawer-close");
+    if (toggle && drawer) {
+      toggle.hidden = false; // reveal the hamburger now that JS is available
+      var inerted = [];
+
+      var onKeydown = function (e) {
+        if (e.key === "Escape") { e.preventDefault(); close(); }
+      };
+
+      var open = function () {
+        drawer.hidden = false;
+        inerted = [];
+        Array.prototype.forEach.call(document.body.children, function (el) {
+          if (el !== drawer) {
+            el.setAttribute("inert", "");
+            el.setAttribute("aria-hidden", "true");
+            inerted.push(el);
+          }
+        });
+        document.body.style.overflow = "hidden";
+        toggle.setAttribute("aria-expanded", "true");
+        toggle.setAttribute("aria-label", "Close menu");
+        document.addEventListener("keydown", onKeydown);
+        (closeBtn || drawer.querySelector("a")).focus();
+      };
+
+      var close = function () {
+        drawer.hidden = true;
+        inerted.forEach(function (el) {
+          el.removeAttribute("inert");
+          el.removeAttribute("aria-hidden");
+        });
+        inerted = [];
+        document.body.style.overflow = "";
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Open menu");
+        document.removeEventListener("keydown", onKeydown);
+        toggle.focus();
+      };
+
+      toggle.addEventListener("click", open);
+      if (closeBtn) closeBtn.addEventListener("click", close);
+
+      // Safety: if the viewport grows past the mobile breakpoint while open,
+      // close so we never strand an inert/scroll-locked page behind a hidden drawer.
+      var mq = window.matchMedia("(min-width: 48rem)");
+      var onChange = function (e) { if (e.matches && !drawer.hidden) close(); };
+      if (mq.addEventListener) mq.addEventListener("change", onChange);
+      else if (mq.addListener) mq.addListener(onChange);
     }
-    btn.addEventListener("click", function () {
-      var next = current() === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      try { localStorage.setItem("midas-theme", next); } catch (_) {}
-      apply();
-    });
-    apply();
   })();
 </script>
+
 <style>
   .site-header {
-    border-bottom: 2px solid var(--rule-strong);
-    padding: 1.25rem 0 0.75rem;
+    border-bottom: 1px solid var(--rule);
     background: var(--bg);
   }
-  .inner {
+  .masthead {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-4);
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+    min-height: 64px;
   }
-  .brand {
+
+  .wordmark {
     font-family: var(--font-display);
-    font-size: 2rem;
-    letter-spacing: 0.08em;
+    font-weight: 800;
+    font-stretch: 125%;
+    letter-spacing: 0.14em;
+    font-size: var(--fs-lg);
+    line-height: 1;
+    color: var(--accent);
     text-decoration: none;
-    color: var(--ink);
+    margin-right: auto;
   }
-  nav ul {
+  .wordmark:hover { color: var(--accent-strong); }
+
+  /* ── Primary (inline) nav — also the no-JS fallback ── */
+  .primary-nav ul {
     display: flex;
-    gap: 1.25rem;
+    align-items: center;
+    gap: var(--sp-5);
     list-style: none;
     margin: 0;
     padding: 0;
-    flex-wrap: wrap;
   }
-  nav a {
+  .primary-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-family: var(--font-mono);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     font-size: var(--fs-xs);
-    font-weight: 700;
-    text-decoration: none;
+    font-weight: 500;
     color: var(--ink-muted);
+    text-decoration: none;
   }
-  nav a[aria-current="page"] { color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 0.15em; }
-  nav a:hover { color: var(--accent); }
+  .primary-nav a:hover { color: var(--ink); }
+  .primary-nav a[aria-current="page"] {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
+  }
+
+  /* ── Theme toggle ── */
   .theme-toggle {
-    background: transparent;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
-    width: 2rem;
-    height: 2rem;
+    width: 44px;
+    height: 44px;
+    flex: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: var(--r-pill);
     color: var(--ink-muted);
-    font-family: var(--font-mono);
-    font-size: 1rem;
-    line-height: 1;
+    cursor: pointer;
     padding: 0;
-    align-self: center;
   }
-  .theme-toggle:hover { border-color: var(--rule-strong); color: var(--ink); }
-  .theme-icon { display: none; }
-  .theme-toggle[data-theme-state="light"] .theme-icon-moon { display: inline; }
-  .theme-toggle[data-theme-state="dark"] .theme-icon-sun { display: inline; }
+  .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .theme-toggle svg { display: block; }
+  .theme-toggle .icon-sun,
+  .theme-toggle .icon-moon { display: none; }
+  .theme-toggle[data-scheme="light"] .icon-sun { display: block; }
+  .theme-toggle[data-scheme="dark"] .icon-moon { display: block; }
+
+  /* ── Hamburger (mobile + JS only) ── */
+  .nav-toggle {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    color: var(--ink);
+    cursor: pointer;
+    padding: 0;
+  }
+  .nav-toggle:hover { color: var(--accent); }
+  .nav-toggle[hidden] { display: none !important; }
+
+  /* ── Mobile drawer ── */
+  .nav-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+  }
+  .nav-drawer[hidden] { display: none; }
+  .drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 64px;
+    padding: 0 var(--gutter);
+    border-bottom: 1px solid var(--rule);
+  }
+  .drawer-title {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .drawer-close {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    color: var(--ink-muted);
+    cursor: pointer;
+    padding: 0;
+    margin-right: -0.4rem;
+  }
+  .drawer-close:hover { color: var(--accent); }
+  .nav-drawer nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .nav-drawer nav a {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 var(--gutter);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: var(--fs-md);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+  }
+  .nav-drawer nav a:hover { color: var(--ink); }
+  .nav-drawer nav a[aria-current="page"] { color: var(--accent); }
+  @media (min-width: 48rem) {
+    .nav-drawer { display: none !important; }
+  }
+
+  /* ── Responsive masthead ──
+     No-JS mobile: the inline nav wraps to its own row and stacks (usable).
+     JS mobile: the inline nav is replaced by the hamburger + drawer. */
+  @media (max-width: 47.999rem) {
+    .masthead {
+      flex-wrap: wrap;
+      padding-block: var(--sp-2);
+    }
+    .primary-nav { flex-basis: 100%; }
+    .primary-nav ul { flex-direction: column; align-items: stretch; gap: 0; }
+    .primary-nav a { min-height: 48px; }
+
+    :global(html.js) .masthead { flex-wrap: nowrap; padding-block: 0; }
+    :global(html.js) .primary-nav { display: none; }
+    :global(html.js) .nav-toggle:not([hidden]) { display: inline-flex; }
+  }
 </style>

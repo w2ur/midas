@@ -2,24 +2,44 @@
 const year = new Date().getFullYear();
 ---
 <footer class="site-footer">
-  <div class="page inner">
-    <p class="credit">Made with care by <a href="https://william.revah.paris">William</a> · &copy; {year}</p>
+  <div class="inner">
+    <p class="credit">Made with care by <a href="https://william.revah.paris">William</a> &middot; &copy; {year}</p>
+    <p class="tagline">Nothing is real money — yet.</p>
   </div>
 </footer>
 <style>
   .site-footer {
     border-top: 1px solid var(--rule);
-    padding: 1.5rem 0 2rem;
-    color: var(--ink-muted);
-    font-size: var(--fs-xs);
+    padding: var(--sp-5) 0 var(--sp-6);
+    background: var(--bg);
   }
   .inner {
     display: flex;
-    gap: 1rem;
+    gap: var(--sp-3) var(--sp-5);
     justify-content: space-between;
+    align-items: baseline;
     flex-wrap: wrap;
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
   }
-  .site-footer p { margin: 0; }
-  .site-footer a { color: var(--ink-muted); }
+  .site-footer p {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.03em;
+    color: var(--ink-faint);
+  }
+  .site-footer a {
+    color: var(--ink-faint);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
   .site-footer a:hover { color: var(--accent); }
+
+  /* The honest tagline sits to the right on wide viewports. */
+  .tagline { display: none; }
+  @media (min-width: 48rem) {
+    .tagline { display: block; }
+  }
 </style>

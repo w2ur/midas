@@ -1,6 +1,7 @@
 ---
 import SiteHeader from "@/components/SiteHeader.astro";
 import SiteFooter from "@/components/SiteFooter.astro";
+import StatusRail from "@/components/StatusRail.astro";
 import "@/styles/global.css";
 // Preload the two critical faces so the type-led design swaps in fast.
 import archivoFont from "@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2";
@@ -41,7 +42,10 @@ const ogImage = new URL("/og.png", site).toString();
     <script is:inline>
       // No-flash theme: force color-scheme from the stored preference before
       // paint; with none set, :root { color-scheme: light dark } lets the OS win.
+      // Also flag JS-on so the mobile nav can swap to the hamburger drawer
+      // without a flash of the no-JS fallback nav.
       (function () {
+        document.documentElement.classList.add("js");
         try {
           var t = localStorage.getItem("midas-theme");
           if (t === "dark" || t === "light") {
@@ -50,9 +54,17 @@ const ogImage = new URL("/og.png", site).toString();
         } catch (_) {}
       })();
     </script>
+    <style is:global>
+      /* Clear the fixed session-timeline spine on desktop; on mobile the spine
+         is hidden and the condensed strip flows inline, so no offset is needed. */
+      @media (min-width: 48rem) {
+        body { padding-left: var(--rail-w); }
+      }
+    </style>
   </head>
   <body>
     <a href="#main" class="skip">Skip to content</a>
+    <StatusRail />
     <SiteHeader current={current} />
     <main id="main">
       <slot />
