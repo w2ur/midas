@@ -1,0 +1,44 @@
+---
+import { CREST_PATHS, type CrestId } from "@/lib/crests";
+
+interface Props {
+  id: CrestId;
+  size?: number;
+  label?: string;
+}
+const { id, size = 28, label } = Astro.props;
+const inner = CREST_PATHS[id];
+---
+<span
+  class="agent-crest"
+  data-agent={id}
+  style={`--crest-size:${size}px`}
+  role={label ? "img" : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : "true"}
+>
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
+       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={inner} />
+</span>
+
+<style>
+  .agent-crest {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: var(--crest-size);
+    height: var(--crest-size);
+    color: var(--agent-color, var(--ink));
+    line-height: 0;
+  }
+  .agent-crest svg {
+    width: 100%;
+    height: 100%;
+    /* phosphor glow — dark theme only, mirroring --phosphor */
+    filter: light-dark(
+      none,
+      drop-shadow(0 0 5px color-mix(in srgb, var(--agent-color, transparent) 55%, transparent))
+    );
+  }
+</style>
