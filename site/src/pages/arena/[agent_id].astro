@@ -1,9 +1,10 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import AgentCrest from "@/components/AgentCrest.astro";
 import PortfolioTable from "@/components/PortfolioTable.astro";
 import TradeCard from "@/components/TradeCard.astro";
 import BaselineChart from "@/components/BaselineChart.astro";
-import { TRADING_AGENTS, type AgentId, getAgent, getAgentMonogram } from "@/lib/roster";
+import { TRADING_AGENTS, type AgentId, getAgent } from "@/lib/roster";
 import { loadLatest, listDates as listOutputDates } from "@/lib/output";
 import { loadMemory, renderMemoryHtml } from "@/lib/memory";
 import { loadAllOrders } from "@/lib/orders";
@@ -72,7 +73,6 @@ const recentDateGroups = Array.from(recentOrdersByDate.entries()).slice(0, 5);
 const lastActiveDate = agentOrders.length > 0 ? agentOrders[0].date : null;
 
 const sessionStamp = String(currentDayNumber()).padStart(3, "0");
-const monogram = getAgentMonogram(agent.id);
 const startCcy = agent.base_currency === "USD" ? "USD" : "EUR";
 const benchLabel = AGENT_BENCHMARK_LABELS[agent.id] ?? "benchmark";
 ---
@@ -84,7 +84,7 @@ const benchLabel = AGENT_BENCHMARK_LABELS[agent.id] ?? "benchmark";
         DOSSIER · SESSION {sessionStamp} · {agent.base_currency.toUpperCase()} BASE
       </p>
       <div class="namerow">
-        <span class="monogram" aria-hidden="true">{monogram}</span>
+        <AgentCrest id={agent.id} size={60} label={agent.display_name} />
         <h1>{agent.display_name}</h1>
       </div>
       <p class="tagline">{agent.archetype}.</p>
@@ -181,22 +181,6 @@ const benchLabel = AGENT_BENCHMARK_LABELS[agent.id] ?? "benchmark";
     flex: none;
   }
   .namerow { display: flex; align-items: center; gap: var(--sp-4); margin: 0 0 var(--sp-4); }
-  .monogram {
-    width: 60px;
-    height: 60px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-elev2);
-    color: var(--agent-color, var(--accent));
-    border: 1px solid var(--agent-color, var(--rule));
-    border-radius: var(--r-lg);
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: var(--fs-xl);
-    line-height: 1;
-  }
   .namerow h1 { margin: 0; }
   .tagline {
     font-family: var(--font-display);
