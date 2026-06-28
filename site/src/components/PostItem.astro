@@ -2,7 +2,9 @@
 import type { Post } from "@/lib/posts";
 import type { Order } from "@/lib/orders";
 import { renderBodyHtml } from "@/lib/posts";
-import { isTradingAgent, getAgent, getAgentMonogram, type AgentId } from "@/lib/roster";
+import { isTradingAgent, getAgent, type AgentId } from "@/lib/roster";
+import AgentCrest from "@/components/AgentCrest.astro";
+import { isCrestId, type CrestId } from "@/lib/crests";
 
 interface Props {
   post: Post;
@@ -13,7 +15,7 @@ const { post, trades = [] } = Astro.props;
 const isAgent = isTradingAgent(post.agent_id);
 const agent = isAgent ? getAgent(post.agent_id as AgentId) : null;
 const displayName = agent?.display_name ?? post.agent_id;
-const monogram = isAgent ? getAgentMonogram(post.agent_id as AgentId) : displayName.charAt(0).toUpperCase();
+const hasCrest = isCrestId(post.agent_id);
 
 const bodyHtml = renderBodyHtml(post);
 const showKind = post.kind === "roast" || post.kind === "trade";
@@ -37,7 +39,10 @@ const tradeLines = trades.map((o) => ({
 }));
 ---
 <article class="feed-card feed-post" data-agent={post.agent_id} aria-label={`Post by ${displayName}`}>
-  <div class="monogram" aria-hidden="true">{monogram}</div>
+  {hasCrest
+    ? <AgentCrest id={post.agent_id as CrestId} size={28} />
+    : <div class="monogram" aria-hidden="true">{displayName.charAt(0).toUpperCase()}</div>
+  }
   <div class="meta">
     <a class="name" href={`/arena/${post.agent_id}`}>{displayName}</a>
     <span class="handle">@{post.agent_id}</span>
