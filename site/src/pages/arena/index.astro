@@ -2,13 +2,10 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { TRADING_AGENTS } from "@/lib/roster";
 import { loadLatest } from "@/lib/output";
-import { loadGlobalReference, loadBenchmark, returnPct } from "@/lib/baselines";
+import { loadBenchmark, returnPct } from "@/lib/baselines";
 
 const bundle = loadLatest();
 const pctByAgent = new Map(bundle.leaderboard.map((r) => [r.agent, r.return_pct]));
-
-const globalRef = loadGlobalReference();
-const globalRefPct = returnPct(globalRef);
 
 const vsBenchByAgent: Record<string, number | null> = {};
 for (const row of bundle.leaderboard) {
@@ -21,7 +18,7 @@ const tiles = TRADING_AGENTS
   .sort((x, y) => y.pct - x.pct);
 
 function fmtPct(n: number): string {
-  const sign = n > 0 ? "+" : n < 0 ? "" : "";
+  const sign = n > 0 ? "+" : "";
   return `${sign}${n.toFixed(2)}%`;
 }
 function monogram(name: string): string {
@@ -30,8 +27,8 @@ function monogram(name: string): string {
 }
 ---
 <BaseLayout title="The Arena" current="arena">
-  <section class="page">
-    <p class="eyebrow">Dossier · {bundle.date}</p>
+  <section class="page arena-head">
+    <p class="kicker">The Arena · {bundle.date}</p>
     <h1>The Arena</h1>
     <p class="lede">Ten agents. Ten mandates. Same starting capital. Ranked by EUR-normalized return.</p>
   </section>
@@ -40,37 +37,81 @@ function monogram(name: string): string {
     {tiles.map(({ agent, pct }) => {
       const cls = pct > 0 ? "pos" : pct < 0 ? "neg" : "";
       const vs = vsBenchByAgent[agent.id];
-      const beatsBench = vs !== null && vs !== undefined;
       return (
-        <a class="arena-tile" href={`/arena/${agent.id}`}>
-          <div class="monogram">{monogram(agent.display_name)}</div>
-          <div class="name">{agent.display_name}</div>
-          <div class="meta">{agent.archetype} · {agent.base_currency}</div>
-          <div class={`pnl ${cls}`}>
-            {fmtPct(pct)}
-            {beatsBench && (
-              <span class={`bench-badge ${vs! >= 0 ? "yes" : "no"}`}>
-                {vs! >= 0 ? "✓ bench" : "✗ bench"}
-              </span>
-            )}
-          </div>
+        <a class="arena-tile" href={`/arena/${agent.id}`} data-agent={agent.id}>
+          <span class="tile-monogram" aria-hidden="true">{monogram(agent.display_name)}</span>
+          <span class="tile-name">{agent.display_name}</span>
+          <span class="tile-arch">{agent.archetype} · {agent.base_currency}</span>
+          <span class={`tile-ret ${cls}`}>{fmtPct(pct)}</span>
+          {vs != null && (
+            <span class="tile-vs">
+              <span class={`tile-vs-delta ${vs >= 0 ? "pos" : "neg"}`}>{fmtPct(vs)}</span>
+              <span class="tile-vs-label"> vs benchmark</span>
+            </span>
+          )}
         </a>
       );
     })}
   </section>
 </BaseLayout>
 <style>
-  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 1.5rem; }
-  .bench-badge {
-    display: inline-block;
+  .arena-head { margin-bottom: var(--sp-5, 1.5rem); }
+  .kicker {
     font-family: var(--font-mono);
-    font-size: 0.65rem;
-    padding: 0.1rem 0.4rem;
-    border-radius: 3px;
-    margin-left: 0.4rem;
-    background: var(--rule);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--accent);
+    margin: 0 0 var(--sp-2, 0.5rem);
+  }
+  .lede {
+    max-width: var(--measure);
+    color: var(--ink-muted);
+    font-size: var(--fs-md);
+    margin-bottom: 0;
+  }
+
+  /* Tile internals — scoped names so they never collide with the shared
+     .arena-tile child styling in global.css. data-agent on the tile resolves
+     --agent-color (the kit colour) for the monogram. */
+  .tile-monogram {
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    line-height: 1;
+    color: var(--agent-color, var(--ink));
+    margin-bottom: var(--sp-1, 0.25rem);
+  }
+  .tile-name {
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: var(--lh-tight, 1.15);
+  }
+  .tile-arch {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     color: var(--ink-muted);
   }
-  .bench-badge.yes { color: var(--ink); }
-  .bench-badge.no  { color: var(--ink-muted); }
+  .tile-ret {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-lg);
+    margin-top: var(--sp-2, 0.5rem);
+    color: var(--ink);
+  }
+  .tile-ret.pos { color: var(--pos); }
+  .tile-ret.neg { color: var(--neg); }
+  .tile-vs {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
+  .tile-vs-delta.pos { color: var(--pos); }
+  .tile-vs-delta.neg { color: var(--neg); }
+  .tile-vs-label { color: var(--ink-muted); }
 </style>

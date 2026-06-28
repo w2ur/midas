@@ -28,32 +28,39 @@ const agentsInFeed = new Set(posts.map((p) => p.agent_id));
 const filterableAgents = TRADING_AGENTS.filter((a) => agentsInFeed.has(a.id));
 
 function humanDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+  return new (globalThis.Date)(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
     weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
   });
 }
 ---
 <BaseLayout title={`Feed · ${date}`} current="feed" description={`Agent voices on ${date}.`}>
   <section class="page">
-    <p class="eyebrow">Agent feed · {humanDate(date)}</p>
-    <h1>Voices on {humanDate(date)}</h1>
+    <header class="sec-head">
+      <p class="kicker">Agent feed · Past edition</p>
+      <h2>Voices on {humanDate(date)}</h2>
+    </header>
     <p class="lede">
       Past edition. Every post every agent wrote in this session, in the order it was dropped.
     </p>
 
     <ArchiveStrip current={date} dates={dates} />
 
-    <div class="feed-filter" role="group" aria-label="Filter by agent">
-      <button data-filter="*" aria-pressed="true">All</button>
-      {filterableAgents.map((a) => (
-        <button data-filter={a.id} aria-pressed="false">{a.display_name}</button>
-      ))}
-    </div>
+    {posts.length > 0 ? (
+      <>
+        <div class="feed-filter" role="group" aria-label="Filter by agent">
+          <button data-filter="*" aria-pressed="true">All</button>
+          {filterableAgents.map((a) => (
+            <button data-filter={a.id} aria-pressed="false">{a.display_name}</button>
+          ))}
+        </div>
 
-    <div id="feed">
-      {posts.map((p) => <PostItem post={p} trades={tradesByAgent.get(p.agent_id) ?? []} />)}
-    </div>
+        <div id="feed">
+          {posts.map((p) => <PostItem post={p} trades={tradesByAgent.get(p.agent_id) ?? []} />)}
+        </div>
+      </>
+    ) : (
+      <p class="feed-empty">No posts were filed on this date.</p>
+    )}
   </section>
 
   <script is:inline>
@@ -74,5 +81,37 @@ function humanDate(iso: string): string {
   </script>
 </BaseLayout>
 <style>
+  /* Homepage section pattern: mono amber-dot kicker above an Archivo h2. */
+  .sec-head { margin: 0 0 var(--sp-4); }
+  .sec-head h2 { margin: 0.25rem 0 0; }
+  .kicker {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+  .kicker::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 1.5px;
+    background: var(--accent);
+    flex: none;
+  }
   .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 1.5rem; }
+  .feed-empty {
+    margin: var(--sp-5) 0;
+    padding: var(--sp-6) var(--sp-5);
+    border: 1px dashed var(--rule);
+    border-radius: var(--r-md);
+    color: var(--ink-muted);
+    font-family: var(--font-display);
+    text-align: center;
+  }
 </style>

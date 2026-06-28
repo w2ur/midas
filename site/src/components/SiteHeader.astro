@@ -157,9 +157,7 @@ const nav = [
       // Safety: if the viewport grows past the mobile breakpoint while open,
       // close so we never strand an inert/scroll-locked page behind a hidden drawer.
       var mq = window.matchMedia("(min-width: 48rem)");
-      var onChange = function (e) { if (e.matches && !drawer.hidden) close(); };
-      if (mq.addEventListener) mq.addEventListener("change", onChange);
-      else if (mq.addListener) mq.addListener(onChange);
+      mq.addEventListener("change", function (e) { if (e.matches && !drawer.hidden) close(); });
     }
   })();
 </script>

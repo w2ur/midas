@@ -25,21 +25,25 @@ const rows: Row[] = dates.map((d) => {
   return { date: d, leaderName, leaderPct, oracleTitle };
 });
 
-function humanDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+function stampDay(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "2-digit", month: "short", timeZone: "UTC",
+  });
+}
+
+function weekdayShort(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+    weekday: "short", timeZone: "UTC",
   });
 }
 
 function fmtPct(n: number): string {
-  const sign = n > 0 ? "+" : n < 0 ? "" : "";
+  const sign = n > 0 ? "+" : "";
   return `${sign}${n.toFixed(2)}%`;
 }
 
 function monthKey(iso: string): string {
-  const [y, m] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-GB", {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
     month: "long", year: "numeric", timeZone: "UTC",
   });
 }
@@ -54,7 +58,7 @@ for (const r of rows) {
 ---
 <BaseLayout title="Archive" current="archive" description="Every day the Midas experiment has run. Browse the paper.">
   <section class="page">
-    <p class="eyebrow">Time travel</p>
+    <p class="eyebrow">Session log</p>
     <h1>The Archive</h1>
     <p class="lede">
       Every day the experiment has run gets its own front page. Pick a date to see the
@@ -63,41 +67,133 @@ for (const r of rows) {
 
     {Array.from(groups.entries()).map(([month, items]) => (
       <section class="month">
-        <h2>{month}</h2>
-        <ul class="entry-list">
+        <header class="month-head">
+          <h2>{month}</h2>
+          <span class="count num">{items.length} {items.length === 1 ? "session" : "sessions"}</span>
+        </header>
+        <ol class="session-log">
           {items.map((r) => {
             const cls = r.leaderPct > 0 ? "pos" : r.leaderPct < 0 ? "neg" : "";
             return (
-              <li>
-                <div class="meta">{humanDate(r.date)}</div>
-                <div class="title">
-                  <a href={`/archive/${r.date}`}>
-                    {r.oracleTitle ?? `Session · ${r.date}`}
-                  </a>
-                </div>
-                <div class="summary">
-                  <span>Top: <strong>{r.leaderName}</strong></span>
-                  <span class={`num ${cls}`}>{fmtPct(r.leaderPct)}</span>
-                </div>
+              <li class="session">
+                <a class="session-link" href={`/archive/${r.date}`}>
+                  <span class="stamp">
+                    <span class="day num">{stampDay(r.date)}</span>
+                    <span class="dow">{weekdayShort(r.date)}</span>
+                    <span class="tick" aria-hidden="true"></span>
+                  </span>
+                  <span class="entry">
+                    <span class="title">{r.oracleTitle ?? `Session · ${r.date}`}</span>
+                    <span class="summary">
+                      <span class="top">Top &middot; <strong>{r.leaderName}</strong></span>
+                      <span class={`num pct ${cls}`}>{fmtPct(r.leaderPct)}</span>
+                    </span>
+                  </span>
+                </a>
               </li>
             );
           })}
-        </ul>
+        </ol>
       </section>
     ))}
   </section>
 </BaseLayout>
 <style>
-  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 2rem; }
-  .month { margin-bottom: 2.5rem; }
-  .month h2 { font-size: var(--fs-lg); margin: 0 0 0.5rem; }
-  .entry-list .summary {
+  .lede {
+    max-width: var(--measure);
+    color: var(--ink-muted);
+    font-size: var(--fs-md);
+    margin-bottom: var(--sp-6);
+  }
+
+  .month { margin-bottom: var(--sp-7); }
+  .month-head {
     display: flex;
-    gap: 1rem;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin: var(--sp-6) 0 var(--sp-2);
+    padding-bottom: var(--sp-2);
+    border-bottom: 2px solid var(--rule-strong);
+  }
+  .month-head h2 { font-size: var(--fs-lg); margin: 0; }
+  .month-head .count {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  /* ── Teletype session-log timeline ── */
+  .session-log { list-style: none; margin: 0; padding: 0; }
+
+  .session-link {
+    display: grid;
+    grid-template-columns: minmax(4.75rem, auto) 1fr;
+    gap: 0 var(--sp-4);
+    align-items: stretch;
+    text-decoration: none;
+    color: var(--ink);
+    padding: var(--sp-4) 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .session:last-child .session-link { border-bottom: 0; }
+  .session-link:hover { color: var(--ink); }
+  .session-link:hover .title { color: var(--accent); }
+
+  .stamp {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    padding-right: var(--sp-4);
+    border-right: 1px solid var(--rule);
+    font-family: var(--font-mono);
+    text-align: right;
+  }
+  .stamp .day {
+    font-size: var(--fs-sm);
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .stamp .dow {
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .stamp .tick {
+    position: absolute;
+    top: 0.15rem;
+    right: -3.5px;
+    width: 7px;
+    height: 7px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    box-shadow: var(--phosphor);
+  }
+
+  .entry { min-width: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+  .entry .title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-md);
+    line-height: var(--lh-tight);
+    overflow-wrap: anywhere;
+  }
+  .entry .summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem var(--sp-4);
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
     color: var(--ink-muted);
-    margin-top: 0.25rem;
   }
-  .entry-list .summary .num { font-variant-numeric: tabular-nums; }
+  .entry .summary .top strong { color: var(--ink); font-weight: 700; }
+  .entry .summary .pct { font-variant-numeric: tabular-nums; }
 </style>
