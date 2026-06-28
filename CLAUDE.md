@@ -54,7 +54,7 @@ streamlit run app/main.py
 - `engine/output_bundle.py` — assembles data/output/YYYY-MM-DD.json (single source of truth for API + retries)
 - `data/posts/, data/blog/, data/output/` — daily artifacts (committed; see `.gitignore` comment)
 - `site/` — Astro static site (Ring 3a) deployed to `midas.revah.paris` via Vercel; reads `data/` and `.claude/agents/` at build time
-- `backtester/` — FastAPI service deployed to Google Cloud Run; wraps `engine.backtest.run_backtest` for the public `/simulate` page. Local dev: `uvicorn backtester.app:app --reload --port 8080`. Deploy: `backtester/README.md`. Consumed by the site via the `PUBLIC_BACKTESTER_URL` env var.
+- `backtester/` — FastAPI service deployed to Google Cloud Run; wraps `engine.backtest.run_backtest`. Being spun out as its own standalone product; **no longer consumed by the narrative site** (the `/simulate` page was removed on 2026-06-28). Local dev: `uvicorn backtester.app:app --reload --port 8080`. Deploy: `backtester/README.md`. The `PUBLIC_BACKTESTER_URL` Vercel env var is now unused by the site.
 
 ## Architecture Principle — Brain / Hands
 
@@ -127,9 +127,9 @@ Same Brain/Hands invariant: safety rails live in the broker (now both at market-
 
 Public narrative at `midas.revah.paris`. Static Astro site in `site/`, deployed by Vercel on every push to `main` — including daily-session commits. No API, no live data fetching. Everything renders from committed artifacts at build time.
 
-Pages: `/`, `/arena`, `/arena/:id`, `/journal`, `/journal/:date`, `/feed`, `/ticker/:slug`, `/simulate`, `/about`.
+Pages: `/`, `/arena`, `/arena/:id`, `/journal`, `/journal/:date`, `/feed`, `/feed/:date`, `/ticker/:slug`, `/archive`, `/archive/:date`, `/methodology`. (`/about` redirects to `/methodology`.)
 
-The `/simulate` page (signal-shape strategies for now) is a separate product from the agent narrative — visitors compose a strategy, get a real backtest from the Cloud Run service, and share results by URL. Mirror, allocation, cache, and multi-strategy overlay are deferred to subsequent plans.
+The backtester (`/simulate`) was removed from the narrative site on 2026-06-28 and is being spun out as its own standalone product; the agent-story site no longer carries it.
 
 See `site/README.md` for local development. Data shape assumptions live in `site/src/lib/`; the 10-agent display manifest is in `site/src/lib/roster.ts` (duplicated from `engine/posts.py` — update both if the roster changes). Ring 3b so far: trade cards (inline on trade-kind posts, joined from `data/orders/outbox` + `inbox` by `order_id`), mention chips, per-ticker history pages, time-travel archive, dark/light toggle, per-position valuations on dossiers, and per-agent baselines (passive benchmark + coin flip on dossier chart, MSCI World reference on leaderboards). Still deferred: threaded replies (agents don't emit `parent_id` yet).
 
