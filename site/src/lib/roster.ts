@@ -30,7 +30,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Conservative quality, PEA-leaning",
     base_currency: "EUR",
     universe_summary: "STOXX 600 quality large-caps",
-    signatureColor: { light: "#2e6b3c", dark: "#7bb488" },
+    signatureColor: { light: "#1e7a45", dark: "#5fb87e" },
   },
   {
     id: "steady-eddie-usd",
@@ -38,7 +38,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Conservative quality",
     base_currency: "USD",
     universe_summary: "S&P 500 quality large-caps",
-    signatureColor: { light: "#2a4d6b", dark: "#7ba0c4" },
+    signatureColor: { light: "#2a5e8c", dark: "#6fa8d4" },
   },
   {
     id: "sharp-shooter-eur",
@@ -46,7 +46,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Momentum under UCITS handcuffs",
     base_currency: "EUR",
     universe_summary: "EU momentum, 2x UCITS leverage cap",
-    signatureColor: { light: "#9b3e1d", dark: "#d68c7e" },
+    signatureColor: { light: "#b0512f", dark: "#d6745a" },
   },
   {
     id: "sharp-shooter-usd",
@@ -54,7 +54,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Aggressive US momentum",
     base_currency: "USD",
     universe_summary: "S&P 500 + S&P 400 momentum",
-    signatureColor: { light: "#7d2a24", dark: "#c47a72" },
+    signatureColor: { light: "#c0481f", dark: "#e0673e" },
   },
   {
     id: "yolo-sapiens-eur",
@@ -62,7 +62,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "EU cross-asset degen",
     base_currency: "EUR",
     universe_summary: "Anything EU: equities, ETFs, crypto-EUR",
-    signatureColor: { light: "#8a6a1d", dark: "#d4b572" },
+    signatureColor: { light: "#6a40c0", dark: "#a487e0" },
   },
   {
     id: "yolo-sapiens-usd",
@@ -70,7 +70,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "US cross-asset degen",
     base_currency: "USD",
     universe_summary: "Anything US: equities, ETFs, crypto-USD",
-    signatureColor: { light: "#8a4d1d", dark: "#d4a172" },
+    signatureColor: { light: "#b0297e", dark: "#d267b0" },
   },
   {
     id: "satoshi",
@@ -78,7 +78,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "On-chain crypto specialist",
     base_currency: "EUR",
     universe_summary: "Kraken top-cap crypto-EUR pairs",
-    signatureColor: { light: "#2a2a2a", dark: "#bfb8a8" },
+    signatureColor: { light: "#a85a12", dark: "#f2742e" },
   },
   {
     id: "monsieur-forex",
@@ -86,7 +86,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Central-banker whisperer",
     base_currency: "EUR",
     universe_summary: "Major and minor FX pairs",
-    signatureColor: { light: "#3a4d5a", dark: "#9badb8" },
+    signatureColor: { light: "#15707c", dark: "#5bc8d4" },
   },
   {
     id: "goldfinger",
@@ -94,7 +94,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Contrarian commodities",
     base_currency: "EUR",
     universe_summary: "UCITS gold, silver, energy, miners",
-    signatureColor: { light: "#7a5a1d", dark: "#c9a55b" },
+    signatureColor: { light: "#7e6a10", dark: "#b5a24a" },
   },
   {
     id: "world",
@@ -102,7 +102,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "Cross-asset, cross-currency",
     base_currency: "mixed",
     universe_summary: "Anything globally listed, valued in EUR",
-    signatureColor: { light: "#5a3a2a", dark: "#b08877" },
+    signatureColor: { light: "#176e62", dark: "#4fb8a8" },
   },
 ];
 

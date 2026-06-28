@@ -39,8 +39,7 @@ for (const o of orders) {
 const tape = orders.filter((o) => o.status === "filled").slice(0, 12);
 
 function humanDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+  return new (globalThis.Date)(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
     weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
   });
 }
@@ -65,12 +64,16 @@ const title = blog?.title ?? `Session · ${date}`;
 ---
 <BaseLayout title={`Archive · ${date}`} current="archive" description={`Midas snapshot as of ${date}.`}>
   <aside class="archive-banner" aria-label="Archived snapshot">
-    <div class="page">
-      <p class="eyebrow">Archived · {humanDate(date)}</p>
+    <div class="page rail">
+      <p class="eyebrow">Frozen edition &middot; {humanDate(date)}</p>
       <nav class="date-nav" aria-label="Archive navigation">
-        {prev ? <a href={`/archive/${prev}`}>← {prev}</a> : <span class="disabled">← earliest</span>}
-        <a href="/archive">All dates</a>
-        {next ? <a href={`/archive/${next}`}>{next} →</a> : <span class="disabled">latest →</span>}
+        {prev
+          ? <a class="step" href={`/archive/${prev}`}><span class="arr" aria-hidden="true">←</span>{prev}</a>
+          : <span class="step disabled"><span class="arr" aria-hidden="true">←</span>earliest</span>}
+        <a class="step all" href="/archive">All dates</a>
+        {next
+          ? <a class="step" href={`/archive/${next}`}>{next}<span class="arr" aria-hidden="true">→</span></a>
+          : <span class="step disabled">latest<span class="arr" aria-hidden="true">→</span></span>}
       </nav>
     </div>
   </aside>
@@ -94,8 +97,10 @@ const title = blog?.title ?? `Session · ${date}`;
         <p class="eyebrow">The Oracle · {blog.date}</p>
         <h2><a href={`/journal/${blog.date}`}>{blog.title}</a></h2>
       </header>
-      <p class="excerpt">{blogExcerpt}</p>
-      <p><a class="more" href={`/journal/${blog.date}`}>Read the column →</a></p>
+      <div class="oracle-teaser">
+        <p class="excerpt">{blogExcerpt}</p>
+        <a class="more" href={`/journal/${blog.date}`}>Read the column →</a>
+      </div>
     </section>
   )}
 
@@ -134,52 +139,110 @@ const title = blog?.title ?? `Session · ${date}`;
   )}
 </BaseLayout>
 <style>
+  /* ── Desk-rail strip: prev / all / next, mono, 44px targets ── */
   .archive-banner {
     background: var(--bg-elev);
-    border-bottom: 1px solid var(--rule);
-    padding: 0.75rem 0;
-    margin-top: -2rem;
+    border-bottom: 2px solid var(--rule-strong);
+    margin-top: calc(-1 * var(--sp-6));
   }
-  .archive-banner .page { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  .archive-banner .rail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-2) var(--sp-4);
+    padding-top: var(--sp-1);
+    padding-bottom: var(--sp-1);
+  }
   .archive-banner .eyebrow { margin: 0; }
-  .date-nav { display: flex; gap: 1.25rem; font-family: var(--font-mono); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.05em; }
-  .date-nav a { text-decoration: none; color: var(--ink-muted); }
-  .date-nav a:hover { color: var(--accent); }
+  .date-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-4);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .date-nav .step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0 var(--sp-2);
+    text-decoration: none;
+    color: var(--ink-muted);
+  }
+  .date-nav .step:hover { color: var(--accent); }
+  .date-nav .all { color: var(--ink); }
+  .date-nav .arr { color: var(--accent); font-weight: 500; }
   .date-nav .disabled { color: var(--ink-faint); }
-  .hero { padding: 2rem 0 1rem; border-bottom: 1px solid var(--rule); }
-  .hero h1 { font-size: var(--fs-2xl); max-width: 22ch; margin-bottom: 0.5rem; }
+  .date-nav .disabled .arr { color: var(--ink-faint); }
+
+  .hero { padding: var(--sp-6) 0 var(--sp-4); border-bottom: 1px solid var(--rule); }
+  .hero h1 { font-size: var(--fs-2xl); max-width: 22ch; margin-bottom: var(--sp-2); }
   .hero .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); }
-  .section-head { margin: 2.5rem 0 1rem; }
+
+  .section-head { margin: var(--sp-7) 0 var(--sp-4); }
   .section-head h2 { margin: 0; }
   .section-head a { text-decoration: none; }
   .section-head a:hover { color: var(--accent); }
-  .dispatch .excerpt { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); }
-  .more { font-weight: 700; }
+
+  /* ── Oracle teaser — grotesk teaser on the narrator's parchment ── */
+  .oracle-teaser {
+    max-width: var(--measure-wide);
+    background: var(--oracle-surface);
+    color: var(--oracle-ink);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+    padding: var(--sp-4) var(--sp-5);
+  }
+  .dispatch .excerpt {
+    font-family: var(--font-display);
+    color: var(--oracle-ink);
+    font-size: var(--fs-md);
+    margin: 0 0 var(--sp-3);
+  }
+  .more {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--accent);
+  }
+  .more:hover { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ── Filled-order tape — mono ledger rows ── */
   .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
   .tape-row {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0.55rem;
-    padding: 0.6rem 0;
+    gap: 0.4rem var(--sp-3);
+    padding: var(--sp-3) 0;
     border-bottom: 1px solid var(--rule);
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
+    font-variant-numeric: tabular-nums;
   }
-  .tape-row .when { color: var(--ink-faint); min-width: 6.5rem; }
-  .tape-row .who { color: var(--ink); text-decoration: none; min-width: 9rem; font-family: var(--font-body); }
+  .tape-row .when { color: var(--ink-muted); min-width: 6.5rem; }
+  .tape-row .who { color: var(--ink); text-decoration: none; min-width: 9rem; font-family: var(--font-display); font-weight: 700; }
   .tape-row .who:hover { color: var(--accent); }
   .tape-row .side {
     font-weight: 500;
     letter-spacing: 0.06em;
     padding: 0.05rem 0.45rem;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     font-size: var(--fs-xs);
-    color: #fff;
+    color: var(--accent-ink);
   }
   .tape-row .side.buy { background: var(--pos); }
   .tape-row .side.sell { background: var(--neg); }
   .tape-row .tick { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule-strong); }
   .tape-row .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .tape-row .shares, .tape-row .px { color: var(--ink); }
   .tape-row .at { color: var(--ink-faint); }
 </style>

@@ -55,109 +55,187 @@ function fmtShares(n: number): string {
 }
 ---
 <section class="portfolio">
-  <dl class="money">
-    <div><dt>Cash</dt><dd class="num">{cur} {fmt(portfolio.cash)}</dd></div>
-    <div><dt>Deployed</dt><dd class="num">{cur} {fmt(portfolio.deployed)}</dd></div>
-    <div><dt>Total</dt><dd class="num">{cur} {fmt(total)}</dd></div>
+  <dl class="pf-summary">
+    <div class="pf-cell"><dt>Cash</dt><dd class="val"><span class="ccy">{cur}</span> {fmt(portfolio.cash)}</dd></div>
+    <div class="pf-cell"><dt>Deployed</dt><dd class="val"><span class="ccy">{cur}</span> {fmt(portfolio.deployed)}</dd></div>
+    <div class="pf-cell total"><dt>Total</dt><dd class="val"><span class="ccy">{cur}</span> {fmt(total)}</dd></div>
   </dl>
 
   {rows.length === 0 ? (
     <p class="empty">No open positions.</p>
   ) : (
-    <table class="positions">
-      <thead>
-        <tr>
-          <th>Ticker</th>
-          <th class="num">Shares</th>
-          <th class="num">Last close</th>
-          <th class="num">Value</th>
-          <th class="num">Weight</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => {
-          const weight = r.value !== null && valuedTotal > 0 ? (r.value / valuedTotal) * 100 : null;
-          return (
-            <tr>
-              <td><a class="tick" href={`/ticker/${tickerSlug(r.ticker)}`} title={tickerName(r.ticker) ?? undefined}>{r.ticker}</a></td>
-              <td class="num">{fmtShares(r.shares)}</td>
-              <td class="num">
-                {r.close !== null ? (
-                  <>
-                    <span class="ccy">{r.currency ?? ""}</span> {fmtPrice(r.close)}
-                  </>
-                ) : (
-                  <span class="dash">—</span>
-                )}
-              </td>
-              <td class="num">
-                {r.value !== null ? (
-                  <>
-                    <span class="ccy">{r.currency ?? ""}</span> {fmt(r.value)}
-                  </>
-                ) : (
-                  <span class="dash">—</span>
-                )}
-              </td>
-              <td class="num">
-                {weight !== null ? (
-                  <div class="bar-wrap" aria-label={`${weight.toFixed(1)}% of deployed`}>
-                    <span class="bar" style={`width:${weight.toFixed(1)}%`}></span>
-                    <span class="bar-label">{weight.toFixed(1)}%</span>
-                  </div>
-                ) : (
-                  <span class="dash">—</span>
-                )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div class="holdings-wrap">
+      <table class="positions">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th class="num">Shares</th>
+            <th class="num">Last close</th>
+            <th class="num">Value</th>
+            <th>Weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const weight = r.value !== null && valuedTotal > 0 ? (r.value / valuedTotal) * 100 : null;
+            return (
+              <tr>
+                <td><a class="tick" href={`/ticker/${tickerSlug(r.ticker)}`} title={tickerName(r.ticker) ?? undefined}>{r.ticker}</a></td>
+                <td class="num">{fmtShares(r.shares)}</td>
+                <td class="num">
+                  {r.close !== null ? (
+                    <><span class="ccy">{r.currency ?? ""}</span> {fmtPrice(r.close)}</>
+                  ) : (
+                    <span class="dash">—</span>
+                  )}
+                </td>
+                <td class="num">
+                  {r.value !== null ? (
+                    <><span class="ccy">{r.currency ?? ""}</span> {fmt(r.value)}</>
+                  ) : (
+                    <span class="dash">—</span>
+                  )}
+                </td>
+                <td class="wcell">
+                  {weight !== null ? (
+                    <div class="wbar-row" aria-label={`${weight.toFixed(1)}% of deployed`}>
+                      <span class="wbar"><span class="wfill" style={`width:${weight.toFixed(1)}%`}></span></span>
+                      <span class="wpct">{weight.toFixed(1)}%</span>
+                    </div>
+                  ) : (
+                    <span class="dash">—</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   )}
-  <p class="note">Last close per ticker; foreign positions shown in native currency. Cash/deployed/total are base-currency ({cur}).</p>
+  <p class="note">Last close per ticker; foreign positions shown in native currency. Cash / deployed / total are base-currency ({cur}).</p>
 </section>
 <style>
-  .money {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-    margin: 0 0 1rem;
-    border-top: 2px solid var(--rule-strong);
-    border-bottom: 1px solid var(--rule);
-  }
-  .money div { padding: 0.75rem 1rem; border-right: 1px solid var(--rule); }
-  .money div:last-child { border-right: 0; }
-  .money dt { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin: 0 0 0.25rem; }
-  .money dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
-  .empty { color: var(--ink-muted); font-style: italic; }
-  .note { margin-top: 0.75rem; color: var(--ink-faint); font-size: var(--fs-xs); font-style: italic; }
-  .positions .tick { font-family: var(--font-mono); color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule-strong); }
-  .positions .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
-  .positions .ccy { color: var(--ink-faint); }
-  .positions .dash { color: var(--ink-faint); }
-  .bar-wrap {
-    position: relative;
-    display: inline-block;
-    width: 6rem;
-    height: 1rem;
-    background: var(--bg-elev);
+  .portfolio { margin-top: var(--sp-2); }
+
+  /* ── Summary: flush ruled cells ── */
+  .pf-summary {
+    display: flex;
+    margin: 0;
     border: 1px solid var(--rule);
-    vertical-align: middle;
+    border-radius: var(--r-md);
+    background: var(--bg-elev);
+    overflow: hidden;
   }
-  .bar {
-    position: absolute;
-    top: 0; left: 0; bottom: 0;
-    background: var(--accent);
-    opacity: 0.35;
-  }
-  .bar-label {
-    position: relative;
-    z-index: 1;
-    padding: 0 0.35rem;
+  .pf-cell { flex: 1; padding: var(--sp-4) var(--sp-5); border-left: 1px solid var(--rule); }
+  .pf-cell:first-child { border-left: 0; }
+  .pf-cell dt {
     font-family: var(--font-mono);
     font-size: var(--fs-xs);
-    color: var(--ink);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-2);
   }
-  @media (max-width: 32rem) { .money { grid-template-columns: 1fr; } .money div { border-right: 0; border-bottom: 1px solid var(--rule); } .money div:last-child { border-bottom: 0; } }
+  .pf-cell .val {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-md);
+    color: var(--ink);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .pf-cell .ccy { font-size: 0.7em; color: var(--ink-faint); }
+  .pf-cell.total .val { color: var(--accent); }
+  .pf-cell.total .ccy { color: color-mix(in srgb, var(--accent) 60%, transparent); }
+
+  /* ── Holdings: bordered, ruled table ── */
+  .holdings-wrap {
+    margin-top: var(--sp-4);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    overflow-x: auto;
+    background: var(--bg-elev);
+  }
+  table.positions { width: 100%; border-collapse: collapse; margin: 0; }
+  table.positions th {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-align: left;
+    padding: var(--sp-3) var(--sp-5);
+    background: var(--bg-elev2);
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  table.positions th.num { text-align: right; }
+  table.positions td {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-sm);
+    color: var(--ink-muted);
+    padding: var(--sp-4) var(--sp-5);
+    border-bottom: 1px solid var(--rule);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  table.positions tr:last-child td { border-bottom: 0; }
+  table.positions td.num { text-align: right; }
+  .tick {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--rule-strong);
+  }
+  .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .ccy { color: var(--ink-faint); }
+  .dash { color: var(--ink-faint); }
+
+  /* ── Weight bar (amber) ── */
+  .wcell { min-width: 11rem; }
+  .wbar-row { display: flex; align-items: center; gap: var(--sp-3); }
+  .wbar {
+    position: relative;
+    flex: 1;
+    height: 8px;
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    overflow: hidden;
+  }
+  .wfill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    border-radius: var(--r-sm);
+    background: var(--accent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .wpct {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    color: var(--ink);
+    width: 3.4rem;
+    text-align: right;
+    flex: none;
+  }
+
+  .empty { color: var(--ink-muted); font-style: italic; margin: var(--sp-4) 0 0; }
+  .note {
+    margin-top: var(--sp-4);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.02em;
+    color: var(--ink-muted);
+  }
+
+  @media (max-width: 32rem) {
+    .pf-summary { flex-direction: column; }
+    .pf-cell { border-left: 0; border-top: 1px solid var(--rule); }
+    .pf-cell:first-child { border-top: 0; }
+  }
 </style>

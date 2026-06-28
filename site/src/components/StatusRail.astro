@@ -1,0 +1,213 @@
+---
+// StatusRail — the signature "session-timeline spine".
+// Desktop (>=48rem): a fixed vertical rail down the left edge that reads like a
+// trading-desk session log. Mobile (<48rem): a condensed horizontal status strip.
+// All data is build-time static, read from committed artifacts.
+import { currentDayNumber } from "@/lib/session";
+import { loadCurrentLeaderboard } from "@/lib/leaderboard";
+import { loadGlobalReference, returnPct } from "@/lib/baselines";
+import { TRADING_AGENTS } from "@/lib/roster";
+
+const day = currentDayNumber();
+const agentCount = TRADING_AGENTS.length;
+const board = loadCurrentLeaderboard(); // { updated_at, trigger, rows } | null
+
+const msci = returnPct(loadGlobalReference());
+
+function fmtPct(n: number): string {
+  // toFixed carries its own minus sign; we only prepend "+" for gains.
+  const sign = n > 0 ? "+" : "";
+  return `${sign}${n.toFixed(2)}%`;
+}
+const msciLabel = msci === null ? null : fmtPct(msci);
+
+function hhmmUtc(iso: string): string {
+  const d = new Date(iso);
+  const h = String(d.getUTCHours()).padStart(2, "0");
+  const m = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+// "LIVE" only for an intraday conditional-order fire (the desk is mid-market);
+// every other writer (weekday session close, weekend valuation) is a settled
+// readout → "CLOSED".
+const sessionState = board && board.trigger === "trigger-fire" ? "LIVE" : "CLOSED";
+const timeStamp = board ? `${hhmmUtc(board.updated_at)} UTC · ${sessionState}` : null;
+---
+
+<!-- Desktop spine -->
+<aside class="status-rail" aria-label="Session status">
+  <span class="rail-live">
+    <span class="pulse-dot" aria-hidden="true"></span>
+    <span class="rail-live-label">LIVE</span>
+  </span>
+
+  <ol class="rail-stamps">
+    <li class="rail-stamp">
+      <span class="rail-tick" aria-hidden="true"></span>
+      <span class="rail-stamp-text">DAY {day}</span>
+    </li>
+    {timeStamp && (
+      <li class="rail-stamp">
+        <span class="rail-tick" aria-hidden="true"></span>
+        <span class="rail-stamp-text">{timeStamp}</span>
+      </li>
+    )}
+    {msciLabel && (
+      <li class="rail-stamp">
+        <span class="rail-tick" aria-hidden="true"></span>
+        <span class="rail-stamp-text">MSCI {msciLabel}</span>
+      </li>
+    )}
+    <li class="rail-stamp">
+      <span class="rail-tick" aria-hidden="true"></span>
+      <span class="rail-stamp-text">{agentCount} AGENTS</span>
+    </li>
+  </ol>
+</aside>
+
+<!-- Mobile condensed strip -->
+<div class="status-strip">
+  <span class="strip-live"><span class="pulse-dot" aria-hidden="true"></span>LIVE</span>
+  <span class="strip-sep" aria-hidden="true">·</span>
+  <span>DAY <span class="strip-amber">{day}</span></span>
+  {msciLabel && (
+    <>
+      <span class="strip-sep" aria-hidden="true">·</span>
+      <span>MSCI <span class="strip-amber">{msciLabel}</span></span>
+    </>
+  )}
+</div>
+
+<style>
+  /* ── Shared pulse dot ── */
+  .pulse-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
+    flex: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .pulse-dot { animation: rail-pulse 2.4s ease-out infinite; }
+  }
+  @keyframes rail-pulse {
+    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent),
+                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
+    70%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent),
+                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent),
+                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
+  }
+
+  /* ── Desktop spine ── */
+  .status-rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--rail-w);
+    background: var(--bg-elev2);
+    border-right: 1px solid var(--rule);
+    z-index: 40;
+    display: none; /* shown >=48rem */
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-6);
+    padding: var(--sp-5) 0;
+    overflow: hidden;
+  }
+  @media (min-width: 48rem) {
+    .status-rail { display: flex; }
+  }
+
+  .rail-live {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3);
+  }
+  .rail-live-label {
+    writing-mode: vertical-rl;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .rail-stamps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-5);
+  }
+  .rail-stamp {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .rail-tick {
+    width: 6px;
+    height: 6px;
+    border-radius: 1.5px;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--bg-elev2);
+    flex: none;
+  }
+  .rail-stamp-text {
+    writing-mode: vertical-rl;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  /* ── Mobile condensed strip ── */
+  .status-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.5ch;
+    padding: var(--sp-2) var(--gutter);
+    background: var(--bg-elev2);
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (min-width: 48rem) {
+    .status-strip { display: none; }
+  }
+  .strip-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6ch;
+    color: var(--accent);
+    font-weight: 500;
+    flex: none;
+  }
+  .status-strip .pulse-dot { width: 7px; height: 7px; }
+  .strip-sep { color: var(--rule-strong); }
+  .strip-amber { color: var(--accent); }
+
+  /* Chrome — never print the status furniture. */
+  @media print {
+    .status-rail,
+    .status-strip { display: none !important; }
+  }
+</style>

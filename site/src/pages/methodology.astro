@@ -14,27 +14,51 @@ const html = marked.parse(raw, { async: false }) as string;
   description="How the Midas experiment works, what it measures, and its known limitations — stated up front."
   current="methodology"
 >
-  <article class="page article methodology-body" set:html={html} />
+  <div class="page">
+    <header class="methodology-head">
+      <p class="kicker">The Midas Experiment</p>
+    </header>
+    <article class="article methodology-body" set:html={html} />
+  </div>
 </BaseLayout>
 <style>
-  .methodology-body { max-width: var(--measure); padding-bottom: 4rem; }
-  .methodology-body :global(h1) { font-size: var(--fs-3xl); margin-bottom: 1rem; }
-  .methodology-body :global(h2) { margin-top: 2.5rem; margin-bottom: 0.75rem; border-top: 1px solid var(--rule); padding-top: 1.5rem; }
+  /* Editorial essay: --font-serif body via the shared .article class, an
+     Archivo title, and a mono amber kicker. Head is measure-width and centred
+     so its left edge aligns with the centred .article column. */
+  .methodology-head { max-width: var(--measure); margin: 0 auto; }
+  .kicker {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--accent);
+    margin: 0 0 var(--sp-2, 0.5rem);
+  }
+  .methodology-body { padding-bottom: var(--sp-8, 4rem); }
+  .methodology-body :global(h1) { font-size: var(--fs-3xl); margin-bottom: var(--sp-4, 1rem); }
+  .methodology-body :global(h2) {
+    margin-top: var(--sp-7, 2.5rem);
+    margin-bottom: var(--sp-3, 0.75rem);
+    border-top: 1px solid var(--rule);
+    padding-top: var(--sp-5, 1.5rem);
+  }
   .methodology-body :global(blockquote) {
     border-left: 3px solid var(--rule-strong);
-    margin: 1.5rem 0;
-    padding: 0.75rem 1.25rem;
+    margin: var(--sp-5, 1.5rem) 0;
+    padding: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem);
     color: var(--ink-muted);
     font-style: italic;
   }
   .methodology-body :global(code) {
     font-family: var(--font-mono);
     font-size: 0.88em;
-    background: var(--rule);
+    background: var(--bg-elev2, var(--bg-elev));
     padding: 0.1em 0.35em;
-    border-radius: 3px;
+    border-radius: var(--r-sm, 3px);
   }
-  .methodology-body :global(hr) { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
-  .methodology-body :global(ul), .methodology-body :global(ol) { padding-left: 1.5rem; }
-  .methodology-body :global(li) { margin-bottom: 0.4rem; }
+  .methodology-body :global(hr) { border: none; border-top: 1px solid var(--rule); margin: var(--sp-6, 2rem) 0; }
+  .methodology-body :global(ul), .methodology-body :global(ol) { padding-left: var(--sp-5, 1.5rem); }
+  .methodology-body :global(li) { margin-bottom: var(--sp-1, 0.4rem); }
+  .methodology-body :global(a) { color: var(--accent); }
 </style>

@@ -1,7 +1,11 @@
 ---
 import SiteHeader from "@/components/SiteHeader.astro";
 import SiteFooter from "@/components/SiteFooter.astro";
+import StatusRail from "@/components/StatusRail.astro";
 import "@/styles/global.css";
+// Preload the two critical faces so the type-led design swaps in fast.
+import archivoFont from "@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2";
+import newsreaderFont from "@fontsource/newsreader/files/newsreader-latin-400-normal.woff2";
 
 interface Props {
   title: string;
@@ -9,7 +13,9 @@ interface Props {
   current?: string;
 }
 const { title, description = "Ten AI agents run real-market simulations. One narrates.", current } = Astro.props;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://midas.revah.paris").toString();
+const site = Astro.site ?? "https://midas.revah.paris";
+const canonical = new URL(Astro.url.pathname, site).toString();
+const ogImage = new URL("/og.png", site).toString();
 ---
 <!doctype html>
 <html lang="en">
@@ -20,23 +26,45 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://midas.revah
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" as="font" type="font/woff2" href={archivoFont} crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href={newsreaderFont} crossorigin />
     <meta property="og:title" content={`${title} — Midas`} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={`${title} — Midas`} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
     <script is:inline>
+      // No-flash theme: force color-scheme from the stored preference before
+      // paint; with none set, :root { color-scheme: light dark } lets the OS win.
+      // Also flag JS-on so the mobile nav can swap to the hamburger drawer
+      // without a flash of the no-JS fallback nav.
       (function () {
+        document.documentElement.classList.add("js");
         try {
           var t = localStorage.getItem("midas-theme");
           if (t === "dark" || t === "light") {
-            document.documentElement.setAttribute("data-theme", t);
+            document.documentElement.style.colorScheme = t;
           }
         } catch (_) {}
       })();
     </script>
+    <style is:global>
+      /* Clear the fixed session-timeline spine on desktop; on mobile the spine
+         is hidden and the condensed strip flows inline, so no offset is needed. */
+      @media (min-width: 48rem) {
+        body { padding-left: var(--rail-w); }
+      }
+    </style>
   </head>
   <body>
     <a href="#main" class="skip">Skip to content</a>
+    <StatusRail />
     <SiteHeader current={current} />
     <main id="main">
       <slot />

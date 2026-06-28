@@ -1,5 +1,5 @@
 ---
-import type { Order } from "@/lib/orders";
+import type { Order, OrderStatus } from "@/lib/orders";
 import { tickerSlug } from "@/lib/orders";
 import { tickerName } from "@/lib/tickers";
 
@@ -17,25 +17,110 @@ function fmtPrice(n: number | null, ccy: string | null): string {
   const digits = Math.abs(n) < 10 ? 4 : 2;
   return `${ccy ?? ""} ${n.toFixed(digits)}`.trim();
 }
+
+const STATUS_META: Record<OrderStatus, { label: string; cls: string }> = {
+  filled: { label: "Filled", cls: "fil" },
+  rejected: { label: "Rejected", cls: "rej" },
+  pending: { label: "Pending", cls: "pen" },
+};
 ---
-<aside class="trade-card" aria-label="Trade details">
-  {orders.map((o) => (
-    <div class={`row ${o.status}`}>
-      <div class="line">
-        <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
-        <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`} title={tickerName(o.ticker) ?? undefined}>{o.ticker}</a>
-        <span class="shares">{fmtShares(o.shares)} sh</span>
-        <span class="at">@</span>
-        <span class="px">{fmtPrice(o.fill_price, o.fill_currency)}</span>
-        {o.status === "rejected" && <span class="badge rej" title={o.reject_reason ?? ""}>rejected</span>}
-        {o.status === "pending" && <span class="badge pen">pending</span>}
+<div class="ledger" role="list" aria-label="Order-book entries">
+  {orders.map((o) => {
+    const side = o.action.toLowerCase();
+    const status = STATUS_META[o.status];
+    return (
+      <div class={`row ${side} ${o.status}`} role="listitem">
+        <div class="head">
+          <span class={`pill ${side}`}>{o.action}</span>
+          <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`} title={tickerName(o.ticker) ?? undefined}>{o.ticker}</a>
+          <span class="qty">{fmtShares(o.shares)} sh @ {fmtPrice(o.fill_price, o.fill_currency)}</span>
+          <span class={`status ${status.cls}`} title={o.status === "rejected" ? (o.reject_reason ?? "") : undefined}>{status.label}</span>
+        </div>
+        {o.status === "rejected" && o.reject_reason && (
+          <p class="why rej-why">Rejected: {o.reject_reason}</p>
+        )}
+        {o.reasoning && o.status !== "rejected" && (
+          <p class="why">{o.reasoning}</p>
+        )}
       </div>
-      {o.status === "rejected" && o.reject_reason && (
-        <p class="why rej-why">Rejected: {o.reject_reason}</p>
-      )}
-      {o.reasoning && o.status !== "rejected" && (
-        <p class="why">{o.reasoning}</p>
-      )}
-    </div>
-  ))}
-</aside>
+    );
+  })}
+</div>
+<style>
+  .ledger {
+    border: 1px solid var(--rule);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    background: var(--bg-elev);
+  }
+  .row {
+    padding: var(--sp-4) var(--sp-5);
+    border-top: 1px solid var(--rule);
+    box-shadow: inset 3px 0 0 var(--rule-strong);
+  }
+  .row:first-child { border-top: 0; }
+  .row.buy  { box-shadow: inset 3px 0 0 var(--pos); }
+  .row.sell { box-shadow: inset 3px 0 0 var(--neg); }
+  .row.rejected { opacity: 0.72; }
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+  }
+  .pill {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--r-sm);
+    line-height: 1;
+  }
+  .pill.buy  { color: var(--pos); border: 1px solid var(--pos); }
+  .pill.sell { color: var(--neg); border: 1px solid var(--neg); }
+
+  .tick {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: var(--fs-md);
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--rule-strong);
+  }
+  .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .qty {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-sm);
+    color: var(--ink-muted);
+  }
+
+  .status {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--r-sm);
+    line-height: 1;
+  }
+  .status.fil { color: var(--pos); border: 1px solid var(--pos); }
+  .status.rej { color: var(--neg); border: 1px solid var(--neg); }
+  .status.pen { color: var(--accent); border: 1px solid var(--accent); }
+
+  .why {
+    margin: var(--sp-3) 0 0;
+    max-width: var(--measure);
+    font-family: var(--font-display);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-body);
+    color: var(--ink-muted);
+  }
+  .why.rej-why { color: var(--neg); font-style: italic; }
+</style>

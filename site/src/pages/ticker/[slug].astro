@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import { buildTickerIndex, loadAllOrders, tickerSlug, type Order } from "@/lib/orders";
+import { buildTickerIndex, loadAllOrders, type Order } from "@/lib/orders";
 import { isTradingAgent, getAgent } from "@/lib/roster";
 import { tickerName } from "@/lib/tickers";
 
@@ -12,7 +12,6 @@ export function getStaticPaths() {
   }));
 }
 
-interface Props { ticker: string }
 const { ticker } = Astro.props;
 const { slug } = Astro.params as { slug: string };
 const name = tickerName(ticker);
@@ -50,15 +49,15 @@ function fmtPrice(n: number | null, ccy: string | null): string {
 <BaseLayout title={ticker} current="arena" description={`Trade history across agents for ${ticker}.`}>
   <article class="page ticker-page">
     <header>
-      <p class="eyebrow">Ticker · {slug}</p>
-      <h1>{ticker}</h1>
+      <p class="kicker">Ticker · {slug}</p>
+      <h1 class="ticker-symbol">{ticker}</h1>
       {name && <p class="name">{name}</p>}
       <p class="lede">
         Every order any agent wrote for this ticker, filled or rejected. One row per order.
       </p>
     </header>
 
-    <section class="stats rule-strong">
+    <section class="stats">
       <dl>
         <div><dt>Agents</dt><dd class="num">{agentsTouched.length}</dd></div>
         <div><dt>Fills</dt><dd class="num">{filledCount}</dd></div>
@@ -66,9 +65,10 @@ function fmtPrice(n: number | null, ccy: string | null): string {
       </dl>
     </section>
 
-    <section class="history">
+    <section class="orders">
       <h2>Orders</h2>
-      <table class="trade-history">
+      <div class="table-wrap">
+      <table>
         <thead>
           <tr>
             <th>Date</th>
@@ -82,46 +82,126 @@ function fmtPrice(n: number | null, ccy: string | null): string {
         <tbody>
           {all.map((o) => (
             <tr class={o.status}>
-              <td class="mono">{o.date}</td>
-              <td><a href={`/arena/${o.agent_id}`}>{displayName(o.agent_id)}</a></td>
-              <td><span class={`side ${o.action.toLowerCase()}`}>{o.action}</span></td>
+              <td class="date">{o.date}</td>
+              <td class="agent" data-agent={o.agent_id}>
+                <a href={`/arena/${o.agent_id}`}>{displayName(o.agent_id)}</a>
+              </td>
+              <td><span class={`pill ${o.action.toLowerCase()}`}>{o.action}</span></td>
               <td class="num">{fmtShares(o.shares)}</td>
               <td class="num">{fmtPrice(o.fill_price, o.fill_currency)}</td>
               <td>
-                {o.status === "filled" && <span class="badge fil">filled</span>}
-                {o.status === "rejected" && <span class="badge rej" title={o.reject_reason ?? ""}>rejected</span>}
-                {o.status === "pending" && <span class="badge pen">pending</span>}
+                {o.status === "filled" && <span class="pill filled">filled</span>}
+                {o.status === "rejected" && <span class="pill rejected" title={o.reject_reason ?? ""}>rejected</span>}
+                {o.status === "pending" && <span class="pill pending">pending</span>}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
     </section>
 
     <p class="back"><a href="/feed">← Today&rsquo;s feed</a></p>
   </article>
 </BaseLayout>
 <style>
-  .ticker-page h1 { font-family: var(--font-mono); font-size: var(--fs-3xl); margin-bottom: 0.25em; }
-  .ticker-page .name { font-size: var(--fs-md); color: var(--ink-muted); margin: 0 0 1.25rem; font-style: italic; }
-  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 2rem; }
+  .kicker {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--accent);
+    margin: 0 0 var(--sp-2, 0.5rem);
+  }
+  .ticker-symbol {
+    font-family: var(--font-mono);
+    font-size: var(--fs-3xl);
+    line-height: var(--lh-tight, 1.15);
+    margin: 0 0 0.15em;
+    overflow-wrap: anywhere;
+  }
+  .name { font-size: var(--fs-md); color: var(--ink-muted); margin: 0 0 var(--sp-4, 1rem); font-style: italic; }
+  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: var(--sp-6, 2rem); }
+
   .stats dl {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    margin: 0 0 2rem;
+    margin: 0 0 var(--sp-6, 2rem);
     border-bottom: 1px solid var(--rule);
   }
-  .stats dl div { padding: 0.75rem 1rem; border-right: 1px solid var(--rule); }
+  .stats dl div { padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border-right: 1px solid var(--rule); }
   .stats dl div:last-child { border-right: 0; }
-  .stats dt { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin: 0 0 0.25rem; }
-  .stats dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
-  .history { margin-top: 2.5rem; }
-  .trade-history { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
-  .trade-history th, .trade-history td { padding: 0.6rem 0.75rem; text-align: left; border-bottom: 1px solid var(--rule); }
-  .trade-history th { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); font-weight: 500; }
-  .trade-history .num { text-align: right; font-variant-numeric: tabular-nums; }
-  .trade-history .mono { font-family: var(--font-mono); }
-  .trade-history tr.rejected td { color: var(--ink-muted); }
-  .back { margin-top: 3rem; }
-  @media (max-width: 40rem) { .stats dl { grid-template-columns: 1fr; } .stats dl div { border-right: 0; border-bottom: 1px solid var(--rule); } .stats dl div:last-child { border-bottom: 0; } }
+  .stats dt {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-1, 0.25rem);
+  }
+  .stats dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-md);
+    color: var(--ink);
+  }
+
+  /* Orders table caps to --page-max via the .page wrapper. Numeric cells use
+     the shared .num class (mono + tabular). Wrapping is allowed on the text
+     columns so the table never forces horizontal overflow at 360px. */
+  .orders { margin-top: var(--sp-6, 2rem); }
+  /* Contain a wide order table inside its own scroll box so the page never
+     scrolls horizontally on a narrow phone. */
+  .orders .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .orders table { width: 100%; min-width: 22rem; }
+  .orders th, .orders td { padding: 0.7rem 0.6rem; vertical-align: baseline; }
+  .orders td.date {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
+  .orders td.agent { color: var(--agent-color, var(--ink)); }
+  .orders td.agent a {
+    color: inherit;
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-weight: 700;
+    display: inline-block;
+    padding: 0.15rem 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .orders td.agent a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
+  .orders td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .orders tr.rejected td { color: var(--ink-muted); }
+
+  /* Bordered colour-text pills — AA in both light and dark (filled white-on-tint
+     fails contrast when --pos/--neg lighten in dark mode). */
+  .pill {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.1rem 0.45rem;
+    border: 1px solid currentColor;
+    border-radius: var(--r-sm, 3px);
+    white-space: nowrap;
+  }
+  .pill.buy, .pill.filled { color: var(--pos); }
+  .pill.sell, .pill.rejected { color: var(--neg); }
+  .pill.pending { color: var(--ink-muted); }
+
+  .back { margin-top: var(--sp-8, 3rem); }
+
+  @media (max-width: 40rem) {
+    .stats dl { grid-template-columns: 1fr; }
+    .stats dl div { border-right: 0; border-bottom: 1px solid var(--rule); }
+    .stats dl div:last-child { border-bottom: 0; }
+  }
+  @media (max-width: 26rem) {
+    .orders th, .orders td { padding: 0.45rem 0.35rem; font-size: var(--fs-xs); }
+  }
 </style>
