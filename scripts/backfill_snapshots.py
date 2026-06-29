@@ -45,10 +45,8 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
+from engine.config import get_config
 from engine.ohlcv_store import latest_close_on_or_before
-
-
-_PORTFOLIOS_DIR = _PROJECT_ROOT / "data" / "portfolios"
 
 
 def _is_nan(value: float | None) -> bool:
@@ -129,7 +127,7 @@ def _pick_per_date(snapshots: list[dict]) -> dict[str, dict]:
 
 def backfill_portfolio(strategy_id: str, dry_run: bool = False) -> tuple[int, int, int]:
     """Backfill one portfolio. Returns (kept, deduped, repaired)."""
-    portfolio_dir = _PORTFOLIOS_DIR / strategy_id
+    portfolio_dir = get_config().portfolios_dir / strategy_id
     snapshots_path = portfolio_dir / "snapshots.json"
     trades_path = portfolio_dir / "trades.json"
 
@@ -182,14 +180,15 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    if not _PORTFOLIOS_DIR.exists():
+    portfolios_dir = get_config().portfolios_dir
+    if not portfolios_dir.exists():
         print("No data/portfolios/ directory.")
         return 1
 
     if args.strategy_id:
         targets = [args.strategy_id]
     else:
-        targets = sorted(d.name for d in _PORTFOLIOS_DIR.iterdir() if d.is_dir())
+        targets = sorted(d.name for d in portfolios_dir.iterdir() if d.is_dir())
 
     total_deduped = 0
     total_repaired = 0

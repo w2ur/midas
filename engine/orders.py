@@ -24,9 +24,9 @@ from engine.config import get_config
 #   MANAGER_OUTBOX_DIR / _INBOX_DIR  — the LLM Manager's isolated channel (Task
 #     C5). Its orders, fills, and decision-review audit artifact live here —
 #     NEVER in the public outbox/inbox the site joins by order_id. the-manager is
-#     not in the roster (engine.posts.AGENT_POST_TIMES), so it is auto-excluded
-#     from the output bundle, leaderboard, and journals; routing its fills here
-#     keeps it off the trade-card join as well.
+#     not in get_config().trading_roster, so it is auto-excluded from the output
+#     bundle, leaderboard, and journals; routing its fills here keeps it off the
+#     trade-card join as well.
 #   MANAGER_REVIEW_DIR               — Manager decision-review artifacts.
 
 TRIGGER_OPS: tuple[str, ...] = ("<=", ">=")

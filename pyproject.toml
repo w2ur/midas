@@ -14,7 +14,8 @@ dependencies = [
     "PyYAML>=6.0",
 ]
 # NOTE: requirements.txt remains the pinned lock everyone installs (pip-compile from
-# requirements.in). These loose constraints mirror requirements.in for `pip install -e .`.
+# requirements.in). These loose constraints are the core runtime subset of
+# requirements.in (a curated subset, not a full mirror) for `pip install -e .`.
 
 [project.scripts]
 midas = "engine.cli:main"

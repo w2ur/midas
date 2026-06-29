@@ -76,6 +76,33 @@ class TestConfig:
         assert ppath == root / "data" / "posts" / "2026-04-17.json"
         assert ppath.exists()
 
+    def test_reset_clears_registered_module_caches_across_env_switch(
+        self, monkeypatch, tmp_path
+    ):
+        """reset_config_cache() must fire registered callbacks so module-level
+        caches keyed on config paths (e.g. paper_broker's ticker-currency
+        override map) are invalidated across a MIDAS_DATA_DIR switch."""
+        import engine.paper_broker as pb  # registers its reset callback on import
+
+        def _make_root(name: str, overrides: str) -> object:
+            r = tmp_path / name
+            (r / "data").mkdir(parents=True)
+            (r / "roster.yaml").write_text(_MINIMAL_ROSTER, encoding="utf-8")
+            (r / "data" / "ticker_currencies.json").write_text(
+                overrides, encoding="utf-8"
+            )
+            return r
+
+        root1 = _make_root("r1", '{"FOO": "USD"}')
+        monkeypatch.setenv("MIDAS_DATA_DIR", str(root1))
+        reset_config_cache()
+        assert pb._load_ticker_currency_overrides() == {"FOO": "USD"}
+
+        root2 = _make_root("r2", '{"BAR": "EUR"}')
+        monkeypatch.setenv("MIDAS_DATA_DIR", str(root2))
+        reset_config_cache()  # fires the callback that nils pb._TICKER_CURRENCY_OVERRIDES
+        assert pb._load_ticker_currency_overrides() == {"BAR": "EUR"}
+
     def test_resolve_agent_universe_accepts_bare_string(self):
         # A single universe name given as a bare str (not a list) resolves in
         # native order — same as a one-element list.

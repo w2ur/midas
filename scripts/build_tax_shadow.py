@@ -19,10 +19,8 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
+from engine.config import get_config
 from engine.tax_shadow import compute_tax_shadow
-
-_PORTFOLIOS_DIR = _PROJECT_ROOT / "data" / "portfolios"
-_OUTPUT_DIR = _PROJECT_ROOT / "data" / "tax_shadow"
 
 # Directories inside data/portfolios/ that are NOT trading agents.
 _NON_AGENT_DIRS = {"baseline-manager", "the-manager"}
@@ -50,8 +48,10 @@ def build_tax_shadow_all(
     list[str]
         Agent IDs for which a ledger was written.
     """
-    portfolios_dir = portfolios_dir if portfolios_dir is not None else _PORTFOLIOS_DIR
-    output_dir = output_dir if output_dir is not None else _OUTPUT_DIR
+    portfolios_dir = (
+        portfolios_dir if portfolios_dir is not None else get_config().portfolios_dir
+    )
+    output_dir = output_dir if output_dir is not None else get_config().tax_shadow_dir
 
     if not portfolios_dir.exists():
         print("  No portfolios directory found — skipping.")

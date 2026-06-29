@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from engine.config import get_config
+from engine.config import get_config, register_reset_callback
 from engine.fees import fee_for
 from engine.fx import convert as fx_convert
 from engine.ohlcv_store import latest_close_on_or_before
@@ -108,6 +108,20 @@ def _load_ticker_currency_overrides() -> dict[str, str]:
         else:
             _TICKER_CURRENCY_OVERRIDES = {}
     return _TICKER_CURRENCY_OVERRIDES
+
+
+def _reset_ticker_currency_overrides() -> None:
+    """Invalidate the ticker-currency override cache (fired by reset_config_cache).
+
+    The map is read once from get_config().ticker_currencies_path and memoised; a
+    MIDAS_DATA_DIR switch must re-read it from the new tree, so config registers
+    this to run whenever its own cache is cleared.
+    """
+    global _TICKER_CURRENCY_OVERRIDES
+    _TICKER_CURRENCY_OVERRIDES = None
+
+
+register_reset_callback(_reset_ticker_currency_overrides)
 
 
 def _ticker_currency(ticker: str) -> str:

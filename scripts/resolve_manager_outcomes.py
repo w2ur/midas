@@ -57,10 +57,8 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
+from engine.config import get_config
 from engine.ohlcv_store import latest_close_on_or_before
-
-_REVIEW_DIR = _PROJECT_ROOT / "data" / "orders" / "manager-review"
-_RESOLVED_PATH = _REVIEW_DIR / "resolved.json"
 
 # Whitelist of fields allowed in the resolved output (Oracle-Fallacy guard).
 _ALLOWED_FIELDS = frozenset(
@@ -359,10 +357,13 @@ def write_resolved(entries: list[dict], resolved_path: Path) -> None:
 def main() -> None:
     """Load, resolve, and write manager outcome memory.
 
-    Reads from the project-root-derived paths.  Intended for manual runs and
-    the ``step_resolve_manager_outcomes`` session step.
+    Reads from paths derived from engine.config.get_config().  Intended for
+    manual runs and the ``step_resolve_manager_outcomes`` session step.
     """
-    msci_path = _PROJECT_ROOT / "data" / "baselines" / "global" / "msci_world.json"
+    cfg = get_config()
+    review_dir = cfg.orders_dir / "manager-review"
+    resolved_path = review_dir / "resolved.json"
+    msci_path = cfg.baselines_dir / "global" / "msci_world.json"
     try:
         msci_series = json.loads(msci_path.read_text(encoding="utf-8"))
         if not isinstance(msci_series, list):
@@ -370,17 +371,17 @@ def main() -> None:
     except (json.JSONDecodeError, OSError):
         msci_series = []
 
-    existing = load_existing_resolved(_RESOLVED_PATH)
+    existing = load_existing_resolved(resolved_path)
     from engine.ohlcv_store import OHLCV_STORE
 
     updated = resolve_outcomes(
-        review_dir=_REVIEW_DIR,
+        review_dir=review_dir,
         store=OHLCV_STORE,
         msci_series=msci_series,
         today=date.today(),
         existing_resolved=existing,
     )
-    write_resolved(updated, _RESOLVED_PATH)
+    write_resolved(updated, resolved_path)
     new_count = len(updated) - len(existing)
     print(f"  Resolved manager outcomes: {new_count} new, {len(updated)} total.")
 

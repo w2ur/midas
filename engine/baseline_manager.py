@@ -1,8 +1,8 @@
 """Deterministic baseline-manager — Gate C benchmark portfolio.
 
 Internal comparison portfolio only. NOT a public trading agent.
-Excluded from AGENT_POST_TIMES, AGENT_DISPLAY_NAMES, roster.ts, leaderboard,
-posts, journals, and the public output bundle.
+Excluded from roster.ts, the leaderboard, posts, journals, and the public
+output bundle by roster absence — it is not in get_config().trading_roster.
 
 Rules
 -----
@@ -22,8 +22,8 @@ Rules
   the day's close price (fractional shares allowed). Fees applied via fee_for.
 - Skip tickers with no price in the store — log and exclude.
 
-All public-surface keys (AGENT_POST_TIMES, AGENT_DISPLAY_NAMES, leaderboard)
-remain unchanged. The baseline-manager directory is iterated by
+The public roster (get_config().trading_roster) is unchanged — this book is
+never added to it. The baseline-manager directory is iterated by
 step_update_snapshots (intentional — daily valuation snapshots are desired).
 """
 

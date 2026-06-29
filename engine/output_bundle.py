@@ -108,7 +108,9 @@ def save_output_bundle(bundle_date: date, bundle: dict) -> Path:
 if __name__ == "__main__":
     import sys
 
-    # Re-save today's (or a specified) output bundle from disk.
+    # Re-PERSIST an already-assembled bundle from disk (read → save_output_bundle).
+    # This does NOT re-assemble session data; it only re-writes the existing JSON
+    # (e.g. to normalise formatting or confirm the artifact round-trips).
     # Usage: python -m engine.output_bundle [YYYY-MM-DD]
     _target = date.fromisoformat(sys.argv[1]) if len(sys.argv) > 1 else date.today()
     _cfg = get_config()

@@ -116,6 +116,22 @@ class MidasConfig:
         return self._data / "ticker_currencies.json"
 
     @property
+    def portfolios_dir(self) -> Path:
+        return self._data / "portfolios"
+
+    @property
+    def leaderboard_dir(self) -> Path:
+        return self._data / "leaderboard"
+
+    @property
+    def tax_shadow_dir(self) -> Path:
+        return self._data / "tax_shadow"
+
+    @property
+    def session_state_dir(self) -> Path:
+        return self._data / "session_state"
+
+    @property
     def trading_roster(self) -> tuple[str, ...]:
         return tuple(aid for aid, spec in self.roster.items() if spec.role == "trader")
 
@@ -185,9 +201,27 @@ def get_config() -> MidasConfig:
     return _load(_resolve_data_dir())
 
 
+# Modules that derive their own caches from config paths (e.g. paper_broker's
+# ticker-currency override map) register a callback here so they are invalidated
+# in lockstep with the config cache. Without this, a MIDAS_DATA_DIR switch +
+# reset_config_cache() would leave those module caches pinned to the old tree.
+_RESET_CALLBACKS: list = []
+
+
+def register_reset_callback(fn) -> None:
+    """Register a zero-arg callback invoked after every reset_config_cache()."""
+    _RESET_CALLBACKS.append(fn)
+
+
 def reset_config_cache() -> None:
-    """Clear the cached config — for tests that change MIDAS_DATA_DIR between cases."""
+    """Clear the cached config — for tests that change MIDAS_DATA_DIR between cases.
+
+    Also fires every registered reset callback so module-level caches keyed on
+    config paths are invalidated together.
+    """
     get_config.cache_clear()
+    for fn in _RESET_CALLBACKS:
+        fn()
 
 
 def resolve_agent_universe(spec: AgentSpec) -> list[str]:
