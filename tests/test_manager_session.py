@@ -24,6 +24,7 @@ from pathlib import Path
 
 import pytest
 
+from engine.config import get_config
 from engine.manager_decision import ManagerDecision, ManagerPosition
 from engine.manager_orders import manager_decision_to_orders
 from engine.orders import Order, read_inbox, read_outbox
@@ -150,7 +151,7 @@ def test_decision_to_orders_empty():
 
 
 @pytest.fixture
-def manager_env(tmp_path, monkeypatch):
+def manager_env(midas_data_root, monkeypatch):
     """Redirect every path the manager step touches into tmp_path.
 
     Mirrors the broker_env discipline: nothing the manager step writes can land
@@ -160,42 +161,46 @@ def manager_env(tmp_path, monkeypatch):
     import engine.paper_broker as broker_mod
     import scripts.daily_session as session_mod
 
-    ohlcv = tmp_path / "ohlcv"
-    ohlcv.mkdir()
-    config_dir = tmp_path / "config"
-    config_dir.mkdir()
-    ticker_ccy = tmp_path / "ticker_currencies.json"
+    cfg = get_config()
+    ohlcv = cfg.ohlcv_dir
+    ohlcv.mkdir(parents=True, exist_ok=True)
+    # Seed the real FX-pair series so cross-currency fills convert exactly as they
+    # did before the data root was redirected (engine.fx reads get_config().ohlcv_dir).
+    import shutil as _shutil
 
-    public_outbox = tmp_path / "orders" / "outbox"
-    public_inbox = tmp_path / "orders" / "inbox"
-    manager_outbox = tmp_path / "orders" / "manager-outbox"
-    manager_inbox = tmp_path / "orders" / "manager-inbox"
-    manager_review = tmp_path / "orders" / "manager-review"
+    from engine.config import _LEGACY_ROOT
+
+    for _fx in (_LEGACY_ROOT / "data" / "market" / "ohlcv").glob("*=X.jsonl"):
+        _shutil.copy(_fx, ohlcv / _fx.name)
+    # The manager step dispatches the the-manager persona — mirror the real
+    # .claude/agents into the redirected root so wrap_persona_prompt finds it.
+    _shutil.copytree(_LEGACY_ROOT / ".claude" / "agents", cfg.agents_dir)
+    config_dir = cfg.agent_config_dir
+    config_dir.mkdir(parents=True, exist_ok=True)
+    ticker_ccy = cfg.ticker_currencies_path
+
+    public_outbox = cfg.orders_dir / "outbox"
+    public_inbox = cfg.orders_dir / "inbox"
+    manager_outbox = cfg.orders_dir / "manager-outbox"
+    manager_inbox = cfg.orders_dir / "manager-inbox"
+    manager_review = cfg.orders_dir / "manager-review"
     for d in (public_outbox, public_inbox, manager_outbox, manager_inbox):
         d.mkdir(parents=True)
 
     # The session step derives portfolios from _PROJECT_ROOT / "data" / "portfolios".
-    portfolios = tmp_path / "data" / "portfolios"
+    portfolios = midas_data_root / "data" / "portfolios"
     portfolios.mkdir(parents=True)
 
     # Broker path constants.
-    monkeypatch.setattr(broker_mod, "_OHLCV_STORE", ohlcv)
-    monkeypatch.setattr(broker_mod, "AGENT_CONFIG_DIR", config_dir)
-    monkeypatch.setattr(broker_mod, "TICKER_CURRENCIES_PATH", ticker_ccy)
     monkeypatch.setattr(broker_mod, "_TICKER_CURRENCY_OVERRIDES", None)
 
     # Orders module dirs (default channel + manager channel).
-    monkeypatch.setattr(orders_mod, "OUTBOX_DIR", public_outbox)
-    monkeypatch.setattr(orders_mod, "INBOX_DIR", public_inbox)
-    monkeypatch.setattr(orders_mod, "MANAGER_OUTBOX_DIR", manager_outbox)
-    monkeypatch.setattr(orders_mod, "MANAGER_INBOX_DIR", manager_inbox)
-    monkeypatch.setattr(orders_mod, "MANAGER_REVIEW_DIR", manager_review)
 
     # Session project root → tmp (so the step derives data/ from here).
-    monkeypatch.setattr(session_mod, "_PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(session_mod, "_PROJECT_ROOT", midas_data_root)
 
     return {
-        "tmp_path": tmp_path,
+        "tmp_path": midas_data_root,
         "ohlcv": ohlcv,
         "config_dir": config_dir,
         "public_outbox": public_outbox,
@@ -550,10 +555,9 @@ def test_manager_conditional_order_routes_to_manager_pending(
     from engine.orders import Order, append_order, read_inbox
     from engine.paper_broker import fill_day
 
-    # Redirect public pending to an isolated dir so we can assert isolation.
-    public_pending = manager_env["tmp_path"] / "orders" / "public-pending"
+    # The public pending dir (config-resolved) must stay empty — isolation proof.
+    public_pending = get_config().orders_dir / "pending"
     public_pending.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr("engine.triggers.PENDING_DIR", public_pending)
 
     # Dedicated manager pending/cancels dirs in tmp space.
     manager_pending = manager_env["tmp_path"] / "orders" / "manager-pending"

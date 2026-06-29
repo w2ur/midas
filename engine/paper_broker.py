@@ -31,12 +31,10 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+from engine.config import get_config
 from engine.fees import fee_for
 from engine.fx import convert as fx_convert
-from engine.ohlcv_store import (
-    OHLCV_STORE as _DEFAULT_OHLCV_STORE,
-    latest_close_on_or_before,
-)
+from engine.ohlcv_store import latest_close_on_or_before
 from engine.orders import Fill, Order, append_fill, inbox_order_ids
 from engine.triggers import (
     delete_pending,
@@ -48,12 +46,11 @@ from engine.types import Trade
 from engine.universes import resolve_universe
 from engine.valuation import mtm_base_currency
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-# Module-level constant kept for test monkeypatching compatibility:
-# tests do `monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", tmp_path)`.
-_OHLCV_STORE = _DEFAULT_OHLCV_STORE
-AGENT_CONFIG_DIR = _REPO_ROOT / "data" / "agent_config"
-TICKER_CURRENCIES_PATH = _REPO_ROOT / "data" / "ticker_currencies.json"
+# The OHLCV store, agent-config dir, and ticker-currency override path are all
+# resolved lazily through get_config() inside the functions that use them, so a
+# forker who sets MIDAS_DATA_DIR (the Hands reading prices from the redirected
+# store) is honoured — nothing is frozen at import. Price reads default to
+# latest_close_on_or_before's own lazy store default (get_config().ohlcv_dir).
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +72,7 @@ class AgentConfig:
 
     @classmethod
     def load(cls, agent_id: str) -> "AgentConfig":
-        path = AGENT_CONFIG_DIR / f"{agent_id}.json"
+        path = get_config().agent_config_dir / f"{agent_id}.json"
         defaults = cls(
             max_order_notional=500.0,
             max_orders_per_day=5,
@@ -101,10 +98,9 @@ _TICKER_CURRENCY_OVERRIDES: dict[str, str] | None = None
 def _load_ticker_currency_overrides() -> dict[str, str]:
     global _TICKER_CURRENCY_OVERRIDES
     if _TICKER_CURRENCY_OVERRIDES is None:
-        if TICKER_CURRENCIES_PATH.exists():
-            _TICKER_CURRENCY_OVERRIDES = json.loads(
-                TICKER_CURRENCIES_PATH.read_text(encoding="utf-8")
-            )
+        path = get_config().ticker_currencies_path
+        if path.exists():
+            _TICKER_CURRENCY_OVERRIDES = json.loads(path.read_text(encoding="utf-8"))
         else:
             _TICKER_CURRENCY_OVERRIDES = {}
     return _TICKER_CURRENCY_OVERRIDES
@@ -165,7 +161,7 @@ def _current_commit_sha() -> str | None:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            cwd=Path(__file__).resolve().parent,
+            cwd=get_config().data_dir,
             capture_output=True,
             text=True,
             timeout=5,
@@ -257,7 +253,9 @@ def _process_one(
     if allowed_tickers and order.ticker not in allowed_tickers:
         return _reject(order.order_id, "TICKER_NOT_IN_UNIVERSE")
 
-    price = latest_close_on_or_before(order.ticker, trade_date, store=_OHLCV_STORE)
+    # store defaults to get_config().ohlcv_dir inside latest_close_on_or_before —
+    # resolved at call time so MIDAS_DATA_DIR redirection reaches the broker's fills.
+    price = latest_close_on_or_before(order.ticker, trade_date)
     if price is None:
         return _reject(order.order_id, "NO_PRICE_DATA")
 

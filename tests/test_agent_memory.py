@@ -19,10 +19,11 @@ from engine.agent_memory import (
 
 
 @pytest.fixture
-def temp_journal_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Redirect JOURNAL_DIR to a tmp path so tests don't touch real journals."""
-    monkeypatch.setattr(agent_memory, "JOURNAL_DIR", tmp_path)
-    return tmp_path
+def temp_journal_dir(midas_data_root: Path) -> Path:
+    """Redirect journal writes to an isolated tmp path via config env redirect."""
+    from engine.config import get_config
+
+    return get_config().journal_dir
 
 
 class TestLoadSave:
@@ -43,13 +44,11 @@ class TestLoadSave:
         path = save_journal("x", "already has one\n")
         assert path.read_text(encoding="utf-8") == "already has one\n"
 
-    def test_save_creates_directory(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        fresh = tmp_path / "nested" / "memory"
-        monkeypatch.setattr(agent_memory, "JOURNAL_DIR", fresh)
+    def test_save_creates_directory(self, midas_data_root: Path) -> None:
+        from engine.config import get_config
+
         save_journal("x", "hello")
-        assert (fresh / "x.md").exists()
+        assert (get_config().journal_dir / "x.md").exists()
 
     def test_utf8_roundtrip(self, temp_journal_dir: Path) -> None:
         content = "Today I felt — actually, pretty good. Café, €, 🎯."

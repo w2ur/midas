@@ -13,8 +13,7 @@ import re
 from pathlib import Path
 from typing import TypedDict
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PATH = _PROJECT_ROOT / "data" / "tickers.json"
+from engine.config import get_config
 
 
 class TickerInfo(TypedDict):
@@ -25,16 +24,20 @@ class TickerInfo(TypedDict):
 Registry = dict[str, TickerInfo]
 
 
-def load_registry(path: Path = DEFAULT_PATH) -> Registry:
+def load_registry(path: Path | None = None) -> Registry:
     """Load the registry from disk. Returns {} when the file is missing."""
+    if path is None:
+        path = get_config().tickers_path
     if not path.exists():
         return {}
     with path.open() as f:
         return json.load(f)
 
 
-def save_registry(reg: Registry, path: Path = DEFAULT_PATH) -> None:
+def save_registry(reg: Registry, path: Path | None = None) -> None:
     """Write the registry to disk, sorted by symbol for diff stability."""
+    if path is None:
+        path = get_config().tickers_path
     path.parent.mkdir(parents=True, exist_ok=True)
     ordered = {k: reg[k] for k in sorted(reg)}
     with path.open("w") as f:

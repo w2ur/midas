@@ -103,23 +103,32 @@ def _write_store(store_dir: Path, ticker: str, rows: list[dict]) -> None:
 
 
 class TestGetLatestPrice:
-    def test_garbage_ticker_raises_no_market_data_error(self, monkeypatch, tmp_path):
+    def test_garbage_ticker_raises_no_market_data_error(self, midas_data_root):
         """Unknown symbol must raise NoMarketDataError, never silently return None/0."""
-        monkeypatch.setattr("engine.market_data._OHLCV_STORE", tmp_path)
+        from engine.config import get_config
+
+        ohlcv = get_config().ohlcv_dir
+        ohlcv.mkdir(parents=True, exist_ok=True)
         with pytest.raises(NoMarketDataError) as exc_info:
             get_latest_price("DEFINITELY_NOT_A_REAL_TICKER_XYZXYZ")
         assert exc_info.value.symbol == "DEFINITELY_NOT_A_REAL_TICKER_XYZXYZ"
 
-    def test_symbol_in_exception_message(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("engine.market_data._OHLCV_STORE", tmp_path)
+    def test_symbol_in_exception_message(self, midas_data_root):
+        from engine.config import get_config
+
+        ohlcv = get_config().ohlcv_dir
+        ohlcv.mkdir(parents=True, exist_ok=True)
         with pytest.raises(NoMarketDataError) as exc_info:
             get_latest_price("GHOST")
         assert "GHOST" in str(exc_info.value)
 
-    def test_known_ticker_returns_float(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("engine.market_data._OHLCV_STORE", tmp_path)
+    def test_known_ticker_returns_float(self, midas_data_root):
+        from engine.config import get_config
+
+        ohlcv = get_config().ohlcv_dir
+        ohlcv.mkdir(parents=True, exist_ok=True)
         _write_store(
-            tmp_path,
+            ohlcv,
             "AAPL",
             [
                 {"date": "2026-06-10", "close": 193.5, "adj_close": 193.5},
@@ -130,10 +139,13 @@ class TestGetLatestPrice:
         assert isinstance(price, float)
         assert price == pytest.approx(195.0)
 
-    def test_returns_latest_row_not_first(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("engine.market_data._OHLCV_STORE", tmp_path)
+    def test_returns_latest_row_not_first(self, midas_data_root):
+        from engine.config import get_config
+
+        ohlcv = get_config().ohlcv_dir
+        ohlcv.mkdir(parents=True, exist_ok=True)
         _write_store(
-            tmp_path,
+            ohlcv,
             "MSFT",
             [
                 {"date": "2026-06-09", "close": 400.0, "adj_close": 400.0},
@@ -144,10 +156,13 @@ class TestGetLatestPrice:
         price = get_latest_price("MSFT")
         assert price == pytest.approx(420.0)
 
-    def test_falls_back_to_close_when_adj_close_absent(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("engine.market_data._OHLCV_STORE", tmp_path)
+    def test_falls_back_to_close_when_adj_close_absent(self, midas_data_root):
+        from engine.config import get_config
+
+        ohlcv = get_config().ohlcv_dir
+        ohlcv.mkdir(parents=True, exist_ok=True)
         _write_store(
-            tmp_path,
+            ohlcv,
             "BTC-USD",
             [
                 {"date": "2026-06-11", "close": 67000.0},
@@ -156,9 +171,12 @@ class TestGetLatestPrice:
         price = get_latest_price("BTC-USD")
         assert price == pytest.approx(67000.0)
 
-    def test_raises_no_market_data_not_value_error(self, monkeypatch, tmp_path):
+    def test_raises_no_market_data_not_value_error(self, midas_data_root):
         """Must raise NoMarketDataError specifically, not a generic ValueError/None."""
-        monkeypatch.setattr("engine.market_data._OHLCV_STORE", tmp_path)
+        from engine.config import get_config
+
+        ohlcv = get_config().ohlcv_dir
+        ohlcv.mkdir(parents=True, exist_ok=True)
         with pytest.raises(NoMarketDataError):
             get_latest_price("NOTHERE")
 
@@ -176,10 +194,13 @@ class TestBulkPathPreservation:
     raising). This test confirms the bulk path is unchanged.
     """
 
-    def test_missing_ticker_absent_from_result_not_raises(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("engine.market_data._OHLCV_STORE", tmp_path)
+    def test_missing_ticker_absent_from_result_not_raises(self, midas_data_root):
+        from engine.config import get_config
+
+        ohlcv = get_config().ohlcv_dir
+        ohlcv.mkdir(parents=True, exist_ok=True)
         _write_store(
-            tmp_path,
+            ohlcv,
             "AAPL",
             [
                 {"date": "2026-06-11", "close": 193.0, "adj_close": 193.0},
@@ -202,17 +223,20 @@ class TestBulkPathPreservation:
         assert result["AAPL"] == pytest.approx(193.0)
         assert "GHOST" not in result  # silently absent, not raised
 
-    def test_all_known_tickers_returned(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("engine.market_data._OHLCV_STORE", tmp_path)
+    def test_all_known_tickers_returned(self, midas_data_root):
+        from engine.config import get_config
+
+        ohlcv = get_config().ohlcv_dir
+        ohlcv.mkdir(parents=True, exist_ok=True)
         _write_store(
-            tmp_path,
+            ohlcv,
             "AAPL",
             [
                 {"date": "2026-06-11", "close": 193.0, "adj_close": 193.0},
             ],
         )
         _write_store(
-            tmp_path,
+            ohlcv,
             "MSFT",
             [
                 {"date": "2026-06-11", "close": 410.0, "adj_close": 410.0},

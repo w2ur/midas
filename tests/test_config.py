@@ -51,6 +51,31 @@ class TestConfig:
         assert spec.safety.daily_drawdown_halt_pct == -5.0
         assert cfg.trading_roster == ("demo-one",)
 
+    def test_paths_redirect_under_env(self, monkeypatch, tmp_path):
+        (tmp_path / "roster.yaml").write_text(_MINIMAL_ROSTER, encoding="utf-8")
+        monkeypatch.setenv("MIDAS_DATA_DIR", str(tmp_path))
+        reset_config_cache()
+        root = tmp_path.resolve()
+        cfg = get_config()
+        assert cfg.ohlcv_dir == root / "data" / "market" / "ohlcv"
+        assert cfg.journal_dir == root / "data" / "agent_memory"
+        assert cfg.agents_dir == root / ".claude" / "agents"
+
+        # Regression guard for the whole laziness property: real engine functions
+        # must WRITE under the redirected root. If any module froze its path at
+        # import time (the bug this task fixed), these would land in the legacy
+        # tree and the assertions would fail.
+        import engine.agent_memory as agent_memory
+        import engine.posts as posts
+
+        jpath = agent_memory.save_journal("demo-one", "redirect proof")
+        assert jpath == root / "data" / "agent_memory" / "demo-one.md"
+        assert jpath.read_text(encoding="utf-8").startswith("redirect proof")
+
+        ppath = posts.save_daily_posts(date(2026, 4, 17), {"demo-one": []})
+        assert ppath == root / "data" / "posts" / "2026-04-17.json"
+        assert ppath.exists()
+
     def test_resolve_agent_universe_accepts_bare_string(self):
         # A single universe name given as a bare str (not a list) resolves in
         # native order — same as a one-element list.

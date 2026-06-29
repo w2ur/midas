@@ -28,10 +28,17 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
 
 
 @pytest.fixture
-def fake_ohlcv(tmp_path, monkeypatch):
-    """Redirect engine.fx._OHLCV to a tmp dir; return the dir path."""
-    monkeypatch.setattr(fx, "_OHLCV", tmp_path)
-    return tmp_path
+def fake_ohlcv(midas_data_root):
+    """Redirect the OHLCV store (via MIDAS_DATA_DIR) to a tmp dir; return it.
+
+    engine.fx now reads get_config().ohlcv_dir at call time, so redirecting the
+    data root relocates the FX store hermetically.
+    """
+    from engine.config import get_config
+
+    ohlcv = get_config().ohlcv_dir
+    ohlcv.mkdir(parents=True, exist_ok=True)
+    return ohlcv
 
 
 # ---------------------------------------------------------------------------

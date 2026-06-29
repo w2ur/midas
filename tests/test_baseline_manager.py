@@ -431,27 +431,22 @@ class TestRebalance:
 
 class TestStepBuildBaselineManager:
     def test_initializes_portfolio_on_first_run(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, midas_data_root
     ) -> None:
         """step_build_baseline_manager creates portfolio dir with EUR 2000 on first call."""
-        from engine.ohlcv_store import OHLCV_STORE
+        from engine.config import get_config
 
         # Write minimal OHLCV data for a ticker that will appear in notes
-        ohlcv_dir = tmp_path / "ohlcv"
-        ohlcv_dir.mkdir(parents=True)
+        ohlcv_dir = get_config().ohlcv_dir
+        ohlcv_dir.mkdir(parents=True, exist_ok=True)
         (ohlcv_dir / "AAPL.jsonl").write_text(
             '{"date": "2026-06-01", "close": 150.0, "adj_close": 150.0}\n',
             encoding="utf-8",
         )
 
-        import engine.ohlcv_store as ohlcv_module
-
-        monkeypatch.setattr(ohlcv_module, "OHLCV_STORE", ohlcv_dir)
-
-        # Patch the baseline_manager module's store reference too
-        import engine.baseline_manager as bm_module
-
-        monkeypatch.setattr(bm_module, "_OHLCV_STORE", ohlcv_dir)
+        # No store patch needed: step_build_baseline_manager reads
+        # baseline_manager._OHLCV_STORE, which now lazily resolves to
+        # get_config().ohlcv_dir — the same redirected dir seeded above.
 
         portfolios_dir = tmp_path / "portfolios"
         portfolios_dir.mkdir()

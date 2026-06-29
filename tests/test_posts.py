@@ -19,20 +19,32 @@ from engine.posts import (
 class TestAgentMaps:
     def test_all_11_agents_have_display_names(self) -> None:
         expected = {
-            "steady-eddie-eur", "steady-eddie-usd",
-            "sharp-shooter-eur", "sharp-shooter-usd",
-            "yolo-sapiens-eur", "yolo-sapiens-usd",
-            "satoshi", "monsieur-forex", "goldfinger", "world",
+            "steady-eddie-eur",
+            "steady-eddie-usd",
+            "sharp-shooter-eur",
+            "sharp-shooter-usd",
+            "yolo-sapiens-eur",
+            "yolo-sapiens-usd",
+            "satoshi",
+            "monsieur-forex",
+            "goldfinger",
+            "world",
             "the-oracle",
         }
         assert set(AGENT_DISPLAY_NAMES.keys()) == expected
 
     def test_all_10_trading_agents_have_post_times(self) -> None:
         trading = {
-            "steady-eddie-eur", "steady-eddie-usd",
-            "sharp-shooter-eur", "sharp-shooter-usd",
-            "yolo-sapiens-eur", "yolo-sapiens-usd",
-            "satoshi", "monsieur-forex", "goldfinger", "world",
+            "steady-eddie-eur",
+            "steady-eddie-usd",
+            "sharp-shooter-eur",
+            "sharp-shooter-usd",
+            "yolo-sapiens-eur",
+            "yolo-sapiens-usd",
+            "satoshi",
+            "monsieur-forex",
+            "goldfinger",
+            "world",
         }
         assert trading == set(AGENT_POST_TIMES.keys())
 
@@ -77,7 +89,9 @@ class TestResolvedPostTime:
 
     def test_random_is_deterministic_per_date_agent(self) -> None:
         d = date(2026, 4, 17)
-        assert resolved_post_time("yolo-sapiens-eur", d) == resolved_post_time("yolo-sapiens-eur", d)
+        assert resolved_post_time("yolo-sapiens-eur", d) == resolved_post_time(
+            "yolo-sapiens-eur", d
+        )
 
     def test_random_differs_by_date(self) -> None:
         a = resolved_post_time("yolo-sapiens-eur", date(2026, 4, 17))
@@ -100,7 +114,17 @@ class TestResolvedPostTime:
 class TestBuildPostPrompt:
     def test_includes_own_and_others(self) -> None:
         results = {
-            "satoshi": {"commentary": "Loading the dip.", "trades": [{"action": "BUY", "ticker": "BTC-EUR", "shares": 0.01, "reasoning": "F&G 12"}]},
+            "satoshi": {
+                "commentary": "Loading the dip.",
+                "trades": [
+                    {
+                        "action": "BUY",
+                        "ticker": "BTC-EUR",
+                        "shares": 0.01,
+                        "reasoning": "F&G 12",
+                    }
+                ],
+            },
             "goldfinger": {"commentary": "Gold consolidating.", "trades": []},
         }
         prompt = build_post_prompt("satoshi", results)
@@ -110,7 +134,9 @@ class TestBuildPostPrompt:
         assert "280" in prompt  # soft char guideline mentioned
 
     def test_prompt_contains_schedule(self) -> None:
-        prompt = build_post_prompt("satoshi", {"satoshi": {"commentary": "", "trades": []}})
+        prompt = build_post_prompt(
+            "satoshi", {"satoshi": {"commentary": "", "trades": []}}
+        )
         assert "23:00" in prompt
 
 
@@ -122,25 +148,32 @@ class TestParsePostResponse:
         assert posts[0].kind == "trade"
 
     def test_with_code_fences(self) -> None:
-        resp = "```json\n[{\"text\":\"x\",\"mentions\":[],\"kind\":\"trade\"}]\n```"
+        resp = '```json\n[{"text":"x","mentions":[],"kind":"trade"}]\n```'
         posts = parse_post_response("satoshi", resp)
         assert posts[0].text == "x"
 
     def test_reply_with_parent_id(self) -> None:
-        resp = json.dumps([
-            {"text": "No way that hedges.", "mentions": ["yolo-sapiens-usd"], "kind": "reply", "parent_id": "post_xyz"},
-        ])
+        resp = json.dumps(
+            [
+                {
+                    "text": "No way that hedges.",
+                    "mentions": ["yolo-sapiens-usd"],
+                    "kind": "reply",
+                    "parent_id": "post_xyz",
+                },
+            ]
+        )
         posts = parse_post_response("steady-eddie-usd", resp)
         assert posts[0].parent_id == "post_xyz"
 
 
 class TestSaveDailyPosts:
-    def test_saves_grouped_by_agent(self, tmp_path: Path) -> None:
-        import engine.posts as p
-        p.POSTS_DIR = tmp_path
+    def test_saves_grouped_by_agent(self, midas_data_root: Path) -> None:
         posts = {
             "satoshi": [PostPayload("satoshi", "x", [], "trade", None, {}, "23:00")],
-            "the-oracle": [PostPayload("the-oracle", "y", [], "scoreboard", None, {}, "12:00")],
+            "the-oracle": [
+                PostPayload("the-oracle", "y", [], "scoreboard", None, {}, "12:00")
+            ],
         }
         path = save_daily_posts(date(2026, 4, 17), posts)
         data = json.loads(path.read_text())

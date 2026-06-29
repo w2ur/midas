@@ -18,15 +18,15 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
+from engine.config import get_config
 from engine.orders import Order
 
 logger = logging.getLogger(__name__)
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-PENDING_DIR = _REPO_ROOT / "data" / "orders" / "pending"
-CANCELS_DIR = _REPO_ROOT / "data" / "orders" / "cancels"
-MANAGER_PENDING_DIR = _REPO_ROOT / "data" / "orders" / "manager-pending"
-MANAGER_CANCELS_DIR = _REPO_ROOT / "data" / "orders" / "manager-cancels"
+# Pending/cancel channel dirs are resolved lazily through get_config() (never
+# frozen at import) so MIDAS_DATA_DIR redirection takes effect. The public names
+# PENDING_DIR / CANCELS_DIR / MANAGER_PENDING_DIR / MANAGER_CANCELS_DIR remain
+# readable as module attributes via __getattr__ (PEP 562).
 
 
 @dataclass
@@ -74,7 +74,9 @@ def save_pending(order: Order, pending_dir: Path | None = None) -> None:
         raise ValueError(
             f"save_pending requires order.trigger, got None for {order.order_id}"
         )
-    base = pending_dir if pending_dir is not None else PENDING_DIR
+    base = (
+        pending_dir if pending_dir is not None else get_config().orders_dir / "pending"
+    )
     base.mkdir(parents=True, exist_ok=True)
     path = base / f"{order.order_id}.json"
     path.write_text(json.dumps(order.to_dict(), indent=2), encoding="utf-8")
@@ -82,7 +84,9 @@ def save_pending(order: Order, pending_dir: Path | None = None) -> None:
 
 def list_pending(pending_dir: Path | None = None) -> list[Order]:
     """Return all pending conditional orders, deterministic by order_id."""
-    base = pending_dir if pending_dir is not None else PENDING_DIR
+    base = (
+        pending_dir if pending_dir is not None else get_config().orders_dir / "pending"
+    )
     if not base.exists():
         return []
     out: list[Order] = []
@@ -97,7 +101,9 @@ def list_pending(pending_dir: Path | None = None) -> list[Order]:
 
 def delete_pending(order_id: str, pending_dir: Path | None = None) -> bool:
     """Remove a pending order's file. Returns True if removed, False if absent."""
-    base = pending_dir if pending_dir is not None else PENDING_DIR
+    base = (
+        pending_dir if pending_dir is not None else get_config().orders_dir / "pending"
+    )
     path = base / f"{order_id}.json"
     if not path.exists():
         return False
@@ -117,12 +123,16 @@ def _append_jsonl(path: Path, obj: dict) -> None:
 def append_cancel(
     d: date, cancel: CancelRequest, cancels_dir: Path | None = None
 ) -> None:
-    base = cancels_dir if cancels_dir is not None else CANCELS_DIR
+    base = (
+        cancels_dir if cancels_dir is not None else get_config().orders_dir / "cancels"
+    )
     _append_jsonl(base / f"{d.isoformat()}.jsonl", cancel.to_dict())
 
 
 def read_cancels(d: date, cancels_dir: Path | None = None) -> list[CancelRequest]:
-    base = cancels_dir if cancels_dir is not None else CANCELS_DIR
+    base = (
+        cancels_dir if cancels_dir is not None else get_config().orders_dir / "cancels"
+    )
     path = base / f"{d.isoformat()}.jsonl"
     if not path.exists():
         return []
@@ -245,3 +255,26 @@ def get_current_price(ticker: str, today: date) -> float | None:
             # right now" and carry the pending order forward.
             return None
     return latest_close_on_or_before(ticker, today)
+
+
+_LAZY_DIRS = {
+    "PENDING_DIR": "pending",
+    "CANCELS_DIR": "cancels",
+    "MANAGER_PENDING_DIR": "manager-pending",
+    "MANAGER_CANCELS_DIR": "manager-cancels",
+}
+
+
+def __getattr__(name: str) -> object:
+    """Resolve the pending/cancel channel dir constants lazily (PEP 562).
+
+    Readers (``engine.triggers.PENDING_DIR``, ``from engine.triggers import
+    MANAGER_PENDING_DIR``, scripts) get the CURRENT config's path at access time,
+    so MIDAS_DATA_DIR redirection is honoured and nothing is frozen at import.
+    Tests that need a different location pass the explicit ``*_dir`` argument or
+    redirect via MIDAS_DATA_DIR.
+    """
+    sub = _LAZY_DIRS.get(name)
+    if sub is not None:
+        return get_config().orders_dir / sub
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

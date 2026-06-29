@@ -21,9 +21,10 @@ from scripts.daily_session import (
 
 
 @pytest.fixture
-def tmp_journals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    monkeypatch.setattr(agent_memory, "JOURNAL_DIR", tmp_path)
-    return tmp_path
+def tmp_journals(midas_data_root: Path) -> Path:
+    from engine.config import get_config
+
+    return get_config().journal_dir
 
 
 class TestStepLoadMemories:

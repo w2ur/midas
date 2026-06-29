@@ -8,9 +8,8 @@ from datetime import date
 from pathlib import Path
 
 from engine.agent_memory import format_oracle_digest
+from engine.config import get_config
 from engine.posts import AGENT_DISPLAY_NAMES, PostPayload
-
-BLOG_DIR = Path(__file__).parent.parent / "data" / "blog"
 
 # Trim caps applied to the Oracle prompt so first-token latency stays under
 # the cloud streaming idle threshold. Verbatim agent commentary is not what
@@ -135,8 +134,9 @@ def parse_oracle_response(response: str) -> tuple[BlogDraft, list[PostPayload]]:
 
 def save_daily_blog_draft(d: date, draft: BlogDraft) -> Path:
     """Save a blog draft as markdown with YAML frontmatter. Title is always quoted."""
-    BLOG_DIR.mkdir(parents=True, exist_ok=True)
-    path = BLOG_DIR / f"{d.isoformat()}.md"
+    blog_dir = get_config().blog_dir
+    blog_dir.mkdir(parents=True, exist_ok=True)
+    path = blog_dir / f"{d.isoformat()}.md"
     frontmatter = (
         "---\n"
         f'title: "{draft.title}"\n'

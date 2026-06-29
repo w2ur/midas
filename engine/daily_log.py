@@ -5,11 +5,10 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+from engine.config import get_config
 from engine.fx import to_eur
 from engine.posts import AGENT_DISPLAY_NAMES
 from engine.valuation import portfolio_mtm, portfolio_mtm_eur
-
-LOGS_DIR = Path(__file__).parent.parent / "data" / "logs"
 
 _CURRENCY_SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "JPY": "¥", "CHF": "CHF "}
 
@@ -53,8 +52,9 @@ def generate_daily_log(
     -------
     Path to the generated log file.
     """
-    LOGS_DIR.mkdir(parents=True, exist_ok=True)
-    path = LOGS_DIR / f"{log_date.isoformat()}.md"
+    logs_dir = get_config().logs_dir
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    path = logs_dir / f"{log_date.isoformat()}.md"
 
     lines: list[str] = []
     lines.append(f"# Midas Daily Log — {log_date.isoformat()}\n")

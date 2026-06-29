@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from engine.config import get_config
+
 from engine.orders import Order, read_inbox
 from engine.portfolio import PortfolioManager
 from engine.triggers import list_pending, save_pending
@@ -20,32 +22,24 @@ from engine.triggers import list_pending, save_pending
 
 
 @pytest.fixture
-def broker_env(tmp_path, monkeypatch):
-    ohlcv = tmp_path / "ohlcv"
-    ohlcv.mkdir()
-    config_dir = tmp_path / "config"
-    config_dir.mkdir()
-    ticker_ccy_path = tmp_path / "ticker_currencies.json"
-    outbox = tmp_path / "outbox"
-    outbox.mkdir()
-    inbox = tmp_path / "inbox"
-    inbox.mkdir()
-    pm_base = tmp_path / "portfolios"
+def broker_env(midas_data_root, monkeypatch):
+    cfg = get_config()
+    ohlcv = cfg.ohlcv_dir
+    ohlcv.mkdir(parents=True, exist_ok=True)
+    config_dir = cfg.agent_config_dir
+    config_dir.mkdir(parents=True, exist_ok=True)
+    ticker_ccy_path = cfg.ticker_currencies_path
+    outbox = cfg.orders_dir / "outbox"
+    outbox.mkdir(parents=True, exist_ok=True)
+    inbox = cfg.orders_dir / "inbox"
+    inbox.mkdir(parents=True, exist_ok=True)
+    pm_base = midas_data_root / "portfolios"
     pm_base.mkdir()
-    pending_dir = tmp_path / "pending"
-    cancels_dir = tmp_path / "cancels"
-    manager_inbox = tmp_path / "manager-inbox"
-    manager_pending = tmp_path / "manager-pending"
-    monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", ohlcv)
-    monkeypatch.setattr("engine.paper_broker.AGENT_CONFIG_DIR", config_dir)
-    monkeypatch.setattr("engine.paper_broker.TICKER_CURRENCIES_PATH", ticker_ccy_path)
+    pending_dir = cfg.orders_dir / "pending"
+    cancels_dir = cfg.orders_dir / "cancels"
+    manager_inbox = cfg.orders_dir / "manager-inbox"
+    manager_pending = cfg.orders_dir / "manager-pending"
     monkeypatch.setattr("engine.paper_broker._TICKER_CURRENCY_OVERRIDES", None)
-    monkeypatch.setattr("engine.orders.OUTBOX_DIR", outbox)
-    monkeypatch.setattr("engine.orders.INBOX_DIR", inbox)
-    monkeypatch.setattr("engine.orders.MANAGER_INBOX_DIR", manager_inbox)
-    monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-    monkeypatch.setattr("engine.triggers.MANAGER_PENDING_DIR", manager_pending)
-    monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
     return {
         "ohlcv": ohlcv,
         "config_dir": config_dir,

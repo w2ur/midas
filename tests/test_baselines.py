@@ -9,14 +9,14 @@ from engine.baselines import (
     compute_passive_benchmark,
     compute_coin_flip,
 )
+from engine.config import get_config
 
 
 @pytest.fixture
-def tmp_ohlcv(tmp_path, monkeypatch):
+def tmp_ohlcv(midas_data_root):
     """Redirect the OHLCV store to a temp dir with controllable contents."""
-    ohlcv = tmp_path / "market" / "ohlcv"
-    ohlcv.mkdir(parents=True)
-    monkeypatch.setattr("engine.baselines.OHLCV_DIR", ohlcv)
+    ohlcv = get_config().ohlcv_dir
+    ohlcv.mkdir(parents=True, exist_ok=True)
     return ohlcv
 
 
@@ -164,12 +164,11 @@ def test_global_reference_uses_msci_world(tmp_ohlcv):
     assert snaps[0]["currency"] == "EUR"
 
 
-def test_build_all_baselines_writes_files(tmp_ohlcv, tmp_path, monkeypatch):
+def test_build_all_baselines_writes_files(tmp_ohlcv):
     """build_all_baselines should produce per-agent + global JSON files."""
     from engine.baselines import build_all_baselines, AGENT_BENCHMARKS, GLOBAL_REFERENCE
 
-    baselines_dir = tmp_path / "baselines"
-    monkeypatch.setattr("engine.baselines.BASELINES_DIR", baselines_dir)
+    baselines_dir = get_config().baselines_dir
 
     # Minimal OHLCV for every referenced ticker
     for t in {s.ticker for s in AGENT_BENCHMARKS.values()} | {GLOBAL_REFERENCE.ticker}:

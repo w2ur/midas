@@ -30,9 +30,7 @@ from typing import Iterator, Literal
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BASELINES_DIR = PROJECT_ROOT / "data" / "baselines"
-OHLCV_DIR = PROJECT_ROOT / "data" / "market" / "ohlcv"
+from engine.config import get_config
 
 DAY_ONE = date(2026, 4, 17)
 
@@ -81,7 +79,7 @@ def _daterange(start: date, end: date) -> Iterator[date]:
 
 def _load_ohlcv(ticker: str) -> dict[str, float]:
     """Return date_iso -> close for the ticker, empty if file missing."""
-    path = OHLCV_DIR / f"{ticker}.jsonl"
+    path = get_config().ohlcv_dir / f"{ticker}.jsonl"
     if not path.exists():
         return {}
     out: dict[str, float] = {}
@@ -245,8 +243,9 @@ def build_all_baselines(
     series; callers are expected to surface that as "no line to draw".
     """
     max_positions_by_agent = max_positions_by_agent or {}
+    baselines_dir = get_config().baselines_dir
     for agent_id, spec in AGENT_BENCHMARKS.items():
-        agent_dir = BASELINES_DIR / agent_id
+        agent_dir = baselines_dir / agent_id
         bench = compute_passive_benchmark(spec, from_date, to_date)
         _write_json(agent_dir / "benchmark.json", bench)
 
@@ -263,6 +262,6 @@ def build_all_baselines(
         _write_json(agent_dir / "coinflip.json", coin)
 
     _write_json(
-        BASELINES_DIR / "global" / "msci_world.json",
+        baselines_dir / "global" / "msci_world.json",
         compute_global_reference(from_date, to_date),
     )

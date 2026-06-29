@@ -11,17 +11,19 @@ import json
 from datetime import date
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-OHLCV_STORE = _REPO_ROOT / "data" / "market" / "ohlcv"
+from engine.config import get_config
 
 
-def latest_close_on_or_before(ticker: str, on: date | None = None, store: Path | None = None) -> float | None:
+def latest_close_on_or_before(
+    ticker: str, on: date | None = None, store: Path | None = None
+) -> float | None:
     """Return the most recent close (or adj_close) for `ticker` with date <= `on`.
 
     Returns None if the ticker is not in the store or no row satisfies the date bound.
-    `store` defaults to the module-level OHLCV_STORE path; tests may pass a tmp path.
+    `store` defaults to ``get_config().ohlcv_dir`` (MIDAS_DATA_DIR-aware, resolved at
+    call time); tests may pass a tmp path.
     """
-    store = store if store is not None else OHLCV_STORE
+    store = store if store is not None else get_config().ohlcv_dir
     path = store / f"{ticker}.jsonl"
     if not path.exists():
         return None
@@ -42,6 +44,22 @@ def latest_close_on_or_before(ticker: str, on: date | None = None, store: Path |
                 continue
             if best_date is None or row_date > best_date:
                 best_date = row_date
-                val = row.get("adj_close") if row.get("adj_close") is not None else row.get("close")
+                val = (
+                    row.get("adj_close")
+                    if row.get("adj_close") is not None
+                    else row.get("close")
+                )
                 best_price = float(val) if val is not None else None
     return best_price
+
+
+def __getattr__(name: str) -> object:
+    """Lazily expose ``OHLCV_STORE`` as the current config's OHLCV dir (PEP 562).
+
+    Kept as a module attribute so existing readers
+    (``from engine.ohlcv_store import OHLCV_STORE``) resolve through
+    ``get_config()`` at access time — MIDAS_DATA_DIR-aware, never frozen at import.
+    """
+    if name == "OHLCV_STORE":
+        return get_config().ohlcv_dir
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

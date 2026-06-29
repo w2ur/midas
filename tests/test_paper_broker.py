@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from engine.fees import fee_for
+from engine.config import get_config
 from engine.orders import Fill, Order, append_order
 from engine.portfolio import PortfolioManager
 
@@ -24,24 +25,22 @@ from engine.portfolio import PortfolioManager
 
 
 @pytest.fixture
-def broker_env(tmp_path, monkeypatch):
-    ohlcv = tmp_path / "ohlcv"
-    ohlcv.mkdir()
-    config_dir = tmp_path / "config"
-    config_dir.mkdir()
-    ticker_ccy_path = tmp_path / "ticker_currencies.json"
-    outbox = tmp_path / "outbox"
-    outbox.mkdir()
-    inbox = tmp_path / "inbox"
-    inbox.mkdir()
-    pm_base = tmp_path / "portfolios"
+def broker_env(midas_data_root, monkeypatch):
+    cfg = get_config()
+    ohlcv = cfg.ohlcv_dir
+    ohlcv.mkdir(parents=True, exist_ok=True)
+    config_dir = cfg.agent_config_dir
+    config_dir.mkdir(parents=True, exist_ok=True)
+    ticker_ccy_path = cfg.ticker_currencies_path
+    outbox = cfg.orders_dir / "outbox"
+    outbox.mkdir(parents=True, exist_ok=True)
+    inbox = cfg.orders_dir / "inbox"
+    inbox.mkdir(parents=True, exist_ok=True)
+    pm_base = midas_data_root / "portfolios"
     pm_base.mkdir()
-    monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", ohlcv)
-    monkeypatch.setattr("engine.paper_broker.AGENT_CONFIG_DIR", config_dir)
-    monkeypatch.setattr("engine.paper_broker.TICKER_CURRENCIES_PATH", ticker_ccy_path)
+    # The OHLCV store, agent-config, ticker-currency, outbox, and inbox dirs all
+    # resolve via get_config() under the redirected root — nothing to patch.
     monkeypatch.setattr("engine.paper_broker._TICKER_CURRENCY_OVERRIDES", None)
-    monkeypatch.setattr("engine.orders.OUTBOX_DIR", outbox)
-    monkeypatch.setattr("engine.orders.INBOX_DIR", inbox)
     return {
         "ohlcv": ohlcv,
         "config_dir": config_dir,
@@ -609,10 +608,8 @@ class TestConditionalOrderRouting:
         self, broker_env, monkeypatch, tmp_path
     ) -> None:
         """Sanity: a no-trigger order still goes through the existing fill path."""
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -647,10 +644,8 @@ class TestConditionalOrderRouting:
         self, broker_env, monkeypatch, tmp_path
     ) -> None:
         """A conditional order does NOT produce an inbox fill; it goes to pending."""
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -694,10 +689,8 @@ class TestConditionalOrderRouting:
         trigger-without-expires (the agent could forget to set expires). The
         broker enforces the requirement here.
         """
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -743,10 +736,8 @@ class TestCancelRequestProcessing:
     def test_cancel_removes_pending_and_writes_rejection(
         self, broker_env, monkeypatch, tmp_path
     ) -> None:
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -803,10 +794,8 @@ class TestCancelRequestProcessing:
     def test_cancel_targeting_nonexistent_pending_writes_rejection(
         self, broker_env, monkeypatch, tmp_path
     ) -> None:
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -842,10 +831,8 @@ class TestCancelRequestProcessing:
         """Two cancels for the same target_order_id in one session: first wins as
         CANCELLED_BY_AGENT, second sees the pending already gone and becomes
         CANCEL_TARGET_NOT_FOUND. Same target_order_id, two distinct rejection records."""
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day

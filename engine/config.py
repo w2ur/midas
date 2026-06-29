@@ -112,6 +112,10 @@ class MidasConfig:
         return self._data / "tickers.json"
 
     @property
+    def ticker_currencies_path(self) -> Path:
+        return self._data / "ticker_currencies.json"
+
+    @property
     def trading_roster(self) -> tuple[str, ...]:
         return tuple(aid for aid, spec in self.roster.items() if spec.role == "trader")
 

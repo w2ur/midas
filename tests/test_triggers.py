@@ -35,59 +35,54 @@ def _make_order(order_id: str = "ord_2026-05-17_satoshi_001", **overrides) -> Or
 
 
 class TestPendingStorage:
-    def test_save_and_list(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
+    def test_save_and_list(self, tmp_path: Path) -> None:
         o = _make_order()
-        save_pending(o)
-        pending = list_pending()
+        save_pending(o, pending_dir=tmp_path)
+        pending = list_pending(pending_dir=tmp_path)
         assert len(pending) == 1
         assert pending[0].order_id == o.order_id
         assert pending[0].trigger == {"op": ">=", "level": 85000.0}
 
-    def test_save_overwrites_same_id(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
-        save_pending(_make_order(trigger={"op": ">=", "level": 85000.0}))
-        save_pending(_make_order(trigger={"op": ">=", "level": 90000.0}))  # same id
-        pending = list_pending()
+    def test_save_overwrites_same_id(self, tmp_path: Path) -> None:
+        save_pending(
+            _make_order(trigger={"op": ">=", "level": 85000.0}), pending_dir=tmp_path
+        )
+        save_pending(
+            _make_order(trigger={"op": ">=", "level": 90000.0}), pending_dir=tmp_path
+        )  # same id
+        pending = list_pending(pending_dir=tmp_path)
         assert len(pending) == 1
         assert pending[0].trigger["level"] == 90000.0
 
-    def test_delete_removes_file(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
+    def test_delete_removes_file(self, tmp_path: Path) -> None:
         o = _make_order()
-        save_pending(o)
-        assert delete_pending(o.order_id) is True
-        assert list_pending() == []
+        save_pending(o, pending_dir=tmp_path)
+        assert delete_pending(o.order_id, pending_dir=tmp_path) is True
+        assert list_pending(pending_dir=tmp_path) == []
 
-    def test_delete_missing_returns_false(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
-        assert delete_pending("ord_does_not_exist") is False
+    def test_delete_missing_returns_false(self, tmp_path: Path) -> None:
+        assert delete_pending("ord_does_not_exist", pending_dir=tmp_path) is False
 
-    def test_list_empty_when_dir_empty(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
-        assert list_pending() == []
+    def test_list_empty_when_dir_empty(self, tmp_path: Path) -> None:
+        assert list_pending(pending_dir=tmp_path) == []
 
-    def test_list_empty_when_dir_missing(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path / "nonexistent")
-        assert list_pending() == []
+    def test_list_empty_when_dir_missing(self, tmp_path: Path) -> None:
+        assert list_pending(pending_dir=tmp_path / "nonexistent") == []
 
-    def test_list_skips_gitkeep_and_non_json(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
+    def test_list_skips_gitkeep_and_non_json(self, tmp_path: Path) -> None:
         (tmp_path / ".gitkeep").write_text("")
         (tmp_path / "README.md").write_text("not a pending order")
-        save_pending(_make_order())
-        assert len(list_pending()) == 1
+        save_pending(_make_order(), pending_dir=tmp_path)
+        assert len(list_pending(pending_dir=tmp_path)) == 1
 
-    def test_save_requires_trigger(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
+    def test_save_requires_trigger(self, tmp_path: Path) -> None:
         market_order = _make_order(trigger=None, expires=None)
         with pytest.raises(ValueError, match="save_pending requires order.trigger"):
-            save_pending(market_order)
+            save_pending(market_order, pending_dir=tmp_path)
 
 
 class TestCancelStorage:
-    def test_append_and_read(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path)
+    def test_append_and_read(self, tmp_path: Path) -> None:
         d = date(2026, 5, 17)
         c = CancelRequest(
             request_id="cnl_2026-05-17_satoshi_001",
@@ -96,20 +91,16 @@ class TestCancelStorage:
             target_order_id="ord_2026-05-10_satoshi_003",
             reasoning="thesis changed, no longer want to sell at 85k",
         )
-        append_cancel(d, c)
-        back = read_cancels(d)
+        append_cancel(d, c, cancels_dir=tmp_path)
+        back = read_cancels(d, cancels_dir=tmp_path)
         assert len(back) == 1
         assert back[0].target_order_id == "ord_2026-05-10_satoshi_003"
         assert back[0].ts.tzinfo is not None
 
-    def test_empty_when_missing(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path)
-        assert read_cancels(date(2026, 5, 17)) == []
+    def test_empty_when_missing(self, tmp_path: Path) -> None:
+        assert read_cancels(date(2026, 5, 17), cancels_dir=tmp_path) == []
 
-    def test_read_cancels_skips_malformed_lines(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path)
+    def test_read_cancels_skips_malformed_lines(self, tmp_path: Path) -> None:
         d = date(2026, 5, 17)
         # Mix: one good line, one truncated JSON, one good line.
         path = tmp_path / f"{d.isoformat()}.jsonl"
@@ -120,7 +111,7 @@ class TestCancelStorage:
             '{"request_id":"cnl_c","ts":"2026-05-17T20:07:00Z","agent_id":"satoshi",'
             '"target_order_id":"ord_c","reasoning":"ok"}\n'
         )
-        cancels = read_cancels(d)
+        cancels = read_cancels(d, cancels_dir=tmp_path)
         assert [c.request_id for c in cancels] == ["cnl_a", "cnl_c"]
 
 

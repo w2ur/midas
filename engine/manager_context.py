@@ -42,6 +42,7 @@ from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from engine.config import get_config
 from engine.market_data import no_data_sentinel
 from engine.research_note import ResearchNote
 
@@ -49,9 +50,6 @@ if TYPE_CHECKING:
     from engine.orders import Order
 
 logger = logging.getLogger(__name__)
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-_DEFAULT_TICKERS_PATH = _REPO_ROOT / "data" / "tickers.json"
 
 # ---------------------------------------------------------------------------
 # Structured risk limits and PRIIPs blocklist — single source of truth.
@@ -189,7 +187,7 @@ def load_ticker_registry(path: Path | None = None) -> dict[str, dict]:
     are free. Pass an explicit path in tests to bypass the default.
     """
     global _registry_cache, _registry_cache_path
-    resolved = path if path is not None else _DEFAULT_TICKERS_PATH
+    resolved = path if path is not None else get_config().tickers_path
     if _registry_cache is not None and _registry_cache_path == resolved:
         return _registry_cache
 

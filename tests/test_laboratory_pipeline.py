@@ -16,7 +16,7 @@ import pytest
 
 from engine import orders as orders_module
 from engine.blog import BlogDraft, parse_oracle_response
-from engine.orders import INBOX_DIR, OUTBOX_DIR
+from engine.config import get_config
 from engine.output_bundle import get_day_number, save_output_bundle
 from engine.paper_broker import fill_day
 from engine.portfolio import PortfolioManager
@@ -34,33 +34,26 @@ TRADE_DATE = date(2026, 4, 17)
 
 
 @pytest.fixture
-def lab_env(tmp_path: Path, monkeypatch):
+def lab_env(midas_data_root: Path, monkeypatch):
     """Wire every module's writable path to a tmp directory so nothing leaks."""
-    ohlcv = tmp_path / "ohlcv"
-    ohlcv.mkdir()
-    config_dir = tmp_path / "agent_config"
-    config_dir.mkdir()
-    ticker_ccy = tmp_path / "ticker_currencies.json"
+    cfg = get_config()
+    ohlcv = cfg.ohlcv_dir
+    ohlcv.mkdir(parents=True, exist_ok=True)
+    config_dir = cfg.agent_config_dir
+    config_dir.mkdir(parents=True, exist_ok=True)
+    ticker_ccy = cfg.ticker_currencies_path
     ticker_ccy.write_text(json.dumps({"MC.PA": "EUR"}), encoding="utf-8")
-    outbox = tmp_path / "outbox"
-    outbox.mkdir()
-    inbox = tmp_path / "inbox"
-    inbox.mkdir()
-    pm_base = tmp_path / "portfolios"
+    outbox = cfg.orders_dir / "outbox"
+    outbox.mkdir(parents=True, exist_ok=True)
+    inbox = cfg.orders_dir / "inbox"
+    inbox.mkdir(parents=True, exist_ok=True)
+    pm_base = midas_data_root / "portfolios"
     pm_base.mkdir()
-    posts_dir = tmp_path / "posts"
-    blog_dir = tmp_path / "blog"
-    output_dir = tmp_path / "output"
+    posts_dir = cfg.posts_dir
+    blog_dir = cfg.blog_dir
+    output_dir = cfg.output_dir
 
-    monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", ohlcv)
-    monkeypatch.setattr("engine.paper_broker.AGENT_CONFIG_DIR", config_dir)
-    monkeypatch.setattr("engine.paper_broker.TICKER_CURRENCIES_PATH", ticker_ccy)
     monkeypatch.setattr("engine.paper_broker._TICKER_CURRENCY_OVERRIDES", None)
-    monkeypatch.setattr("engine.orders.OUTBOX_DIR", outbox)
-    monkeypatch.setattr("engine.orders.INBOX_DIR", inbox)
-    monkeypatch.setattr("engine.posts.POSTS_DIR", posts_dir)
-    monkeypatch.setattr("engine.blog.BLOG_DIR", blog_dir)
-    monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", output_dir)
 
     # Seed OHLCV: yesterday's close present (simulates cron-before-OHLCV-refresh).
     def seed_ohlcv(ticker: str, price: float, on_date: date) -> None:

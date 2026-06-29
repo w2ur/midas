@@ -14,20 +14,20 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-OUTBOX_DIR = _REPO_ROOT / "data" / "orders" / "outbox"
-INBOX_DIR = _REPO_ROOT / "data" / "orders" / "inbox"
+from engine.config import get_config
 
-# Separate channel for the LLM Manager (Task C5). Its orders, fills, and the
-# decision-review audit artifact live here — NEVER in the public outbox/inbox the
-# site joins by order_id. Keeping the manager fully off every public surface is a
-# hard invariant (see CLAUDE.md / Manager design): the-manager is not in the
-# roster (engine.posts.AGENT_POST_TIMES), so it is auto-excluded from the output
-# bundle, leaderboard, and journals; routing its fills here keeps it off the
-# trade-card join as well.
-MANAGER_OUTBOX_DIR = _REPO_ROOT / "data" / "orders" / "manager-outbox"
-MANAGER_INBOX_DIR = _REPO_ROOT / "data" / "orders" / "manager-inbox"
-MANAGER_REVIEW_DIR = _REPO_ROOT / "data" / "orders" / "manager-review"
+# Order-channel directories are resolved lazily through ``get_config()`` (never
+# frozen at import) so MIDAS_DATA_DIR redirection takes effect. The public names
+# below remain readable as module attributes via ``__getattr__`` (PEP 562):
+#
+#   OUTBOX_DIR / INBOX_DIR            — public Brain/Hands trade flow.
+#   MANAGER_OUTBOX_DIR / _INBOX_DIR  — the LLM Manager's isolated channel (Task
+#     C5). Its orders, fills, and decision-review audit artifact live here —
+#     NEVER in the public outbox/inbox the site joins by order_id. the-manager is
+#     not in the roster (engine.posts.AGENT_POST_TIMES), so it is auto-excluded
+#     from the output bundle, leaderboard, and journals; routing its fills here
+#     keeps it off the trade-card join as well.
+#   MANAGER_REVIEW_DIR               — Manager decision-review artifacts.
 
 TRIGGER_OPS: tuple[str, ...] = ("<=", ">=")
 
@@ -217,14 +217,14 @@ def append_order(d: date, order: Order, outbox_dir: Path | None = None) -> None:
 
     ``outbox_dir`` defaults to the public OUTBOX_DIR. Pass MANAGER_OUTBOX_DIR to
     write to the separate Manager channel (Task C5). The default is resolved at
-    call time so test monkeypatching of OUTBOX_DIR is respected.
+    call time through get_config() so MIDAS_DATA_DIR redirection is respected.
     """
-    base = outbox_dir if outbox_dir is not None else OUTBOX_DIR
+    base = outbox_dir if outbox_dir is not None else get_config().orders_dir / "outbox"
     _append_jsonl(base / f"{d.isoformat()}.jsonl", order.to_dict())
 
 
 def read_outbox(d: date, outbox_dir: Path | None = None) -> list[Order]:
-    base = outbox_dir if outbox_dir is not None else OUTBOX_DIR
+    base = outbox_dir if outbox_dir is not None else get_config().orders_dir / "outbox"
     return [Order.from_dict(r) for r in _read_jsonl(base / f"{d.isoformat()}.jsonl")]
 
 
@@ -233,14 +233,14 @@ def append_fill(d: date, fill: Fill, inbox_dir: Path | None = None) -> None:
 
     ``inbox_dir`` defaults to the public INBOX_DIR. Pass MANAGER_INBOX_DIR to
     write to the separate Manager channel (Task C5). The default is resolved at
-    call time so test monkeypatching of INBOX_DIR is respected.
+    call time through get_config() so MIDAS_DATA_DIR redirection is respected.
     """
-    base = inbox_dir if inbox_dir is not None else INBOX_DIR
+    base = inbox_dir if inbox_dir is not None else get_config().orders_dir / "inbox"
     _append_jsonl(base / f"{d.isoformat()}.jsonl", fill.to_dict())
 
 
 def read_inbox(d: date, inbox_dir: Path | None = None) -> list[Fill]:
-    base = inbox_dir if inbox_dir is not None else INBOX_DIR
+    base = inbox_dir if inbox_dir is not None else get_config().orders_dir / "inbox"
     return [Fill.from_dict(r) for r in _read_jsonl(base / f"{d.isoformat()}.jsonl")]
 
 
@@ -254,13 +254,14 @@ def inbox_order_ids(d: date | None = None, inbox_dir: Path | None = None) -> set
 
     ``inbox_dir`` defaults to the public INBOX_DIR. Pass MANAGER_INBOX_DIR so the
     idempotency check operates on the Manager channel (Task C5). The default is
-    resolved at call time so test monkeypatching of INBOX_DIR is respected.
+    resolved at call time through get_config() so MIDAS_DATA_DIR redirection is
+    respected.
 
     Reads raw JSONL lines and extracts the ``order_id`` field; silently skips
     malformed lines (the idempotency check is best-effort — a corrupt line
     cannot retroactively cause a double-fill if the original write succeeded).
     """
-    base = inbox_dir if inbox_dir is not None else INBOX_DIR
+    base = inbox_dir if inbox_dir is not None else get_config().orders_dir / "inbox"
     if d is not None:
         paths = [base / f"{d.isoformat()}.jsonl"]
     else:
@@ -285,3 +286,27 @@ def inbox_order_ids(d: date | None = None, inbox_dir: Path | None = None) -> set
                 except json.JSONDecodeError:
                     pass
     return ids
+
+
+_LAZY_DIRS = {
+    "OUTBOX_DIR": "outbox",
+    "INBOX_DIR": "inbox",
+    "MANAGER_OUTBOX_DIR": "manager-outbox",
+    "MANAGER_INBOX_DIR": "manager-inbox",
+    "MANAGER_REVIEW_DIR": "manager-review",
+}
+
+
+def __getattr__(name: str) -> object:
+    """Resolve the order-channel dir constants lazily (PEP 562).
+
+    Readers (``engine.orders.OUTBOX_DIR``, ``from engine.orders import INBOX_DIR``,
+    the broker's ``orders_module.OUTBOX_DIR``, scripts) get the CURRENT config's
+    path at access time, so MIDAS_DATA_DIR redirection is honoured and nothing is
+    frozen at import. Tests that need a different location pass the explicit
+    ``*_dir`` argument or redirect via MIDAS_DATA_DIR.
+    """
+    sub = _LAZY_DIRS.get(name)
+    if sub is not None:
+        return get_config().orders_dir / sub
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

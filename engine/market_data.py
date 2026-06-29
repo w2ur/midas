@@ -17,8 +17,7 @@ from typing import Optional
 import pandas as pd
 import yfinance as yf
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-_OHLCV_STORE = _REPO_ROOT / "data" / "market" / "ohlcv"
+from engine.config import get_config
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +39,7 @@ BENCHMARK_TICKERS: dict[str, str] = {
 
 def _read_store_file(ticker: str) -> list[dict] | None:
     """Load all rows for a ticker from the committed JSONL store, or None."""
-    path = _OHLCV_STORE / f"{ticker}.jsonl"
+    path = get_config().ohlcv_dir / f"{ticker}.jsonl"
     if not path.exists():
         return None
     rows: list[dict] = []
