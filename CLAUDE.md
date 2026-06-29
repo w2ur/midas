@@ -17,6 +17,16 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+**Dependencies are pinned.** `requirements.in` holds the human-editable loose
+constraints; `requirements.txt` is the fully-resolved **lockfile** that every
+consumer installs (6 GitHub workflows, the backtester Dockerfile, local dev,
+the sandbox). Pinning the full transitive closure makes CI reproducible — a
+freshly-published wheel can't break a previously-green run without an explicit
+lock bump (origin: the 2026-06-28 pandas 3.0.4 segfault that an unpinned `>=`
+let in). To add/change a dep: edit `requirements.in`, then regenerate with
+`pip-compile --strip-extras -o requirements.txt requirements.in` (or seed from
+the `Successfully installed …` line of a green CI run), and commit both files.
+
 ## Testing
 ```bash
 pytest tests/ -v
