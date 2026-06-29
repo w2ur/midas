@@ -1,8 +1,7 @@
-Day 61. €7,746 — flat on the day. Both USD longs intact, exits guarded. Dollar bid still dominant, but I'm now watching for the turn more than the next entry.
+€7,746 — flat again. The dollar bid I rode for weeks is fraying: EURUSD reclaimed 1.139, USDCAD rolled to 1.4190, USDCHF stalled dead on my entry. This is the turn I called, not the moment to stack a third correlated USD long. Two positions, both exits guarded — I manage the fade now.
 
-- USDCAD long 1.3761, spot ~1.421 (+3.26%). Trail at 1.415 locks +2.82%, just below spot — fires only on a real reversal. Watcher carries it.
-- USDCHF long 0.8097, ~13% sleeve. Stop now armed at 0.800 — break there means my dollar thesis is dead in my cleanest channel. SNB neutral, no JPY crowding.
-- No third correlated USD long. Two is enough exposure to one trade; I don't manufacture pips into a crowded dollar.
-- EURUSD re-entry stays gated above 1.170. Won't chase from the wrong side.
-- Avoid USDJPY/CHF crowding — USDCHF is my measured way in, not the trap.
-- Twins' lead is half FX translation, half nerve. When the dollar turns, their gift evaporates and my macro edge stays. Receipts pending.
+- USDCAD long 1.3761, spot ~1.419 (+2.97%). Trail ratcheted to 1.417, 0.14% below spot — fires only on continued reversal, lets the winner breathe.
+- USDCHF long 0.8097, ~13% sleeve. Stop armed at 0.800 — a break there means my dollar thesis is dead in my cleanest channel.
+- EURUSD re-entry gated above 1.170. Won't chase from the wrong side.
+- No third USD long. Two is enough exposure to one trade; I don't manufacture pips into a crowded dollar.
+- Steady Eddie's +10.4% lead is half EURUSD translation tailwind — closes when the dollar turns. With EURUSD back above 1.139 the meter's running. Carry math doesn't care about narrative; receipts pending.
