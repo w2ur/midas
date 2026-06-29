@@ -93,6 +93,26 @@ class TestConfig:
         )
         assert resolve_agent_universe(spec) == resolve_universe("sp500")
 
+    def test_resolve_agent_universe_literal_tickers(self):
+        # Inline-ticker fallback: if universe items are NOT registered universe
+        # names, they are treated as literal ticker symbols and returned as-is.
+        # This lets forkers write universe: [SPY, QQQ, IWM] without registering
+        # a universe name. William's live agents always use registered names and
+        # never hit this path.
+        spec = AgentSpec(
+            id="y",
+            display_name="Y",
+            voice="",
+            post_time="",
+            home_currency="USD",
+            initial_capital=10000.0,
+            max_positions=5,
+            universe=["SPY", "QQQ"],
+            benchmark=None,
+            persona="y.md",
+        )
+        assert resolve_agent_universe(spec) == ["SPY", "QQQ"]
+
 
 _MINIMAL_ROSTER = """
 globals:

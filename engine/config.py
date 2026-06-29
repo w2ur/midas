@@ -200,6 +200,13 @@ def resolve_agent_universe(spec: AgentSpec) -> list[str]:
       - empty / None       -> []
       - exactly one name   -> resolve_universe(name) (native order, NOT sorted)
       - two or more names  -> sorted({t for n in names for t in resolve_universe(n)})
+
+    Inline-ticker fallback: if ANY name raises KeyError (i.e. it is not a
+    registered universe name), the whole list is treated as literal ticker
+    symbols and returned as-is. This lets forkers supply e.g.
+    ``universe: [SPY, QQQ, IWM]`` without registering a universe name.
+    William's live agents use only registered names, so they never hit this
+    path.
     """
     names = spec.universe
     if not names:
@@ -208,6 +215,10 @@ def resolve_agent_universe(spec: AgentSpec) -> list[str]:
         names = [names]
     from engine.universes import resolve_universe
 
+    try:
+        resolved = [resolve_universe(n) for n in names]
+    except KeyError:
+        return list(names)  # not registry names → treat as literal tickers
     if len(names) == 1:
-        return resolve_universe(names[0])
-    return sorted({ticker for name in names for ticker in resolve_universe(name)})
+        return resolved[0]  # single registered name → native order (unchanged)
+    return sorted({t for lst in resolved for t in lst})  # multi → sorted union
