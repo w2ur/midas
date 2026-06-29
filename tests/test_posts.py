@@ -4,20 +4,22 @@ import json
 from datetime import date
 from pathlib import Path
 
+from engine.config import get_config
 from engine.posts import (
-    AGENT_DISPLAY_NAMES,
-    AGENT_POST_TIMES,
-    AGENT_VOICE,
     PostPayload,
     build_post_prompt,
+    display_name,
     parse_post_response,
     resolved_post_time,
     save_daily_posts,
 )
 
 
-class TestAgentMaps:
-    def test_all_11_agents_have_display_names(self) -> None:
+class TestAgentRoster:
+    """Roster-shape assertions backed by config (no frozen module dicts)."""
+
+    def test_11_agents_in_roster(self) -> None:
+        cfg = get_config()
         expected = {
             "steady-eddie-eur",
             "steady-eddie-usd",
@@ -31,9 +33,10 @@ class TestAgentMaps:
             "world",
             "the-oracle",
         }
-        assert set(AGENT_DISPLAY_NAMES.keys()) == expected
+        assert set(cfg.roster.keys()) == expected
 
-    def test_all_10_trading_agents_have_post_times(self) -> None:
+    def test_10_trading_agents(self) -> None:
+        cfg = get_config()
         trading = {
             "steady-eddie-eur",
             "steady-eddie-usd",
@@ -46,13 +49,15 @@ class TestAgentMaps:
             "goldfinger",
             "world",
         }
-        assert trading == set(AGENT_POST_TIMES.keys())
+        assert trading == set(cfg.trading_roster)
 
-    def test_oracle_not_in_post_times(self) -> None:
-        assert "the-oracle" not in AGENT_POST_TIMES
+    def test_oracle_not_in_trading_roster(self) -> None:
+        assert "the-oracle" not in get_config().trading_roster
 
     def test_every_agent_has_a_voice(self) -> None:
-        assert set(AGENT_VOICE.keys()) == set(AGENT_DISPLAY_NAMES.keys())
+        cfg = get_config()
+        for aid, spec in cfg.roster.items():
+            assert spec.voice, f"{aid} has empty voice"
 
 
 class TestPostPayload:

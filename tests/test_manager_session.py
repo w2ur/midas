@@ -488,10 +488,11 @@ def test_fill_day_default_path_uses_public_dirs(manager_env):
 
 
 def test_the_manager_not_in_roster():
-    from engine.posts import AGENT_DISPLAY_NAMES, AGENT_POST_TIMES
+    from engine.config import get_config
 
-    assert "the-manager" not in AGENT_POST_TIMES
-    assert "the-manager" not in AGENT_DISPLAY_NAMES
+    cfg = get_config()
+    assert "the-manager" not in cfg.trading_roster
+    assert "the-manager" not in cfg.roster
 
 
 def test_output_bundle_excludes_the_manager():

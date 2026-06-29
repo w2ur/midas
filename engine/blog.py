@@ -9,7 +9,7 @@ from pathlib import Path
 
 from engine.agent_memory import format_oracle_digest
 from engine.config import get_config
-from engine.posts import AGENT_DISPLAY_NAMES, PostPayload
+from engine.posts import display_name as _display_name, PostPayload
 
 # Trim caps applied to the Oracle prompt so first-token latency stays under
 # the cloud streaming idle threshold. Verbatim agent commentary is not what
@@ -68,7 +68,7 @@ def build_oracle_prompt(
 
     agents_s = ""
     for aid, res in agent_results.items():
-        name = AGENT_DISPLAY_NAMES.get(aid, aid)
+        name = _display_name(aid)
         commentary = _truncate(res.get("commentary", ""), _ORACLE_COMMENTARY_CAP)
         agents_s += f"\n  {name}:\n    Commentary: {commentary}\n"
         for t in res.get("trades", []):
@@ -77,7 +77,7 @@ def build_oracle_prompt(
 
     posts_s = ""
     for aid, posts in agent_posts.items():
-        name = AGENT_DISPLAY_NAMES.get(aid, aid)
+        name = _display_name(aid)
         posts_s += f"\n  {name}:\n"
         for p in posts:
             text = p.get("text", "") if isinstance(p, dict) else str(p)
@@ -85,7 +85,7 @@ def build_oracle_prompt(
     posts_block = f"\n\nAGENT POSTS TODAY:{posts_s}" if posts_s else ""
 
     lb_s = "\n".join(
-        f"  #{e['rank']} {AGENT_DISPLAY_NAMES.get(e['agent'], e['agent'])}: {e['return_pct']:+.1f}% (EUR)"
+        f"  #{e['rank']} {_display_name(e['agent'])}: {e['return_pct']:+.1f}% (EUR)"
         for e in leaderboard
     )
 

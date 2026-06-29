@@ -7,7 +7,7 @@ from pathlib import Path
 
 from engine.config import get_config
 from engine.fx import to_eur
-from engine.posts import AGENT_DISPLAY_NAMES
+from engine.posts import display_name as _display_name
 from engine.valuation import portfolio_mtm, portfolio_mtm_eur
 
 _CURRENCY_SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "JPY": "¥", "CHF": "CHF "}
@@ -70,7 +70,7 @@ def generate_daily_log(
 
     # Agent sections
     for agent_id, result in agent_results.items():
-        display_name = AGENT_DISPLAY_NAMES.get(agent_id, agent_id)
+        display_name = _display_name(agent_id)
         lines.append(f"## {display_name}\n")
 
         # Commentary
@@ -96,12 +96,16 @@ def generate_daily_log(
         # Portfolio state
         summary = portfolio_summaries.get(agent_id)
         if summary:
-            currency = summary.get("currency", "USD")  # default USD for legacy portfolios
+            currency = summary.get(
+                "currency", "USD"
+            )  # default USD for legacy portfolios
             cash = summary.get("cash", 0)
             deployed = summary.get("deployed", 0)
             lines.append("### Portfolio\n")
             lines.append(f"- **Cash:** {_fmt_with_eur(cash, currency, log_date)}")
-            lines.append(f"- **Deployed (cost basis):** {_fmt_with_eur(deployed, currency, log_date)}")
+            lines.append(
+                f"- **Deployed (cost basis):** {_fmt_with_eur(deployed, currency, log_date)}"
+            )
             positions = summary.get("positions", [])
             if positions:
                 # Positions may be a list of ticker strings OR dicts {ticker, shares}.
@@ -113,8 +117,10 @@ def generate_daily_log(
 
     # Leaderboard — MTM valuation in EUR for cross-agent comparison
     lines.append("## Leaderboard (mark-to-market, EUR-equivalent)\n")
-    lines.append("> Positions priced at latest close from the committed OHLCV store, "
-                 "converted to EUR at today's FX. All agents started at €10,000 equivalent.\n")
+    lines.append(
+        "> Positions priced at latest close from the committed OHLCV store, "
+        "converted to EUR at today's FX. All agents started at €10,000 equivalent.\n"
+    )
     lines.append("| Rank | Agent | Native MTM | ≈ EUR | vs €10k |")
     lines.append("|------|-------|------------|-------|---------|")
     rows = []
@@ -125,14 +131,18 @@ def generate_daily_log(
         rows.append((agent_id, currency, native_mtm, eur_mtm))
     rows.sort(key=lambda r: r[3] if r[3] is not None else -1, reverse=True)
     for rank, (agent_id, currency, native_mtm, eur_mtm) in enumerate(rows, start=1):
-        display = AGENT_DISPLAY_NAMES.get(agent_id, agent_id)
-        eur_str = _fmt(eur_mtm, "EUR") if eur_mtm is not None else "— (rate unavailable)"
+        display = _display_name(agent_id)
+        eur_str = (
+            _fmt(eur_mtm, "EUR") if eur_mtm is not None else "— (rate unavailable)"
+        )
         if eur_mtm is None:
             pnl_str = "—"
         else:
             pnl_pct = (eur_mtm / 10_000 - 1) * 100
             pnl_str = f"{pnl_pct:+.2f}%"
-        lines.append(f"| {rank} | {display} | {_fmt(native_mtm, currency)} | {eur_str} | {pnl_str} |")
+        lines.append(
+            f"| {rank} | {display} | {_fmt(native_mtm, currency)} | {eur_str} | {pnl_str} |"
+        )
     lines.append("")
 
     # Footer

@@ -12,12 +12,16 @@ from pathlib import Path
 
 from engine.blog import BlogDraft
 from engine.config import get_config
-from engine.posts import AGENT_POST_TIMES, PostPayload
+from engine.posts import PostPayload
 from engine.research_note import parse_research_note
 
-# Canonical 10-agent trading roster. Source of truth: engine.posts.AGENT_POST_TIMES.
-# Oracle is a narrator and lives under bundle["narrator"], not bundle["agents"].
-ROSTER: tuple[str, ...] = tuple(AGENT_POST_TIMES.keys())
+
+def __getattr__(name: str):
+    # Lazy ROSTER — resolved at access time so config overrides (tests / CLI) are honoured.
+    # Oracle is a narrator and lives under bundle["narrator"], not bundle["agents"].
+    if name == "ROSTER":
+        return get_config().trading_roster
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def get_day_number(for_date: date | None = None) -> int:
@@ -61,7 +65,7 @@ def assemble_output_bundle(
     so the site can always render every dossier.
     """
     agents = {}
-    for aid in ROSTER:
+    for aid in get_config().trading_roster:
         result = agent_results.get(aid)
         if result is None:
             agents[aid] = {

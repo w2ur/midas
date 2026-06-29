@@ -537,15 +537,15 @@ class TestStepBuildBaselineManager:
 
 
 class TestPublicExclusion:
-    def test_baseline_manager_not_in_agent_post_times(self) -> None:
-        from engine.posts import AGENT_POST_TIMES
+    def test_baseline_manager_not_in_trading_roster(self) -> None:
+        from engine.config import get_config
 
-        assert "baseline-manager" not in AGENT_POST_TIMES
+        assert "baseline-manager" not in get_config().trading_roster
 
-    def test_baseline_manager_not_in_agent_display_names(self) -> None:
-        from engine.posts import AGENT_DISPLAY_NAMES
+    def test_baseline_manager_not_in_roster(self) -> None:
+        from engine.config import get_config
 
-        assert "baseline-manager" not in AGENT_DISPLAY_NAMES
+        assert "baseline-manager" not in get_config().roster
 
     def test_build_portfolio_summaries_excludes_baseline_manager(
         self, tmp_path: Path, monkeypatch

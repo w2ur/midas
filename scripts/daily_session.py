@@ -89,9 +89,9 @@ from engine.output_bundle import (
 )
 from engine.paper_broker import fill_day
 from engine.portfolio import PortfolioManager
+from engine.config import get_config
 from engine.posts import (
-    AGENT_DISPLAY_NAMES,
-    AGENT_POST_TIMES,
+    display_name,
     PostPayload,
     build_post_prompt,
     save_daily_posts,
@@ -757,7 +757,7 @@ def step_build_post_prompts(
     print("\n=== Step 5a: Build post prompts ===")
     prompts: dict[str, str] = {}
     for agent_id in agent_results:
-        if agent_id in AGENT_POST_TIMES:  # trading agents only
+        if agent_id in get_config().trading_roster:  # trading agents only
             prompts[agent_id] = build_post_prompt(
                 agent_id, agent_results, oracle_blog=oracle_blog
             )
@@ -957,13 +957,11 @@ def build_portfolio_summaries() -> dict[str, dict]:
     where `positions` is the Portfolio.to_dict() position list and
     `deployed` is `portfolio.cost_basis`.
     """
-    from engine.posts import AGENT_POST_TIMES
-
     portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
     manager = PortfolioManager(base_dir=portfolios_dir)
 
     summaries: dict[str, dict] = {}
-    for agent_id in AGENT_POST_TIMES.keys():
+    for agent_id in get_config().trading_roster:
         if not (portfolios_dir / agent_id / "portfolio.json").exists():
             continue
         portfolio = manager.load(agent_id)
@@ -1118,14 +1116,15 @@ def step_build_baselines() -> None:
     print("\n=== Step 9a: Build baselines ===")
     from datetime import date as _date
 
-    from engine.baselines import DAY_ONE, build_all_baselines
-    from scripts.backfill_baselines import AGENT_MAX_POSITIONS, AGENT_UNIVERSES
+    from engine.baselines import build_all_baselines
+    from scripts.backfill_baselines import _max_positions_by_agent, _universes_by_agent
 
+    cfg = get_config()
     build_all_baselines(
-        universes_by_agent=AGENT_UNIVERSES,
-        from_date=DAY_ONE,
+        universes_by_agent=_universes_by_agent(),
+        from_date=cfg.day_one,
         to_date=_date.today(),
-        max_positions_by_agent=AGENT_MAX_POSITIONS,
+        max_positions_by_agent=_max_positions_by_agent(),
     )
 
 

@@ -1,16 +1,15 @@
-"""roster.yaml must reproduce the legacy cast structures verbatim (default env)."""
+"""Snapshot tests — roster.yaml must produce the expected cast (default env).
 
-import json
-from pathlib import Path
+Inline expected values so the test is not tautological (not config vs config).
+Covers display_name, post_time, home_currency, max_positions, benchmark, universe
+names, Oracle role, and trading_roster order.
+"""
+
+from __future__ import annotations
 
 import pytest
 
-from engine.config import get_config, reset_config_cache, resolve_agent_universe
-from engine.posts import AGENT_DISPLAY_NAMES, AGENT_POST_TIMES, AGENT_VOICE
-from engine.baselines import AGENT_BENCHMARKS, DAY_ONE, INITIAL
-from scripts.backfill_baselines import AGENT_MAX_POSITIONS, AGENT_UNIVERSES
-
-ROOT = Path(__file__).resolve().parents[1]
+from engine.config import get_config, reset_config_cache
 
 
 @pytest.fixture(autouse=True)
@@ -21,48 +20,194 @@ def _default_env(monkeypatch):
     reset_config_cache()
 
 
-class TestRosterParity:
-    def test_display_names(self):
-        cfg = get_config()
-        for aid, name in AGENT_DISPLAY_NAMES.items():
-            assert cfg.roster[aid].display_name == name
+class TestRosterSnapshot:
+    # Inline expected values — the migration is locked in; these values come
+    # from the roster.yaml committed in Task 1, not from any live dict.
 
-    def test_post_times_and_order(self):
-        cfg = get_config()
-        assert cfg.trading_roster == tuple(AGENT_POST_TIMES.keys())
-        for aid, t in AGENT_POST_TIMES.items():
-            assert cfg.roster[aid].post_time == t
+    EXPECTED_TRADERS = {
+        "monsieur-forex": {
+            "display_name": "Monsieur Forex",
+            "post_time": "07:00",
+            "home_currency": "EUR",
+            "max_positions": 6,
+            "benchmark_ticker": "EUR_CASH_FLAT",
+            "universe": ["forex-majors"],
+        },
+        "steady-eddie-eur": {
+            "display_name": "Steady Eddie EUR",
+            "post_time": "08:00",
+            "home_currency": "EUR",
+            "max_positions": 10,
+            "benchmark_ticker": "VGK",
+            "universe": ["stoxx-600", "cac40", "dax", "ftse100"],
+        },
+        "steady-eddie-usd": {
+            "display_name": "Steady Eddie USD",
+            "post_time": "08:15",
+            "home_currency": "USD",
+            "max_positions": 10,
+            "benchmark_ticker": "SPY",
+            "universe": ["sp500"],
+        },
+        "sharp-shooter-eur": {
+            "display_name": "Sharp Shooter EUR",
+            "post_time": "09:35",
+            "home_currency": "EUR",
+            "max_positions": 8,
+            "benchmark_ticker": "VGK",
+            "universe": ["stoxx-600", "cac40", "dax", "ftse100", "bearish-etfs-ucits"],
+        },
+        "sharp-shooter-usd": {
+            "display_name": "Sharp Shooter USD",
+            "post_time": "09:45",
+            "home_currency": "USD",
+            "max_positions": 8,
+            "benchmark_ticker": "SPY",
+            "universe": ["sp500", "bearish-etfs-ucits"],
+        },
+        "world": {
+            "display_name": "World",
+            "post_time": "10:00",
+            "home_currency": "EUR",
+            "max_positions": 12,
+            "benchmark_ticker": "URTH",
+            "universe": [
+                "sp500",
+                "stoxx-600",
+                "cac40",
+                "dax",
+                "ftse100",
+                "crypto-top20-eur",
+                "crypto-top20",
+                "forex-majors",
+                "commodities-eur",
+                "bearish-etfs-ucits",
+            ],
+        },
+        "goldfinger": {
+            "display_name": "Goldfinger",
+            "post_time": "11:00",
+            "home_currency": "EUR",
+            "max_positions": 6,
+            "benchmark_ticker": "4GLD.DE",
+            "universe": ["commodities-eur"],
+        },
+        "yolo-sapiens-eur": {
+            "display_name": "YOLO Sapiens EUR",
+            "post_time": "random",
+            "home_currency": "EUR",
+            "max_positions": 5,
+            "benchmark_ticker": "VGK",
+            "universe": [
+                "stoxx-600",
+                "cac40",
+                "dax",
+                "ftse100",
+                "crypto-top20-eur",
+                "commodities-eur",
+                "bearish-etfs-ucits",
+            ],
+        },
+        "yolo-sapiens-usd": {
+            "display_name": "YOLO Sapiens USD",
+            "post_time": "random",
+            "home_currency": "USD",
+            "max_positions": 5,
+            "benchmark_ticker": "SPY",
+            "universe": [
+                "sp500",
+                "crypto-top20",
+                "forex-majors",
+                "metals-commodities",
+                "bearish-etfs-ucits",
+            ],
+        },
+        "satoshi": {
+            "display_name": "Satoshi",
+            "post_time": "23:00",
+            "home_currency": "EUR",
+            "max_positions": 8,
+            "benchmark_ticker": "BTC-EUR",
+            "universe": ["crypto-top20-eur"],
+        },
+    }
 
-    def test_voice(self):
-        cfg = get_config()
-        for aid, v in AGENT_VOICE.items():
-            assert cfg.roster[aid].voice == v
+    # Trading roster order is load-bearing (matches post-time ordering in roster.yaml).
+    EXPECTED_TRADING_ROSTER = (
+        "monsieur-forex",
+        "steady-eddie-eur",
+        "steady-eddie-usd",
+        "sharp-shooter-eur",
+        "sharp-shooter-usd",
+        "world",
+        "goldfinger",
+        "yolo-sapiens-eur",
+        "yolo-sapiens-usd",
+        "satoshi",
+    )
 
-    def test_benchmarks(self):
+    def test_trading_roster_order(self):
         cfg = get_config()
-        for aid, spec in AGENT_BENCHMARKS.items():
-            assert cfg.roster[aid].benchmark.ticker == spec.ticker
-            assert cfg.roster[aid].benchmark.currency == spec.currency
+        assert cfg.trading_roster == self.EXPECTED_TRADING_ROSTER
 
-    def test_universes_and_max_positions(self):
+    def test_trader_display_names(self):
         cfg = get_config()
-        for aid, tickers in AGENT_UNIVERSES.items():
-            assert resolve_agent_universe(cfg.roster[aid]) == tickers
-            assert cfg.roster[aid].max_positions == AGENT_MAX_POSITIONS[aid]
+        for aid, expected in self.EXPECTED_TRADERS.items():
+            assert cfg.roster[aid].display_name == expected["display_name"], aid
 
-    def test_globals(self):
+    def test_trader_post_times(self):
         cfg = get_config()
-        assert cfg.day_one == DAY_ONE
-        assert cfg.initial_capital == INITIAL
+        for aid, expected in self.EXPECTED_TRADERS.items():
+            assert cfg.roster[aid].post_time == expected["post_time"], aid
 
-    def test_safety_matches_agent_config(self):
+    def test_trader_home_currencies(self):
         cfg = get_config()
-        for aid in AGENT_POST_TIMES:
-            path = ROOT / "data" / "agent_config" / f"{aid}.json"
-            if not path.exists():
-                continue
-            raw = json.loads(path.read_text())
-            s = cfg.roster[aid].safety
-            assert s.max_order_notional == raw["max_order_notional"]
-            assert s.daily_drawdown_halt_pct == raw["daily_drawdown_halt_pct"]
-            assert list(s.allowed_universe) == raw.get("allowed_universe", [])
+        for aid, expected in self.EXPECTED_TRADERS.items():
+            assert cfg.roster[aid].home_currency == expected["home_currency"], aid
+
+    def test_trader_max_positions(self):
+        cfg = get_config()
+        for aid, expected in self.EXPECTED_TRADERS.items():
+            assert cfg.roster[aid].max_positions == expected["max_positions"], aid
+
+    def test_trader_benchmark_tickers(self):
+        cfg = get_config()
+        for aid, expected in self.EXPECTED_TRADERS.items():
+            bench = cfg.roster[aid].benchmark
+            assert bench is not None, f"{aid} missing benchmark"
+            assert bench.ticker == expected["benchmark_ticker"], aid
+
+    def test_trader_universe_names(self):
+        """Each trader's universe field matches the expected list of universe names.
+
+        Does NOT resolve the tickers — resolving 500+ tickers belongs in
+        test_universes_resolve.py. This only checks the names stored in config.
+        """
+        cfg = get_config()
+        for aid, expected in self.EXPECTED_TRADERS.items():
+            raw = cfg.roster[aid].universe
+            # Normalise to list for comparison
+            actual = [raw] if isinstance(raw, str) else list(raw or [])
+            assert actual == expected["universe"], aid
+
+    def test_oracle_is_narrator(self):
+        cfg = get_config()
+        assert "the-oracle" in cfg.roster
+        assert cfg.roster["the-oracle"].role == "narrator"
+        assert cfg.roster["the-oracle"].display_name == "The Oracle"
+
+    def test_oracle_not_in_trading_roster(self):
+        cfg = get_config()
+        assert "the-oracle" not in cfg.trading_roster
+
+    def test_day_one_and_initial_capital(self):
+        from datetime import date
+
+        cfg = get_config()
+        assert cfg.day_one == date(2026, 4, 17)
+        assert cfg.initial_capital == 10_000.0
+
+    def test_global_reference_is_msci_world(self):
+        cfg = get_config()
+        assert cfg.global_reference.ticker == "URTH"
+        assert cfg.global_reference.currency == "EUR"

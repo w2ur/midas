@@ -4,12 +4,13 @@ from pathlib import Path
 import pytest
 
 from engine.baselines import (
-    INITIAL,
-    BenchmarkSpec,
     compute_passive_benchmark,
     compute_coin_flip,
 )
-from engine.config import get_config
+from engine.config import BenchmarkSpec, get_config
+
+# Snapshot value — initial capital is 10k in the committed roster.yaml.
+_INITIAL = 10_000.0
 
 
 @pytest.fixture
@@ -37,7 +38,7 @@ def test_passive_benchmark_starts_at_ten_thousand(tmp_ohlcv):
     )
     spec = BenchmarkSpec("Test", "TEST", "EUR")
     snaps = compute_passive_benchmark(spec, date(2026, 4, 17), date(2026, 4, 21))
-    assert snaps[0]["portfolio_value"] == pytest.approx(INITIAL)
+    assert snaps[0]["portfolio_value"] == pytest.approx(_INITIAL)
     assert snaps[0]["date"] == "2026-04-17"
 
 
@@ -71,8 +72,8 @@ def test_passive_benchmark_carries_weekend_close(tmp_ohlcv):
     snaps = compute_passive_benchmark(spec, date(2026, 4, 17), date(2026, 4, 20))
     values = {s["date"]: s["portfolio_value"] for s in snaps}
     # Saturday + Sunday must exist and carry Friday's value
-    assert values["2026-04-18"] == pytest.approx(INITIAL)
-    assert values["2026-04-19"] == pytest.approx(INITIAL)
+    assert values["2026-04-18"] == pytest.approx(_INITIAL)
+    assert values["2026-04-19"] == pytest.approx(_INITIAL)
     assert values["2026-04-20"] == pytest.approx(10500.0)
 
 
@@ -80,7 +81,7 @@ def test_passive_benchmark_flat_cash_sentinel(tmp_ohlcv):
     spec = BenchmarkSpec("EUR cash", "EUR_CASH_FLAT", "EUR")
     snaps = compute_passive_benchmark(spec, date(2026, 4, 17), date(2026, 4, 20))
     assert len(snaps) == 4
-    assert all(s["portfolio_value"] == pytest.approx(INITIAL) for s in snaps)
+    assert all(s["portfolio_value"] == pytest.approx(_INITIAL) for s in snaps)
     # Shape contract: every snapshot carries the same five fields so the
     # site can consume them with one loader.
     assert snaps[0].keys() == {
@@ -143,42 +144,57 @@ def test_coin_flip_starts_at_ten_thousand(tmp_ohlcv):
     snaps = compute_coin_flip(
         "x", ["A"], "EUR", 1, date(2026, 4, 17), date(2026, 4, 17)
     )
-    assert snaps[0]["portfolio_value"] == pytest.approx(INITIAL)
+    assert snaps[0]["portfolio_value"] == pytest.approx(_INITIAL)
     assert snaps[0]["currency"] == "EUR"
 
 
 def test_global_reference_uses_msci_world(tmp_ohlcv):
-    from engine.baselines import GLOBAL_REFERENCE, compute_global_reference
+    from engine.baselines import compute_global_reference
 
+    global_ref = get_config().global_reference
     _write_ohlcv(
         tmp_ohlcv,
-        GLOBAL_REFERENCE.ticker,
+        global_ref.ticker,
         [
             ("2026-04-17", 100.0),
             ("2026-04-18", 102.0),
         ],
     )
     snaps = compute_global_reference(date(2026, 4, 17), date(2026, 4, 18))
-    assert snaps[0]["portfolio_value"] == pytest.approx(INITIAL)
-    assert snaps[-1]["portfolio_value"] == pytest.approx(INITIAL * 1.02)
+    assert snaps[0]["portfolio_value"] == pytest.approx(_INITIAL)
+    assert snaps[-1]["portfolio_value"] == pytest.approx(_INITIAL * 1.02)
     assert snaps[0]["currency"] == "EUR"
 
 
 def test_build_all_baselines_writes_files(tmp_ohlcv):
     """build_all_baselines should produce per-agent + global JSON files."""
-    from engine.baselines import build_all_baselines, AGENT_BENCHMARKS, GLOBAL_REFERENCE
+    from engine.baselines import build_all_baselines
 
-    baselines_dir = get_config().baselines_dir
+    cfg = get_config()
+    baselines_dir = cfg.baselines_dir
 
-    # Minimal OHLCV for every referenced ticker
-    for t in {s.ticker for s in AGENT_BENCHMARKS.values()} | {GLOBAL_REFERENCE.ticker}:
-        if t == "EUR_CASH_FLAT":
-            continue
-        _write_ohlcv(tmp_ohlcv, t, [("2026-04-17", 100.0), ("2026-04-18", 105.0)])
-
-    universes_by_agent = {
-        agent_id: ["FAKE-A", "FAKE-B"] for agent_id in AGENT_BENCHMARKS
+    # Agents with a benchmark (all 10 traders have one in the committed roster).
+    agents_with_bench = {
+        aid: cfg.roster[aid].benchmark
+        for aid in cfg.trading_roster
+        if cfg.roster[aid].benchmark is not None
     }
+
+    # Minimal OHLCV for every referenced ticker.
+    for bench in agents_with_bench.values():
+        if bench.ticker == "EUR_CASH_FLAT":
+            continue
+        _write_ohlcv(
+            tmp_ohlcv, bench.ticker, [("2026-04-17", 100.0), ("2026-04-18", 105.0)]
+        )
+    # Global reference ticker.
+    global_ref = cfg.global_reference
+    if global_ref.ticker != "EUR_CASH_FLAT":
+        _write_ohlcv(
+            tmp_ohlcv, global_ref.ticker, [("2026-04-17", 100.0), ("2026-04-18", 105.0)]
+        )
+
+    universes_by_agent = {aid: ["FAKE-A", "FAKE-B"] for aid in agents_with_bench}
     _write_ohlcv(tmp_ohlcv, "FAKE-A", [("2026-04-17", 10.0), ("2026-04-18", 12.0)])
     _write_ohlcv(tmp_ohlcv, "FAKE-B", [("2026-04-17", 20.0), ("2026-04-18", 19.0)])
 
@@ -188,7 +204,7 @@ def test_build_all_baselines_writes_files(tmp_ohlcv):
         to_date=date(2026, 4, 18),
     )
 
-    for agent_id in AGENT_BENCHMARKS:
+    for agent_id in agents_with_bench:
         assert (baselines_dir / agent_id / "benchmark.json").exists()
         assert (baselines_dir / agent_id / "coinflip.json").exists()
     assert (baselines_dir / "global" / "msci_world.json").exists()
