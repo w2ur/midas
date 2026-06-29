@@ -63,15 +63,30 @@ def _seed_ohlcv(ohlcv_dir: Path, ticker: str, rows: list[tuple[str, float]]) -> 
 
 
 def _write_config(config_dir: Path, agent_id: str, **overrides) -> None:
-    cfg = {
+    """Seed per-agent safety rails via roster.yaml in the tmp MIDAS_DATA_DIR.
+
+    As of Task 4, AgentConfig.load() reads from get_config().roster.
+    ``config_dir`` is kept in the signature for call-site compatibility.
+    """
+    import yaml
+    from engine.config import get_config, reset_config_cache
+
+    safety = {
         "max_order_notional": 10_000.0,
         "max_orders_per_day": 10,
         "daily_drawdown_halt_pct": -50.0,
         "allowed_universe": [],
         "dry_run": False,
     }
-    cfg.update(overrides)
-    (config_dir / f"{agent_id}.json").write_text(json.dumps(cfg), encoding="utf-8")
+    safety.update(overrides)
+    cfg = get_config()
+    roster_path = cfg.data_dir / "roster.yaml"
+    data = yaml.safe_load(roster_path.read_text(encoding="utf-8"))
+    if agent_id not in data["agents"]:
+        data["agents"][agent_id] = {"display_name": agent_id, "role": "trader"}
+    data["agents"][agent_id]["safety"] = safety
+    roster_path.write_text(yaml.dump(data), encoding="utf-8")
+    reset_config_cache()
 
 
 def _init_portfolio(

@@ -57,11 +57,16 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AgentConfig:
-    """Per-agent safety rails loaded from data/agent_config/{agent_id}.json.
+    """Per-agent safety rails sourced from roster.yaml via get_config().roster[agent_id].safety.
 
     daily_drawdown_halt_pct uses NEGATIVE values. The broker halts all of the
     agent's orders when the computed drawdown % is strictly less than this value
     (i.e. -7.0 < -5.0 → halt). A value of 0.0 disables the halt for that agent.
+
+    Agents not in the roster (e.g. the-manager, baseline-manager) receive safe
+    defaults: max_order_notional=500, max_orders_per_day=5,
+    daily_drawdown_halt_pct=-5.0, allowed_universe=[], dry_run=False — identical
+    to the original broker's missing-file defaults (commit 320e0d53).
     """
 
     max_order_notional: float
@@ -72,24 +77,23 @@ class AgentConfig:
 
     @classmethod
     def load(cls, agent_id: str) -> "AgentConfig":
-        path = get_config().agent_config_dir / f"{agent_id}.json"
-        defaults = cls(
-            max_order_notional=500.0,
-            max_orders_per_day=5,
-            daily_drawdown_halt_pct=-5.0,
-            allowed_universe=[],
-            dry_run=False,
-        )
-        if not path.exists():
-            return defaults
-        try:
-            d = json.loads(path.read_text(encoding="utf-8"))
-            return cls(**d)
-        except (json.JSONDecodeError, TypeError) as exc:
-            logger.warning(
-                "Malformed agent config at %s: %s — falling back to defaults", path, exc
+        spec = get_config().roster.get(agent_id)
+        if spec is None:
+            return cls(
+                max_order_notional=500.0,
+                max_orders_per_day=5,
+                daily_drawdown_halt_pct=-5.0,
+                allowed_universe=[],
+                dry_run=False,
             )
-            return defaults
+        s = spec.safety
+        return cls(
+            max_order_notional=s.max_order_notional,
+            max_orders_per_day=s.max_orders_per_day,
+            daily_drawdown_halt_pct=s.daily_drawdown_halt_pct,
+            allowed_universe=list(s.allowed_universe),
+            dry_run=s.dry_run,
+        )
 
 
 _TICKER_CURRENCY_OVERRIDES: dict[str, str] | None = None

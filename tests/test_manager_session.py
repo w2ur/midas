@@ -446,17 +446,25 @@ def test_fill_day_default_path_uses_public_dirs(manager_env):
     from engine.paper_broker import fill_day
 
     _seed_ohlcv(manager_env["ohlcv"], "AAPL", "2026-06-01", 200.0)
-    (manager_env["config_dir"] / "agent1.json").write_text(
-        json.dumps(
-            {
-                "max_order_notional": 10_000.0,
-                "max_orders_per_day": 10,
-                "daily_drawdown_halt_pct": -50.0,
-                "allowed_universe": [],
-                "dry_run": False,
-            }
-        )
-    )
+    # Seed agent1 safety rails via roster.yaml (Task 4: no more agent_config/*.json).
+    import yaml as _yaml
+    from engine.config import get_config as _gc, reset_config_cache as _rcc
+
+    _roster_path = _gc().data_dir / "roster.yaml"
+    _roster_data = _yaml.safe_load(_roster_path.read_text(encoding="utf-8"))
+    _roster_data["agents"]["agent1"] = {
+        "display_name": "agent1",
+        "role": "trader",
+        "safety": {
+            "max_order_notional": 10_000.0,
+            "max_orders_per_day": 10,
+            "daily_drawdown_halt_pct": -50.0,
+            "allowed_universe": [],
+            "dry_run": False,
+        },
+    }
+    _roster_path.write_text(_yaml.dump(_roster_data), encoding="utf-8")
+    _rcc()
     pm = PortfolioManager(manager_env["portfolios"])
     pm.initialize("agent1", initial_capital=5000.0, currency="EUR")
 

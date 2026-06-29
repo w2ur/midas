@@ -31,7 +31,7 @@ class BenchmarkSpec:
 @dataclass(frozen=True)
 class SafetyRails:
     max_order_notional: float = 500.0
-    max_orders_per_day: int = 100
+    max_orders_per_day: int = 5
     daily_drawdown_halt_pct: float = -5.0
     allowed_universe: tuple[str, ...] = ()
     dry_run: bool = False
@@ -132,7 +132,7 @@ def _safety(raw: dict | None) -> SafetyRails:
     raw = raw or {}
     return SafetyRails(
         max_order_notional=float(raw.get("max_order_notional", 500.0)),
-        max_orders_per_day=int(raw.get("max_orders_per_day", 100)),
+        max_orders_per_day=int(raw.get("max_orders_per_day", 5)),
         daily_drawdown_halt_pct=float(raw.get("daily_drawdown_halt_pct", -5.0)),
         allowed_universe=tuple(raw.get("allowed_universe", []) or []),
         dry_run=bool(raw.get("dry_run", False)),

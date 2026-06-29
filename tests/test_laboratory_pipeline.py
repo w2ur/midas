@@ -67,48 +67,44 @@ def lab_env(midas_data_root: Path, monkeypatch):
     seed_ohlcv("BTC-EUR", 50000.0, date(2026, 4, 16))
     seed_ohlcv("MSFT", 400.0, date(2026, 4, 16))
 
-    # Seed per-agent configs (small notional caps so one test-trade exceeds it).
+    # Seed per-agent safety rails via roster.yaml (Task 4: no more agent_config/*.json).
+    import yaml
+    from engine.config import reset_config_cache
+
+    roster_path = cfg.data_dir / "roster.yaml"
+    roster_data = yaml.safe_load(roster_path.read_text(encoding="utf-8"))
+
+    _base_safety = {
+        "max_order_notional": 1000.0,
+        "max_orders_per_day": 5,
+        "daily_drawdown_halt_pct": -5.0,
+        "allowed_universe": [],
+        "dry_run": False,
+    }
     for agent_id in ["satoshi", "funded-buyer", "steady-eddie-eur", "yolo-sapiens-usd"]:
-        (config_dir / f"{agent_id}.json").write_text(
-            json.dumps(
-                {
-                    "max_order_notional": 1000.0,
-                    "max_orders_per_day": 5,
-                    "daily_drawdown_halt_pct": -5.0,
-                    "allowed_universe": [],
-                    "dry_run": False,
-                }
-            ),
-            encoding="utf-8",
-        )
+        if agent_id not in roster_data["agents"]:
+            roster_data["agents"][agent_id] = {
+                "display_name": agent_id,
+                "role": "trader",
+            }
+        roster_data["agents"][agent_id]["safety"] = dict(_base_safety)
 
     # Dedicated agent with drawdown halt triggered.
-    (config_dir / "halted-agent.json").write_text(
-        json.dumps(
-            {
-                "max_order_notional": 1000.0,
-                "max_orders_per_day": 5,
-                "daily_drawdown_halt_pct": -5.0,
-                "allowed_universe": [],
-                "dry_run": False,
-            }
-        ),
-        encoding="utf-8",
-    )
+    roster_data["agents"]["halted-agent"] = {
+        "display_name": "halted-agent",
+        "role": "trader",
+        "safety": dict(_base_safety),
+    }
 
     # Dedicated agent with universe restriction.
-    (config_dir / "gated-agent.json").write_text(
-        json.dumps(
-            {
-                "max_order_notional": 1000.0,
-                "max_orders_per_day": 5,
-                "daily_drawdown_halt_pct": -5.0,
-                "allowed_universe": ["single-voo"],
-                "dry_run": False,
-            }
-        ),
-        encoding="utf-8",
-    )
+    roster_data["agents"]["gated-agent"] = {
+        "display_name": "gated-agent",
+        "role": "trader",
+        "safety": {**_base_safety, "allowed_universe": ["single-voo"]},
+    }
+
+    roster_path.write_text(yaml.dump(roster_data), encoding="utf-8")
+    reset_config_cache()
 
     pm = PortfolioManager(base_dir=pm_base)
     pm.initialize("satoshi", 10000.0, currency="EUR")
@@ -283,18 +279,25 @@ class TestLaboratoryPipeline:
         # We'll use fail-agent with a trade that WOULD pass all rails otherwise.
         # Seed a SELL that will pass pre-checks (give the agent a position first).
         pm.initialize("fail-agent", 1000.0, currency="EUR")
-        (lab_env["config_dir"] / "fail-agent.json").write_text(
-            json.dumps(
-                {
-                    "max_order_notional": 1000.0,
-                    "max_orders_per_day": 5,
-                    "daily_drawdown_halt_pct": -5.0,
-                    "allowed_universe": [],
-                    "dry_run": False,
-                }
-            ),
-            encoding="utf-8",
-        )
+        # Seed fail-agent safety rails via roster.yaml (Task 4: no more agent_config/*.json).
+        import yaml as _yaml
+        from engine.config import get_config as _gc, reset_config_cache as _rcc
+
+        _roster_path = _gc().data_dir / "roster.yaml"
+        _roster_data = _yaml.safe_load(_roster_path.read_text(encoding="utf-8"))
+        _roster_data["agents"]["fail-agent"] = {
+            "display_name": "fail-agent",
+            "role": "trader",
+            "safety": {
+                "max_order_notional": 1000.0,
+                "max_orders_per_day": 5,
+                "daily_drawdown_halt_pct": -5.0,
+                "allowed_universe": [],
+                "dry_run": False,
+            },
+        }
+        _roster_path.write_text(_yaml.dump(_roster_data), encoding="utf-8")
+        _rcc()
 
         # Give fail-agent a tiny BTC-EUR position. Shares chosen so that:
         # - APPLY_TRADE_FAILED order: 0.00001 shares (notional=0.5 EUR < 1000 cap, ≤ held)
