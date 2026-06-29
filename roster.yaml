@@ -1,0 +1,258 @@
+globals:
+  day_one: '2026-04-17'
+  currencies:
+  - EUR
+  - USD
+  initial_capital: 10000.0
+  global_reference:
+    label: MSCI World
+    ticker: URTH
+    currency: EUR
+  agents_dir: .claude/agents
+agents:
+  monsieur-forex:
+    display_name: Monsieur Forex
+    voice: Central-bank whisperer. Precise, dispassionate. Macro flows.
+    post_time: 07:00
+    home_currency: EUR
+    initial_capital: 10000.0
+    max_positions: 6
+    universe:
+    - forex-majors
+    benchmark:
+      label: EUR cash
+      ticker: EUR_CASH_FLAT
+      currency: EUR
+    persona: monsieur-forex.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  steady-eddie-eur:
+    display_name: Steady Eddie EUR
+    voice: Patient quality-focused EU manager. Dry, methodical. Thinks in quarters,
+      not days.
+    post_time: 08:00
+    home_currency: EUR
+    initial_capital: 10000.0
+    max_positions: 10
+    universe:
+    - stoxx-600
+    - cac40
+    - dax
+    - ftse100
+    benchmark:
+      label: FTSE Europe
+      ticker: VGK
+      currency: EUR
+    persona: steady-eddie-eur.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  steady-eddie-usd:
+    display_name: Steady Eddie USD
+    voice: Patient quality-focused US manager. Dry, methodical. Thinks in quarters,
+      not days.
+    post_time: 08:15
+    home_currency: USD
+    initial_capital: 10000.0
+    max_positions: 10
+    universe:
+    - sp500
+    benchmark:
+      label: S&P 500
+      ticker: SPY
+      currency: USD
+    persona: steady-eddie-usd.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  sharp-shooter-eur:
+    display_name: Sharp Shooter EUR
+    voice: Decisive EU momentum trader. UCITS-bounded. No sentiment.
+    post_time: 09:35
+    home_currency: EUR
+    initial_capital: 10000.0
+    max_positions: 8
+    universe:
+    - stoxx-600
+    - cac40
+    - dax
+    - ftse100
+    - bearish-etfs-ucits
+    benchmark:
+      label: FTSE Europe
+      ticker: VGK
+      currency: EUR
+    persona: sharp-shooter-eur.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  sharp-shooter-usd:
+    display_name: Sharp Shooter USD
+    voice: Decisive US momentum trader. Rides trends hard, cuts fast.
+    post_time: 09:45
+    home_currency: USD
+    initial_capital: 10000.0
+    max_positions: 8
+    universe:
+    - sp500
+    - bearish-etfs-ucits
+    benchmark:
+      label: S&P 500
+      ticker: SPY
+      currency: USD
+    persona: sharp-shooter-usd.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  world:
+    display_name: World
+    voice: Global multi-asset manager. Currency-aware. Speaks in EUR-equivalent terms.
+    post_time: '10:00'
+    home_currency: EUR
+    initial_capital: 10000.0
+    max_positions: 12
+    universe:
+    - sp500
+    - stoxx-600
+    - cac40
+    - dax
+    - ftse100
+    - crypto-top20-eur
+    - crypto-top20
+    - forex-majors
+    - commodities-eur
+    - bearish-etfs-ucits
+    benchmark:
+      label: MSCI World
+      ticker: URTH
+      currency: EUR
+    persona: world.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  goldfinger:
+    display_name: Goldfinger
+    voice: Contrarian commodities veteran. Patient. Oldest asset class.
+    post_time: '11:00'
+    home_currency: EUR
+    initial_capital: 10000.0
+    max_positions: 6
+    universe:
+    - commodities-eur
+    benchmark:
+      label: Gold
+      ticker: 4GLD.DE
+      currency: EUR
+    persona: goldfinger.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  yolo-sapiens-eur:
+    display_name: YOLO Sapiens EUR
+    voice: EU cross-asset degen. Self-aware, audacious. 'Cash doesn't double.'
+    post_time: random
+    home_currency: EUR
+    initial_capital: 10000.0
+    max_positions: 5
+    universe:
+    - stoxx-600
+    - cac40
+    - dax
+    - ftse100
+    - crypto-top20-eur
+    - commodities-eur
+    - bearish-etfs-ucits
+    benchmark:
+      label: FTSE Europe
+      ticker: VGK
+      currency: EUR
+    persona: yolo-sapiens-eur.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  yolo-sapiens-usd:
+    display_name: YOLO Sapiens USD
+    voice: US cross-asset degen. Self-aware, audacious. Leveraged ETFs are his religion.
+    post_time: random
+    home_currency: USD
+    initial_capital: 10000.0
+    max_positions: 5
+    universe:
+    - sp500
+    - crypto-top20
+    - forex-majors
+    - metals-commodities
+    - bearish-etfs-ucits
+    benchmark:
+      label: S&P 500
+      ticker: SPY
+      currency: USD
+    persona: yolo-sapiens-usd.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  satoshi:
+    display_name: Satoshi
+    voice: On-chain nerd. Halving cycles, F&G index, cites metrics.
+    post_time: '23:00'
+    home_currency: EUR
+    initial_capital: 10000.0
+    max_positions: 8
+    universe:
+    - crypto-top20-eur
+    benchmark:
+      label: BTC-EUR
+      ticker: BTC-EUR
+      currency: EUR
+    persona: satoshi.md
+    role: trader
+    safety:
+      max_order_notional: 1000000.0
+      max_orders_per_day: 100
+      daily_drawdown_halt_pct: -95.0
+      allowed_universe: []
+      dry_run: false
+  the-oracle:
+    display_name: The Oracle
+    voice: Curious, witty narrator. Sports-commentator energy. Amused by the agents'
+      egos.
+    post_time: ''
+    role: narrator
+    persona: the-oracle.md
