@@ -72,6 +72,37 @@ def run(trigger: str, today: date | None = None) -> dict:
     return artifact
 
 
+def _push_with_rebase_retry(max_attempts: int = 3) -> None:
+    """Push HEAD to main, rebasing on origin/main and retrying on a
+    non-fast-forward rejection.
+
+    The weekend refresh commits a single derived-state commit and can race a
+    concurrent commit on main (a PR merge, the trigger watcher's opportunistic
+    leaderboard write). A bare ``git push`` then fails with ``[rejected]
+    (fetch first)``. Rebasing our lone commit onto the advanced main and
+    retrying resolves the race without human intervention.
+    """
+    for attempt in range(1, max_attempts + 1):
+        push = subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=_PROJECT_ROOT)
+        if push.returncode == 0:
+            return
+        if attempt == max_attempts:
+            raise RuntimeError(
+                f"git push to main failed after {max_attempts} attempts "
+                f"(last exit {push.returncode})"
+            )
+        logger.warning(
+            "Push rejected (attempt %d/%d) — rebasing on origin/main and retrying.",
+            attempt,
+            max_attempts,
+        )
+        subprocess.run(
+            ["git", "pull", "--rebase", "origin", "main"],
+            cwd=_PROJECT_ROOT,
+            check=True,
+        )
+
+
 def commit_and_push() -> None:
     """Idempotency contract: full-rewrite of snapshots + baselines + current.json.
     Re-running on the same date is safe; commit is a no-op when nothing changed."""
@@ -88,9 +119,7 @@ def commit_and_push() -> None:
         return
     msg = f"chore: weekend refresh {date.today().isoformat()}"
     subprocess.run(["git", "commit", "-m", msg], cwd=_PROJECT_ROOT, check=True)
-    subprocess.run(
-        ["git", "push", "origin", "HEAD:main"], cwd=_PROJECT_ROOT, check=True
-    )
+    _push_with_rebase_retry()
 
 
 def main() -> None:

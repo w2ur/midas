@@ -30,7 +30,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
         with:
-          fetch-depth: 1
+          # Full history so the push step can rebase on an advanced main when a
+          # concurrent commit races the refresh (see _push_with_rebase_retry).
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
