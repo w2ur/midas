@@ -29,6 +29,7 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
+from engine.config import get_config
 from engine.market_data import latest_close_and_date_from_store
 
 
@@ -93,7 +94,7 @@ def fetch_and_save(
         Saved payload: {"date", "benchmarks": {...}, "notes": {...}}
     """
     if output_path is None:
-        output_path = _PROJECT_ROOT / "data" / "market" / "today.json"
+        output_path = get_config().data_dir / "data" / "market" / "today.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     if allow_network:

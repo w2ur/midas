@@ -28,8 +28,8 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 import pandas as pd
 import yfinance as yf
 
+from engine.config import get_config
 from engine.tickers import (
-    DEFAULT_PATH as _TICKERS_PATH,
     load_registry,
     merge as _merge_registry,
     resolve_name,
@@ -60,9 +60,6 @@ from engine.universes.assets import (
     get_bearish_etf_ucits_tickers,
     get_commodities_eur_tickers,
 )
-
-_OHLCV_DIR = _PROJECT_ROOT / "data" / "market" / "ohlcv"
-_PORTFOLIOS_DIR = _PROJECT_ROOT / "data" / "portfolios"
 
 
 def _fetch_ticker_info(symbol: str) -> dict | None:
@@ -129,9 +126,10 @@ _ETF_BROAD = [
 def _collect_holdings() -> set[str]:
     """Return every ticker currently held across all portfolios."""
     holdings: set[str] = set()
-    if not _PORTFOLIOS_DIR.exists():
+    portfolios_dir = get_config().portfolios_dir
+    if not portfolios_dir.exists():
         return holdings
-    for portfolio_dir in _PORTFOLIOS_DIR.iterdir():
+    for portfolio_dir in portfolios_dir.iterdir():
         portfolio_file = portfolio_dir / "portfolio.json"
         if not portfolio_file.exists():
             continue
@@ -272,7 +270,7 @@ def _safe_int(v) -> int | None:
 
 def _write_rows(symbol: str, df: pd.DataFrame) -> int:
     """Append new daily rows to data/market/ohlcv/{SYMBOL}.jsonl."""
-    path = _OHLCV_DIR / f"{symbol}.jsonl"
+    path = get_config().ohlcv_dir / f"{symbol}.jsonl"
     existing = _existing_dates(path)
 
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -367,7 +365,7 @@ def main() -> int:
     failures = 0
     for i, symbol in enumerate(symbols, start=1):
         if not args.names_only:
-            path = _OHLCV_DIR / f"{symbol}.jsonl"
+            path = get_config().ohlcv_dir / f"{symbol}.jsonl"
             if args.backfill:
                 start = default_start
             elif path.exists():

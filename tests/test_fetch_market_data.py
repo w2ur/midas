@@ -12,13 +12,13 @@ import json
 from pathlib import Path
 
 import pytest
+from engine.config import get_config
 
 
 @pytest.fixture
-def tmp_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    store = tmp_path / "ohlcv"
-    store.mkdir()
-    monkeypatch.setattr("engine.market_data._OHLCV_STORE", store)
+def tmp_store(midas_data_root) -> Path:
+    store = get_config().ohlcv_dir
+    store.mkdir(parents=True, exist_ok=True)
     return store
 
 

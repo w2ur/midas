@@ -13,16 +13,17 @@ from __future__ import annotations
 
 import json
 from datetime import date
-from pathlib import Path
 from typing import Iterable
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-_OHLCV = _REPO_ROOT / "data" / "market" / "ohlcv"
+from engine.config import get_config
 
 # Direct pairs available in the forex-majors universe.
 # Each entry: (from, to) → yfinance ticker, inverted (True = stored rate is to/from, use 1/rate)
 _DIRECT: dict[tuple[str, str], tuple[str, bool]] = {
-    ("USD", "EUR"): ("EURUSD=X", True),   # Stored rate is EUR→USD, so EUR per USD = 1/rate
+    ("USD", "EUR"): (
+        "EURUSD=X",
+        True,
+    ),  # Stored rate is EUR→USD, so EUR per USD = 1/rate
     ("GBP", "EUR"): ("EURGBP=X", True),
     ("JPY", "EUR"): ("EURJPY=X", True),
     ("EUR", "USD"): ("EURUSD=X", False),
@@ -33,7 +34,7 @@ _DIRECT: dict[tuple[str, str], tuple[str, bool]] = {
 
 def _load_store_series(ticker: str) -> dict[str, float]:
     """Return {date_iso: close_price} for a ticker, or empty dict if missing."""
-    path = _OHLCV / f"{ticker}.jsonl"
+    path = get_config().ohlcv_dir / f"{ticker}.jsonl"
     if not path.exists():
         return {}
     series: dict[str, float] = {}
@@ -47,7 +48,11 @@ def _load_store_series(ticker: str) -> dict[str, float]:
             except json.JSONDecodeError:
                 continue
             d = row.get("date")
-            close = row.get("adj_close") if row.get("adj_close") is not None else row.get("close")
+            close = (
+                row.get("adj_close")
+                if row.get("adj_close") is not None
+                else row.get("close")
+            )
             if d and close is not None:
                 series[d] = float(close)
     return series
@@ -62,7 +67,9 @@ def _latest_on_or_before(series: dict[str, float], target: date) -> float | None
     return series[max(eligible)]
 
 
-def get_rate(from_currency: str, to_currency: str, on: date | None = None) -> float | None:
+def get_rate(
+    from_currency: str, to_currency: str, on: date | None = None
+) -> float | None:
     """Return the exchange rate: how many `to_currency` per 1 `from_currency` on `on`.
 
     Returns None if the rate cannot be computed from the available data.
@@ -113,7 +120,9 @@ def get_rate(from_currency: str, to_currency: str, on: date | None = None) -> fl
     return None
 
 
-def convert(amount: float, from_currency: str, to_currency: str, on: date | None = None) -> float | None:
+def convert(
+    amount: float, from_currency: str, to_currency: str, on: date | None = None
+) -> float | None:
     """Convert `amount` from one currency to another using the rate on `on`.
 
     Returns None if the rate is unavailable. Useful for portfolio valuation.

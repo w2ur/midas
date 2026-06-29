@@ -1,6 +1,8 @@
-"""Post generation — single source of truth for agent display names and schedule.
+"""Post generation — agent display names and schedule backed by roster config.
 
-Imported by engine/daily_log.py; engine/blog.py and engine/output_bundle.py will import from here in later tasks.
+Imported by engine/daily_log.py, engine/blog.py, and engine/output_bundle.py.
+All cast data is read from get_config().roster at call time — no module-level
+frozen dicts.
 """
 
 from __future__ import annotations
@@ -12,59 +14,35 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-POSTS_DIR = Path(__file__).parent.parent / "data" / "posts"
+from engine.config import get_config
 
-AGENT_DISPLAY_NAMES: dict[str, str] = {
-    "steady-eddie-eur": "Steady Eddie EUR",
-    "steady-eddie-usd": "Steady Eddie USD",
-    "sharp-shooter-eur": "Sharp Shooter EUR",
-    "sharp-shooter-usd": "Sharp Shooter USD",
-    "yolo-sapiens-eur": "YOLO Sapiens EUR",
-    "yolo-sapiens-usd": "YOLO Sapiens USD",
-    "satoshi": "Satoshi",
-    "monsieur-forex": "Monsieur Forex",
-    "goldfinger": "Goldfinger",
-    "world": "World",
-    "the-oracle": "The Oracle",
-}
 
-# Trading agents only — Oracle uses per-kind custom times set by its prompt.
-AGENT_POST_TIMES: dict[str, str] = {
-    "monsieur-forex": "07:00",
-    "steady-eddie-eur": "08:00",
-    "steady-eddie-usd": "08:15",
-    "sharp-shooter-eur": "09:35",
-    "sharp-shooter-usd": "09:45",
-    "world": "10:00",
-    "goldfinger": "11:00",
-    "yolo-sapiens-eur": "random",
-    "yolo-sapiens-usd": "random",
-    "satoshi": "23:00",
-}
+def display_name(agent_id: str) -> str:
+    """Return the human-readable display name for an agent, falling back to agent_id."""
+    spec = get_config().roster.get(agent_id)
+    return spec.display_name if spec else agent_id
 
-AGENT_VOICE: dict[str, str] = {
-    "steady-eddie-eur": "Patient quality-focused EU manager. Dry, methodical. Thinks in quarters, not days.",
-    "steady-eddie-usd": "Patient quality-focused US manager. Dry, methodical. Thinks in quarters, not days.",
-    "sharp-shooter-eur": "Decisive EU momentum trader. UCITS-bounded. No sentiment.",
-    "sharp-shooter-usd": "Decisive US momentum trader. Rides trends hard, cuts fast.",
-    "yolo-sapiens-eur": "EU cross-asset degen. Self-aware, audacious. 'Cash doesn't double.'",
-    "yolo-sapiens-usd": "US cross-asset degen. Self-aware, audacious. Leveraged ETFs are his religion.",
-    "satoshi": "On-chain nerd. Halving cycles, F&G index, cites metrics.",
-    "monsieur-forex": "Central-bank whisperer. Precise, dispassionate. Macro flows.",
-    "goldfinger": "Contrarian commodities veteran. Patient. Oldest asset class.",
-    "world": "Global multi-asset manager. Currency-aware. Speaks in EUR-equivalent terms.",
-    "the-oracle": "Curious, witty narrator. Sports-commentator energy. Amused by the agents' egos.",
-}
+
+def _post_time(agent_id: str) -> str:
+    """Return the post_time for an agent, defaulting to '12:00'."""
+    spec = get_config().roster.get(agent_id)
+    return spec.post_time if spec and spec.post_time else "12:00"
+
+
+def _voice(agent_id: str) -> str:
+    """Return the voice description for an agent."""
+    spec = get_config().roster.get(agent_id)
+    return spec.voice if spec else ""
 
 
 def resolved_post_time(agent_id: str, post_date: date) -> str:
-    """Resolve AGENT_POST_TIMES[agent_id] — fixed returns verbatim, 'random' returns deterministic HH:MM.
+    """Resolve the agent's post time — fixed returns verbatim, 'random' returns deterministic HH:MM.
 
     'random' is seeded by MD5(date_iso::agent_id), truncated to a minute-offset
     within the 09:00-22:00 Paris window. Same (date, agent) always returns the
     same time — needed for SSG-friendly feed rendering.
     """
-    raw = AGENT_POST_TIMES.get(agent_id, "12:00")
+    raw = _post_time(agent_id)
     if raw != "random":
         return raw
     seed = f"{post_date.isoformat()}::{agent_id}"
@@ -106,7 +84,7 @@ class PostPayload:
             kind=raw.get("kind", "trade"),
             parent_id=raw.get("parent_id"),
             refs=raw.get("refs", {}),
-            post_at=raw.get("post_at", AGENT_POST_TIMES.get(agent_id, "12:00")),
+            post_at=raw.get("post_at", _post_time(agent_id)),
         )
 
 
@@ -121,9 +99,9 @@ def build_post_prompt(
     injected as a context block so the agent can react to the Oracle's
     framing of the day, not just to other agents' raw moves.
     """
-    display = AGENT_DISPLAY_NAMES[agent_id]
-    voice = AGENT_VOICE[agent_id]
-    schedule = AGENT_POST_TIMES[agent_id]
+    display = display_name(agent_id)
+    voice = _voice(agent_id)
+    schedule = _post_time(agent_id)
 
     own = all_results.get(agent_id, {})
     own_section = f"YOUR COMMENTARY: {own.get('commentary', 'No commentary.')}\n"
@@ -139,7 +117,7 @@ def build_post_prompt(
     for other_id, res in all_results.items():
         if other_id == agent_id:
             continue
-        name = AGENT_DISPLAY_NAMES.get(other_id, other_id)
+        name = display_name(other_id)
         commentary = res.get("commentary", "")
         trades = res.get("trades", [])
         others_section += f"\n  {name}:\n    Commentary: {commentary}\n"
@@ -183,8 +161,9 @@ def parse_post_response(agent_id: str, response_text: str) -> list[PostPayload]:
 
 
 def save_daily_posts(post_date: date, all_posts: dict[str, list[PostPayload]]) -> Path:
-    POSTS_DIR.mkdir(parents=True, exist_ok=True)
-    path = POSTS_DIR / f"{post_date.isoformat()}.json"
+    posts_dir = get_config().posts_dir
+    posts_dir.mkdir(parents=True, exist_ok=True)
+    path = posts_dir / f"{post_date.isoformat()}.json"
     out = {aid: [p.to_dict() for p in posts] for aid, posts in all_posts.items()}
     path.write_text(json.dumps(out, indent=2), encoding="utf-8")
     return path

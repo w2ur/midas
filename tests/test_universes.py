@@ -10,6 +10,8 @@ session aborted as a downstream consequence.
 from __future__ import annotations
 
 import json
+
+from engine.config import get_config
 from pathlib import Path
 
 import pytest
@@ -53,24 +55,22 @@ class TestSP500Tickers:
         for ticker in get_sp500_tickers():
             assert "." not in ticker, f"{ticker!r} still contains a dot"
 
-    def test_isolated_cache_returns_isolated_data(self, tmp_path, monkeypatch):
+    def test_isolated_cache_returns_isolated_data(self, midas_data_root, monkeypatch):
         """Monkeypatch the data dir; verify reads come from the patched location."""
         import engine.universes.index as ix_mod
 
-        fake_dir = tmp_path / "universes"
-        fake_dir.mkdir()
-        monkeypatch.setattr(ix_mod, "_DATA_DIR", fake_dir)
+        fake_dir = get_config().universes_dir
+        fake_dir.mkdir(parents=True, exist_ok=True)
 
         sample = ["AAPL", "MSFT"]
         (fake_dir / "sp500.json").write_text(json.dumps(sample))
         assert ix_mod.get_sp500_tickers() == sample
 
-    def test_no_network_call_when_file_exists(self, tmp_path, monkeypatch):
+    def test_no_network_call_when_file_exists(self, midas_data_root, monkeypatch):
         import engine.universes.index as ix_mod
 
-        fake_dir = tmp_path / "universes"
-        fake_dir.mkdir()
-        monkeypatch.setattr(ix_mod, "_DATA_DIR", fake_dir)
+        fake_dir = get_config().universes_dir
+        fake_dir.mkdir(parents=True, exist_ok=True)
         (fake_dir / "sp500.json").write_text(json.dumps(["AAPL"]))
 
         called = []
@@ -149,12 +149,12 @@ class TestEUIndices:
 
 
 class TestRefreshFunctions:
-    def test_refresh_sp500_writes_to_data_dir(self, tmp_path, monkeypatch):
+    def test_refresh_sp500_writes_to_data_dir(self, midas_data_root, monkeypatch):
         import engine.universes.index as ix_mod
         import pandas as pd
 
-        fake_dir = tmp_path / "universes"
-        monkeypatch.setattr(ix_mod, "_DATA_DIR", fake_dir)
+        fake_dir = get_config().universes_dir
+        fake_dir.mkdir(parents=True, exist_ok=True)
 
         fresh = [f"T{i:03d}" for i in range(150)]
 
@@ -168,14 +168,14 @@ class TestRefreshFunctions:
         assert (fake_dir / "sp500.json").exists()
         assert json.loads((fake_dir / "sp500.json").read_text()) == sorted(fresh)
 
-    def test_refresh_nasdaq100_handles_dataframe_or_chain(self, tmp_path, monkeypatch):
+    def test_refresh_nasdaq100_handles_dataframe_or_chain(self, midas_data_root, monkeypatch):
         """Regression: previous code used `or` between DataFrame returns, which
         crashes on truthy non-empty frames. Refresh must handle both column names."""
         import engine.universes.index as ix_mod
         import pandas as pd
 
-        fake_dir = tmp_path / "universes"
-        monkeypatch.setattr(ix_mod, "_DATA_DIR", fake_dir)
+        fake_dir = get_config().universes_dir
+        fake_dir.mkdir(parents=True, exist_ok=True)
         fresh = [f"N{i:03d}" for i in range(80)]
 
         # Return a table with the "Ticker" column — first lookup matches,
@@ -265,11 +265,11 @@ class TestCongressionalTickers:
         result = get_congressional_tickers()
         assert result == sorted(result)
 
-    def test_isolated_seed_writes_to_patched_dir(self, tmp_path, monkeypatch):
+    def test_isolated_seed_writes_to_patched_dir(self, midas_data_root, monkeypatch):
         import engine.universes.alternative as alt_mod
 
-        fake_dir = tmp_path / "universes"
-        monkeypatch.setattr(alt_mod, "_DATA_DIR", fake_dir)
+        fake_dir = get_config().universes_dir
+        fake_dir.mkdir(parents=True, exist_ok=True)
         cache_path = fake_dir / "congressional.json"
         assert not cache_path.exists()
 

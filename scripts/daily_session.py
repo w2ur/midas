@@ -89,9 +89,8 @@ from engine.output_bundle import (
 )
 from engine.paper_broker import fill_day
 from engine.portfolio import PortfolioManager
+from engine.config import get_config
 from engine.posts import (
-    AGENT_DISPLAY_NAMES,
-    AGENT_POST_TIMES,
     PostPayload,
     build_post_prompt,
     save_daily_posts,
@@ -311,9 +310,7 @@ def step_author_all(
     """
     print("\n=== Step 3: Author orders + cancels (all agents) ===")
     if portfolio_manager is None:
-        portfolio_manager = PortfolioManager(
-            base_dir=_PROJECT_ROOT / "data" / "portfolios"
-        )
+        portfolio_manager = PortfolioManager(base_dir=get_config().portfolios_dir)
     summary: dict[str, dict[str, int]] = {}
     for agent_id, result in agent_results.items():
         portfolio = portfolio_manager.load(agent_id)
@@ -358,8 +355,8 @@ def step_build_baseline_manager(
     """Step 3c — run the deterministic baseline-manager rebalance.
 
     Internal Gate C benchmark portfolio. NOT a public trading agent.
-    Excluded from AGENT_POST_TIMES, AGENT_DISPLAY_NAMES, leaderboard, and
-    the public output bundle.
+    Excluded from the leaderboard and the public output bundle by roster
+    absence — it is not in get_config().trading_roster.
 
     Parameters
     ----------
@@ -370,7 +367,7 @@ def step_build_baseline_manager(
         The session's trading date. Defaults to today.
     portfolios_dir:
         Override for data/portfolios/ (test monkeypatching). Derived from
-        _PROJECT_ROOT when None.
+        get_config().portfolios_dir when None.
     ohlcv_store:
         Override for the OHLCV store path (test monkeypatching).
 
@@ -386,7 +383,7 @@ def step_build_baseline_manager(
     if trade_date is None:
         trade_date = date.today()
 
-    resolved_portfolios_dir = portfolios_dir or (_PROJECT_ROOT / "data" / "portfolios")
+    resolved_portfolios_dir = portfolios_dir or (get_config().portfolios_dir)
     resolved_ohlcv_store = ohlcv_store or bm_module._OHLCV_STORE
 
     manager = PortfolioManager(base_dir=resolved_portfolios_dir)
@@ -451,7 +448,7 @@ def step_build_baseline_manager(
 #
 # Authors to a SEPARATE manager-outbox, fills into a SEPARATE the-manager book,
 # and writes a manager-review audit artifact. the-manager is NOT in
-# AGENT_POST_TIMES / AGENT_DISPLAY_NAMES / roster.ts / the output bundle, and its
+# get_config().trading_roster / roster.ts / the output bundle, and its
 # fills go to manager-inbox (NOT the public inbox the site joins by order_id), so
 # it never leaks into the narrative. The outcome-resolution loop (Task C5b) is
 # step_resolve_manager_outcomes, which runs at Step 3c-bis BEFORE this block.
@@ -482,14 +479,14 @@ def step_resolve_manager_outcomes(
         The session's reference date (used to name the idempotency key and
         passed through to resolve_outcomes as an informational bound).
     review_dir:
-        Override for data/orders/manager-review/. Derived from _PROJECT_ROOT
-        when None (monkeypatch-friendly for tests).
+        Override for data/orders/manager-review/. Derived from
+        get_config().orders_dir when None (monkeypatch-friendly for tests).
     ohlcv_store:
-        Override for the OHLCV store path. Derived from engine.ohlcv_store
+        Override for the OHLCV store path. Derived from get_config().ohlcv_dir
         when None.
     msci_path:
         Override for the MSCI World series JSON file path. Derived from
-        _PROJECT_ROOT when None.
+        get_config().baselines_dir when None.
     resolved_path:
         Override for the output resolved.json path. Defaults to
         review_dir/resolved.json when None.
@@ -503,12 +500,10 @@ def step_resolve_manager_outcomes(
 
     print("\n=== Step 3c-bis: Resolve manager outcomes ===")
 
-    resolved_review_dir = review_dir or (
-        _PROJECT_ROOT / "data" / "orders" / "manager-review"
-    )
+    resolved_review_dir = review_dir or (get_config().orders_dir / "manager-review")
     resolved_store = ohlcv_store or OHLCV_STORE
     resolved_msci_path = msci_path or (
-        _PROJECT_ROOT / "data" / "baselines" / "global" / "msci_world.json"
+        get_config().baselines_dir / "global" / "msci_world.json"
     )
     resolved_resolved_path = resolved_path or (resolved_review_dir / "resolved.json")
 
@@ -563,7 +558,7 @@ def step_build_manager_prompt(
 
     print("\n=== Step 3d: Build Manager prompt ===")
 
-    portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
+    portfolios_dir = get_config().portfolios_dir
     resolved_store = ohlcv_store
 
     # Parse each agent's research note (drop None — same tolerance as the baseline).
@@ -582,9 +577,7 @@ def step_build_manager_prompt(
     # Resolved decisions: written by step_resolve_manager_outcomes (Step 3c-bis, C5b).
     # That step runs BEFORE this one, so resolved.json is already up-to-date.
     resolved_decisions: list[dict] = []
-    resolved_path = (
-        _PROJECT_ROOT / "data" / "orders" / "manager-review" / "resolved.json"
-    )
+    resolved_path = get_config().orders_dir / "manager-review" / "resolved.json"
     if resolved_path.exists():
         try:
             resolved_decisions = json.loads(resolved_path.read_text(encoding="utf-8"))
@@ -662,7 +655,7 @@ def step_apply_manager_decision(
 
     print("\n=== Step 3e: Apply Manager decision ===")
 
-    portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
+    portfolios_dir = get_config().portfolios_dir
     manager = PortfolioManager(base_dir=portfolios_dir)
     if not (portfolios_dir / MANAGER_AGENT_ID / "portfolio.json").exists():
         manager.initialize(
@@ -757,7 +750,7 @@ def step_build_post_prompts(
     print("\n=== Step 5a: Build post prompts ===")
     prompts: dict[str, str] = {}
     for agent_id in agent_results:
-        if agent_id in AGENT_POST_TIMES:  # trading agents only
+        if agent_id in get_config().trading_roster:  # trading agents only
             prompts[agent_id] = build_post_prompt(
                 agent_id, agent_results, oracle_blog=oracle_blog
             )
@@ -802,7 +795,7 @@ def step_write_current_leaderboard(
     Idempotent: full-overwrites the file each call.
     """
     print("\n=== Step 9b: Write current leaderboard ===")
-    leaderboard_dir = _PROJECT_ROOT / "data" / "leaderboard"
+    leaderboard_dir = get_config().leaderboard_dir
     leaderboard_dir.mkdir(parents=True, exist_ok=True)
     path = leaderboard_dir / "current.json"
 
@@ -957,13 +950,11 @@ def build_portfolio_summaries() -> dict[str, dict]:
     where `positions` is the Portfolio.to_dict() position list and
     `deployed` is `portfolio.cost_basis`.
     """
-    from engine.posts import AGENT_POST_TIMES
-
-    portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
+    portfolios_dir = get_config().portfolios_dir
     manager = PortfolioManager(base_dir=portfolios_dir)
 
     summaries: dict[str, dict] = {}
-    for agent_id in AGENT_POST_TIMES.keys():
+    for agent_id in get_config().trading_roster:
         if not (portfolios_dir / agent_id / "portfolio.json").exists():
             continue
         portfolio = manager.load(agent_id)
@@ -1042,7 +1033,7 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
     Note: this iterates portfolio dirs, so the internal `the-manager` and
     `baseline-manager` books accrue committed snapshots here. That is intentional
     private valuation tracking — both are excluded from every public surface by
-    roster absence (they are not in AGENT_POST_TIMES), so this is not a leak.
+    roster absence (they are not in get_config().trading_roster), so this is not a leak.
 
     Parameters
     ----------
@@ -1057,7 +1048,7 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
     """
     print("\n=== Step 4: Update daily snapshots ===")
 
-    portfolios_dir = _PROJECT_ROOT / "data" / "portfolios"
+    portfolios_dir = get_config().portfolios_dir
     if not portfolios_dir.exists():
         print("  No portfolios directory found — skipping.")
         return []
@@ -1118,14 +1109,15 @@ def step_build_baselines() -> None:
     print("\n=== Step 9a: Build baselines ===")
     from datetime import date as _date
 
-    from engine.baselines import DAY_ONE, build_all_baselines
-    from scripts.backfill_baselines import AGENT_MAX_POSITIONS, AGENT_UNIVERSES
+    from engine.baselines import build_all_baselines
+    from scripts.backfill_baselines import _max_positions_by_agent, _universes_by_agent
 
+    cfg = get_config()
     build_all_baselines(
-        universes_by_agent=AGENT_UNIVERSES,
-        from_date=DAY_ONE,
+        universes_by_agent=_universes_by_agent(),
+        from_date=cfg.day_one,
         to_date=_date.today(),
-        max_positions_by_agent=AGENT_MAX_POSITIONS,
+        max_positions_by_agent=_max_positions_by_agent(),
     )
 
 
@@ -1142,8 +1134,8 @@ def step_build_tax_shadow() -> None:
     from scripts.build_tax_shadow import build_tax_shadow_all
 
     written = build_tax_shadow_all(
-        portfolios_dir=_PROJECT_ROOT / "data" / "portfolios",
-        output_dir=_PROJECT_ROOT / "data" / "tax_shadow",
+        portfolios_dir=get_config().portfolios_dir,
+        output_dir=get_config().tax_shadow_dir,
     )
     print(f"  Wrote {len(written)} tax shadow ledger(s).")
 

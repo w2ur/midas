@@ -30,9 +30,7 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-_PORTFOLIOS_DIR = _PROJECT_ROOT / "data" / "portfolios"
-_PENDING_DIR = _PROJECT_ROOT / "data" / "orders" / "pending"
-_NEWS_DIR = _PROJECT_ROOT / "data" / "market" / "news"
+from engine.config import get_config
 
 _MAX_HEADLINES = 10
 _MAX_TITLE_LEN = 200
@@ -105,10 +103,13 @@ def sanitize_headline(raw: str | None) -> str:
 def _collect_active_tickers() -> set[str]:
     """Return held tickers ∪ pending-order tickers (bounded surface area)."""
     tickers: set[str] = set()
+    cfg = get_config()
+    portfolios_dir = cfg.portfolios_dir
+    pending_dir = cfg.orders_dir / "pending"
 
     # Held positions across all portfolios
-    if _PORTFOLIOS_DIR.exists():
-        for portfolio_dir in _PORTFOLIOS_DIR.iterdir():
+    if portfolios_dir.exists():
+        for portfolio_dir in portfolios_dir.iterdir():
             portfolio_file = portfolio_dir / "portfolio.json"
             if not portfolio_file.exists():
                 continue
@@ -123,8 +124,8 @@ def _collect_active_tickers() -> set[str]:
                 print(f"  ! Could not read {portfolio_file}: {exc}", file=sys.stderr)
 
     # Pending conditional orders
-    if _PENDING_DIR.exists():
-        for order_file in _PENDING_DIR.glob("*.json"):
+    if pending_dir.exists():
+        for order_file in pending_dir.glob("*.json"):
             try:
                 with order_file.open() as f:
                     data = json.load(f)
@@ -250,7 +251,7 @@ def _write_digest(
     items must already be normalized (title/source/published_at).
     """
     if news_dir is None:
-        news_dir = _NEWS_DIR
+        news_dir = get_config().data_dir / "data" / "market" / "news"
 
     # Truncate to newest 10
     headlines = items[:_MAX_HEADLINES]

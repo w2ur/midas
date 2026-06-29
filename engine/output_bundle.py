@@ -11,14 +11,17 @@ from datetime import date
 from pathlib import Path
 
 from engine.blog import BlogDraft
-from engine.posts import AGENT_POST_TIMES, PostPayload
+from engine.config import get_config
+from engine.posts import PostPayload
 from engine.research_note import parse_research_note
 
-OUTPUT_DIR = Path(__file__).parent.parent / "data" / "output"
 
-# Canonical 10-agent trading roster. Source of truth: engine.posts.AGENT_POST_TIMES.
-# Oracle is a narrator and lives under bundle["narrator"], not bundle["agents"].
-ROSTER: tuple[str, ...] = tuple(AGENT_POST_TIMES.keys())
+def __getattr__(name: str):
+    # Lazy ROSTER — resolved at access time so config overrides (tests / CLI) are honoured.
+    # Oracle is a narrator and lives under bundle["narrator"], not bundle["agents"].
+    if name == "ROSTER":
+        return get_config().trading_roster
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def get_day_number(for_date: date | None = None) -> int:
@@ -29,9 +32,10 @@ def get_day_number(for_date: date | None = None) -> int:
     `len(existing) + 1`. Prevents the day count from advancing when a session
     is retried after a crash.
     """
-    if not OUTPUT_DIR.exists():
+    output_dir = get_config().output_dir
+    if not output_dir.exists():
         return 1
-    existing = sorted(f.stem for f in OUTPUT_DIR.iterdir() if f.suffix == ".json")
+    existing = sorted(f.stem for f in output_dir.iterdir() if f.suffix == ".json")
     target = (for_date or date.today()).isoformat()
     if target in existing:
         return existing.index(target) + 1
@@ -61,7 +65,7 @@ def assemble_output_bundle(
     so the site can always render every dossier.
     """
     agents = {}
-    for aid in ROSTER:
+    for aid in get_config().trading_roster:
         result = agent_results.get(aid)
         if result is None:
             agents[aid] = {
@@ -94,7 +98,29 @@ def assemble_output_bundle(
 
 def save_output_bundle(bundle_date: date, bundle: dict) -> Path:
     """Save the output bundle to data/output/YYYY-MM-DD.json."""
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    path = OUTPUT_DIR / f"{bundle_date.isoformat()}.json"
+    output_dir = get_config().output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / f"{bundle_date.isoformat()}.json"
     path.write_text(json.dumps(bundle, indent=2), encoding="utf-8")
     return path
+
+
+if __name__ == "__main__":
+    import sys
+
+    # Re-PERSIST an already-assembled bundle from disk (read → save_output_bundle).
+    # This does NOT re-assemble session data; it only re-writes the existing JSON
+    # (e.g. to normalise formatting or confirm the artifact round-trips).
+    # Usage: python -m engine.output_bundle [YYYY-MM-DD]
+    _target = date.fromisoformat(sys.argv[1]) if len(sys.argv) > 1 else date.today()
+    _cfg = get_config()
+    _src = _cfg.output_dir / f"{_target.isoformat()}.json"
+    if not _src.exists():
+        print(
+            f"build-bundle: no bundle for {_target} at {_src}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    _bundle = json.loads(_src.read_text(encoding="utf-8"))
+    _path = save_output_bundle(_target, _bundle)
+    print(f"build-bundle: saved → {_path}")

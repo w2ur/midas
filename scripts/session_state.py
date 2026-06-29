@@ -36,13 +36,35 @@ import tempfile
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[1]
-_STATE_DIR = _PROJECT_ROOT / "data" / "session_state"
+from engine.config import get_config
+
+
+def _state_dir() -> Path:
+    """Resolve the session-state dir.
+
+    Override-aware: the test suite's autouse fixture monkeypatches ``_STATE_DIR``
+    to isolate per-test markers; when no override is set, resolve from config so a
+    forker's ``MIDAS_DATA_DIR`` redirection reaches session markers too (never
+    frozen at import).
+    """
+    override = globals().get("_STATE_DIR")
+    return override if override is not None else get_config().session_state_dir
+
+
+def __getattr__(name: str) -> object:
+    """Expose ``_STATE_DIR`` as a lazy config-backed path (PEP 562).
+
+    Lets ``monkeypatch.setattr(session_state, "_STATE_DIR", tmp)`` keep working
+    (the existence check resolves here) while production stays config-driven.
+    """
+    if name == "_STATE_DIR":
+        return get_config().session_state_dir
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def _state_path(day: date | None = None) -> Path:
     d = day if day is not None else datetime.now(timezone.utc).date()
-    return _STATE_DIR / f"{d.isoformat()}.json"
+    return _state_dir() / f"{d.isoformat()}.json"
 
 
 def _load_state(day: date | None = None) -> dict[str, str]:

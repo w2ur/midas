@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from engine.fees import fee_for
+from engine.config import get_config
 from engine.orders import Fill, Order, append_order
 from engine.portfolio import PortfolioManager
 
@@ -24,24 +25,22 @@ from engine.portfolio import PortfolioManager
 
 
 @pytest.fixture
-def broker_env(tmp_path, monkeypatch):
-    ohlcv = tmp_path / "ohlcv"
-    ohlcv.mkdir()
-    config_dir = tmp_path / "config"
-    config_dir.mkdir()
-    ticker_ccy_path = tmp_path / "ticker_currencies.json"
-    outbox = tmp_path / "outbox"
-    outbox.mkdir()
-    inbox = tmp_path / "inbox"
-    inbox.mkdir()
-    pm_base = tmp_path / "portfolios"
+def broker_env(midas_data_root, monkeypatch):
+    cfg = get_config()
+    ohlcv = cfg.ohlcv_dir
+    ohlcv.mkdir(parents=True, exist_ok=True)
+    config_dir = cfg.agent_config_dir
+    config_dir.mkdir(parents=True, exist_ok=True)
+    ticker_ccy_path = cfg.ticker_currencies_path
+    outbox = cfg.orders_dir / "outbox"
+    outbox.mkdir(parents=True, exist_ok=True)
+    inbox = cfg.orders_dir / "inbox"
+    inbox.mkdir(parents=True, exist_ok=True)
+    pm_base = midas_data_root / "portfolios"
     pm_base.mkdir()
-    monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", ohlcv)
-    monkeypatch.setattr("engine.paper_broker.AGENT_CONFIG_DIR", config_dir)
-    monkeypatch.setattr("engine.paper_broker.TICKER_CURRENCIES_PATH", ticker_ccy_path)
+    # The OHLCV store, agent-config, ticker-currency, outbox, and inbox dirs all
+    # resolve via get_config() under the redirected root — nothing to patch.
     monkeypatch.setattr("engine.paper_broker._TICKER_CURRENCY_OVERRIDES", None)
-    monkeypatch.setattr("engine.orders.OUTBOX_DIR", outbox)
-    monkeypatch.setattr("engine.orders.INBOX_DIR", inbox)
     return {
         "ohlcv": ohlcv,
         "config_dir": config_dir,
@@ -61,15 +60,33 @@ def _seed_ohlcv(ohlcv_dir: Path, ticker: str, rows: list[tuple[str, float]]) -> 
 
 
 def _write_config(config_dir: Path, agent_id: str, **overrides) -> None:
-    cfg = {
+    """Seed per-agent safety rails via roster.yaml in the tmp MIDAS_DATA_DIR.
+
+    As of Task 4, AgentConfig.load() reads from get_config().roster, not from
+    data/agent_config/{id}.json. This helper modifies the roster.yaml that was
+    seeded into the tmp root by the midas_data_root fixture so that subsequent
+    AgentConfig.load(agent_id) calls return the expected values.
+    ``config_dir`` is kept in the signature for call-site compatibility.
+    """
+    import yaml
+    from engine.config import get_config, reset_config_cache
+
+    safety = {
         "max_order_notional": 10_000.0,
         "max_orders_per_day": 10,
         "daily_drawdown_halt_pct": -50.0,
         "allowed_universe": [],
         "dry_run": False,
     }
-    cfg.update(overrides)
-    (config_dir / f"{agent_id}.json").write_text(json.dumps(cfg), encoding="utf-8")
+    safety.update(overrides)
+    cfg = get_config()
+    roster_path = cfg.data_dir / "roster.yaml"
+    data = yaml.safe_load(roster_path.read_text(encoding="utf-8"))
+    if agent_id not in data["agents"]:
+        data["agents"][agent_id] = {"display_name": agent_id, "role": "trader"}
+    data["agents"][agent_id]["safety"] = safety
+    roster_path.write_text(yaml.dump(data), encoding="utf-8")
+    reset_config_cache()
 
 
 def _init_portfolio(
@@ -554,19 +571,24 @@ def test_apply_trade_failure_rejects_cleanly_and_continues_loop(
 
 
 # ---------------------------------------------------------------------------
-# 16. Malformed agent config falls back to defaults without crashing
+# 16. Agent not in roster falls back to safe defaults
 # ---------------------------------------------------------------------------
 
 
-def test_malformed_agent_config_falls_back_to_defaults(broker_env):
-    """A corrupt agent config file must not crash fill_day; defaults are used instead."""
+def test_unlisted_agent_falls_back_to_defaults(broker_env):
+    """An agent not present in roster.yaml must return safe defaults from AgentConfig.load.
+
+    Previously this test wrote a malformed JSON file and verified the fallback.
+    As of Task 4, AgentConfig.load reads from get_config().roster; any agent_id
+    not found there gets the safe defaults regardless of the data/agent_config/ dir.
+    """
     from engine.paper_broker import AgentConfig
 
-    config_path = broker_env["config_dir"] / "ghostagent.json"
-    config_path.write_text("{ not json", encoding="utf-8")
-    cfg = AgentConfig.load("ghostagent")
-    assert cfg.max_order_notional == 500.0  # default
-    assert cfg.max_orders_per_day == 5  # default
+    cfg = AgentConfig.load("ghostagent")  # not in roster → defaults
+    assert cfg.max_order_notional == 500.0
+    assert (
+        cfg.max_orders_per_day == 5
+    )  # original missing-file default (commit 320e0d53)
     assert cfg.daily_drawdown_halt_pct == -5.0
     assert cfg.allowed_universe == []
     assert cfg.dry_run is False
@@ -609,10 +631,8 @@ class TestConditionalOrderRouting:
         self, broker_env, monkeypatch, tmp_path
     ) -> None:
         """Sanity: a no-trigger order still goes through the existing fill path."""
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -647,10 +667,8 @@ class TestConditionalOrderRouting:
         self, broker_env, monkeypatch, tmp_path
     ) -> None:
         """A conditional order does NOT produce an inbox fill; it goes to pending."""
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -694,10 +712,8 @@ class TestConditionalOrderRouting:
         trigger-without-expires (the agent could forget to set expires). The
         broker enforces the requirement here.
         """
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -743,10 +759,8 @@ class TestCancelRequestProcessing:
     def test_cancel_removes_pending_and_writes_rejection(
         self, broker_env, monkeypatch, tmp_path
     ) -> None:
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -803,10 +817,8 @@ class TestCancelRequestProcessing:
     def test_cancel_targeting_nonexistent_pending_writes_rejection(
         self, broker_env, monkeypatch, tmp_path
     ) -> None:
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -842,10 +854,8 @@ class TestCancelRequestProcessing:
         """Two cancels for the same target_order_id in one session: first wins as
         CANCELLED_BY_AGENT, second sees the pending already gone and becomes
         CANCEL_TARGET_NOT_FOUND. Same target_order_id, two distinct rejection records."""
-        pending_dir = tmp_path / "pending"
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", pending_dir)
-        cancels_dir = tmp_path / "cancels"
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", cancels_dir)
+        pending_dir = get_config().orders_dir / "pending"
+        cancels_dir = get_config().orders_dir / "cancels"
 
         from engine.orders import read_inbox
         from engine.paper_broker import fill_day
@@ -988,3 +998,58 @@ def test_execute_triggered_order_stamps_executed_sha(broker_env, monkeypatch):
 
     assert fill is not None
     assert fill.executed_sha == "c" * 40
+
+
+# ---------------------------------------------------------------------------
+# TestSafetyFold — verify rails are read from roster config, not JSON files
+# ---------------------------------------------------------------------------
+
+
+class TestSafetyFold:
+    """Safety rails now come from roster.yaml; these tests prove the fold is correct."""
+
+    def test_roster_agent_reads_rails_from_config(self, midas_data_root):
+        """A real roster trader's AgentConfig.load() returns the config-folded values."""
+        from engine.config import get_config
+        from engine.paper_broker import AgentConfig
+
+        cfg = get_config()
+        aid = cfg.trading_roster[0]  # first trader in roster
+        rails = AgentConfig.load(aid)
+        spec_safety = cfg.roster[aid].safety
+        assert rails.max_order_notional == spec_safety.max_order_notional
+        assert rails.daily_drawdown_halt_pct == spec_safety.daily_drawdown_halt_pct
+        assert rails.max_orders_per_day == spec_safety.max_orders_per_day
+        assert rails.dry_run == spec_safety.dry_run
+
+    def test_satoshi_has_folded_permissive_values(self, midas_data_root):
+        """satoshi's safety fold preserved the permissive paper-only rails."""
+        from engine.paper_broker import AgentConfig
+
+        rails = AgentConfig.load("satoshi")
+        assert rails.max_order_notional == 1_000_000.0
+        assert rails.daily_drawdown_halt_pct == -95.0
+        assert rails.max_orders_per_day == 100
+        assert rails.dry_run is False
+
+    def test_yolo_sapiens_eur_has_folded_permissive_values(self, midas_data_root):
+        """Spot-check a second trader to confirm the fold is roster-wide."""
+        from engine.paper_broker import AgentConfig
+
+        rails = AgentConfig.load("yolo-sapiens-eur")
+        assert rails.max_order_notional == 1_000_000.0
+        assert rails.daily_drawdown_halt_pct == -95.0
+
+    def test_not_in_roster_agent_gets_safe_defaults(self, midas_data_root):
+        """the-manager is not in roster.yaml; it must receive safe defaults.
+
+        These must match the ORIGINAL broker's missing-file defaults exactly
+        (commit 320e0d53): notional 500, max_orders_per_day 5, drawdown -5%.
+        """
+        from engine.paper_broker import AgentConfig
+
+        rails = AgentConfig.load("the-manager")
+        assert rails.max_order_notional == 500.0
+        assert rails.daily_drawdown_halt_pct == -5.0
+        assert rails.max_orders_per_day == 5  # original default, NOT 100
+        assert rails.dry_run is False

@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from engine.blog import BlogDraft
+from engine.config import get_config
 from engine.output_bundle import (
     ROSTER,
     assemble_output_bundle,
@@ -15,36 +16,41 @@ from engine.posts import PostPayload
 
 
 class TestGetDayNumber:
-    def test_empty_dir_returns_1(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", tmp_path)
+    def test_empty_dir_returns_1(self, midas_data_root: Path) -> None:
+        output_dir = get_config().output_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
         assert get_day_number() == 1
 
-    def test_counts_existing_bundles(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", tmp_path)
-        (tmp_path / "2026-04-14.json").write_text("{}")
-        (tmp_path / "2026-04-15.json").write_text("{}")
+    def test_counts_existing_bundles(self, midas_data_root: Path) -> None:
+        output_dir = get_config().output_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "2026-04-14.json").write_text("{}")
+        (output_dir / "2026-04-15.json").write_text("{}")
         assert get_day_number() == 3
 
-    def test_ignores_non_json(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", tmp_path)
-        (tmp_path / "2026-04-14.json").write_text("{}")
-        (tmp_path / "readme.txt").write_text("not a bundle")
+    def test_ignores_non_json(self, midas_data_root: Path) -> None:
+        output_dir = get_config().output_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "2026-04-14.json").write_text("{}")
+        (output_dir / "readme.txt").write_text("not a bundle")
         assert get_day_number() == 2
 
-    def test_idempotent_on_retry(self, tmp_path: Path, monkeypatch) -> None:
+    def test_idempotent_on_retry(self, midas_data_root: Path) -> None:
         """Key behaviour — re-running a session for an already-bundled day must
         return the day's *original* ordinal, not len+1."""
-        monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", tmp_path)
-        (tmp_path / "2026-04-14.json").write_text("{}")
-        (tmp_path / "2026-04-15.json").write_text("{}")
+        output_dir = get_config().output_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "2026-04-14.json").write_text("{}")
+        (output_dir / "2026-04-15.json").write_text("{}")
         # Bundle for 2026-04-15 already exists. Re-running for that date should return 2, not 3.
         assert get_day_number(for_date=date(2026, 4, 15)) == 2
 
-    def test_specific_date_ordinal(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", tmp_path)
-        (tmp_path / "2026-04-14.json").write_text("{}")
-        (tmp_path / "2026-04-15.json").write_text("{}")
-        (tmp_path / "2026-04-16.json").write_text("{}")
+    def test_specific_date_ordinal(self, midas_data_root: Path) -> None:
+        output_dir = get_config().output_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "2026-04-14.json").write_text("{}")
+        (output_dir / "2026-04-15.json").write_text("{}")
+        (output_dir / "2026-04-16.json").write_text("{}")
         assert get_day_number(for_date=date(2026, 4, 14)) == 1
         assert get_day_number(for_date=date(2026, 4, 16)) == 3
 
@@ -188,8 +194,8 @@ class TestAssembleOutputBundle:
 
 
 class TestSaveOutputBundle:
-    def test_save_and_read(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", tmp_path)
+    def test_save_and_read(self, midas_data_root: Path) -> None:
+        output_dir = get_config().output_dir
         bundle = {
             "date": "2026-04-17",
             "market_snapshot": {},
@@ -202,13 +208,14 @@ class TestSaveOutputBundle:
         data = json.loads(path.read_text(encoding="utf-8"))
         assert data["date"] == "2026-04-17"
 
-    def test_idempotent_across_save_cycle(self, tmp_path: Path, monkeypatch) -> None:
+    def test_idempotent_across_save_cycle(self, midas_data_root: Path) -> None:
         """After saving today's bundle, get_day_number(today) returns the same value
         as it did before the save."""
-        monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", tmp_path)
+        output_dir = get_config().output_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
         # Seed two prior days.
-        (tmp_path / "2026-04-15.json").write_text("{}")
-        (tmp_path / "2026-04-16.json").write_text("{}")
+        (output_dir / "2026-04-15.json").write_text("{}")
+        (output_dir / "2026-04-16.json").write_text("{}")
         today = date(2026, 4, 17)
         assert get_day_number(for_date=today) == 3
 

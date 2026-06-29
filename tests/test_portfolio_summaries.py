@@ -12,23 +12,17 @@ from pathlib import Path
 
 import pytest
 
+from engine.config import get_config
 from engine.portfolio import PortfolioManager
-from engine.posts import AGENT_POST_TIMES
 
 
 @pytest.fixture
-def tmp_portfolios(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    portfolios_dir = tmp_path / "portfolios"
-    portfolios_dir.mkdir()
-    monkeypatch.setattr("scripts.daily_session._PROJECT_ROOT", tmp_path.parent)
-    # _PROJECT_ROOT/data/portfolios → tmp_path.parent/data/portfolios.
-    # Easier: monkeypatch _PROJECT_ROOT to tmp_path and put portfolios under data/.
-    project_root = tmp_path
-    (project_root / "data").mkdir(exist_ok=True)
-    real_portfolios_dir = project_root / "data" / "portfolios"
-    real_portfolios_dir.mkdir()
-    monkeypatch.setattr("scripts.daily_session._PROJECT_ROOT", project_root)
-    return real_portfolios_dir
+def tmp_portfolios(midas_data_root: Path) -> Path:
+    # build_portfolio_summaries reads get_config().portfolios_dir; redirect the
+    # data root (MIDAS_DATA_DIR) and seed/assert against that resolved dir.
+    portfolios_dir = get_config().portfolios_dir
+    portfolios_dir.mkdir(parents=True, exist_ok=True)
+    return portfolios_dir
 
 
 class TestBuildPortfolioSummaries:
@@ -67,7 +61,7 @@ class TestBuildPortfolioSummaries:
         summaries = build_portfolio_summaries()
         assert "satoshi" in summaries
         # The other 9 are absent on disk → not in the dict.
-        for aid in AGENT_POST_TIMES:
+        for aid in get_config().trading_roster:
             if aid != "satoshi":
                 assert aid not in summaries
 

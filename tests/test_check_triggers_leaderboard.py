@@ -1,14 +1,16 @@
 import json
+import logging
 from datetime import date
 
 import pytest
 
+from engine.config import get_config
 
-def test_watcher_refreshes_current_json_after_fire(tmp_path, monkeypatch):
+
+def test_watcher_refreshes_current_json_after_fire(midas_data_root, monkeypatch):
     from scripts import check_triggers
 
-    (tmp_path / "data" / "leaderboard").mkdir(parents=True)
-    monkeypatch.setattr(check_triggers, "_PROJECT_ROOT", tmp_path)
+    get_config().leaderboard_dir.mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(
         check_triggers,
@@ -25,21 +27,17 @@ def test_watcher_refreshes_current_json_after_fire(tmp_path, monkeypatch):
         trigger="trigger-fire", on=date(2026, 5, 23)
     )
 
-    payload = json.loads(
-        (tmp_path / "data" / "leaderboard" / "current.json").read_text()
-    )
+    payload = json.loads((get_config().leaderboard_dir / "current.json").read_text())
     assert payload["trigger"] == "trigger-fire"
     assert payload["rows"][0]["agent"] == "satoshi"
     assert payload["updated_at"].endswith("Z")
 
 
-def test_watcher_leaderboard_refresh_swallows_errors(tmp_path, monkeypatch, caplog):
+def test_watcher_leaderboard_refresh_swallows_errors(
+    midas_data_root, monkeypatch, caplog
+):
     """Critical contract: a leaderboard refresh failure must never raise."""
-    import logging
-
     from scripts import check_triggers
-
-    monkeypatch.setattr(check_triggers, "_PROJECT_ROOT", tmp_path)
 
     def _boom():
         raise RuntimeError("boom")

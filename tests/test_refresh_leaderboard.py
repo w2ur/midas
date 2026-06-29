@@ -68,12 +68,12 @@ def test_push_raises_after_max_attempts(monkeypatch):
     assert len(rebases) == 2
 
 
-def test_refresh_leaderboard_writes_current_json(tmp_path, monkeypatch):
-    """End-to-end: snapshots → baselines → current.json, all in tmp_path."""
+def test_refresh_leaderboard_writes_current_json(midas_data_root, monkeypatch):
+    """End-to-end: snapshots → baselines → current.json, all in the isolated tmp root."""
+    from engine.config import get_config
     from scripts import refresh_leaderboard
 
-    (tmp_path / "data" / "leaderboard").mkdir(parents=True)
-    monkeypatch.setattr(refresh_leaderboard, "_PROJECT_ROOT", tmp_path)
+    get_config().leaderboard_dir.mkdir(parents=True, exist_ok=True)
 
     calls = []
     monkeypatch.setattr(
@@ -121,9 +121,8 @@ def test_refresh_leaderboard_writes_current_json(tmp_path, monkeypatch):
 
     assert ("snapshots", "2026-05-23") in calls
     assert ("baselines",) in calls
-    payload = json.loads(
-        (tmp_path / "data" / "leaderboard" / "current.json").read_text()
-    )
+    leaderboard_path = get_config().leaderboard_dir / "current.json"
+    payload = json.loads(leaderboard_path.read_text())
     assert payload["trigger"] == "scheduled-weekend-refresh"
     assert payload["rows"][0]["agent"] == "satoshi"
     assert payload["updated_at"].endswith("Z")

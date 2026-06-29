@@ -23,53 +23,18 @@ de minimis, matching the existing snapshot-benchmark pattern in the site.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Iterator, Literal
+from typing import Iterator
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BASELINES_DIR = PROJECT_ROOT / "data" / "baselines"
-OHLCV_DIR = PROJECT_ROOT / "data" / "market" / "ohlcv"
-
-DAY_ONE = date(2026, 4, 17)
-
-Currency = Literal["EUR", "USD"]
+from engine.config import BenchmarkSpec, get_config
 
 
-@dataclass(frozen=True)
-class BenchmarkSpec:
-    label: str  # Human-readable, e.g. "FTSE Europe"
-    ticker: str  # Concrete OHLCV-store ticker, e.g. "VGK"
-    currency: Currency  # Currency the resulting series is denominated in
-
-
-# Single source of truth. Ticker choices must exist in data/market/ohlcv/.
-# "EUR_CASH_FLAT" is a sentinel handled by compute_passive_benchmark —
-# produces a flat €10k series (honest benchmark for monsieur-forex).
-# Currency is the DISPLAY currency for the series (matches the agent's home
-# currency). The price ratio used to compute daily value is currency-invariant,
-# so the ETF's actual trading currency (USD for VGK/URTH) is not relevant to
-# the comparison. FX-noise over the short observation window is accepted as
-# de minimis, matching the existing snapshot-benchmark pattern in the site.
-AGENT_BENCHMARKS: dict[str, BenchmarkSpec] = {
-    "satoshi": BenchmarkSpec("BTC-EUR", "BTC-EUR", "EUR"),
-    "yolo-sapiens-eur": BenchmarkSpec("FTSE Europe", "VGK", "EUR"),
-    "yolo-sapiens-usd": BenchmarkSpec("S&P 500", "SPY", "USD"),
-    "goldfinger": BenchmarkSpec("Gold", "4GLD.DE", "EUR"),
-    "monsieur-forex": BenchmarkSpec("EUR cash", "EUR_CASH_FLAT", "EUR"),
-    "sharp-shooter-eur": BenchmarkSpec("FTSE Europe", "VGK", "EUR"),
-    "sharp-shooter-usd": BenchmarkSpec("S&P 500", "SPY", "USD"),
-    "steady-eddie-eur": BenchmarkSpec("FTSE Europe", "VGK", "EUR"),
-    "steady-eddie-usd": BenchmarkSpec("S&P 500", "SPY", "USD"),
-    "world": BenchmarkSpec("MSCI World", "URTH", "EUR"),
-}
-
-GLOBAL_REFERENCE = BenchmarkSpec("MSCI World", "URTH", "EUR")
-
-INITIAL = 10000.0
+def _initial() -> float:
+    """Return the initial capital from config."""
+    return get_config().initial_capital
 
 
 def _daterange(start: date, end: date) -> Iterator[date]:
@@ -81,7 +46,7 @@ def _daterange(start: date, end: date) -> Iterator[date]:
 
 def _load_ohlcv(ticker: str) -> dict[str, float]:
     """Return date_iso -> close for the ticker, empty if file missing."""
-    path = OHLCV_DIR / f"{ticker}.jsonl"
+    path = get_config().ohlcv_dir / f"{ticker}.jsonl"
     if not path.exists():
         return {}
     out: dict[str, float] = {}
@@ -104,12 +69,13 @@ def compute_passive_benchmark(
     Non-trading days carry the last observed close. Missing OHLCV data returns
     an empty list (caller treats as "no line to draw").
     """
+    initial = _initial()
     if spec.ticker == "EUR_CASH_FLAT":
         return [
             {
                 "date": d.isoformat(),
-                "portfolio_value": INITIAL,
-                "cash": INITIAL,
+                "portfolio_value": initial,
+                "cash": initial,
                 "positions_value": 0.0,
                 "currency": spec.currency,
             }
@@ -131,7 +97,7 @@ def compute_passive_benchmark(
                 first_close = last_close
         if first_close is None or last_close is None:
             continue  # no data yet for the range
-        value = INITIAL * (last_close / first_close)
+        value = initial * (last_close / first_close)
         out.append(
             {
                 "date": iso,
@@ -168,7 +134,7 @@ def _load_price_frame(
 def compute_coin_flip(
     agent_id: str,
     tickers: list[str],
-    currency: Currency,
+    currency: str,
     max_positions: int,
     from_date: date,
     to_date: date,
@@ -202,7 +168,7 @@ def compute_coin_flip(
         _bt.algos.Rebalance(),
     ]
     strategy = _bt.Strategy(strategy_id, pipeline)
-    backtest = _bt.Backtest(strategy, price_data, initial_capital=INITIAL)
+    backtest = _bt.Backtest(strategy, price_data, initial_capital=_initial())
     bt_result = _bt.run(backtest)
 
     daily_values: pd.Series = bt_result.backtests[strategy_id].strategy.values
@@ -225,7 +191,7 @@ def compute_coin_flip(
 
 def compute_global_reference(from_date: date, to_date: date) -> list[dict]:
     """€10k buy-and-hold of MSCI World, the site's global reference line."""
-    return compute_passive_benchmark(GLOBAL_REFERENCE, from_date, to_date)
+    return compute_passive_benchmark(get_config().global_reference, from_date, to_date)
 
 
 def _write_json(path: Path, data: list[dict]) -> None:
@@ -241,12 +207,18 @@ def build_all_baselines(
 ) -> None:
     """Produce all per-agent baseline files + the global reference file.
 
-    Idempotent: always full-rewrites. Missing OHLCV data yields an empty
-    series; callers are expected to surface that as "no line to draw".
+    Iterates get_config().trading_roster; agents whose benchmark is None are
+    skipped. Idempotent: always full-rewrites. Missing OHLCV data yields an
+    empty series; callers are expected to surface that as "no line to draw".
     """
+    cfg = get_config()
     max_positions_by_agent = max_positions_by_agent or {}
-    for agent_id, spec in AGENT_BENCHMARKS.items():
-        agent_dir = BASELINES_DIR / agent_id
+    baselines_dir = cfg.baselines_dir
+    for agent_id in cfg.trading_roster:
+        spec = cfg.roster[agent_id].benchmark
+        if spec is None:
+            continue
+        agent_dir = baselines_dir / agent_id
         bench = compute_passive_benchmark(spec, from_date, to_date)
         _write_json(agent_dir / "benchmark.json", bench)
 
@@ -263,6 +235,6 @@ def build_all_baselines(
         _write_json(agent_dir / "coinflip.json", coin)
 
     _write_json(
-        BASELINES_DIR / "global" / "msci_world.json",
+        baselines_dir / "global" / "msci_world.json",
         compute_global_reference(from_date, to_date),
     )

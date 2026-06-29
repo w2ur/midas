@@ -176,8 +176,7 @@ class TestParseOracleResponse:
 
 
 class TestSaveDailyBlogDraft:
-    def test_writes_frontmatter_and_body(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.blog.BLOG_DIR", tmp_path)
+    def test_writes_frontmatter_and_body(self, midas_data_root: Path) -> None:
         draft = BlogDraft(
             title="Day 1: Opening",
             body_md="# Day 1\n\nThe agents made their first trades.",
@@ -193,9 +192,8 @@ class TestSaveDailyBlogDraft:
         assert "The agents made their first trades." in content
 
     def test_quotes_title_even_when_it_contains_colon(
-        self, tmp_path: Path, monkeypatch
+        self, midas_data_root: Path
     ) -> None:
-        monkeypatch.setattr("engine.blog.BLOG_DIR", tmp_path)
         draft = BlogDraft(title="Day 2: The Split", body_md="Content.", slug="day-2")
         path = save_daily_blog_draft(date(2026, 4, 17), draft)
         content = path.read_text(encoding="utf-8")

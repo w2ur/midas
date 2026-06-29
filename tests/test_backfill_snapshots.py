@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
+from engine.config import get_config
 from scripts import backfill_snapshots
 
 
@@ -18,10 +19,9 @@ def _write(path: Path, data) -> None:
 
 
 @pytest.fixture
-def portfolio_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    portfolios = tmp_path / "portfolios"
-    portfolios.mkdir()
-    monkeypatch.setattr(backfill_snapshots, "_PORTFOLIOS_DIR", portfolios)
+def portfolio_root(midas_data_root: Path) -> Path:
+    portfolios = get_config().portfolios_dir
+    portfolios.mkdir(parents=True, exist_ok=True)
     return portfolios
 
 

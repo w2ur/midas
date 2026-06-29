@@ -31,12 +31,10 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+from engine.config import get_config, register_reset_callback
 from engine.fees import fee_for
 from engine.fx import convert as fx_convert
-from engine.ohlcv_store import (
-    OHLCV_STORE as _DEFAULT_OHLCV_STORE,
-    latest_close_on_or_before,
-)
+from engine.ohlcv_store import latest_close_on_or_before
 from engine.orders import Fill, Order, append_fill, inbox_order_ids
 from engine.triggers import (
     delete_pending,
@@ -48,23 +46,27 @@ from engine.types import Trade
 from engine.universes import resolve_universe
 from engine.valuation import mtm_base_currency
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-# Module-level constant kept for test monkeypatching compatibility:
-# tests do `monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", tmp_path)`.
-_OHLCV_STORE = _DEFAULT_OHLCV_STORE
-AGENT_CONFIG_DIR = _REPO_ROOT / "data" / "agent_config"
-TICKER_CURRENCIES_PATH = _REPO_ROOT / "data" / "ticker_currencies.json"
+# The OHLCV store, agent-config dir, and ticker-currency override path are all
+# resolved lazily through get_config() inside the functions that use them, so a
+# forker who sets MIDAS_DATA_DIR (the Hands reading prices from the redirected
+# store) is honoured — nothing is frozen at import. Price reads default to
+# latest_close_on_or_before's own lazy store default (get_config().ohlcv_dir).
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class AgentConfig:
-    """Per-agent safety rails loaded from data/agent_config/{agent_id}.json.
+    """Per-agent safety rails sourced from roster.yaml via get_config().roster[agent_id].safety.
 
     daily_drawdown_halt_pct uses NEGATIVE values. The broker halts all of the
     agent's orders when the computed drawdown % is strictly less than this value
     (i.e. -7.0 < -5.0 → halt). A value of 0.0 disables the halt for that agent.
+
+    Agents not in the roster (e.g. the-manager, baseline-manager) receive safe
+    defaults: max_order_notional=500, max_orders_per_day=5,
+    daily_drawdown_halt_pct=-5.0, allowed_universe=[], dry_run=False — identical
+    to the original broker's missing-file defaults (commit 320e0d53).
     """
 
     max_order_notional: float
@@ -75,24 +77,23 @@ class AgentConfig:
 
     @classmethod
     def load(cls, agent_id: str) -> "AgentConfig":
-        path = AGENT_CONFIG_DIR / f"{agent_id}.json"
-        defaults = cls(
-            max_order_notional=500.0,
-            max_orders_per_day=5,
-            daily_drawdown_halt_pct=-5.0,
-            allowed_universe=[],
-            dry_run=False,
-        )
-        if not path.exists():
-            return defaults
-        try:
-            d = json.loads(path.read_text(encoding="utf-8"))
-            return cls(**d)
-        except (json.JSONDecodeError, TypeError) as exc:
-            logger.warning(
-                "Malformed agent config at %s: %s — falling back to defaults", path, exc
+        spec = get_config().roster.get(agent_id)
+        if spec is None:
+            return cls(
+                max_order_notional=500.0,
+                max_orders_per_day=5,
+                daily_drawdown_halt_pct=-5.0,
+                allowed_universe=[],
+                dry_run=False,
             )
-            return defaults
+        s = spec.safety
+        return cls(
+            max_order_notional=s.max_order_notional,
+            max_orders_per_day=s.max_orders_per_day,
+            daily_drawdown_halt_pct=s.daily_drawdown_halt_pct,
+            allowed_universe=list(s.allowed_universe),
+            dry_run=s.dry_run,
+        )
 
 
 _TICKER_CURRENCY_OVERRIDES: dict[str, str] | None = None
@@ -101,13 +102,26 @@ _TICKER_CURRENCY_OVERRIDES: dict[str, str] | None = None
 def _load_ticker_currency_overrides() -> dict[str, str]:
     global _TICKER_CURRENCY_OVERRIDES
     if _TICKER_CURRENCY_OVERRIDES is None:
-        if TICKER_CURRENCIES_PATH.exists():
-            _TICKER_CURRENCY_OVERRIDES = json.loads(
-                TICKER_CURRENCIES_PATH.read_text(encoding="utf-8")
-            )
+        path = get_config().ticker_currencies_path
+        if path.exists():
+            _TICKER_CURRENCY_OVERRIDES = json.loads(path.read_text(encoding="utf-8"))
         else:
             _TICKER_CURRENCY_OVERRIDES = {}
     return _TICKER_CURRENCY_OVERRIDES
+
+
+def _reset_ticker_currency_overrides() -> None:
+    """Invalidate the ticker-currency override cache (fired by reset_config_cache).
+
+    The map is read once from get_config().ticker_currencies_path and memoised; a
+    MIDAS_DATA_DIR switch must re-read it from the new tree, so config registers
+    this to run whenever its own cache is cleared.
+    """
+    global _TICKER_CURRENCY_OVERRIDES
+    _TICKER_CURRENCY_OVERRIDES = None
+
+
+register_reset_callback(_reset_ticker_currency_overrides)
 
 
 def _ticker_currency(ticker: str) -> str:
@@ -165,7 +179,7 @@ def _current_commit_sha() -> str | None:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            cwd=Path(__file__).resolve().parent,
+            cwd=get_config().data_dir,
             capture_output=True,
             text=True,
             timeout=5,
@@ -257,7 +271,9 @@ def _process_one(
     if allowed_tickers and order.ticker not in allowed_tickers:
         return _reject(order.order_id, "TICKER_NOT_IN_UNIVERSE")
 
-    price = latest_close_on_or_before(order.ticker, trade_date, store=_OHLCV_STORE)
+    # store defaults to get_config().ohlcv_dir inside latest_close_on_or_before —
+    # resolved at call time so MIDAS_DATA_DIR redirection reaches the broker's fills.
+    price = latest_close_on_or_before(order.ticker, trade_date)
     if price is None:
         return _reject(order.order_id, "NO_PRICE_DATA")
 
@@ -610,3 +626,17 @@ def _execute_triggered_order(
         reason=None,
         trigger_fired=True,
     )
+
+
+if __name__ == "__main__":
+    from datetime import date as _date
+
+    from engine.config import get_config as _gc
+    from engine.portfolio import PortfolioManager as _PM
+
+    _cfg = _gc()
+    _pm = _PM(base_dir=_cfg.data_dir / "data" / "portfolios")
+    _fills = fill_day(_date.today(), _pm)
+    _filled = sum(1 for f in _fills if f.status == "filled")
+    _rejected = sum(1 for f in _fills if f.status == "rejected")
+    print(f"fill-day: {_filled} filled, {_rejected} rejected out of {len(_fills)}")

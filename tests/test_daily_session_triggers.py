@@ -25,8 +25,7 @@ from scripts.daily_session import (
 
 
 class TestAuthorConditionalOrders:
-    def test_market_order_unchanged(self, tmp_path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path)
+    def test_market_order_unchanged(self, midas_data_root) -> None:
         d = date(2026, 5, 17)
         n = step_author_orders(
             "satoshi",
@@ -47,9 +46,8 @@ class TestAuthorConditionalOrders:
         assert out[0].expires is None
 
     def test_conditional_order_persists_trigger_and_expires(
-        self, tmp_path, monkeypatch
+        self, midas_data_root
     ) -> None:
-        monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path)
         d = date(2026, 5, 17)
         step_author_orders(
             "satoshi",
@@ -72,8 +70,7 @@ class TestAuthorConditionalOrders:
 
 
 class TestAuthorCancels:
-    def test_cancel_written_to_cancels_dir(self, tmp_path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path)
+    def test_cancel_written_to_cancels_dir(self, midas_data_root) -> None:
         d = date(2026, 5, 17)
         n = step_author_cancels(
             "satoshi",
@@ -91,23 +88,18 @@ class TestAuthorCancels:
         assert cancels[0].target_order_id == "ord_2026-05-10_satoshi_003"
         assert cancels[0].agent_id == "satoshi"
 
-    def test_empty_cancels_is_no_op(self, tmp_path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path)
+    def test_empty_cancels_is_no_op(self, midas_data_root) -> None:
         d = date(2026, 5, 17)
         assert step_author_cancels("satoshi", cancels=[], trade_date=d) == 0
         assert read_cancels(d) == []
 
 
 class TestRenderActiveTriggers:
-    def test_no_triggers_returns_friendly_empty_string(
-        self, tmp_path, monkeypatch
-    ) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
+    def test_no_triggers_returns_friendly_empty_string(self, midas_data_root) -> None:
         out = render_active_triggers_for_agent("satoshi")
         assert "no active triggers" in out.lower()
 
-    def test_renders_each_pending_order_for_agent(self, tmp_path, monkeypatch) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
+    def test_renders_each_pending_order_for_agent(self, midas_data_root) -> None:
         save_pending(
             Order(
                 order_id="ord_2026-05-10_satoshi_003",
@@ -144,10 +136,7 @@ class TestRenderActiveTriggers:
         assert "ord_2026-05-12_satoshi_001" in out
         assert "ETH-EUR" in out
 
-    def test_renders_only_orders_for_requested_agent(
-        self, tmp_path, monkeypatch
-    ) -> None:
-        monkeypatch.setattr("engine.triggers.PENDING_DIR", tmp_path)
+    def test_renders_only_orders_for_requested_agent(self, midas_data_root) -> None:
         save_pending(
             Order(
                 order_id="ord_satoshi_x",
@@ -195,10 +184,8 @@ class TestConditionalOrderInstructions:
 
 class TestAuthorAll:
     def test_authors_orders_and_cancels_for_multiple_agents(
-        self, tmp_path, monkeypatch
+        self, tmp_path, midas_data_root
     ) -> None:
-        monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path / "outbox")
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path / "cancels")
         pm_base = tmp_path / "portfolios"
         pm = PortfolioManager(pm_base)
         pm.initialize("satoshi", initial_capital=10_000.0, currency="EUR")
@@ -253,10 +240,8 @@ class TestAuthorAll:
         assert cancels[0].target_order_id == "ord_old_001"
 
     def test_missing_trades_and_cancels_keys_treated_as_empty(
-        self, tmp_path, monkeypatch
+        self, tmp_path, midas_data_root
     ) -> None:
-        monkeypatch.setattr("engine.orders.OUTBOX_DIR", tmp_path / "outbox")
-        monkeypatch.setattr("engine.triggers.CANCELS_DIR", tmp_path / "cancels")
         pm_base = tmp_path / "portfolios"
         pm = PortfolioManager(pm_base)
         pm.initialize("satoshi", initial_capital=10_000.0, currency="EUR")

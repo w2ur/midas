@@ -19,8 +19,7 @@ import json
 import os
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-_DEFAULT_PATH = _REPO_ROOT / "data" / "agent_config" / "live_switch.json"
+from engine.config import get_config
 
 _ENV_FALSE = {"0", "false"}
 _ENV_TRUE = {"1", "true"}
@@ -49,7 +48,11 @@ def is_live_enabled(*, path: Path | None = None) -> bool:
         if env_val in _ENV_TRUE:
             return True
 
-        config_path = path if path is not None else _DEFAULT_PATH
+        config_path = (
+            path
+            if path is not None
+            else get_config().agent_config_dir / "live_switch.json"
+        )
         if not config_path.is_file():
             return False
 

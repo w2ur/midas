@@ -240,10 +240,11 @@ class TestIdempotentStepDecorator:
 
 
 @pytest.fixture()
-def temp_journal_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Redirect JOURNAL_DIR to a tmp path for journal atomicity tests."""
-    monkeypatch.setattr(agent_memory, "JOURNAL_DIR", tmp_path)
-    return tmp_path
+def temp_journal_dir(midas_data_root: Path) -> Path:
+    """Redirect journal writes to an isolated tmp path via config env redirect."""
+    from engine.config import get_config
+
+    return get_config().journal_dir
 
 
 class TestJournalAtomicity:
@@ -282,11 +283,9 @@ class TestJournalAtomicity:
         agent_memory.save_journal("satoshi", content)
         assert agent_memory.load_journal("satoshi") == content
 
-    def test_write_creates_directory_atomically(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_write_creates_directory_atomically(self, midas_data_root: Path) -> None:
         """save_journal creates the journal directory if it does not exist."""
-        nested = tmp_path / "nested" / "journals"
-        monkeypatch.setattr(agent_memory, "JOURNAL_DIR", nested)
+        from engine.config import get_config
+
         agent_memory.save_journal("satoshi", "hello\n")
-        assert (nested / "satoshi.md").exists()
+        assert (get_config().journal_dir / "satoshi.md").exists()

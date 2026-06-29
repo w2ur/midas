@@ -11,22 +11,21 @@ seed the file on first run.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_DATA_DIR = _REPO_ROOT / "data" / "universes"
+from engine.config import get_config
 
 
 def _read_data(name: str) -> list[str] | None:
-    path = _DATA_DIR / f"{name}.json"
+    path = get_config().universes_dir / f"{name}.json"
     if not path.exists():
         return None
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _write_data(name: str, tickers: list[str]) -> None:
-    _DATA_DIR.mkdir(parents=True, exist_ok=True)
-    (_DATA_DIR / f"{name}.json").write_text(json.dumps(tickers), encoding="utf-8")
+    data_dir = get_config().universes_dir
+    data_dir.mkdir(parents=True, exist_ok=True)
+    (data_dir / f"{name}.json").write_text(json.dumps(tickers), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------

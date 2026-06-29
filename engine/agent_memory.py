@@ -19,14 +19,14 @@ import os
 import tempfile
 from pathlib import Path
 
-JOURNAL_DIR = Path(__file__).parent.parent / "data" / "agent_memory"
+from engine.config import get_config
 
 # Roughly 1000 tokens of English at 4 chars/token.
 DEFAULT_MAX_CHARS = 4000
 
 
 def _path_for(agent_id: str) -> Path:
-    return JOURNAL_DIR / f"{agent_id}.md"
+    return get_config().journal_dir / f"{agent_id}.md"
 
 
 def load_journal(agent_id: str) -> str:
@@ -39,12 +39,13 @@ def load_journal(agent_id: str) -> str:
 
 def save_journal(agent_id: str, content: str) -> Path:
     """Write an agent's journal atomically (tmp + os.replace). Creates the directory."""
-    JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
+    journal_dir = get_config().journal_dir
+    journal_dir.mkdir(parents=True, exist_ok=True)
     path = _path_for(agent_id)
     if not content.endswith("\n"):
         content = content + "\n"
     # Write to a sibling tmp file so os.replace is on the same filesystem.
-    fd, tmp_name = tempfile.mkstemp(dir=JOURNAL_DIR, prefix=".journal_tmp_")
+    fd, tmp_name = tempfile.mkstemp(dir=journal_dir, prefix=".journal_tmp_")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(content)

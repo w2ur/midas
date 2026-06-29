@@ -16,7 +16,7 @@ import pytest
 
 from engine import orders as orders_module
 from engine.blog import BlogDraft, parse_oracle_response
-from engine.orders import INBOX_DIR, OUTBOX_DIR
+from engine.config import get_config
 from engine.output_bundle import get_day_number, save_output_bundle
 from engine.paper_broker import fill_day
 from engine.portfolio import PortfolioManager
@@ -34,33 +34,26 @@ TRADE_DATE = date(2026, 4, 17)
 
 
 @pytest.fixture
-def lab_env(tmp_path: Path, monkeypatch):
+def lab_env(midas_data_root: Path, monkeypatch):
     """Wire every module's writable path to a tmp directory so nothing leaks."""
-    ohlcv = tmp_path / "ohlcv"
-    ohlcv.mkdir()
-    config_dir = tmp_path / "agent_config"
-    config_dir.mkdir()
-    ticker_ccy = tmp_path / "ticker_currencies.json"
+    cfg = get_config()
+    ohlcv = cfg.ohlcv_dir
+    ohlcv.mkdir(parents=True, exist_ok=True)
+    config_dir = cfg.agent_config_dir
+    config_dir.mkdir(parents=True, exist_ok=True)
+    ticker_ccy = cfg.ticker_currencies_path
     ticker_ccy.write_text(json.dumps({"MC.PA": "EUR"}), encoding="utf-8")
-    outbox = tmp_path / "outbox"
-    outbox.mkdir()
-    inbox = tmp_path / "inbox"
-    inbox.mkdir()
-    pm_base = tmp_path / "portfolios"
+    outbox = cfg.orders_dir / "outbox"
+    outbox.mkdir(parents=True, exist_ok=True)
+    inbox = cfg.orders_dir / "inbox"
+    inbox.mkdir(parents=True, exist_ok=True)
+    pm_base = midas_data_root / "portfolios"
     pm_base.mkdir()
-    posts_dir = tmp_path / "posts"
-    blog_dir = tmp_path / "blog"
-    output_dir = tmp_path / "output"
+    posts_dir = cfg.posts_dir
+    blog_dir = cfg.blog_dir
+    output_dir = cfg.output_dir
 
-    monkeypatch.setattr("engine.paper_broker._OHLCV_STORE", ohlcv)
-    monkeypatch.setattr("engine.paper_broker.AGENT_CONFIG_DIR", config_dir)
-    monkeypatch.setattr("engine.paper_broker.TICKER_CURRENCIES_PATH", ticker_ccy)
     monkeypatch.setattr("engine.paper_broker._TICKER_CURRENCY_OVERRIDES", None)
-    monkeypatch.setattr("engine.orders.OUTBOX_DIR", outbox)
-    monkeypatch.setattr("engine.orders.INBOX_DIR", inbox)
-    monkeypatch.setattr("engine.posts.POSTS_DIR", posts_dir)
-    monkeypatch.setattr("engine.blog.BLOG_DIR", blog_dir)
-    monkeypatch.setattr("engine.output_bundle.OUTPUT_DIR", output_dir)
 
     # Seed OHLCV: yesterday's close present (simulates cron-before-OHLCV-refresh).
     def seed_ohlcv(ticker: str, price: float, on_date: date) -> None:
@@ -74,48 +67,44 @@ def lab_env(tmp_path: Path, monkeypatch):
     seed_ohlcv("BTC-EUR", 50000.0, date(2026, 4, 16))
     seed_ohlcv("MSFT", 400.0, date(2026, 4, 16))
 
-    # Seed per-agent configs (small notional caps so one test-trade exceeds it).
+    # Seed per-agent safety rails via roster.yaml (Task 4: no more agent_config/*.json).
+    import yaml
+    from engine.config import reset_config_cache
+
+    roster_path = cfg.data_dir / "roster.yaml"
+    roster_data = yaml.safe_load(roster_path.read_text(encoding="utf-8"))
+
+    _base_safety = {
+        "max_order_notional": 1000.0,
+        "max_orders_per_day": 5,
+        "daily_drawdown_halt_pct": -5.0,
+        "allowed_universe": [],
+        "dry_run": False,
+    }
     for agent_id in ["satoshi", "funded-buyer", "steady-eddie-eur", "yolo-sapiens-usd"]:
-        (config_dir / f"{agent_id}.json").write_text(
-            json.dumps(
-                {
-                    "max_order_notional": 1000.0,
-                    "max_orders_per_day": 5,
-                    "daily_drawdown_halt_pct": -5.0,
-                    "allowed_universe": [],
-                    "dry_run": False,
-                }
-            ),
-            encoding="utf-8",
-        )
+        if agent_id not in roster_data["agents"]:
+            roster_data["agents"][agent_id] = {
+                "display_name": agent_id,
+                "role": "trader",
+            }
+        roster_data["agents"][agent_id]["safety"] = dict(_base_safety)
 
     # Dedicated agent with drawdown halt triggered.
-    (config_dir / "halted-agent.json").write_text(
-        json.dumps(
-            {
-                "max_order_notional": 1000.0,
-                "max_orders_per_day": 5,
-                "daily_drawdown_halt_pct": -5.0,
-                "allowed_universe": [],
-                "dry_run": False,
-            }
-        ),
-        encoding="utf-8",
-    )
+    roster_data["agents"]["halted-agent"] = {
+        "display_name": "halted-agent",
+        "role": "trader",
+        "safety": dict(_base_safety),
+    }
 
     # Dedicated agent with universe restriction.
-    (config_dir / "gated-agent.json").write_text(
-        json.dumps(
-            {
-                "max_order_notional": 1000.0,
-                "max_orders_per_day": 5,
-                "daily_drawdown_halt_pct": -5.0,
-                "allowed_universe": ["single-voo"],
-                "dry_run": False,
-            }
-        ),
-        encoding="utf-8",
-    )
+    roster_data["agents"]["gated-agent"] = {
+        "display_name": "gated-agent",
+        "role": "trader",
+        "safety": {**_base_safety, "allowed_universe": ["single-voo"]},
+    }
+
+    roster_path.write_text(yaml.dump(roster_data), encoding="utf-8")
+    reset_config_cache()
 
     pm = PortfolioManager(base_dir=pm_base)
     pm.initialize("satoshi", 10000.0, currency="EUR")
@@ -290,18 +279,25 @@ class TestLaboratoryPipeline:
         # We'll use fail-agent with a trade that WOULD pass all rails otherwise.
         # Seed a SELL that will pass pre-checks (give the agent a position first).
         pm.initialize("fail-agent", 1000.0, currency="EUR")
-        (lab_env["config_dir"] / "fail-agent.json").write_text(
-            json.dumps(
-                {
-                    "max_order_notional": 1000.0,
-                    "max_orders_per_day": 5,
-                    "daily_drawdown_halt_pct": -5.0,
-                    "allowed_universe": [],
-                    "dry_run": False,
-                }
-            ),
-            encoding="utf-8",
-        )
+        # Seed fail-agent safety rails via roster.yaml (Task 4: no more agent_config/*.json).
+        import yaml as _yaml
+        from engine.config import get_config as _gc, reset_config_cache as _rcc
+
+        _roster_path = _gc().data_dir / "roster.yaml"
+        _roster_data = _yaml.safe_load(_roster_path.read_text(encoding="utf-8"))
+        _roster_data["agents"]["fail-agent"] = {
+            "display_name": "fail-agent",
+            "role": "trader",
+            "safety": {
+                "max_order_notional": 1000.0,
+                "max_orders_per_day": 5,
+                "daily_drawdown_halt_pct": -5.0,
+                "allowed_universe": [],
+                "dry_run": False,
+            },
+        }
+        _roster_path.write_text(_yaml.dump(_roster_data), encoding="utf-8")
+        _rcc()
 
         # Give fail-agent a tiny BTC-EUR position. Shares chosen so that:
         # - APPLY_TRADE_FAILED order: 0.00001 shares (notional=0.5 EUR < 1000 cap, ≤ held)

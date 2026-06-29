@@ -1,8 +1,8 @@
 """Deterministic baseline-manager — Gate C benchmark portfolio.
 
 Internal comparison portfolio only. NOT a public trading agent.
-Excluded from AGENT_POST_TIMES, AGENT_DISPLAY_NAMES, roster.ts, leaderboard,
-posts, journals, and the public output bundle.
+Excluded from roster.ts, the leaderboard, posts, journals, and the public
+output bundle by roster absence — it is not in get_config().trading_roster.
 
 Rules
 -----
@@ -22,8 +22,8 @@ Rules
   the day's close price (fractional shares allowed). Fees applied via fee_for.
 - Skip tickers with no price in the store — log and exclude.
 
-All public-surface keys (AGENT_POST_TIMES, AGENT_DISPLAY_NAMES, leaderboard)
-remain unchanged. The baseline-manager directory is iterated by
+The public roster (get_config().trading_roster) is unchanged — this book is
+never added to it. The baseline-manager directory is iterated by
 step_update_snapshots (intentional — daily valuation snapshots are desired).
 """
 
@@ -34,15 +34,12 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import Callable
 
+from engine.config import get_config
 from engine.fees import fee_for
-from engine.ohlcv_store import OHLCV_STORE as _DEFAULT_OHLCV_STORE
 from engine.research_note import ResearchNote
 from engine.types import Trade
 
 logger = logging.getLogger(__name__)
-
-# Module-level constant kept for test monkeypatching.
-_OHLCV_STORE = _DEFAULT_OHLCV_STORE
 
 STRATEGY_ID = "baseline-manager"
 INITIAL_CAPITAL_EUR = 2000.0
@@ -224,3 +221,17 @@ def rebalance(
         )
 
     return trades
+
+
+def __getattr__(name: str) -> object:
+    """Lazily expose ``_OHLCV_STORE`` as the current config's OHLCV dir (PEP 562).
+
+    ``scripts.daily_session.step_build_baseline_manager`` reads
+    ``engine.baseline_manager._OHLCV_STORE`` as the default store for its phantom
+    fills. Resolving it through ``get_config()`` at access time keeps the
+    Hands-side baseline manager honouring MIDAS_DATA_DIR redirection — nothing is
+    frozen at import.
+    """
+    if name == "_OHLCV_STORE":
+        return get_config().ohlcv_dir
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

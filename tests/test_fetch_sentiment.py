@@ -18,6 +18,8 @@ from pathlib import Path
 
 import pytest
 
+from engine.config import get_config
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -178,69 +180,50 @@ class TestSanitizeHeadline:
 
 
 class TestCollectActiveTickers:
-    def test_returns_held_union_pending(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_returns_held_union_pending(self, midas_data_root: Path) -> None:
         import scripts.fetch_sentiment as fs
 
-        portfolios_dir = tmp_path / "portfolios"
-        pending_dir = tmp_path / "pending"
+        portfolios_dir = get_config().portfolios_dir
+        pending_dir = get_config().orders_dir / "pending"
 
         _write_portfolio(portfolios_dir, "satoshi", ["BTC-EUR", "ETH-EUR"])
         _write_portfolio(portfolios_dir, "goldfinger", ["GLD"])
         _write_pending(pending_dir, "ord_001", "AAPL")
 
-        monkeypatch.setattr(fs, "_PORTFOLIOS_DIR", portfolios_dir)
-        monkeypatch.setattr(fs, "_PENDING_DIR", pending_dir)
-
         result = fs._collect_active_tickers()
         assert result == {"BTC-EUR", "ETH-EUR", "GLD", "AAPL"}
 
-    def test_no_universe_bleed(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_no_universe_bleed(self, midas_data_root: Path) -> None:
         """Should NOT include universe tickers not held or pending."""
         import scripts.fetch_sentiment as fs
 
-        portfolios_dir = tmp_path / "portfolios"
-        pending_dir = tmp_path / "pending"
+        portfolios_dir = get_config().portfolios_dir
+        pending_dir = get_config().orders_dir / "pending"
         # Only one held ticker
         _write_portfolio(portfolios_dir, "agent-a", ["MSFT"])
-        pending_dir.mkdir()
-
-        monkeypatch.setattr(fs, "_PORTFOLIOS_DIR", portfolios_dir)
-        monkeypatch.setattr(fs, "_PENDING_DIR", pending_dir)
+        pending_dir.mkdir(parents=True, exist_ok=True)
 
         result = fs._collect_active_tickers()
         # Must be exactly the held ticker — no S&P 500 bleed
         assert result == {"MSFT"}
         assert len(result) == 1
 
-    def test_empty_when_no_portfolios_or_pending(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_empty_when_no_portfolios_or_pending(self, midas_data_root: Path) -> None:
         import scripts.fetch_sentiment as fs
-
-        monkeypatch.setattr(fs, "_PORTFOLIOS_DIR", tmp_path / "portfolios")
-        monkeypatch.setattr(fs, "_PENDING_DIR", tmp_path / "pending")
 
         result = fs._collect_active_tickers()
         assert result == set()
 
     def test_handles_missing_ticker_field_in_pending(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, midas_data_root: Path
     ) -> None:
         import scripts.fetch_sentiment as fs
 
-        portfolios_dir = tmp_path / "portfolios"
-        pending_dir = tmp_path / "pending"
-        pending_dir.mkdir()
+        pending_dir = get_config().orders_dir / "pending"
+        pending_dir.mkdir(parents=True, exist_ok=True)
 
         # A pending file missing the ticker key
         (pending_dir / "bad_order.json").write_text(json.dumps({"order_id": "x"}))
-
-        monkeypatch.setattr(fs, "_PORTFOLIOS_DIR", portfolios_dir)
-        monkeypatch.setattr(fs, "_PENDING_DIR", pending_dir)
 
         # Should not crash
         result = fs._collect_active_tickers()
@@ -259,12 +242,11 @@ class TestMax10Cap:
         import scripts.fetch_sentiment as fs
 
         news_dir = tmp_path / "news"
-        monkeypatch.setattr(fs, "_NEWS_DIR", news_dir)
 
         items = _make_news_items(25)
         monkeypatch.setattr(fs, "_fetch_news", lambda _sym: items)
 
-        fs._write_digest("AAPL", items, run_date="2026-06-13")
+        fs._write_digest("AAPL", items, run_date="2026-06-13", news_dir=news_dir)
 
         path = news_dir / "AAPL.jsonl"
         rows = [
@@ -285,20 +267,16 @@ class TestMax10Cap:
 
 class TestGracefulDegradation:
     def test_failing_ticker_skipped_others_processed(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         import scripts.fetch_sentiment as fs
 
-        portfolios_dir = tmp_path / "portfolios"
-        pending_dir = tmp_path / "pending"
-        news_dir = tmp_path / "news"
-        pending_dir.mkdir()
+        portfolios_dir = get_config().portfolios_dir
+        pending_dir = get_config().orders_dir / "pending"
+        news_dir = get_config().data_dir / "data" / "market" / "news"
+        pending_dir.mkdir(parents=True, exist_ok=True)
 
         _write_portfolio(portfolios_dir, "agent-a", ["FAIL-ME", "AAPL"])
-
-        monkeypatch.setattr(fs, "_PORTFOLIOS_DIR", portfolios_dir)
-        monkeypatch.setattr(fs, "_PENDING_DIR", pending_dir)
-        monkeypatch.setattr(fs, "_NEWS_DIR", news_dir)
 
         def _patched_fetch(symbol: str) -> list[dict]:
             if symbol == "FAIL-ME":
@@ -321,20 +299,16 @@ class TestGracefulDegradation:
         assert row["count"] == 3
 
     def test_empty_news_list_skips_file(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         import scripts.fetch_sentiment as fs
 
-        portfolios_dir = tmp_path / "portfolios"
-        pending_dir = tmp_path / "pending"
-        news_dir = tmp_path / "news"
-        pending_dir.mkdir()
+        portfolios_dir = get_config().portfolios_dir
+        pending_dir = get_config().orders_dir / "pending"
+        news_dir = get_config().data_dir / "data" / "market" / "news"
+        pending_dir.mkdir(parents=True, exist_ok=True)
 
         _write_portfolio(portfolios_dir, "agent-a", ["AAPL"])
-
-        monkeypatch.setattr(fs, "_PORTFOLIOS_DIR", portfolios_dir)
-        monkeypatch.setattr(fs, "_PENDING_DIR", pending_dir)
-        monkeypatch.setattr(fs, "_NEWS_DIR", news_dir)
 
         # Returns empty list (no news)
         monkeypatch.setattr(fs, "_fetch_news", lambda _sym: [])
@@ -429,22 +403,19 @@ class TestDigestShape:
 
 class TestFullRunIntegration:
     def test_full_run_no_crash(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         import scripts.fetch_sentiment as fs
 
-        portfolios_dir = tmp_path / "portfolios"
-        pending_dir = tmp_path / "pending"
-        news_dir = tmp_path / "news"
-        pending_dir.mkdir()
+        portfolios_dir = get_config().portfolios_dir
+        pending_dir = get_config().orders_dir / "pending"
+        news_dir = get_config().data_dir / "data" / "market" / "news"
+        pending_dir.mkdir(parents=True, exist_ok=True)
 
         _write_portfolio(portfolios_dir, "satoshi", ["BTC-EUR"])
         _write_portfolio(portfolios_dir, "goldfinger", ["GLD", "SLV"])
         _write_pending(pending_dir, "ord_001", "AAPL")
 
-        monkeypatch.setattr(fs, "_PORTFOLIOS_DIR", portfolios_dir)
-        monkeypatch.setattr(fs, "_PENDING_DIR", pending_dir)
-        monkeypatch.setattr(fs, "_NEWS_DIR", news_dir)
         monkeypatch.setattr(fs, "_fetch_news", lambda sym: _make_news_items(5, sym))
 
         fs.run(run_date="2026-06-13")

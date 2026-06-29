@@ -18,10 +18,8 @@ via this module is the substitute for the auto-registration we don't have.
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[1]
-_AGENTS_DIR = _PROJECT_ROOT / ".claude" / "agents"
+from engine.config import get_config
 
 _FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
@@ -52,7 +50,7 @@ def load_persona(agent_id: str) -> tuple[str, str | None]:
 
     Raises FileNotFoundError if the persona file does not exist.
     """
-    path = _AGENTS_DIR / f"{agent_id}.md"
+    path = get_config().agents_dir / f"{agent_id}.md"
     raw = path.read_text(encoding="utf-8")
     match = _FRONTMATTER_RE.match(raw)
     if not match:

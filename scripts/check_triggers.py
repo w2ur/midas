@@ -24,6 +24,7 @@ from typing import Callable
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
+from engine.config import get_config
 from engine.orders import Fill, Order, append_fill
 from engine.paper_broker import execute_triggered_order
 from engine.portfolio import PortfolioManager
@@ -103,7 +104,7 @@ def process_fired_order(
         # so the per-fire commit captures the full mutation set atomically.
         # Directory-level add covers portfolio.json + trades.json (and any other
         # files the fill may have touched in that directory).
-        portfolio_dir = str(_PROJECT_ROOT / "data" / "portfolios" / order.agent_id)
+        portfolio_dir = str(get_config().portfolios_dir / order.agent_id)
         paths.append(portfolio_dir)
 
     # Remove the pending file regardless (fill or zombie cleanup).
@@ -320,7 +321,7 @@ def refresh_leaderboard_artifact(trigger: str, on: date) -> None:
     try:
         summaries = _build_portfolio_summaries()
         rows = _build_leaderboard_rows(summaries, on=on)
-        leaderboard_dir = _PROJECT_ROOT / "data" / "leaderboard"
+        leaderboard_dir = get_config().leaderboard_dir
         leaderboard_dir.mkdir(parents=True, exist_ok=True)
         path = leaderboard_dir / "current.json"
         now_iso = (
@@ -402,7 +403,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    portfolio_manager = PortfolioManager(base_dir=_PROJECT_ROOT / "data" / "portfolios")
+    portfolio_manager = PortfolioManager(base_dir=get_config().portfolios_dir)
     now = datetime.now(timezone.utc)
     summary = run(now=now, portfolio_manager=portfolio_manager)
     logger.info("Watcher summary: %s", summary)

@@ -8,9 +8,8 @@ from datetime import date
 from pathlib import Path
 
 from engine.agent_memory import format_oracle_digest
-from engine.posts import AGENT_DISPLAY_NAMES, PostPayload
-
-BLOG_DIR = Path(__file__).parent.parent / "data" / "blog"
+from engine.config import get_config
+from engine.posts import display_name as _display_name, PostPayload
 
 # Trim caps applied to the Oracle prompt so first-token latency stays under
 # the cloud streaming idle threshold. Verbatim agent commentary is not what
@@ -69,7 +68,7 @@ def build_oracle_prompt(
 
     agents_s = ""
     for aid, res in agent_results.items():
-        name = AGENT_DISPLAY_NAMES.get(aid, aid)
+        name = _display_name(aid)
         commentary = _truncate(res.get("commentary", ""), _ORACLE_COMMENTARY_CAP)
         agents_s += f"\n  {name}:\n    Commentary: {commentary}\n"
         for t in res.get("trades", []):
@@ -78,7 +77,7 @@ def build_oracle_prompt(
 
     posts_s = ""
     for aid, posts in agent_posts.items():
-        name = AGENT_DISPLAY_NAMES.get(aid, aid)
+        name = _display_name(aid)
         posts_s += f"\n  {name}:\n"
         for p in posts:
             text = p.get("text", "") if isinstance(p, dict) else str(p)
@@ -86,7 +85,7 @@ def build_oracle_prompt(
     posts_block = f"\n\nAGENT POSTS TODAY:{posts_s}" if posts_s else ""
 
     lb_s = "\n".join(
-        f"  #{e['rank']} {AGENT_DISPLAY_NAMES.get(e['agent'], e['agent'])}: {e['return_pct']:+.1f}% (EUR)"
+        f"  #{e['rank']} {_display_name(e['agent'])}: {e['return_pct']:+.1f}% (EUR)"
         for e in leaderboard
     )
 
@@ -135,8 +134,9 @@ def parse_oracle_response(response: str) -> tuple[BlogDraft, list[PostPayload]]:
 
 def save_daily_blog_draft(d: date, draft: BlogDraft) -> Path:
     """Save a blog draft as markdown with YAML frontmatter. Title is always quoted."""
-    BLOG_DIR.mkdir(parents=True, exist_ok=True)
-    path = BLOG_DIR / f"{d.isoformat()}.md"
+    blog_dir = get_config().blog_dir
+    blog_dir.mkdir(parents=True, exist_ok=True)
+    path = blog_dir / f"{d.isoformat()}.md"
     frontmatter = (
         "---\n"
         f'title: "{draft.title}"\n'

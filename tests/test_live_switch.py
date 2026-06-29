@@ -153,8 +153,10 @@ class TestCommittedDefault:
         Uses the real data/agent_config/live_switch.json without any path
         override, with MIDAS_LIVE absent so the file value is authoritative.
         """
+        from engine.config import get_config
+
         monkeypatch.delenv("MIDAS_LIVE", raising=False)
-        config_path = live_switch._DEFAULT_PATH
+        config_path = get_config().agent_config_dir / "live_switch.json"
         data = __import__("json").loads(config_path.read_text(encoding="utf-8"))
         assert data.get("live_enabled") is False, (
             "data/agent_config/live_switch.json must ship with live_enabled=false"
