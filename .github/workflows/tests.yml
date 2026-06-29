@@ -1,0 +1,43 @@
+name: tests
+
+# Runs the full pytest suite (incl. the import-smoke guard) on every pull
+# request. This is the PRE-MERGE gate: the cron workflows and session-integrity
+# only run on `main`, so without this nothing exercises the suite before a PR
+# lands. Triggered on pull_request only — the daily session pushes to sandbox
+# branches that auto-merge, which never open a PR, so this does not interfere
+# with that flow.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run test suite
+        run: pytest -q
