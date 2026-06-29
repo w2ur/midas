@@ -103,3 +103,22 @@ def save_output_bundle(bundle_date: date, bundle: dict) -> Path:
     path = output_dir / f"{bundle_date.isoformat()}.json"
     path.write_text(json.dumps(bundle, indent=2), encoding="utf-8")
     return path
+
+
+if __name__ == "__main__":
+    import sys
+
+    # Re-save today's (or a specified) output bundle from disk.
+    # Usage: python -m engine.output_bundle [YYYY-MM-DD]
+    _target = date.fromisoformat(sys.argv[1]) if len(sys.argv) > 1 else date.today()
+    _cfg = get_config()
+    _src = _cfg.output_dir / f"{_target.isoformat()}.json"
+    if not _src.exists():
+        print(
+            f"build-bundle: no bundle for {_target} at {_src}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    _bundle = json.loads(_src.read_text(encoding="utf-8"))
+    _path = save_output_bundle(_target, _bundle)
+    print(f"build-bundle: saved → {_path}")

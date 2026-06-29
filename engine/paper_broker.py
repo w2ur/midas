@@ -612,3 +612,17 @@ def _execute_triggered_order(
         reason=None,
         trigger_fired=True,
     )
+
+
+if __name__ == "__main__":
+    from datetime import date as _date
+
+    from engine.config import get_config as _gc
+    from engine.portfolio import PortfolioManager as _PM
+
+    _cfg = _gc()
+    _pm = _PM(base_dir=_cfg.data_dir / "data" / "portfolios")
+    _fills = fill_day(_date.today(), _pm)
+    _filled = sum(1 for f in _fills if f.status == "filled")
+    _rejected = sum(1 for f in _fills if f.status == "rejected")
+    print(f"fill-day: {_filled} filled, {_rejected} rejected out of {len(_fills)}")
