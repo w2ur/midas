@@ -23,6 +23,7 @@ export type Agent = {
 
 export const ORACLE_ID = "the-oracle" as const;
 
+// Mirrors roster.yaml (repo root) — update both if the cast or display names change.
 export const TRADING_AGENTS: Agent[] = [
   {
     id: "steady-eddie-eur",

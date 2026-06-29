@@ -41,10 +41,13 @@ streamlit run app/main.py
 - `engine/` — Core trading logic: types, market data, bt adapter, backtest runner
 - `engine/orders.py` — Order/Fill types + outbox/inbox JSONL serde (Brain/Hands primitive)
 - `engine/paper_broker.py` — Hands side: 14 rejection/cancel reason codes + fill logic + portfolio update
-- `engine/posts.py` — post types, 11-agent display names + schedule (single source of truth)
+- `engine/posts.py` — post types, config-backed PostPayload + prompt builders + save_daily_posts (display names + schedule now driven by `roster.yaml`)
 - `engine/blog.py` — Oracle prompt builder + response parser + blog draft saver
 - `engine/agent_memory.py` — Ring 2 per-agent journal I/O + digest/excerpt helpers + session-end rewrite prompt
 - `engine/persona_dispatch.py` — load `.claude/agents/{id}.md`, strip frontmatter, wrap a task prompt with the persona body so the orchestrator can dispatch via `subagent_type="general-purpose"` (project agents are not auto-registered as dispatchable subagent types)
+- `engine/config.py` — `MidasConfig`: single source of truth for paths + roster + safety rails, loaded from `roster.yaml`; `MIDAS_DATA_DIR`-aware (default = repo root)
+- `engine/cli.py` — the `midas` CLI entry point
+- `roster.yaml` — the cast (agents, voices, schedule, universes, benchmarks, per-agent safety rails) + globals; the engine and orchestrator are config-driven from this file; set `MIDAS_DATA_DIR` to redirect all data reads/writes to a different root (e.g. for forks or isolated test runs)
 - `engine/selectors/` — bt Algos for entry signals (golden cross, RSI, etc.)
 - `engine/managers/` — bt Algos for position management (grid, trailing stop, etc.)
 - `engine/universes/` — Universe resolvers (S&P 500, congressional, crypto, etc.). Read from committed `data/universes/*.json` — no network at runtime. Refresh via `scripts/refresh_universes.py` or the weekly `refresh-universes.yml` workflow.
@@ -52,7 +55,7 @@ streamlit run app/main.py
 - `app/` — Streamlit dashboard pages
 - `data/strategies/` — Strategy spec JSON files
 - `data/portfolios/` — Runtime portfolio state (committed — needed by the sandboxed remote agent)
-- `data/agent_config/` — per-agent safety rails (committed)
+- `data/agent_config/` — holds `live_switch.json` only (committed); the 10 per-agent JSONs were removed; per-agent safety rails now live in `roster.yaml` (enforced by the broker)
 - `data/ticker_currencies.json` — ticker → ISO currency override map (committed)
 - `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (committed)
 - `data/orders/{manager-pending,manager-cancels,manager-inbox}/` — Manager channel conditional orders (pending/cancels) and fills (committed, isolated from the public inbox the site reads)
@@ -142,8 +145,8 @@ Pages: `/`, `/arena`, `/arena/:id`, `/journal`, `/journal/:date`, `/feed`, `/fee
 
 The backtester (`/simulate`) was removed from the narrative site on 2026-06-28 and is being spun out as its own standalone product; the agent-story site no longer carries it.
 
-See `site/README.md` for local development. Data shape assumptions live in `site/src/lib/`; the 10-agent display manifest is in `site/src/lib/roster.ts` (duplicated from `engine/posts.py` — update both if the roster changes). Ring 3b so far: trade cards (inline on trade-kind posts, joined from `data/orders/outbox` + `inbox` by `order_id`), mention chips, per-ticker history pages, time-travel archive, dark/light toggle, per-position valuations on dossiers, and per-agent baselines (passive benchmark + coin flip on dossier chart, MSCI World reference on leaderboards). Still deferred: threaded replies (agents don't emit `parent_id` yet).
+See `site/README.md` for local development. Data shape assumptions live in `site/src/lib/`; the 10-agent display manifest is in `site/src/lib/roster.ts` (mirrors `roster.yaml` — update both if the roster changes). Ring 3b so far: trade cards (inline on trade-kind posts, joined from `data/orders/outbox` + `inbox` by `order_id`), mention chips, per-ticker history pages, time-travel archive, dark/light toggle, per-position valuations on dossiers, and per-agent baselines (passive benchmark + coin flip on dossier chart, MSCI World reference on leaderboards). Still deferred: threaded replies (agents don't emit `parent_id` yet).
 
 Agent identity = a frameless SVG **crest** per agent: `site/src/components/AgentCrest.astro` renders `CREST_PATHS` from `site/src/lib/crests.ts` (10 agents + the Oracle), tinted by `--agent-color`. Kit colours stay duplicated in `roster.ts` (`signatureColor`) and `global.css` (`[data-agent]`) — update both, and the `tests/contrast.test.ts` guard enforces ≥4.5:1 in both themes.
 
-The `AGENT_BENCHMARK_LABELS` map in `site/src/lib/baselines.ts` mirrors `AGENT_BENCHMARKS` in `engine/baselines.py` — update both when an agent's benchmark changes. Same convention as `roster.ts`.
+The `AGENT_BENCHMARK_LABELS` map in `site/src/lib/baselines.ts` mirrors the benchmark entries in `roster.yaml` — update `roster.yaml` and keep `baselines.ts` in sync when an agent's benchmark changes. Same convention as `roster.ts`.
