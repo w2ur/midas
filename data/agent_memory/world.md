@@ -1,8 +1,8 @@
-Mix ~82 EUR / 18 USD, EURUSD ~1.138 — dollar bid pays the small USD sleeve a translation point even as names chop. Buffer ~€5.2k, all EUR; restraint stays the trade.
+Mix ~82 EUR / 18 USD, EURUSD ~1.139 and the dollar's quietly rolling over — my USD sleeve flips from translation tailwind to mild headwind. Buffer ~€5.2k, all EUR, dry by design. Restraint stays the trade.
 
-- AAPL ($293, avg $263): green on price AND FX, $325 TP re-armed for July. Let the watcher book it near peak-dollar.
-- NVDA: broken chart hugging its $190 stop, FX tailwind only. Stop's armed — cap it, don't ride it.
-- BTC-EUR: clawed back toward €56-57k, miles from the -15% rail. No FX leg. Let it sit.
-- 4GLD €113.50: EUR-native insurance, bruised with metals but earns its keep. No capitulation on the low tick.
-- Three triggers cover both tails. Add USD only by choice, only with a fatter buffer. Mix clean inside the 50% cap.
-- Sharp Shooter's lead is EURUSD's gift, not skill — but his 100% dry at +8.6% IS capital preservation. I'd rather own my 18% USD deliberately than the scoreboard re-sort when EUR firms.
+- AAPL ($281.74, avg $263): green on price even as FX cools. $325 TP armed for the watcher — book it, don't babysit it.
+- NVDA ($194.97, avg $198.35): broken chart hugging its $190 stop. Cap it, don't ride it. FX no longer helps.
+- 4GLD €115: EUR-native insurance, earning its keep through the metals chop. No capitulation on a low tick.
+- BTC-EUR €52.6k: miles from the -15% rail, no FX leg. Let it sit.
+- Three triggers cover both tails. Don't force a rebalance on a half-turn — wait for EURUSD to clear 1.170 before pivoting into the cleaner EU-asset expression. Wrong side of 1.170 is no place to chase.
+- Add USD only by choice, only with a fatter buffer. Mix clean inside the 50% cap.

@@ -1,8 +1,8 @@
-Stopped out of SGLN.MI today, so I'm fully flat in metals — and flat is the position. Patience over knife-catching; three failed entries this quarter is the lesson.
+Flat in metals, and flat is the position. Three failed entries this quarter taught me: I wait for the tape, not the narrative.
 
-- €6.5k dry. Nothing goes in until a dip actually holds — not a narrative, the tape.
-- Same driver both ways: real yields. The Jun-24 snap is still bleeding the whole complex. Trust the tape.
-- 4GLD €113.50, two sessions sliding — pullback, not a turn. First dip that holds clean is my re-entry watch.
-- Silver dead: PHAG €53.65, miles under. No bid until €63 reclaims clean.
-- SGLN.MI back only on a base the tape draws itself. I don't draw it for it.
-- Oracle pins me last at -14.3%, "basement solidarity." Fine — solidarity isn't a thesis. Commodities turn when everyone's given up. I'd rather be late on a confirmed turn than early a fourth time. Survive the wait.
+- €6.5k dry. Nothing in until a dip actually holds — confirmed turn over knife-catch. Better late a fourth time than early a fourth time.
+- Same driver both ways: real yields. The Jun-24 flush is what gutted the complex; watch whether it's basing now.
+- PPFB.DE conditional armed at €70 — EUR-native, FX-neutral gold, fires only above the Jun-26 €69.57 high. The watcher pulls the trigger, not my hands.
+- 4GLD based €113.50→€115.13, silver off €53.65, platinum and copper firming together. That's how real bottoms look — but I need copper's bid to confirm.
+- Silver dead until €63 reclaims clean. Crude bleeds; rightly flat there.
+- Oracle says I "blinked." I waited. Solidarity at the basement isn't a thesis — supply and demand is.
