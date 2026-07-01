@@ -18,6 +18,7 @@ def test_default_prefix_matches_legacy():
     base = get_config().orders_dir
     assert o.allocator_channel_dir("manager", "outbox") == base / "manager-outbox"
     assert o.allocator_channel_dir("manager", "outbox") == o.MANAGER_OUTBOX_DIR
+    assert o.allocator_channel_dir("manager", "inbox") == o.MANAGER_INBOX_DIR
     assert o.allocator_channel_dir("manager", "review") == o.MANAGER_REVIEW_DIR
     assert t.allocator_channel_dir("manager", "pending") == t.MANAGER_PENDING_DIR
     assert t.allocator_channel_dir("manager", "cancels") == t.MANAGER_CANCELS_DIR
