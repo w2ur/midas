@@ -28,10 +28,30 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from engine.config import get_config
+
 # Snapshot record: {"date": "YYYY-MM-DD", "portfolio_value": float, ...}
 Snapshot = dict
 Decision = dict
 ResolvedOutcome = dict
+
+
+def book_paths(allocator_id: str = "the-manager") -> dict[str, Path]:
+    """Return the canonical filesystem paths for an allocator's book.
+
+    Keys: ``portfolio``, ``snapshots``, ``review_dir``, ``resolved``.
+    Default ``allocator_id="the-manager"`` reproduces the legacy hardcoded paths
+    byte-for-byte so existing readers keep working.
+    """
+    cfg = get_config()
+    portfolio_dir = cfg.portfolios_dir / allocator_id
+    review_dir = cfg.orders_dir / f"{allocator_id.removeprefix('the-')}-review"
+    return {
+        "portfolio": portfolio_dir / "portfolio.json",
+        "snapshots": portfolio_dir / "snapshots.json",
+        "review_dir": review_dir,
+        "resolved": review_dir / "resolved.json",
+    }
 
 
 # ---------------------------------------------------------------------------

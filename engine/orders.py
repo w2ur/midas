@@ -288,6 +288,13 @@ def inbox_order_ids(d: date | None = None, inbox_dir: Path | None = None) -> set
     return ids
 
 
+def allocator_channel_dir(prefix: str, kind: str) -> "Path":
+    """Resolve an allocator channel dir: data/orders/{prefix}-{kind}.
+    kind ∈ {outbox, inbox, review}. Default prefix 'manager' reproduces the
+    legacy MANAGER_*_DIR paths byte-for-byte."""
+    return get_config().orders_dir / f"{prefix}-{kind}"
+
+
 _LAZY_DIRS = {
     "OUTBOX_DIR": "outbox",
     "INBOX_DIR": "inbox",

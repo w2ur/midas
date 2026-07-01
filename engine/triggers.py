@@ -257,6 +257,12 @@ def get_current_price(ticker: str, today: date) -> float | None:
     return latest_close_on_or_before(ticker, today)
 
 
+def allocator_channel_dir(prefix: str, kind: str) -> "Path":
+    """Resolve an allocator pending/cancels dir: data/orders/{prefix}-{kind}.
+    kind ∈ {pending, cancels}. Default prefix 'manager' == legacy paths."""
+    return get_config().orders_dir / f"{prefix}-{kind}"
+
+
 _LAZY_DIRS = {
     "PENDING_DIR": "pending",
     "CANCELS_DIR": "cancels",
