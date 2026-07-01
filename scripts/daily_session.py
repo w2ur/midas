@@ -67,17 +67,10 @@ from engine.baseline_manager import (
 )
 from engine.blog import build_oracle_prompt, save_daily_blog_draft
 from engine.ohlcv_store import latest_close_on_or_before
-from engine.manager_orders import (
-    MANAGER_AGENT_ID,
-    MANAGER_CURRENCY,
-    MANAGER_INITIAL_CAPITAL_EUR,
-)
 from engine.orders import Order, append_order, make_order_id
 from engine.research_note import parse_research_note
 from engine.triggers import (
     CancelRequest,
-    MANAGER_CANCELS_DIR,
-    MANAGER_PENDING_DIR,
     append_cancel,
     list_pending,
 )
@@ -89,7 +82,7 @@ from engine.output_bundle import (
 )
 from engine.paper_broker import fill_day
 from engine.portfolio import PortfolioManager
-from engine.config import get_config
+from engine.config import AgentSpec, AllocatorSpec, get_config
 from engine.posts import (
     PostPayload,
     build_post_prompt,
@@ -345,12 +338,44 @@ def step_fill_orders(trade_date: date, portfolio_manager: PortfolioManager) -> l
     return fills
 
 
+# ---------------------------------------------------------------------------
+# Allocator resolution (SP2 Task 5)
+#
+# Every manager session step is opt-in: a roster that omits the allocator block
+# (role='allocator') runs each step as a clean skip. The four steps below source
+# ALL of their channel dirs, book identity, prose, and gates from the resolved
+# allocator spec — never from module constants — so a forker can rename channels,
+# retune the risk budget, or drop the allocator entirely by editing roster.yaml
+# alone. William's sole allocator (`the-manager`) resolves as the default and
+# reproduces the legacy paths / prose / conviction gate byte-for-byte.
+# ---------------------------------------------------------------------------
+
+
+def _resolve_allocator(
+    allocator_id: str | None = None,
+) -> tuple[str, AllocatorSpec, AgentSpec] | tuple[None, None, None]:
+    """Resolve the target allocator to ``(id, AllocatorSpec, AgentSpec)``.
+
+    Returns ``(None, None, None)`` when the deployment configures no allocator
+    (no roster entry with ``role='allocator'``) — the opt-out path every manager
+    step treats as a clean skip. Ship-one default: with a single allocator and no
+    explicit ``allocator_id``, resolve to that sole allocator.
+    """
+    cfg = get_config()
+    allocs = cfg.allocators
+    if not allocs:
+        return None, None, None
+    aid = allocator_id or allocs[0]
+    return aid, cfg.allocator_spec(aid), cfg.roster[aid]
+
+
 @idempotent_step(skip_return=None)
 def step_build_baseline_manager(
     agent_results: dict[str, dict],
     trade_date: date | None = None,
     portfolios_dir: Path | None = None,
     ohlcv_store: Path | None = None,
+    allocator_id: str | None = None,
 ) -> None:
     """Step 3c — run the deterministic baseline-manager rebalance.
 
@@ -379,6 +404,11 @@ def step_build_baseline_manager(
     import engine.baseline_manager as bm_module
 
     print("\n=== Step 3c: Baseline-manager rebalance ===")
+
+    aid, alloc, _spec = _resolve_allocator(allocator_id)
+    if aid is None or not alloc.baseline_enabled:
+        print("  No allocator with baseline enabled — skipping.")
+        return
 
     if trade_date is None:
         trade_date = date.today()
@@ -462,6 +492,7 @@ def step_resolve_manager_outcomes(
     ohlcv_store: Path | None = None,
     msci_path: Path | None = None,
     resolved_path: Path | None = None,
+    allocator_id: str | None = None,
 ) -> None:
     """Step 3c-bis — resolve matured Manager decisions into numeric outcome memory.
 
@@ -492,6 +523,7 @@ def step_resolve_manager_outcomes(
         review_dir/resolved.json when None.
     """
     from engine.ohlcv_store import OHLCV_STORE
+    from engine.orders import allocator_channel_dir as _order_channel_dir
     from scripts.resolve_manager_outcomes import (
         load_existing_resolved,
         resolve_outcomes,
@@ -500,7 +532,14 @@ def step_resolve_manager_outcomes(
 
     print("\n=== Step 3c-bis: Resolve manager outcomes ===")
 
-    resolved_review_dir = review_dir or (get_config().orders_dir / "manager-review")
+    aid, alloc, _spec = _resolve_allocator(allocator_id)
+    if aid is None:
+        print("  No allocator configured — skipping.")
+        return
+
+    resolved_review_dir = review_dir or _order_channel_dir(
+        alloc.channels_prefix, "review"
+    )
     resolved_store = ohlcv_store or OHLCV_STORE
     resolved_msci_path = msci_path or (
         get_config().baselines_dir / "global" / "msci_world.json"
@@ -534,18 +573,23 @@ def step_build_manager_prompt(
     agent_results: dict[str, dict],
     trade_date: date,
     ohlcv_store: Path | None = None,
+    allocator_id: str | None = None,
 ) -> str:
-    """Step 3d — build the LLM Manager's decision prompt (mirror of the Oracle).
+    """Step 3d — build the LLM allocator's decision prompt (mirror of the Oracle).
 
     Not wrapped with @idempotent_step: pure prompt builder with no side effects —
     on resume it must rebuild the real prompt so the orchestrator's untracked LLM
     dispatch can re-run; idempotency lives on step_apply_manager_decision.
 
     Assembles the C3 manager context from each agent's research note, the
-    the-manager portfolio (empty book if absent), and resolved decisions
-    (always [] here — the outcome-resolution loop is Task C5b). Wraps the rendered
-    context with the the-manager persona via wrap_persona_prompt and returns the
-    prompt string. Does NOT call Claude.
+    allocator's portfolio (empty book if absent), and resolved decisions. Wraps the
+    rendered context with the allocator persona via wrap_persona_prompt and returns
+    the prompt string. Does NOT call Claude. Returns "" when the deployment has no
+    allocator (opt-out).
+
+    Every channel dir, book identity, prose block, and memory cap is sourced from
+    the resolved allocator spec — William's sole allocator reproduces the legacy
+    the-manager output byte-for-byte.
     """
     from engine.manager_context import (
         build_manager_context,
@@ -555,17 +599,20 @@ def step_build_manager_prompt(
         render_risk_budget_prose,
     )
     from engine.ohlcv_store import latest_close_on_or_before as _lcob
+    from engine.orders import allocator_channel_dir as _order_channel_dir
     from engine.persona_dispatch import wrap_persona_prompt
-    from engine.triggers import MANAGER_PENDING_DIR, list_pending
+    from engine.triggers import allocator_channel_dir as _trigger_channel_dir
+    from engine.triggers import list_pending
 
     print("\n=== Step 3d: Build Manager prompt ===")
 
-    # Single-allocator prose wiring (Task 5 generalises this to the allocator loop):
-    # source the POLICY/RISK BUDGET prose + memory caps from the-manager's config so
-    # render_manager_context keeps its byte-identical blocks now that it reads ctx.
-    _alloc = get_config().allocator_spec(MANAGER_AGENT_ID)
+    aid, alloc, spec = _resolve_allocator(allocator_id)
+    if aid is None:
+        print("  No allocator configured — skipping.")
+        return ""
 
-    portfolios_dir = get_config().portfolios_dir
+    cfg = get_config()
+    portfolios_dir = cfg.portfolios_dir
     resolved_store = ohlcv_store
 
     # Parse each agent's research note (drop None — same tolerance as the baseline).
@@ -574,17 +621,19 @@ def step_build_manager_prompt(
         note = parse_research_note(result.get("research_note"))
         notes.append((agent_id, note))
 
-    # Load the-manager portfolio if it exists, else None (→ empty book in C3).
+    # Load the allocator's portfolio if it exists, else None (→ empty book in C3).
     portfolio: dict | None = None
-    manager_path = portfolios_dir / MANAGER_AGENT_ID / "portfolio.json"
+    manager_path = portfolios_dir / aid / "portfolio.json"
     if manager_path.exists():
         manager = PortfolioManager(base_dir=portfolios_dir)
-        portfolio = manager.load(MANAGER_AGENT_ID).to_dict()
+        portfolio = manager.load(aid).to_dict()
 
     # Resolved decisions: written by step_resolve_manager_outcomes (Step 3c-bis, C5b).
     # That step runs BEFORE this one, so resolved.json is already up-to-date.
     resolved_decisions: list[dict] = []
-    resolved_path = get_config().orders_dir / "manager-review" / "resolved.json"
+    resolved_path = (
+        _order_channel_dir(alloc.channels_prefix, "review") / "resolved.json"
+    )
     if resolved_path.exists():
         try:
             resolved_decisions = json.loads(resolved_path.read_text(encoding="utf-8"))
@@ -611,7 +660,9 @@ def step_build_manager_prompt(
         if close is not None:
             price_lookup[ticker] = (close, trade_date.isoformat())
 
-    active_triggers = list_pending(pending_dir=MANAGER_PENDING_DIR)
+    active_triggers = list_pending(
+        pending_dir=_trigger_channel_dir(alloc.channels_prefix, "pending")
+    )
 
     ctx = build_manager_context(
         notes=notes,
@@ -621,23 +672,23 @@ def step_build_manager_prompt(
         ticker_registry=load_ticker_registry(),
         as_of=trade_date,
         config={
-            "initial_capital": MANAGER_INITIAL_CAPITAL_EUR,
-            "currency": MANAGER_CURRENCY,
+            "initial_capital": spec.initial_capital,
+            "currency": spec.home_currency,
             "policy_prose": render_policy_prose(
-                get_config().jurisdiction,
-                _alloc.blocklist,
-                _alloc.policy_prose_override,
+                cfg.jurisdiction,
+                alloc.blocklist,
+                alloc.policy_prose_override,
             ),
             "risk_budget_prose": render_risk_budget_prose(
-                _alloc.risk_budget, MANAGER_CURRENCY, MANAGER_INITIAL_CAPITAL_EUR
+                alloc.risk_budget, spec.home_currency, spec.initial_capital
             ),
-            "outcome_memory_same_max": _alloc.outcome_memory_same_max,
-            "outcome_memory_other_max": _alloc.outcome_memory_other_max,
+            "outcome_memory_same_max": alloc.outcome_memory_same_max,
+            "outcome_memory_other_max": alloc.outcome_memory_other_max,
         },
         active_triggers=active_triggers,
     )
     rendered = render_manager_context(ctx)
-    wrapped, _model = wrap_persona_prompt(MANAGER_AGENT_ID, rendered)
+    wrapped, _model = wrap_persona_prompt(aid, rendered)
     print(
         f"  Built Manager prompt ({len(notes)} notes, {len(price_lookup)} priced,"
         f" {len(active_triggers)} active trigger(s))"
@@ -650,45 +701,57 @@ def step_apply_manager_decision(
     raw_decision: dict | None,
     trade_date: date,
     ohlcv_store: Path | None = None,
+    allocator_id: str | None = None,
 ) -> None:
-    """Step 3e — apply the LLM Manager's decision to the PAPER the-manager book.
+    """Step 3e — apply the LLM allocator's decision to its PAPER book.
 
-    1. parse_manager_decision(raw_decision) — conviction gate applied in code.
-    2. Write the manager-review audit artifact (rendered decision + full
+    1. parse_manager_decision(raw_decision) — conviction gate applied in code
+       (threshold sourced from the allocator's risk budget).
+    2. Write the allocator's review audit artifact (rendered decision + full
        positions/reasoning/conviction). Written EVERY day, even on a hold — it is
-       the load-bearing record of what the Manager decided and why.
-    3. Convert non-HOLD positions to Orders, append to the manager-outbox.
-    4. fill_day against the manager channel (separate outbox/inbox) and a
-       PortfolioManager rooted at data/portfolios (the-manager book, init EUR 2000
-       if absent). All 14 rails + fees + idempotency apply identically.
+       the load-bearing record of what the allocator decided and why.
+    3. Convert non-HOLD positions to Orders, append to the allocator's outbox.
+    4. fill_day against the allocator channel (separate outbox/inbox) and a
+       PortfolioManager rooted at data/portfolios (the allocator's book, init from
+       its spec if absent). All 14 rails + fees + idempotency apply identically.
 
+    Returns cleanly (no artifacts) when the deployment has no allocator (opt-out).
     Public surfaces are untouched: orders never enter the public outbox, fills
     never enter the public inbox.
     """
-    from engine import orders as orders_mod
     from engine.manager_decision import parse_manager_decision, render_manager_decision
     from engine.manager_orders import manager_decision_to_orders
     from engine.ohlcv_store import latest_close_on_or_before as _lcob
+    from engine.orders import allocator_channel_dir as _order_channel_dir
+    from engine.triggers import allocator_channel_dir as _trigger_channel_dir
 
     print("\n=== Step 3e: Apply Manager decision ===")
 
+    aid, alloc, spec = _resolve_allocator(allocator_id)
+    if aid is None:
+        print("  No allocator configured — skipping.")
+        return
+
+    prefix = alloc.channels_prefix
+
     portfolios_dir = get_config().portfolios_dir
     manager = PortfolioManager(base_dir=portfolios_dir)
-    if not (portfolios_dir / MANAGER_AGENT_ID / "portfolio.json").exists():
+    if not (portfolios_dir / aid / "portfolio.json").exists():
         manager.initialize(
-            MANAGER_AGENT_ID,
-            initial_capital=MANAGER_INITIAL_CAPITAL_EUR,
-            currency=MANAGER_CURRENCY,
+            aid,
+            initial_capital=spec.initial_capital,
+            currency=spec.home_currency,
         )
         print(
-            f"  Initialized {MANAGER_AGENT_ID} book (EUR {MANAGER_INITIAL_CAPITAL_EUR:.0f})"
+            f"  Initialized {aid} book ({spec.home_currency} {spec.initial_capital:.0f})"
         )
 
-    _mc = get_config().allocator_spec(MANAGER_AGENT_ID).risk_budget.min_conviction
-    decision = parse_manager_decision(raw_decision, min_conviction=_mc)
+    decision = parse_manager_decision(
+        raw_decision, min_conviction=alloc.risk_budget.min_conviction
+    )
 
     # --- Audit artifact: written every day, hold or trade. ---
-    review_dir = orders_mod.MANAGER_REVIEW_DIR
+    review_dir = _order_channel_dir(prefix, "review")
     review_dir.mkdir(parents=True, exist_ok=True)
     review_path = review_dir / f"{trade_date.isoformat()}.json"
     if decision is None:
@@ -723,23 +786,26 @@ def step_apply_manager_decision(
             return _lcob(ticker, trade_date, store=ohlcv_store)
         return _lcob(ticker, trade_date)
 
-    orders = manager_decision_to_orders(decision, trade_date, _price)
+    orders = manager_decision_to_orders(
+        decision, trade_date, _price, agent_id=aid, currency=spec.home_currency
+    )
     if not orders:
         print("  Hold (or no priceable positions) — no orders authored.")
         return
 
+    outbox_dir = _order_channel_dir(prefix, "outbox")
     for order in orders:
-        append_order(trade_date, order, outbox_dir=orders_mod.MANAGER_OUTBOX_DIR)
-    print(f"  Authored {len(orders)} manager order(s) to manager-outbox")
+        append_order(trade_date, order, outbox_dir=outbox_dir)
+    print(f"  Authored {len(orders)} manager order(s) to {prefix}-outbox")
 
-    # --- Fill on the SEPARATE manager channel. ---
+    # --- Fill on the SEPARATE allocator channel. ---
     fills = fill_day(
         trade_date,
         manager,
-        outbox_dir=orders_mod.MANAGER_OUTBOX_DIR,
-        inbox_dir=orders_mod.MANAGER_INBOX_DIR,
-        pending_dir=MANAGER_PENDING_DIR,
-        cancels_dir=MANAGER_CANCELS_DIR,
+        outbox_dir=outbox_dir,
+        inbox_dir=_order_channel_dir(prefix, "inbox"),
+        pending_dir=_trigger_channel_dir(prefix, "pending"),
+        cancels_dir=_trigger_channel_dir(prefix, "cancels"),
     )
     filled = sum(1 for f in fills if f.status == "filled")
     rejected = sum(1 for f in fills if f.status == "rejected")
