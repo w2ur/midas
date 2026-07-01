@@ -551,12 +551,19 @@ def step_build_manager_prompt(
         build_manager_context,
         load_ticker_registry,
         render_manager_context,
+        render_policy_prose,
+        render_risk_budget_prose,
     )
     from engine.ohlcv_store import latest_close_on_or_before as _lcob
     from engine.persona_dispatch import wrap_persona_prompt
     from engine.triggers import MANAGER_PENDING_DIR, list_pending
 
     print("\n=== Step 3d: Build Manager prompt ===")
+
+    # Single-allocator prose wiring (Task 5 generalises this to the allocator loop):
+    # source the POLICY/RISK BUDGET prose + memory caps from the-manager's config so
+    # render_manager_context keeps its byte-identical blocks now that it reads ctx.
+    _alloc = get_config().allocator_spec(MANAGER_AGENT_ID)
 
     portfolios_dir = get_config().portfolios_dir
     resolved_store = ohlcv_store
@@ -616,6 +623,16 @@ def step_build_manager_prompt(
         config={
             "initial_capital": MANAGER_INITIAL_CAPITAL_EUR,
             "currency": MANAGER_CURRENCY,
+            "policy_prose": render_policy_prose(
+                get_config().jurisdiction,
+                _alloc.blocklist,
+                _alloc.policy_prose_override,
+            ),
+            "risk_budget_prose": render_risk_budget_prose(
+                _alloc.risk_budget, MANAGER_CURRENCY, MANAGER_INITIAL_CAPITAL_EUR
+            ),
+            "outcome_memory_same_max": _alloc.outcome_memory_same_max,
+            "outcome_memory_other_max": _alloc.outcome_memory_other_max,
         },
         active_triggers=active_triggers,
     )
