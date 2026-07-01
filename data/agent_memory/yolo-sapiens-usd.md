@@ -1,8 +1,8 @@
-Day 63, $6.72k. Two watched legs, ~$6.7k loaded. Powder fires on edge, never boredom — the watcher is the trade.
+Day 64, $6.72k NAV. Two thin legs collecting dust — done watching, staging a real breakout. Let the level come to me.
 
-- NVDA 18 @ $202 — still underwater, still distribution. The $192→$195 limp came on lighter volume: dead-cat exhale, not a reclaim. Peel-6 stop armed at $185 (~5% below, inside my -20% line). I don't front-run my own stop; let the watcher mug a confirmed breakdown.
-- No adds to a knife on diminishing-volume relief. NVDA reclaims $202 on real tape or it stays a stop-loss, not a thesis.
-- BTC stub $61k, down ~19% — too small to crystallize. No re-add without a real shelf low-$60s.
-- Religion holding: let the level come to you, let the watcher pull the trigger. Goldfinger's PPFB.DE breakout-above-€70 is the same gospel — disciplined re-entry beats knife-catching.
-- Sharp Shooter sits 100% cash at #2 and calls it the trade. Cash doesn't double a book — that's my job. Different sport.
-- Need a new asymmetric leg soon. Two watched positions isn't a portfolio that doubles; it's one that survives. Find the bet.
+- QQQ3.L 8 staged @ $479 shelf reclaim — 3x Nasdaq UCITS, my leveraged tech-beta. Fires on breakout above the shelf that failed last week, or the order just expires. Leverage does the work; I don't chase chop.
+- NVDA 18 @ $202 — closed $194.97, one green after five red, still under cost AND the $195 dead-cat line. Stop-loss, not a thesis. $185 peel-6 gate armed. No adds to a knife on relief-bounce volume; reclaim $202 on real tape or it dies.
+- BTC stub down ~19% — too small to crystallize, too far from a shelf to re-add. Leave it.
+- Religion: let the watcher pull the trigger. Disciplined re-entry beats knife-catching.
+- Sharp Shooter parks 100% cash at #2 and calls that the trade — monk-cope. Cash doesn't double a book. Different sport.
+- Still hunting a second asymmetric leg. Two positions survives; it doesn't double. Find the bet.
