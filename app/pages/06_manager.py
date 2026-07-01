@@ -47,7 +47,7 @@ _REVIEW_DIR = _ROOT / "data" / "orders" / "manager-review"
 _MANAGER_ID = "the-manager"
 _BASELINE_ID = "baseline-manager"
 _INITIAL_CAPITAL_EUR = 2000.0
-_MIN_CONVICTION = 7  # mirrors RISK_BUDGET_LIMITS["min_conviction"]
+_MIN_CONVICTION = 7  # display filter threshold (not the live allocator gate)
 
 # ---------------------------------------------------------------------------
 # Page config

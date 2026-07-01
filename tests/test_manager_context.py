@@ -23,7 +23,6 @@ import pytest
 
 from engine.config import get_config, reset_config_cache
 from engine.manager_context import (
-    RISK_BUDGET_LIMITS,
     SNAPSHOT_TRUTH_INSTRUCTION,
     ManagerContext,
     build_manager_context,
@@ -778,29 +777,6 @@ class TestOutcomeMemoryDeterminism:
             assert render_manager_context(ctx_shuffled) == render_manager_context(
                 ctx_original
             ), "rendered output differs between input orderings"
-
-
-# ---------------------------------------------------------------------------
-# Structured constants — prose derived from machine values
-# ---------------------------------------------------------------------------
-
-
-class TestStructuredConstants:
-    def test_risk_budget_limits_has_required_keys(self) -> None:
-        required = {
-            "max_positions",
-            "per_position_cap_eur",
-            "cash_floor_eur",
-            "max_trades_per_week",
-            "min_conviction",
-        }
-        assert required <= set(RISK_BUDGET_LIMITS.keys())
-
-    def test_risk_budget_limits_importable(self) -> None:
-        """Verify importability for the conviction gate (manager_decision)."""
-        from engine.manager_context import RISK_BUDGET_LIMITS as rbl
-
-        assert rbl["max_positions"] == 6
 
 
 # ---------------------------------------------------------------------------

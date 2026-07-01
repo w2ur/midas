@@ -8,8 +8,8 @@ orders regardless of what the LLM emits.
 Conviction gate contract
 ------------------------
 parse_manager_decision() is the ONLY entry point for agent output. After
-assembling a valid decision it checks conviction against
-RISK_BUDGET_LIMITS["min_conviction"]. If conviction < threshold:
+assembling a valid decision it checks conviction against the caller-supplied
+`min_conviction` (from the allocator's risk_budget). If conviction < threshold:
   - positions is forced to [] regardless of what the LLM returned.
   - hold_reasoning is synthesised if the model left it blank.
 
@@ -25,7 +25,6 @@ import logging
 from dataclasses import dataclass
 from datetime import date
 
-from engine.manager_context import RISK_BUDGET_LIMITS
 from engine.orders import TRIGGER_OPS
 
 logger = logging.getLogger(__name__)
@@ -153,8 +152,8 @@ class ManagerDecision:
         List of ManagerPosition directives. Empty list means hold everything.
     conviction:
         Overall Manager conviction 0 (no conviction) to 10 (maximum).
-        If below RISK_BUDGET_LIMITS["min_conviction"], positions MUST be empty
-        (enforced by parse_manager_decision — see conviction gate).
+        If below the caller-supplied `min_conviction` (from the allocator's risk_budget),
+        positions MUST be empty (enforced by parse_manager_decision — see conviction gate).
     hold_reasoning:
         Explanation for holding / not trading. Must be populated when positions
         is empty and conviction is below the gate threshold.
@@ -350,7 +349,9 @@ def _parse_position(raw: object) -> ManagerPosition | None:
         return None
 
 
-def parse_manager_decision(raw: dict | None) -> ManagerDecision | None:
+def parse_manager_decision(
+    raw: dict | None, *, min_conviction: int
+) -> ManagerDecision | None:
     """Tolerant constructor for the Manager's emitted JSON.
 
     Contract
@@ -360,8 +361,9 @@ def parse_manager_decision(raw: dict | None) -> ManagerDecision | None:
     - conviction out of range → clamped to [0, 10].
     - Non-numeric conviction → defaults to 0 (conservative).
     - Individual malformed positions → dropped; remaining positions kept.
-    - CONVICTION GATE: if conviction < RISK_BUDGET_LIMITS["min_conviction"],
-      positions is forced to [] and hold_reasoning is synthesised if blank.
+    - CONVICTION GATE: if conviction < the caller-supplied `min_conviction`
+      (from the allocator's risk_budget), positions is forced to [] and
+      hold_reasoning is synthesised if blank.
       This is enforced HERE in code, not just in the prompt.
 
     This method NEVER raises. A bad response degrades gracefully.
@@ -404,7 +406,6 @@ def parse_manager_decision(raw: dict | None) -> ManagerDecision | None:
     hold_reasoning = str(raw.get("hold_reasoning") or "")
 
     # --- CONVICTION GATE (Hands-side rail) ---
-    min_conviction: int = RISK_BUDGET_LIMITS["min_conviction"]
     if conviction < min_conviction:
         if positions:
             logger.warning(

@@ -684,7 +684,8 @@ def step_apply_manager_decision(
             f"  Initialized {MANAGER_AGENT_ID} book (EUR {MANAGER_INITIAL_CAPITAL_EUR:.0f})"
         )
 
-    decision = parse_manager_decision(raw_decision)
+    _mc = get_config().allocator_spec(MANAGER_AGENT_ID).risk_budget.min_conviction
+    decision = parse_manager_decision(raw_decision, min_conviction=_mc)
 
     # --- Audit artifact: written every day, hold or trade. ---
     review_dir = orders_mod.MANAGER_REVIEW_DIR

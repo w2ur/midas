@@ -52,21 +52,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Structured risk limits — single source of truth for the conviction gate.
-# engine.manager_decision IMPORTS RISK_BUDGET_LIMITS; do NOT re-hardcode.
-# (Kept until Task 3 folds the conviction gate onto the config RiskBudget.)
-# ---------------------------------------------------------------------------
-
-RISK_BUDGET_LIMITS: dict = {
-    "max_positions": 6,
-    "per_position_cap_eur": 400,
-    "cash_floor_eur": 150,
-    "max_trades_per_week": 2,
-    "min_conviction": 6,
-}
-
-
-# ---------------------------------------------------------------------------
 # Prose renderers — POLICY + RISK BUDGET blocks rendered from config.
 # These replace the former hard-coded policy/risk-budget prose constants. For
 # William's live config the rendered output MUST stay byte-identical to the
