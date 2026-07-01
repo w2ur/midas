@@ -22,9 +22,6 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 from engine.config import get_config
 from engine.tax_shadow import compute_tax_shadow
 
-# Directories inside data/portfolios/ that are NOT trading agents.
-_NON_AGENT_DIRS = {"baseline-manager", "the-manager"}
-
 
 def build_tax_shadow_all(
     portfolios_dir: Path | None = None,
@@ -60,13 +57,14 @@ def build_tax_shadow_all(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     written: list[str] = []
+    traders = set(get_config().trading_roster)
 
     for agent_dir in sorted(portfolios_dir.iterdir()):
         if not agent_dir.is_dir():
             continue
-        agent_id = agent_dir.name
-        if agent_id in _NON_AGENT_DIRS:
+        if agent_dir.name not in traders:
             continue
+        agent_id = agent_dir.name
 
         trades_path = agent_dir / "trades.json"
         if not trades_path.exists():

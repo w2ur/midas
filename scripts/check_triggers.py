@@ -263,12 +263,13 @@ def _process_channel(
 
 
 def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
-    """Process all pending orders across both channels. Returns a summary dict.
+    """Process all pending orders across all channels. Returns a summary dict.
 
-    Two channels are processed into ONE summary: the public channel (default
-    dirs) first, then the isolated Manager channel (MANAGER_PENDING_DIR →
-    MANAGER_INBOX_DIR). The blackout check and leaderboard refresh stay single
-    (the latter in main()).
+    All channels are processed into ONE summary: the public channel (default
+    dirs) first, then one isolated channel per allocator (pending_dir →
+    inbox_dir derived from channels_prefix). Allocator fills never reach the
+    public inbox the site joins by order_id. If there are no allocators the
+    loop runs zero times — correct opt-out for forks without an allocator role.
 
     portfolio_manager may be None ONLY during blackout (we short-circuit before use).
     """
@@ -290,23 +291,40 @@ def run(now: datetime, portfolio_manager: PortfolioManager | None) -> dict:
 
     today = now.date()
 
+    cfg = get_config()
+
     # Public channel — default dirs, byte-identical legacy behavior.
     public_pending = list_pending()
-    # Manager channel — isolated pending/inbox; the-manager fills never reach the
-    # public inbox the site joins by order_id.
-    manager_pending = list_pending(pending_dir=_triggers.MANAGER_PENDING_DIR)
-    summary["checked"] = len(public_pending) + len(manager_pending)
+    # Allocator channels — one isolated pending/inbox per allocator; fills
+    # never reach the public inbox the site joins by order_id.
+    # For William (sole allocator the-manager, prefix "manager") this produces
+    # the same manager-pending / manager-inbox paths as before.
+    allocator_channels = [
+        (
+            cfg.allocator_spec(aid).channels_prefix,
+            list_pending(
+                pending_dir=_triggers.allocator_channel_dir(
+                    cfg.allocator_spec(aid).channels_prefix, "pending"
+                )
+            ),
+        )
+        for aid in cfg.allocators
+    ]
+    summary["checked"] = len(public_pending) + sum(
+        len(pl) for _, pl in allocator_channels
+    )
 
     _process_channel(public_pending, now, today, portfolio_manager, summary)
-    _process_channel(
-        manager_pending,
-        now,
-        today,
-        portfolio_manager,
-        summary,
-        inbox_dir=_orders.MANAGER_INBOX_DIR,
-        pending_dir=_triggers.MANAGER_PENDING_DIR,
-    )
+    for prefix, pending in allocator_channels:
+        _process_channel(
+            pending,
+            now,
+            today,
+            portfolio_manager,
+            summary,
+            inbox_dir=_orders.allocator_channel_dir(prefix, "inbox"),
+            pending_dir=_triggers.allocator_channel_dir(prefix, "pending"),
+        )
 
     return summary
 
@@ -343,14 +361,24 @@ def commit_and_push() -> None:
     the leaderboard artifact. Per-fire commits for triggered orders are handled
     individually inside process_fired_order / _git_add_commit.
     """
+    cfg = get_config()
     data_dirs = [
         str(_PROJECT_ROOT / "data" / "orders" / "pending"),
         str(_PROJECT_ROOT / "data" / "orders" / "inbox"),
-        str(_PROJECT_ROOT / "data" / "orders" / "manager-pending"),
-        str(_PROJECT_ROOT / "data" / "orders" / "manager-inbox"),
-        str(_PROJECT_ROOT / "data" / "portfolios"),
-        str(_PROJECT_ROOT / "data" / "leaderboard"),
     ]
+    # Append one pending+inbox pair per allocator. For William (sole allocator
+    # the-manager, prefix "manager") this produces the same manager-pending /
+    # manager-inbox entries as before — byte-identical.
+    for aid in cfg.allocators:
+        prefix = cfg.allocator_spec(aid).channels_prefix
+        data_dirs.append(str(_PROJECT_ROOT / "data" / "orders" / f"{prefix}-pending"))
+        data_dirs.append(str(_PROJECT_ROOT / "data" / "orders" / f"{prefix}-inbox"))
+    data_dirs.extend(
+        [
+            str(_PROJECT_ROOT / "data" / "portfolios"),
+            str(_PROJECT_ROOT / "data" / "leaderboard"),
+        ]
+    )
     subprocess.run(["git", "add", *data_dirs], cwd=_PROJECT_ROOT, check=True)
     diff = subprocess.run(
         ["git", "diff", "--cached", "--quiet"],
