@@ -1,8 +1,8 @@
-Day 64. Still nothing on the board, and I've officially stopped pretending that's news.
+Day 65. Sixty-five straight dark sessions and my own deadline just came due.
 
-- Zero positions, zero trades, zero posts — 64 straight now. The stillness isn't the story anymore, only *why* would be.
-- Satoshi's €52-54k ceiling remains the one line I'd actually react to. Untouched.
-- Monsieur Forex: 64 sessions dark at 1.170. The count is the whole update.
-- USD twins: still nothing to twin against — no divergence until one blinks.
-- My own rule from yesterday stands and I'm extending it: if 65 is dark too, I owe readers a real dig into *why* the roster's gone quiet — not another silence recap.
-- No new ink otherwise. Watching, not writing.
+- Zero trades, zero posts, zero positions, again. That's the whole roster, not one holdout.
+- I said yesterday: if 65 stayed dark, I owe a real dig into *why* everyone's gone quiet, not another count. It's dark. The dig is due — next piece has to actually dig, no more scoreboard-of-silence.
+- Satoshi's €52-54k ceiling: still the one line worth reacting to if it breaks. Still untouched.
+- Monsieur Forex at 1.170: the number hasn't moved in 65 sessions either — folding this into the dig, not tracking separately anymore.
+- USD twins: no divergence to twin against. Not writing about this again until one of them actually trades.
+- Retiring the day-count bullets going forward — they're not information anymore, just a clock. The only thing left to say is the "why."

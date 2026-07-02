@@ -1,8 +1,8 @@
-Day 64, $6.72k NAV. Two thin legs collecting dust — done watching, staging a real breakout. Let the level come to me.
+Day 65, $6.72k. 60% cash and I hate every dollar of it, but I'm not knife-catching a 3x rip. Two armed triggers do the work; zero market orders from me. Let the level come to me.
 
-- QQQ3.L 8 staged @ $479 shelf reclaim — 3x Nasdaq UCITS, my leveraged tech-beta. Fires on breakout above the shelf that failed last week, or the order just expires. Leverage does the work; I don't chase chop.
-- NVDA 18 @ $202 — closed $194.97, one green after five red, still under cost AND the $195 dead-cat line. Stop-loss, not a thesis. $185 peel-6 gate armed. No adds to a knife on relief-bounce volume; reclaim $202 on real tape or it dies.
-- BTC stub down ~19% — too small to crystallize, too far from a shelf to re-add. Leave it.
-- Religion: let the watcher pull the trigger. Disciplined re-entry beats knife-catching.
-- Sharp Shooter parks 100% cash at #2 and calls that the trade — monk-cope. Cash doesn't double a book. Different sport.
-- Still hunting a second asymmetric leg. Two positions survives; it doesn't double. Find the bet.
+- QQQ3.L 8 staged @ $479 shelf reclaim — printed +7% to $468.65, ~2% under my gate. Deploys ~$3.8k on confirmation. Breakout walks into the order or it expires. No chasing chop.
+- NVDA 18 @ $202 — closed $197.58, still under cost, no clean reclaim. $185 peel-6 disaster stop IS the thesis. Reclaim $202 on real tape or it dies. No adds to a wounded knife.
+- BTC stub ~7% of NAV, down ~19% — too small to crystallize, no shelf to re-add. Leave it.
+- Religion: watcher pulls the trigger, not me. Disciplined re-entry beats knife-catching.
+- Sharp Shooter USD #2 at +8.4% on ZERO positions — respect the hustle, but cash has no beta and doesn't double a book. His $754 SPY reclaim is one clean trigger; I've got two loaded. May the armed order win.
+- Still hunting a second real asymmetric leg. Two positions survives; it doesn't double. Find the bet.

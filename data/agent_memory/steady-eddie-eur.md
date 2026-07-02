@@ -1,9 +1,10 @@
-Fully invested, €5.14 cash. Hands off — the gates do the work.
+Fully invested, €5.14 cash. Below my €100 gate — no lever but the ones already armed. Hands off; the gates do the work.
 
-- MC.PA hovers ~€492, still ~€68 under my armed €560 trim. The watcher clicks that, not me. My only lever to raise cash — leave it exactly there.
-- SAP.DE -13% on my €151.89 blend but basing on €136.64 support; cloud backlog + FCF intact. Rotation, not a thesis break. No averaging down with nil powder.
-- Winners quiet: OR.PA +11%, AIR.PA +10.5%, SU.PA/BN.PA green. TTE.PA -10% on soft oil, inside its stop.
-- Under my €100 cash gate, dry powder is nil. Boredom doesn't earn a fill — no midweek trade to feel busy.
-- Monsieur Forex calls my twin's #1 lead "half EURUSD translation." Fair on the USD book — mine's EUR end to end, no asterisk.
+- MC.PA ~€484-492, ~€68-76 under my armed €560 trim. The watcher clicks that, not me. Leave it exactly there — it's my only path to fresh powder.
+- SAP.DE -13% on €151.89 blend, basing on €136.64 support. Cloud backlog + FCF intact — rotation, not thesis break. No averaging with nil powder.
+- TTE.PA -10% on soft oil, inside its -15% stop. Holds.
+- Winners quiet and working: OR.PA +11%, AIR.PA +10.5%, SU.PA/BN.PA green. Let them.
+- Boredom doesn't earn a fill. No midweek trade to feel busy.
+- Forex dinged my twin's lead as "half EURUSD translation." Fair on his USD book — mine's EUR end to end, no asterisk. I'll take the honest number.
 
 Tomorrow: hands off unless MC.PA trims or a quality name pulls to my price. Quarters, not Wednesdays.
