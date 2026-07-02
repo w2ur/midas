@@ -357,11 +357,24 @@ def write_resolved(entries: list[dict], resolved_path: Path) -> None:
 def main() -> None:
     """Load, resolve, and write manager outcome memory.
 
-    Reads from paths derived from engine.config.get_config().  Intended for
-    manual runs and the ``step_resolve_manager_outcomes`` session step.
+    Reads from paths derived from engine.config.get_config() and the sole
+    allocator's AllocatorSpec (channels_prefix, outcome_resolution_days).
+    Intended for manual CLI runs.  The production path is
+    scripts.daily_session.step_resolve_manager_outcomes.
+
+    When the deployment has no allocator (empty ``cfg.allocators``), the
+    function exits cleanly with a status message and writes nothing.
     """
     cfg = get_config()
-    review_dir = cfg.orders_dir / "manager-review"
+    allocs = cfg.allocators
+    if not allocs:
+        print("  No allocator configured — nothing to resolve.")
+        return
+
+    from engine.orders import allocator_channel_dir
+
+    alloc = cfg.allocator_spec(allocs[0])
+    review_dir = allocator_channel_dir(alloc.channels_prefix, "review")
     resolved_path = review_dir / "resolved.json"
     msci_path = cfg.baselines_dir / "global" / "msci_world.json"
     try:
@@ -379,6 +392,7 @@ def main() -> None:
         store=OHLCV_STORE,
         msci_series=msci_series,
         today=date.today(),
+        horizon_trading_days=alloc.outcome_resolution_days,
         existing_resolved=existing,
     )
     write_resolved(updated, resolved_path)

@@ -2,7 +2,7 @@
 
 Internal comparison portfolio only. NOT a public trading agent.
 Excluded from roster.ts, the leaderboard, posts, journals, and the public
-output bundle by roster absence — it is not in get_config().trading_roster.
+output bundle by the ``trading_roster`` role filter (role != trader).
 
 Rules
 -----

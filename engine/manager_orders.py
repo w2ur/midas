@@ -30,6 +30,10 @@ logger = logging.getLogger(__name__)
 MANAGER_AGENT_ID = "the-manager"
 MANAGER_CURRENCY = "EUR"
 # Intentionally matches the baseline-manager book size for a fair Gate C comparison.
+# NOTE: MANAGER_INITIAL_CAPITAL_EUR is no longer used by the session — Task 5
+# sources initial capital from AllocatorSpec.initial_capital (roster.yaml) via
+# the step helpers.  This constant is retained as a legacy default only; removing
+# it would be a breaking change for any callers that import it directly.
 MANAGER_INITIAL_CAPITAL_EUR = 2000.0
 
 

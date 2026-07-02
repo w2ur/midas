@@ -53,3 +53,57 @@ def test_build_baseline_manager_skips_when_disabled(no_allocator_root):
 
     step_build_baseline_manager({}, date(2026, 7, 1))
     assert not (no_allocator_root / "data" / "portfolios" / "baseline-manager").exists()
+
+
+@pytest.fixture
+def custom_horizon_root(tmp_path, monkeypatch):
+    """A roster with a single allocator whose outcome_resolution_days is 5, not 10."""
+    roster = tmp_path / "roster.yaml"
+    roster.write_text(
+        "globals:\n"
+        "  day_one: '2026-04-17'\n"
+        "  currencies: [EUR]\n"
+        "  initial_capital: 10000.0\n"
+        "  global_reference: {label: MSCI World, ticker: URTH, currency: EUR}\n"
+        "  agents_dir: .claude/agents\n"
+        "agents:\n"
+        "  the-manager:\n"
+        "    display_name: The Manager\n"
+        "    role: allocator\n"
+        "    home_currency: EUR\n"
+        "    initial_capital: 2000.0\n"
+        "    persona: the-manager.md\n"
+        "    allocator:\n"
+        "      outcome_resolution_days: 5\n"
+        "      channels_prefix: manager\n"
+        "      baseline_enabled: false\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("MIDAS_DATA_DIR", str(tmp_path))
+    reset_config_cache()
+    yield tmp_path
+    reset_config_cache()
+
+
+def test_outcome_resolution_days_flows_to_resolver(custom_horizon_root, monkeypatch):
+    """Non-default outcome_resolution_days must reach resolve_outcomes as
+    horizon_trading_days — so a forker who sets outcome_resolution_days: 5
+    actually resolves at 5, not the module-level default of 10."""
+    import scripts.resolve_manager_outcomes as rmo_module
+
+    captured: list[int] = []
+
+    def fake_resolve_outcomes(**kwargs):
+        captured.append(kwargs["horizon_trading_days"])
+        return []
+
+    monkeypatch.setattr(rmo_module, "resolve_outcomes", fake_resolve_outcomes)
+
+    from scripts.daily_session import step_resolve_manager_outcomes
+
+    step_resolve_manager_outcomes(today=date(2026, 7, 1))
+
+    assert len(captured) == 1, "resolve_outcomes was not called exactly once"
+    assert captured[0] == 5, (
+        f"Expected horizon_trading_days=5 (allocator spec), got {captured[0]}"
+    )

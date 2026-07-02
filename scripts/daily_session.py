@@ -380,8 +380,8 @@ def step_build_baseline_manager(
     """Step 3c — run the deterministic baseline-manager rebalance.
 
     Internal Gate C benchmark portfolio. NOT a public trading agent.
-    Excluded from the leaderboard and the public output bundle by roster
-    absence — it is not in get_config().trading_roster.
+    Excluded from the leaderboard and the public output bundle by the
+    ``trading_roster`` role filter (role != trader).
 
     Parameters
     ----------
@@ -562,6 +562,7 @@ def step_resolve_manager_outcomes(
         store=resolved_store,
         msci_series=msci_series,
         today=today,
+        horizon_trading_days=alloc.outcome_resolution_days,
         existing_resolved=existing,
     )
     write_resolved(updated, resolved_resolved_path)
@@ -1117,7 +1118,7 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
     Note: this iterates portfolio dirs, so the internal `the-manager` and
     `baseline-manager` books accrue committed snapshots here. That is intentional
     private valuation tracking — both are excluded from every public surface by
-    roster absence (they are not in get_config().trading_roster), so this is not a leak.
+    the ``trading_roster`` role filter (role != trader), so this is not a leak.
 
     Parameters
     ----------
