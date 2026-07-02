@@ -34,3 +34,18 @@ agents:
     voice: "Narrates the demo desk."
     role: narrator
     persona: demo-oracle.md
+  demo-allocator:
+    display_name: "Demo Allocator"
+    role: allocator
+    post_time: ''
+    persona: demo-allocator.md
+    home_currency: USD
+    initial_capital: 2000.0
+    safety: { max_order_notional: 500, max_orders_per_day: 5, daily_drawdown_halt_pct: -5, allowed_universe: [], dry_run: false }
+    allocator:
+      channels_prefix: demo-allocator
+      outcome_resolution_days: 10
+      outcome_memory: { same_ticker_max: 5, other_ticker_max: 3 }
+      baseline: { enabled: false }
+      risk_budget: { max_positions: 3, per_position_cap: 400, cash_floor: 100, max_trades_per_week: 2, min_conviction: 6 }
+      policy: { blocklist: [] }
