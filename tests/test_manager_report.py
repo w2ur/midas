@@ -19,7 +19,9 @@ from pathlib import Path
 
 import pytest
 
+from engine.config import get_config, reset_config_cache
 from engine.manager_report import (
+    book_paths,
     build_manager_summary,
     load_decisions,
     load_resolved,
@@ -27,6 +29,14 @@ from engine.manager_report import (
     read_snapshots,
     return_pct,
 )
+
+
+@pytest.fixture(autouse=True)
+def _default_env(monkeypatch):
+    monkeypatch.delenv("MIDAS_DATA_DIR", raising=False)
+    reset_config_cache()
+    yield
+    reset_config_cache()
 
 
 # ---------------------------------------------------------------------------
@@ -215,3 +225,30 @@ def test_load_resolved_returns_list(tmp_path: Path) -> None:
     assert len(out) == 1
     assert out[0]["ticker"] == "ASML.AS"
     assert out[0]["alpha_vs_msci_pct"] == 1.04
+
+
+# ---------------------------------------------------------------------------
+# book_paths
+# ---------------------------------------------------------------------------
+
+
+def test_book_paths_review_dir_matches_legacy() -> None:
+    """review_dir must be sourced from channels_prefix config, not id string-strip.
+
+    The config-sourced prefix for 'the-manager' is 'manager', so the review dir
+    must be byte-identical to the pre-SP2 legacy path data/orders/manager-review.
+    """
+    paths = book_paths("the-manager")
+    assert paths["review_dir"] == get_config().orders_dir / "manager-review"
+    assert (
+        paths["resolved"]
+        == get_config().orders_dir / "manager-review" / "resolved.json"
+    )
+    assert (
+        paths["portfolio"]
+        == get_config().portfolios_dir / "the-manager" / "portfolio.json"
+    )
+    assert (
+        paths["snapshots"]
+        == get_config().portfolios_dir / "the-manager" / "snapshots.json"
+    )

@@ -106,6 +106,9 @@ jobs:
           # commit that authors manager orders but publishes no posts/blog/output still
           # fails here.  It is still scoped to session mode (weekend-refresh returned
           # above at ~line 94).
+          # COUPLING: "manager-" is hardcoded here because the sole allocator
+          # (the-manager) uses channels_prefix="manager" (roster.yaml). If a second
+          # allocator is added with a different prefix, extend these grep patterns.
           if [[ $touches_manager_outbox -eq 1 && $touches_manager_review -eq 0 ]]; then
             echo "::error::Session commit authors manager orders (data/orders/manager-outbox/) but does NOT write the manager-review audit artifact (data/orders/manager-review/)."
             fail=1

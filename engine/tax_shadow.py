@@ -50,9 +50,12 @@ securities gains or vice-versa:
 
 Tax rate
 --------
-PFU = 30% flat (12.8% IR + 17.2% PS) on net positive annual realized gain
-per regime.  If the net is <= 0, PFU = 0 and the loss magnitude is recorded
-in ``realized_loss_by_year`` for transparency (French law has no PFU
+PFU rate is read from ``globals.jurisdiction.tax_rate_pct`` in roster.yaml
+(e.g. 30.0 for France → 0.30 fraction) via ``_pfu_rate()``.  When no
+jurisdiction block is present the rate defaults to 0.0 (no tax drag).
+PFU applies as a flat rate on net positive annual realized gain per regime.
+If the net is <= 0, PFU = 0 and the loss magnitude is recorded in
+``realized_loss_by_year`` for transparency (French law has no PFU
 loss carry-forward, but the amount is noted for future Manager reporting).
 
 Usage
@@ -74,7 +77,17 @@ from typing import Any
 
 from engine.fees import classify_ticker
 
-_PFU_RATE = 0.30
+
+def _pfu_rate() -> float:
+    """Return the PFU rate as a fraction (e.g. 0.30 for FR).
+
+    Reads ``globals.jurisdiction.tax_rate_pct`` from roster.yaml via
+    ``get_config()``.  Defaults to 0.0 when no jurisdiction block is present
+    (neutral / midas-core config).
+    """
+    from engine.config import get_config
+
+    return get_config().jurisdiction.tax_rate_pct / 100.0
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +217,7 @@ def _aggregate_regime(by_year: dict[str, float]) -> dict[str, Any]:
     for year, net in sorted(by_year.items()):
         lifetime_realized += net
         if net > 0:
-            pfu = _PFU_RATE * net
+            pfu = _pfu_rate() * net
             gain_by_year[year] = round(net, 2)
             pfu_by_year[year] = round(pfu, 2)
             lifetime_pfu += pfu

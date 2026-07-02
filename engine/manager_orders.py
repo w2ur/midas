@@ -30,6 +30,10 @@ logger = logging.getLogger(__name__)
 MANAGER_AGENT_ID = "the-manager"
 MANAGER_CURRENCY = "EUR"
 # Intentionally matches the baseline-manager book size for a fair Gate C comparison.
+# NOTE: MANAGER_INITIAL_CAPITAL_EUR is no longer used by the session — Task 5
+# sources initial capital from AllocatorSpec.initial_capital (roster.yaml) via
+# the step helpers.  This constant is retained as a legacy default only; removing
+# it would be a breaking change for any callers that import it directly.
 MANAGER_INITIAL_CAPITAL_EUR = 2000.0
 
 
@@ -37,6 +41,9 @@ def manager_decision_to_orders(
     decision: ManagerDecision,
     trade_date: date,
     price_lookup: Callable[[str], float | None],
+    *,
+    agent_id: str = MANAGER_AGENT_ID,
+    currency: str = MANAGER_CURRENCY,
 ) -> list[Order]:
     """Convert a ManagerDecision into a list of broker Orders.
 
@@ -52,14 +59,19 @@ def manager_decision_to_orders(
         Callable(ticker) -> close_price | None. Positions whose ticker has no
         store price are skipped (logged) — the same de-risking discipline as
         engine.baseline_manager.rebalance.
+    agent_id:
+        The allocator agent id used for order_id generation and Order.agent_id.
+        Defaults to MANAGER_AGENT_ID ("the-manager").
+    currency:
+        The booking currency for the orders. Defaults to MANAGER_CURRENCY ("EUR").
 
     Returns
     -------
     list[Order]
         One Order per BUY/SELL position with a known price, in input order.
-        agent_id is always "the-manager"; currency is always "EUR". Order ids are
-        deterministic (ord_{date}_the-manager_{seq:03d}) so re-running the
-        conversion yields identical ids — the fill path is idempotent on them.
+        Order ids are deterministic (ord_{date}_{agent_id}_{seq:03d}) so
+        re-running the conversion yields identical ids — the fill path is
+        idempotent on them.
     """
     orders: list[Order] = []
     seq = 0
@@ -96,14 +108,14 @@ def manager_decision_to_orders(
 
         seq += 1
         order = Order(
-            order_id=make_order_id(trade_date, MANAGER_AGENT_ID, seq),
+            order_id=make_order_id(trade_date, agent_id, seq),
             ts=ts,
-            agent_id=MANAGER_AGENT_ID,
+            agent_id=agent_id,
             action=pos.action,
             ticker=pos.ticker,
             shares=shares,
             reasoning=pos.reasoning,
-            currency=MANAGER_CURRENCY,
+            currency=currency,
             trigger=pos.trigger,
             expires=pos.expires,
         )

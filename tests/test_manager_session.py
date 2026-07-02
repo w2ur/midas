@@ -500,7 +500,7 @@ def test_the_manager_not_in_roster():
 
     cfg = get_config()
     assert "the-manager" not in cfg.trading_roster
-    assert "the-manager" not in cfg.roster
+    assert cfg.roster["the-manager"].role == "allocator"
 
 
 def test_output_bundle_excludes_the_manager():

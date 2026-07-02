@@ -52,66 +52,58 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Structured risk limits and PRIIPs blocklist — single source of truth.
-# Task D safety rails and the C4 Manager IMPORT these; do NOT re-hardcode.
+# Prose renderers — POLICY + RISK BUDGET blocks rendered from config.
+# These replace the former hard-coded policy/risk-budget prose constants. For
+# William's live config the rendered output MUST stay byte-identical to the
+# legacy prose — locked by tests/test_manager_context_golden.py.
 # ---------------------------------------------------------------------------
 
-RISK_BUDGET_LIMITS: dict = {
-    "max_positions": 6,
-    "per_position_cap_eur": 400,
-    "cash_floor_eur": 150,
-    "max_trades_per_week": 2,
-    "min_conviction": 6,
-}
 
-# US-domiciled leveraged/inverse ETFs blocked for EU retail via IBKR (PRIIPs KID).
-# Use UCITS substitutes (3USS.L, QQQS.L) or 1x inverse (SH, PSQ) only.
-PRIIPS_BLOCKLIST: frozenset = frozenset(
-    {"SQQQ", "SPXS", "SPXU", "TQQQ", "UPRO", "SOXL"}
-)
+def render_policy_prose(
+    jurisdiction, blocklist: tuple[str, ...], prose_override: str | None
+) -> str:
+    """POLICY block. Author-supplied prose_override wins (byte-identical parity);
+    else a generic jurisdiction-neutral template rendered from config."""
+    if prose_override:
+        return prose_override.strip()
+    lines = ["FEE AND TAX POLICY", ""]
+    rate = jurisdiction.tax_rate_pct
+    if rate > 0:
+        lines.append(f"- Assume a flat {rate:.0f}% tax on net realised gains.")
+    else:
+        lines.append("- Paper trading: no tax modelled.")
+    if blocklist:
+        lines.append(
+            "- Blocked instruments (not buyable): " + ", ".join(sorted(blocklist)) + "."
+        )
+    return "\n".join(lines).strip()
 
-# ---------------------------------------------------------------------------
-# Static policy constants (French tax resident, IBIE + Kraken + OANDA)
-# Built from structured constants above so prose and machine values cannot diverge.
-# ---------------------------------------------------------------------------
 
-_PRIIPS_BLOCKLIST_STR = ", ".join(sorted(PRIIPS_BLOCKLIST))
+def render_risk_budget_prose(rb, currency: str, book: float) -> str:
+    """RISK BUDGET block, rendered from the allocator's numbers + home currency.
 
-FEE_TAX_POLICY: str = f"""
-FEE AND TAX POLICY (French tax resident — these are GIVEN facts, not suggestions)
+    For William (currency=EUR, book=2000, rb=6/400/150/2/6) this MUST reproduce
+    the legacy string byte-for-byte — the golden test is the arbiter. The
+    '≈25% of a ~EUR 2,000 book' annotation is preserved as a literal for the
+    EUR/2000 case (do NOT recompute it — the legacy value is hand-authored)."""
+    cap_note = (
+        "(≈25% of a ~EUR 2,000 book)"
+        if currency == "EUR" and book == 2000.0
+        else f"(of a ~{currency} {book:,.0f} book)"
+    )
+    return "\n".join(
+        [
+            "RISK BUDGET (hard constraints — DEFAULT ACTION IS HOLD)",
+            "",
+            f"- Maximum open positions: {rb.max_positions}",
+            f"- Per-position cap: ~{currency} {int(rb.per_position_cap)} {cap_note}",
+            f"- Cash floor: {currency} {int(rb.cash_floor)} must remain uninvested at all times",
+            f"- Turnover limit: ≤{rb.max_trades_per_week} trades per week",
+            f"- Conviction threshold: conviction < {rb.min_conviction} → do NOT trade; hold cash instead",
+            "- When in doubt, HOLD. A missed opportunity costs nothing; a bad trade costs capital.",
+        ]
+    ).strip()
 
-TAX
-- PFU 30% flat on all realised gains (securities + crypto).
-- Securities and crypto are SILOED regimes: losses never cross-subsidise gains in
-  the other regime.
-- No wash-sale rule in France: you may sell at a loss and immediately re-enter the
-  same position.
-- Securities losses must be declared the year they occur; 10-year carry-forward.
-- Crypto: prefer crypto-to-crypto rebalancing (tax-free sursis under Art. 150 VH bis);
-  when de-risking, park in stablecoins (USDC/USDT) — NOT EUR — to defer taxable events.
-  Batch any EUR cash-out: each EUR realisation triggers a full-portfolio PVCT snapshot.
-- The EUR 305 annual disposal threshold is irrelevant at this scale (blown on first sell).
-- PEA ineligible for this universe — all accounts are CTO under full PFU.
-
-FEES (round-trip cost the trade must exceed by ~2x to be worth doing)
-- Equity/ETF (IBIE): ~0.05% + EUR 1.25/order floor.
-- Crypto (Kraken): 0.40% taker / 0.25% maker.
-- FX (OANDA Europe): ~0.002%.
-
-PRIIPS BLOCKLIST — NOT buyable by EU retail via IBKR
-These US-domiciled leveraged/inverse ETFs are blocked: {_PRIIPS_BLOCKLIST_STR}. Use UCITS substitutes (3USS.L, QQQS.L) or 1x inverse (SH, PSQ) only.
-""".strip()
-
-RISK_BUDGET: str = f"""
-RISK BUDGET (hard constraints — DEFAULT ACTION IS HOLD)
-
-- Maximum open positions: {RISK_BUDGET_LIMITS["max_positions"]}
-- Per-position cap: ~EUR {RISK_BUDGET_LIMITS["per_position_cap_eur"]} (≈25% of a ~EUR 2,000 book)
-- Cash floor: EUR {RISK_BUDGET_LIMITS["cash_floor_eur"]} must remain uninvested at all times
-- Turnover limit: ≤{RISK_BUDGET_LIMITS["max_trades_per_week"]} trades per week
-- Conviction threshold: conviction < {RISK_BUDGET_LIMITS["min_conviction"]} → do NOT trade; hold cash instead
-- When in doubt, HOLD. A missed opportunity costs nothing; a bad trade costs capital.
-""".strip()
 
 SNAPSHOT_TRUTH_INSTRUCTION: str = (
     "Treat these prices as the source of truth. "
@@ -122,10 +114,6 @@ SNAPSHOT_TRUTH_INSTRUCTION: str = (
 # ---------------------------------------------------------------------------
 # ManagerContext dataclass
 # ---------------------------------------------------------------------------
-
-# Maximum same-ticker and cross-ticker outcome memory entries shown to Manager
-_MAX_SAME_TICKER_MEMORY: int = 5
-_MAX_OTHER_TICKER_MEMORY: int = 3
 
 
 @dataclass
@@ -149,6 +137,12 @@ class ManagerContext:
         Empty list when no history available.
     config:
         The raw config dict passed by the caller.
+    policy_prose:
+        Rendered POLICY block (fee/tax + blocklist). Sourced from config via
+        render_policy_prose; empty string when the caller supplies none.
+    risk_budget_prose:
+        Rendered RISK BUDGET block. Sourced from config via
+        render_risk_budget_prose; empty string when the caller supplies none.
     """
 
     as_of: date
@@ -157,6 +151,8 @@ class ManagerContext:
     portfolio_state: dict[str, Any]
     outcome_memory: list[dict[str, Any]]
     config: dict[str, Any] = field(default_factory=dict)
+    policy_prose: str = ""
+    risk_budget_prose: str = ""
     active_triggers: list["Order"] = field(default_factory=list)
 
 
@@ -260,6 +256,10 @@ def build_manager_context(
         Caller-supplied config dict. Expected keys:
         - initial_capital (float): used when portfolio is None.
         - currency (str): base currency, default "EUR".
+        - policy_prose (str): rendered POLICY block (default "").
+        - risk_budget_prose (str): rendered RISK BUDGET block (default "").
+        - outcome_memory_same_max (int): same-ticker memory cap (default 5).
+        - outcome_memory_other_max (int): cross-ticker memory cap (default 3).
 
     Returns
     -------
@@ -309,7 +309,11 @@ def build_manager_context(
     portfolio_state = _build_portfolio_state(portfolio, price_lookup, as_of, config)
 
     # 5. Build outcome memory (Oracle-Fallacy guard: strip reasoning fields)
-    outcome_memory = _build_outcome_memory(resolved_decisions, held_tickers)
+    same_max = int(config.get("outcome_memory_same_max", 5))
+    other_max = int(config.get("outcome_memory_other_max", 3))
+    outcome_memory = _build_outcome_memory(
+        resolved_decisions, held_tickers, same_max, other_max
+    )
 
     return ManagerContext(
         as_of=as_of,
@@ -318,6 +322,8 @@ def build_manager_context(
         portfolio_state=portfolio_state,
         outcome_memory=outcome_memory,
         config=config,
+        policy_prose=config.get("policy_prose", ""),
+        risk_budget_prose=config.get("risk_budget_prose", ""),
         active_triggers=list(active_triggers) if active_triggers else [],
     )
 
@@ -382,12 +388,15 @@ def _build_portfolio_state(
 def _build_outcome_memory(
     resolved_decisions: list[dict],
     held_tickers: set[str],
+    same_max: int,
+    other_max: int,
 ) -> list[dict[str, Any]]:
     """Build the outcome memory list with Oracle-Fallacy guard applied.
 
-    Returns at most _MAX_SAME_TICKER_MEMORY entries for tickers currently held
-    and at most _MAX_OTHER_TICKER_MEMORY entries for other tickers.
-    All reasoning/thesis fields are stripped — ONLY numeric outcome fields are kept.
+    Returns at most ``same_max`` entries for tickers currently held and at most
+    ``other_max`` entries for other tickers (both sourced from the allocator's
+    outcome_memory config). All reasoning/thesis fields are stripped — ONLY
+    numeric outcome fields are kept.
     """
     if not resolved_decisions:
         return []
@@ -408,16 +417,13 @@ def _build_outcome_memory(
         ticker = decision.get("ticker", "")
         entry = _sanitise_decision(decision)
         if ticker in held_tickers:
-            if len(same_ticker) < _MAX_SAME_TICKER_MEMORY:
+            if len(same_ticker) < same_max:
                 same_ticker.append(entry)
         else:
-            if len(other_ticker) < _MAX_OTHER_TICKER_MEMORY:
+            if len(other_ticker) < other_max:
                 other_ticker.append(entry)
 
-        if (
-            len(same_ticker) >= _MAX_SAME_TICKER_MEMORY
-            and len(other_ticker) >= _MAX_OTHER_TICKER_MEMORY
-        ):
+        if len(same_ticker) >= same_max and len(other_ticker) >= other_max:
             break
 
     return same_ticker + other_ticker
@@ -451,8 +457,8 @@ def render_manager_context(ctx: ManagerContext) -> str:
     1. PORTFOLIO
     2. VERIFIED PRICES  (includes SNAPSHOT_TRUTH_INSTRUCTION)
     3. ANALYST NOTES
-    4. POLICY           (FEE_TAX_POLICY)
-    5. RISK BUDGET      (RISK_BUDGET)
+    4. POLICY           (ctx.policy_prose)
+    5. RISK BUDGET      (ctx.risk_budget_prose)
     6. OUTCOME MEMORY   (only if ctx.outcome_memory is non-empty)
     """
     parts: list[str] = []
@@ -533,12 +539,12 @@ def render_manager_context(ctx: ManagerContext) -> str:
     # ------------------------------------------------------------------
     # Section 4: POLICY
     # ------------------------------------------------------------------
-    parts.append(f"=== POLICY ===\n{FEE_TAX_POLICY}")
+    parts.append(f"=== POLICY ===\n{ctx.policy_prose}")
 
     # ------------------------------------------------------------------
     # Section 5: RISK BUDGET
     # ------------------------------------------------------------------
-    parts.append(f"=== RISK BUDGET ===\n{RISK_BUDGET}")
+    parts.append(f"=== RISK BUDGET ===\n{ctx.risk_budget_prose}")
 
     # ------------------------------------------------------------------
     # Section 6: OUTCOME MEMORY (only if non-empty — Oracle-Fallacy guard)

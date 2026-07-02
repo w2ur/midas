@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import pytest
 
-from engine.manager_context import RISK_BUDGET_LIMITS
 from engine.manager_decision import (
     ManagerDecision,
     ManagerPosition,
@@ -211,7 +210,7 @@ class TestConvictionGate:
             "conviction": 5,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert decision.positions == [], "Low-conviction positions must be dropped"
         assert decision.hold_reasoning, (
@@ -234,13 +233,13 @@ class TestConvictionGate:
             "conviction": 3,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert decision.hold_reasoning  # must be non-empty
 
     def test_at_threshold_conviction_retains_positions(self) -> None:
         """conviction == min_conviction → positions are retained."""
-        min_c = RISK_BUDGET_LIMITS["min_conviction"]
+        min_c = 6
         raw = {
             "positions": [
                 {
@@ -255,7 +254,7 @@ class TestConvictionGate:
             "conviction": min_c,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert len(decision.positions) == 1, (
             "Positions must be retained at threshold conviction"
@@ -277,7 +276,7 @@ class TestConvictionGate:
             "conviction": 9,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert len(decision.positions) == 1
 
@@ -297,7 +296,7 @@ class TestConvictionGate:
             "conviction": 6,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert len(decision.positions) == 1, "conviction=6 must pass the gate"
         assert decision.conviction == 6
@@ -318,15 +317,15 @@ class TestConvictionGate:
             "conviction": 5,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert decision.positions == [], (
             "conviction=5 must still be blocked by the gate"
         )
 
     def test_gate_uses_risk_budget_limits_min_conviction(self) -> None:
-        """The gate threshold must equal RISK_BUDGET_LIMITS['min_conviction']."""
-        min_c = RISK_BUDGET_LIMITS["min_conviction"]
+        """The gate threshold (min_conviction=6) is respected: below drops, at-threshold retains."""
+        min_c = 6
         # One below threshold drops positions
         raw_below = {
             "positions": [
@@ -342,7 +341,7 @@ class TestConvictionGate:
             "conviction": min_c - 1,
             "hold_reasoning": "",
         }
-        below = parse_manager_decision(raw_below)
+        below = parse_manager_decision(raw_below, min_conviction=6)
         assert below is not None
         assert below.positions == []
 
@@ -361,7 +360,7 @@ class TestConvictionGate:
             "conviction": min_c,
             "hold_reasoning": "",
         }
-        at = parse_manager_decision(raw_at)
+        at = parse_manager_decision(raw_at, min_conviction=6)
         assert at is not None
         assert len(at.positions) == 1
 
@@ -373,15 +372,15 @@ class TestConvictionGate:
 
 class TestParseManagerDecisionTolerant:
     def test_none_input_returns_none(self) -> None:
-        assert parse_manager_decision(None) is None
+        assert parse_manager_decision(None, min_conviction=6) is None
 
     def test_empty_dict_returns_none(self) -> None:
-        assert parse_manager_decision({}) is None
+        assert parse_manager_decision({}, min_conviction=6) is None
 
     def test_non_dict_returns_none(self) -> None:
-        assert parse_manager_decision("not a dict") is None  # type: ignore[arg-type]
-        assert parse_manager_decision(42) is None  # type: ignore[arg-type]
-        assert parse_manager_decision([]) is None  # type: ignore[arg-type]
+        assert parse_manager_decision("not a dict", min_conviction=6) is None  # type: ignore[arg-type]
+        assert parse_manager_decision(42, min_conviction=6) is None  # type: ignore[arg-type]
+        assert parse_manager_decision([], min_conviction=6) is None  # type: ignore[arg-type]
 
     def test_garbage_conviction_is_clamped(self) -> None:
         raw = {
@@ -389,7 +388,7 @@ class TestParseManagerDecisionTolerant:
             "conviction": 999,
             "hold_reasoning": "Test.",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert decision.conviction == 10
 
@@ -399,7 +398,7 @@ class TestParseManagerDecisionTolerant:
             "conviction": -50,
             "hold_reasoning": "Test.",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert decision.conviction == 0
 
@@ -409,7 +408,7 @@ class TestParseManagerDecisionTolerant:
             "conviction": "high",
             "hold_reasoning": "Test.",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         # Should not raise; conviction defaults to something valid
         assert decision is not None
         assert 0 <= decision.conviction <= 10
@@ -437,7 +436,7 @@ class TestParseManagerDecisionTolerant:
             "conviction": 8,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert len(decision.positions) == 1
         assert decision.positions[0].ticker == "SOL-EUR"
@@ -457,7 +456,7 @@ class TestParseManagerDecisionTolerant:
             "conviction": 8,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert decision.positions == []
 
@@ -476,7 +475,7 @@ class TestParseManagerDecisionTolerant:
             "conviction": 8,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert decision.positions == []
 
@@ -486,7 +485,7 @@ class TestParseManagerDecisionTolerant:
             "conviction": 8,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert decision.positions == []
 
@@ -495,7 +494,7 @@ class TestParseManagerDecisionTolerant:
             "positions": [],
             "hold_reasoning": "No signal.",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert 0 <= decision.conviction <= 10
 
@@ -703,7 +702,7 @@ def _parse_with_size(size_eur: object) -> "ManagerDecision | None":
         "conviction": 9,
         "hold_reasoning": "",
     }
-    return parse_manager_decision(raw)
+    return parse_manager_decision(raw, min_conviction=6)
 
 
 class TestSizeEurCoercion:
@@ -768,7 +767,7 @@ class TestTriggerParsing:
             "conviction": 9,
             "hold_reasoning": "",
         }
-        return parse_manager_decision(raw)
+        return parse_manager_decision(raw, min_conviction=6)
 
     def test_parse_position_with_trigger(self) -> None:
         """Valid trigger + expires → ManagerPosition.trigger/expires populated."""
@@ -845,7 +844,7 @@ class TestTickerAndReasoningCoercion:
             "conviction": 9,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         # Numeric ticker is either coerced to "123" (kept) or dropped.
         # Current behaviour: coerced and kept.
@@ -868,7 +867,7 @@ class TestTickerAndReasoningCoercion:
             "conviction": 9,
             "hold_reasoning": "",
         }
-        decision = parse_manager_decision(raw)
+        decision = parse_manager_decision(raw, min_conviction=6)
         assert decision is not None
         assert len(decision.positions) == 1
         assert decision.positions[0].reasoning == "42"
@@ -897,7 +896,7 @@ class TestTriggerExpiresValidation:
             "conviction": 9,
             "hold_reasoning": "",
         }
-        return parse_manager_decision(raw)
+        return parse_manager_decision(raw, min_conviction=6)
 
     def test_trigger_malformed_expires_dropped(self) -> None:
         """trigger present but expires is not a valid ISO date → position dropped (INVALID_TRIGGER).
@@ -944,3 +943,23 @@ class TestTriggerExpiresValidation:
         )
         assert decision is not None
         assert decision.positions == [], "non-dict trigger must be dropped"
+
+
+# ---------------------------------------------------------------------------
+# Conviction gate — caller-supplied threshold
+# ---------------------------------------------------------------------------
+
+
+def test_conviction_gate_uses_passed_threshold():
+    from engine.manager_decision import parse_manager_decision
+
+    raw = {
+        "conviction": 6,
+        "positions": [
+            {"ticker": "AAPL", "action": "BUY", "size_eur": 300, "reasoning": "x"}
+        ],
+    }
+    # threshold 7 → gated to hold
+    assert parse_manager_decision(raw, min_conviction=7).positions == []
+    # threshold 6 → passes
+    assert len(parse_manager_decision(raw, min_conviction=6).positions) == 1

@@ -200,6 +200,12 @@ class TestRosterSnapshot:
         cfg = get_config()
         assert "the-oracle" not in cfg.trading_roster
 
+    def test_allocators_is_the_manager(self):
+        cfg = get_config()
+        assert cfg.allocators == ("the-manager",)
+        assert "the-manager" not in cfg.trading_roster
+        assert cfg.roster["the-manager"].role == "allocator"
+
     def test_day_one_and_initial_capital(self):
         from datetime import date
 

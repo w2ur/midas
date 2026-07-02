@@ -29,6 +29,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from engine.config import get_config
 from engine.manager_report import (
     build_manager_summary,
     load_decisions,
@@ -42,12 +43,21 @@ from engine.manager_report import (
 # ---------------------------------------------------------------------------
 
 _PORTFOLIOS_DIR = _ROOT / "data" / "portfolios"
-_REVIEW_DIR = _ROOT / "data" / "orders" / "manager-review"
 
-_MANAGER_ID = "the-manager"
+_cfg = get_config()
+if not _cfg.allocators:
+    st.info(
+        "No allocator configured — this page requires an agent with role=allocator."
+    )
+    st.stop()
+
+_MANAGER_ID = _cfg.allocators[0]
+_ALLOCATOR_SPEC = _cfg.allocator_spec(_MANAGER_ID)
+_REVIEW_DIR = _ROOT / "data" / "orders" / f"{_ALLOCATOR_SPEC.channels_prefix}-review"
+
 _BASELINE_ID = "baseline-manager"
 _INITIAL_CAPITAL_EUR = 2000.0
-_MIN_CONVICTION = 7  # mirrors RISK_BUDGET_LIMITS["min_conviction"]
+_MIN_CONVICTION = _ALLOCATOR_SPEC.risk_budget.min_conviction
 
 # ---------------------------------------------------------------------------
 # Page config

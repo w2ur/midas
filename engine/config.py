@@ -38,6 +38,33 @@ class SafetyRails:
 
 
 @dataclass(frozen=True)
+class RiskBudget:
+    max_positions: int = 6
+    per_position_cap: float = 400.0
+    cash_floor: float = 150.0
+    max_trades_per_week: int = 2
+    min_conviction: int = 6
+
+
+@dataclass(frozen=True)
+class AllocatorSpec:
+    channels_prefix: str = "manager"
+    outcome_resolution_days: int = 10
+    outcome_memory_same_max: int = 5
+    outcome_memory_other_max: int = 3
+    baseline_enabled: bool = True
+    risk_budget: RiskBudget = field(default_factory=RiskBudget)
+    blocklist: tuple[str, ...] = ()
+    policy_prose_override: str | None = None
+
+
+@dataclass(frozen=True)
+class JurisdictionSpec:
+    tax_rate_pct: float = 0.0  # core no-op default; FR sets 30.0
+    fees: dict = field(default_factory=dict)  # empty => fees.py module defaults
+
+
+@dataclass(frozen=True)
 class AgentSpec:
     id: str
     display_name: str
@@ -51,6 +78,7 @@ class AgentSpec:
     persona: str
     role: str = "trader"
     safety: SafetyRails = field(default_factory=SafetyRails)
+    allocator: "AllocatorSpec | None" = None
 
 
 @dataclass(frozen=True)
@@ -62,6 +90,7 @@ class MidasConfig:
     global_reference: BenchmarkSpec
     agents_dir: Path
     roster: dict[str, AgentSpec]
+    jurisdiction: JurisdictionSpec
 
     @property
     def _data(self) -> Path:
@@ -135,6 +164,18 @@ class MidasConfig:
     def trading_roster(self) -> tuple[str, ...]:
         return tuple(aid for aid, spec in self.roster.items() if spec.role == "trader")
 
+    @property
+    def allocators(self) -> tuple[str, ...]:
+        return tuple(
+            aid for aid, spec in self.roster.items() if spec.role == "allocator"
+        )
+
+    def allocator_spec(self, agent_id: str) -> "AllocatorSpec":
+        spec = self.roster[agent_id].allocator
+        if spec is None:
+            raise ValueError(f"{agent_id!r} has no allocator config")
+        return spec
+
 
 def _benchmark(raw: dict | None) -> BenchmarkSpec | None:
     if not raw:
@@ -155,6 +196,43 @@ def _safety(raw: dict | None) -> SafetyRails:
     )
 
 
+def _risk_budget(raw: dict | None) -> RiskBudget:
+    raw = raw or {}
+    return RiskBudget(
+        max_positions=int(raw.get("max_positions", 6)),
+        per_position_cap=float(raw.get("per_position_cap", 400.0)),
+        cash_floor=float(raw.get("cash_floor", 150.0)),
+        max_trades_per_week=int(raw.get("max_trades_per_week", 2)),
+        min_conviction=int(raw.get("min_conviction", 6)),
+    )
+
+
+def _allocator(raw: dict | None) -> AllocatorSpec | None:
+    if not raw:
+        return None
+    policy = raw.get("policy") or {}
+    mem = raw.get("outcome_memory") or {}
+    baseline = raw.get("baseline") or {}
+    return AllocatorSpec(
+        channels_prefix=str(raw.get("channels_prefix", "manager")),
+        outcome_resolution_days=int(raw.get("outcome_resolution_days", 10)),
+        outcome_memory_same_max=int(mem.get("same_ticker_max", 5)),
+        outcome_memory_other_max=int(mem.get("other_ticker_max", 3)),
+        baseline_enabled=bool(baseline.get("enabled", True)),
+        risk_budget=_risk_budget(raw.get("risk_budget")),
+        blocklist=tuple(policy.get("blocklist", []) or []),
+        policy_prose_override=policy.get("prose_override"),
+    )
+
+
+def _jurisdiction(raw: dict | None) -> JurisdictionSpec:
+    raw = raw or {}
+    return JurisdictionSpec(
+        tax_rate_pct=float(raw.get("tax_rate_pct", 0.0)),
+        fees=dict(raw.get("fees") or {}),
+    )
+
+
 def _agent(agent_id: str, raw: dict, default_capital: float) -> AgentSpec:
     return AgentSpec(
         id=agent_id,
@@ -169,6 +247,7 @@ def _agent(agent_id: str, raw: dict, default_capital: float) -> AgentSpec:
         persona=raw.get("persona", f"{agent_id}.md"),
         role=raw.get("role", "trader"),
         safety=_safety(raw.get("safety")),
+        allocator=_allocator(raw.get("allocator")),
     )
 
 
@@ -193,6 +272,7 @@ def _load(data_dir: Path) -> MidasConfig:
         global_reference=_benchmark(g["global_reference"]),
         agents_dir=data_dir / g.get("agents_dir", ".claude/agents"),
         roster=roster,
+        jurisdiction=_jurisdiction(g.get("jurisdiction")),
     )
 
 

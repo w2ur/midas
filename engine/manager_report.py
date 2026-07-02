@@ -28,10 +28,35 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from engine.config import get_config
+from engine.orders import allocator_channel_dir as _order_dir
+
 # Snapshot record: {"date": "YYYY-MM-DD", "portfolio_value": float, ...}
 Snapshot = dict
 Decision = dict
 ResolvedOutcome = dict
+
+
+def book_paths(allocator_id: str = "the-manager") -> dict[str, Path]:
+    """Return the canonical filesystem paths for an allocator's book.
+
+    Keys: ``portfolio``, ``snapshots``, ``review_dir``, ``resolved``.
+    ``allocator_id`` must be a registered allocator (role='allocator'); the
+    channel prefix is read from its config, NOT derived from the id string.
+    Default ``allocator_id="the-manager"`` reproduces the legacy paths.
+    Not valid for ``baseline-manager`` (a deterministic twin, not an allocator —
+    it has no review channel and ``allocator_spec`` would raise).
+    """
+    cfg = get_config()
+    prefix = cfg.allocator_spec(allocator_id).channels_prefix
+    review_dir = _order_dir(prefix, "review")
+    portfolio_dir = cfg.portfolios_dir / allocator_id
+    return {
+        "portfolio": portfolio_dir / "portfolio.json",
+        "snapshots": portfolio_dir / "snapshots.json",
+        "review_dir": review_dir,
+        "resolved": review_dir / "resolved.json",
+    }
 
 
 # ---------------------------------------------------------------------------

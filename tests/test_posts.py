@@ -18,7 +18,7 @@ from engine.posts import (
 class TestAgentRoster:
     """Roster-shape assertions backed by config (no frozen module dicts)."""
 
-    def test_11_agents_in_roster(self) -> None:
+    def test_12_agents_in_roster(self) -> None:
         cfg = get_config()
         expected = {
             "steady-eddie-eur",
@@ -32,6 +32,7 @@ class TestAgentRoster:
             "goldfinger",
             "world",
             "the-oracle",
+            "the-manager",
         }
         assert set(cfg.roster.keys()) == expected
 
@@ -57,7 +58,8 @@ class TestAgentRoster:
     def test_every_agent_has_a_voice(self) -> None:
         cfg = get_config()
         for aid, spec in cfg.roster.items():
-            assert spec.voice, f"{aid} has empty voice"
+            if spec.role in ("trader", "narrator"):
+                assert spec.voice, f"{aid} has empty voice"
 
 
 class TestPostPayload:

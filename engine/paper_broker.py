@@ -63,10 +63,15 @@ class AgentConfig:
     agent's orders when the computed drawdown % is strictly less than this value
     (i.e. -7.0 < -5.0 → halt). A value of 0.0 disables the halt for that agent.
 
-    Agents not in the roster (e.g. the-manager, baseline-manager) receive safe
-    defaults: max_order_notional=500, max_orders_per_day=5,
-    daily_drawdown_halt_pct=-5.0, allowed_universe=[], dry_run=False — identical
-    to the original broker's missing-file defaults (commit 320e0d53).
+    Agents not in the roster (e.g. baseline-manager) receive safe defaults:
+    max_order_notional=500, max_orders_per_day=5, daily_drawdown_halt_pct=-5.0,
+    allowed_universe=[], dry_run=False — identical to the original broker's
+    missing-file defaults (commit 320e0d53).
+
+    Note: the-manager IS now in the roster (role: allocator) with an explicit
+    safety block reproducing those same defaults.  It is excluded from the
+    public trading surfaces by the ``trading_roster`` role filter (role !=
+    trader).
     """
 
     max_order_notional: float

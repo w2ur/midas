@@ -8,7 +8,7 @@ Covers:
 - None notes are dropped silently
 - empty resolved_decisions → NO outcome memory section in rendered output
 - non-empty resolved_decisions → numeric outcome fields present, no thesis/reasoning text
-- FEE_TAX_POLICY and RISK_BUDGET constants present in rendered output
+- POLICY and RISK BUDGET prose (sourced from config) present in rendered output
 - absent portfolio → initial empty book (cash=full capital, no positions)
 - Oracle-Fallacy guard: prior reasoning text NEVER appears in the rendered memory block
 - active_triggers → ACTIVE TRIGGERS section in render; absent/empty → no section
@@ -21,19 +21,28 @@ from typing import Any
 
 import pytest
 
+from engine.config import get_config, reset_config_cache
 from engine.manager_context import (
-    FEE_TAX_POLICY,
-    PRIIPS_BLOCKLIST,
-    RISK_BUDGET,
-    RISK_BUDGET_LIMITS,
     SNAPSHOT_TRUTH_INSTRUCTION,
     ManagerContext,
     build_manager_context,
     load_ticker_registry,
     render_manager_context,
+    render_policy_prose,
+    render_risk_budget_prose,
 )
 from engine.orders import Order
 from engine.research_note import ResearchNote
+
+
+@pytest.fixture(autouse=True)
+def _default_env(monkeypatch):
+    """Deterministic config: read the repo-root roster.yaml (William's prose),
+    regardless of any MIDAS_DATA_DIR left set by another test in the process."""
+    monkeypatch.delenv("MIDAS_DATA_DIR", raising=False)
+    reset_config_cache()
+    yield
+    reset_config_cache()
 
 
 # ---------------------------------------------------------------------------
@@ -86,14 +95,6 @@ def _make_portfolio(
 
 
 class TestConstants:
-    def test_fee_tax_policy_is_nonempty_string(self) -> None:
-        assert isinstance(FEE_TAX_POLICY, str)
-        assert len(FEE_TAX_POLICY) > 100
-
-    def test_risk_budget_is_nonempty_string(self) -> None:
-        assert isinstance(RISK_BUDGET, str)
-        assert len(RISK_BUDGET) > 50
-
     def test_snapshot_truth_instruction_is_nonempty_string(self) -> None:
         assert isinstance(SNAPSHOT_TRUTH_INSTRUCTION, str)
         assert len(SNAPSHOT_TRUTH_INSTRUCTION) > 20
@@ -534,6 +535,17 @@ class TestRenderManagerContext:
         notes = [("satoshi", _make_note(["BTC-EUR"]))]
         price_lookup = {"BTC-EUR": (60000.0, "2026-06-12")}
         registry = {"BTC-EUR": {"name": "Bitcoin EUR", "type": "crypto"}}
+        cfg = get_config()
+        alloc = cfg.allocator_spec("the-manager")
+        config = {
+            **_DEFAULT_CONFIG,
+            "policy_prose": render_policy_prose(
+                cfg.jurisdiction, alloc.blocklist, alloc.policy_prose_override
+            ),
+            "risk_budget_prose": render_risk_budget_prose(
+                alloc.risk_budget, "EUR", 2000.0
+            ),
+        }
         return build_manager_context(
             notes=notes,
             portfolio=_make_portfolio(),
@@ -541,7 +553,7 @@ class TestRenderManagerContext:
             price_lookup=price_lookup,
             ticker_registry=registry,
             as_of=date(2026, 6, 12),
-            config=_DEFAULT_CONFIG,
+            config=config,
         )
 
     def test_portfolio_section_present(self) -> None:
@@ -603,7 +615,7 @@ class TestRenderManagerContext:
 
     def test_fee_tax_policy_content_in_render(self) -> None:
         rendered = render_manager_context(self._build_basic_ctx())
-        # The FEE_TAX_POLICY constant content should appear in the render
+        # The POLICY prose (sourced from config) should appear in the render.
         assert "PFU" in rendered
 
     def test_risk_budget_content_in_render(self) -> None:
@@ -765,58 +777,6 @@ class TestOutcomeMemoryDeterminism:
             assert render_manager_context(ctx_shuffled) == render_manager_context(
                 ctx_original
             ), "rendered output differs between input orderings"
-
-
-# ---------------------------------------------------------------------------
-# Structured constants — prose derived from machine values
-# ---------------------------------------------------------------------------
-
-
-class TestStructuredConstants:
-    def test_risk_budget_limits_has_required_keys(self) -> None:
-        required = {
-            "max_positions",
-            "per_position_cap_eur",
-            "cash_floor_eur",
-            "max_trades_per_week",
-            "min_conviction",
-        }
-        assert required <= set(RISK_BUDGET_LIMITS.keys())
-
-    def test_priips_blocklist_is_frozenset(self) -> None:
-        assert isinstance(PRIIPS_BLOCKLIST, frozenset)
-        assert len(PRIIPS_BLOCKLIST) > 0
-
-    def test_priips_blocklist_contains_known_tickers(self) -> None:
-        expected = {"SQQQ", "SPXS", "SPXU", "TQQQ", "UPRO", "SOXL"}
-        assert expected <= PRIIPS_BLOCKLIST
-
-    def test_risk_budget_prose_contains_limit_values(self) -> None:
-        """RISK_BUDGET string must reflect the numbers in RISK_BUDGET_LIMITS."""
-        assert str(RISK_BUDGET_LIMITS["max_positions"]) in RISK_BUDGET
-        assert str(RISK_BUDGET_LIMITS["per_position_cap_eur"]) in RISK_BUDGET
-        assert str(RISK_BUDGET_LIMITS["cash_floor_eur"]) in RISK_BUDGET
-        assert str(RISK_BUDGET_LIMITS["max_trades_per_week"]) in RISK_BUDGET
-        assert str(RISK_BUDGET_LIMITS["min_conviction"]) in RISK_BUDGET
-
-    def test_fee_tax_policy_prose_contains_all_priips_tickers(self) -> None:
-        """FEE_TAX_POLICY string must reference every ticker in PRIIPS_BLOCKLIST."""
-        for ticker in PRIIPS_BLOCKLIST:
-            assert ticker in FEE_TAX_POLICY, (
-                f"PRIIPS_BLOCKLIST ticker {ticker!r} missing from FEE_TAX_POLICY prose"
-            )
-
-    def test_risk_budget_limits_importable(self) -> None:
-        """Verify importability for Task D."""
-        from engine.manager_context import RISK_BUDGET_LIMITS as rbl
-
-        assert rbl["max_positions"] == 6
-
-    def test_priips_blocklist_importable(self) -> None:
-        """Verify importability for Task D."""
-        from engine.manager_context import PRIIPS_BLOCKLIST as pbl
-
-        assert isinstance(pbl, frozenset)
 
 
 # ---------------------------------------------------------------------------
