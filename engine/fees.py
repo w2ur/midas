@@ -46,6 +46,35 @@ _FX_RATE = 0.00002  # 0.002%
 AssetClass = Literal["equity", "crypto", "fx"]
 
 
+# ---------------------------------------------------------------------------
+# Config-driven rate resolvers (prefer jurisdiction config, fall back to
+# module-constant defaults so legacy numbers are byte-identical when no
+# jurisdiction block is present in roster.yaml).
+# ---------------------------------------------------------------------------
+
+
+def _rates() -> dict:
+    from engine.config import get_config
+
+    return get_config().jurisdiction.fees or {}
+
+
+def _equity_rate() -> float:
+    return float(_rates().get("equity", {}).get("rate_pct", _EQUITY_RATE * 100)) / 100
+
+
+def _equity_floor() -> float:
+    return float(_rates().get("equity", {}).get("floor", _EQUITY_FLOOR))
+
+
+def _crypto_rate() -> float:
+    return float(_rates().get("crypto", {}).get("taker_pct", _CRYPTO_RATE * 100)) / 100
+
+
+def _fx_rate() -> float:
+    return float(_rates().get("fx", {}).get("spread_pct", _FX_RATE * 100)) / 100
+
+
 def classify_ticker(ticker: str) -> AssetClass:
     """Classify a ticker symbol into an asset class for fee computation.
 
@@ -94,8 +123,8 @@ def fee_for(ticker: str, notional: float) -> float:
     asset_class = classify_ticker(ticker)
 
     if asset_class == "equity":
-        return max(_EQUITY_FLOOR, _EQUITY_RATE * notional)
+        return max(_equity_floor(), _equity_rate() * notional)
     elif asset_class == "crypto":
-        return _CRYPTO_RATE * notional
+        return _crypto_rate() * notional
     else:  # fx
-        return _FX_RATE * notional
+        return _fx_rate() * notional
