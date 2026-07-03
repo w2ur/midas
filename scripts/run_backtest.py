@@ -21,6 +21,7 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 
 from engine.backtest import run_backtest
 from engine.market_data import MarketDataFetcher
+from engine.survivorship import survivorship_warning
 from engine.types import StrategySpec
 from engine.universes.index import (
     get_sp500_tickers,
@@ -50,7 +51,19 @@ from engine.universes.assets import (
 _STRATEGIES_DIR = _PROJECT_ROOT / "data" / "strategies"
 _CACHE_DIR = _PROJECT_ROOT / "data" / "cache" / "market"
 
-_ETF_SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLI", "XLC", "XLY", "XLP", "XLU", "XLRE", "XLB"]
+_ETF_SECTORS = [
+    "XLK",
+    "XLF",
+    "XLE",
+    "XLV",
+    "XLI",
+    "XLC",
+    "XLY",
+    "XLP",
+    "XLU",
+    "XLRE",
+    "XLB",
+]
 _ETF_BROAD = ["VOO", "QQQ", "VEA", "VWO", "GLD", "BND", "TLT", "IWM", "DIA", "HYG"]
 
 _COIN_FLIP_ID = "coin-flip-baseline"
@@ -100,6 +113,7 @@ def _resolve_universe(universe_id: str) -> list[str]:
 # Single backtest
 # ---------------------------------------------------------------------------
 
+
 def _run_single(
     spec_path: Path,
     start: date,
@@ -112,6 +126,9 @@ def _run_single(
     """
     try:
         spec_dict = json.loads(spec_path.read_text())
+        warning = survivorship_warning(spec_dict["universe"], start)
+        if warning is not None:
+            print(f"  [WARN] {warning}", file=sys.stderr)
         tickers = _resolve_universe(spec_dict["universe"])
         price_data = fetcher.fetch_prices(tickers, start, end)
 
@@ -124,6 +141,7 @@ def _run_single(
             "cagr": round(result.cagr, 6),
             "sharpe": round(result.sharpe, 6),
             "max_drawdown": round(result.max_drawdown, 6),
+            "warnings": [warning] if warning is not None else [],
         }
     except Exception as exc:
         strategy_id = spec_path.stem
@@ -134,6 +152,7 @@ def _run_single(
 # ---------------------------------------------------------------------------
 # Leaderboard printer
 # ---------------------------------------------------------------------------
+
 
 def _print_leaderboard(results: list[dict]) -> None:
     """Print a leaderboard table sorted by total return descending."""
@@ -181,6 +200,7 @@ def _print_leaderboard(results: list[dict]) -> None:
 # Argument parsing
 # ---------------------------------------------------------------------------
 
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run Midas strategy backtests.",
@@ -226,6 +246,7 @@ def _parse_args() -> argparse.Namespace:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     args = _parse_args()

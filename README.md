@@ -54,7 +54,7 @@ Create a JSON file in `data/strategies/`:
 {
   "id": "my-strategy",
   "name": "My Custom Strategy",
-  "universe": "sp500",
+  "universe": "dow30",
   "selector": "golden-cross",
   "manager": "equal-weight",
   "funding": {"initial": 10000, "monthly_addition": 500},

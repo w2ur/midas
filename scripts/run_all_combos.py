@@ -22,8 +22,19 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 
 from engine.backtest import run_backtest
 from engine.market_data import MarketDataFetcher
-from engine.universes.index import get_sp500_tickers, get_dow30_tickers, get_nasdaq100_tickers
-from engine.universes.assets import get_crypto_tickers, get_forex_tickers, get_metals_tickers, get_voo_only, get_classic_60_40
+from engine.survivorship import survivorship_warning
+from engine.universes.index import (
+    get_sp500_tickers,
+    get_dow30_tickers,
+    get_nasdaq100_tickers,
+)
+from engine.universes.assets import (
+    get_crypto_tickers,
+    get_forex_tickers,
+    get_metals_tickers,
+    get_voo_only,
+    get_classic_60_40,
+)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -31,7 +42,19 @@ from engine.universes.assets import get_crypto_tickers, get_forex_tickers, get_m
 
 _CACHE_DIR = _PROJECT_ROOT / "data" / "cache" / "market"
 
-_ETF_SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLI", "XLC", "XLY", "XLP", "XLU", "XLRE", "XLB"]
+_ETF_SECTORS = [
+    "XLK",
+    "XLF",
+    "XLE",
+    "XLV",
+    "XLI",
+    "XLC",
+    "XLY",
+    "XLP",
+    "XLU",
+    "XLRE",
+    "XLB",
+]
 _ETF_BROAD = ["VOO", "QQQ", "VEA", "VWO", "GLD", "BND", "TLT", "IWM", "DIA", "HYG"]
 
 # Selectors that work in backtesting (excludes claude-analysis and data-follow)
@@ -53,7 +76,10 @@ _DEFAULT_MANAGERS = [
     "rebalance-monthly",
 ]
 
-_DEFAULT_UNIVERSES = ["sp500", "etf-broad"]
+# Default to dow30 (survivorship-stable) rather than sp500: backtesting
+# against sp500's *current* membership over a historical window inflated an
+# early Midas run ~194% (see engine.survivorship / METHODOLOGY.md).
+_DEFAULT_UNIVERSES = ["dow30", "etf-broad"]
 
 _UNIVERSE_FETCHERS = {
     "sp500": get_sp500_tickers,
@@ -73,6 +99,7 @@ _UNIVERSE_FETCHERS = {
 # Universe resolution
 # ---------------------------------------------------------------------------
 
+
 def _resolve_universe(universe_id: str) -> list[str]:
     if universe_id not in _UNIVERSE_FETCHERS:
         raise ValueError(f"Unknown universe: {universe_id!r}")
@@ -82,6 +109,7 @@ def _resolve_universe(universe_id: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # Combo runner
 # ---------------------------------------------------------------------------
+
 
 def _run_combo(
     universe_id: str,
@@ -128,6 +156,7 @@ def _run_combo(
 # ---------------------------------------------------------------------------
 # Heatmap printer
 # ---------------------------------------------------------------------------
+
 
 def _print_heatmap(
     results: list[dict],
@@ -192,6 +221,7 @@ def _print_full_heatmap(
 # Argument parsing
 # ---------------------------------------------------------------------------
 
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate and backtest all selector × manager combinations.",
@@ -242,6 +272,7 @@ def _parse_args() -> argparse.Namespace:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     args = _parse_args()
 
@@ -258,6 +289,11 @@ def main() -> None:
         f"({len(universes)} universes × {len(selectors)} selectors × {len(managers)} managers)"
     )
     print(f"Period: {start} → {end}\n")
+
+    for universe_id in universes:
+        warning = survivorship_warning(universe_id, start)
+        if warning is not None:
+            print(f"[WARN] {warning}", file=sys.stderr)
 
     fetcher = MarketDataFetcher(cache_dir=_CACHE_DIR)
 
@@ -279,7 +315,9 @@ def main() -> None:
     results: list[dict] = []
     combo_num = 0
 
-    for universe_id, selector, manager in itertools.product(universes, selectors, managers):
+    for universe_id, selector, manager in itertools.product(
+        universes, selectors, managers
+    ):
         combo_num += 1
         if universe_id not in universe_prices:
             print(f"  [{combo_num:>4}/{total_combos}] SKIP (no data for {universe_id})")
@@ -307,7 +345,11 @@ def main() -> None:
         _print_full_heatmap(results, selectors, managers, universes)
 
     # Save output.
-    output_path = _PROJECT_ROOT / args.output if not Path(args.output).is_absolute() else Path(args.output)
+    output_path = (
+        _PROJECT_ROOT / args.output
+        if not Path(args.output).is_absolute()
+        else Path(args.output)
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as f:
         json.dump(results, f, indent=2)

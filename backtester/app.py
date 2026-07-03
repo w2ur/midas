@@ -105,6 +105,17 @@ def _build_response(
         coin_flip_curve=coin_flip,
     )
 
+    warnings = list(deltas.warnings)
+    # Survivorship-bias guard: a signal run over a survivorship-prone index
+    # universe whose start predates the constituents refresh is trading today's
+    # membership over history — flag it (see engine.survivorship).
+    if isinstance(request, SignalRunRequest):
+        from engine.survivorship import survivorship_warning
+
+        sv = survivorship_warning(request.config.universe, start)
+        if sv is not None:
+            warnings.append(sv)
+
     equity_curve = [
         EquityPoint(date=idx.date().isoformat(), value=float(val))
         for idx, val in daily_values.items()
@@ -133,7 +144,7 @@ def _build_response(
         metrics=metrics,
         trades=trades,
         config_hash=_config_hash(request),
-        warnings=deltas.warnings,
+        warnings=warnings,
     )
 
 
