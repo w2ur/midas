@@ -18,8 +18,10 @@ via this module is the substitute for the auto-registration we don't have.
 from __future__ import annotations
 
 import re
+import sys
 
 from engine.config import get_config
+from engine.token_cost import record_dispatch
 
 _FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
@@ -80,5 +82,13 @@ def wrap_persona_prompt(agent_id: str, task_prompt: str) -> tuple[str, str | Non
         agent_id=agent_id,
         persona_body=body,
         task_prompt=task_prompt,
+    )
+    # Token/cost visibility: record the character-count proxy (len/4) for this
+    # dispatch into the session ledger, and log it. Proxy only — we have no real
+    # token accounting from the orchestrator's untracked dispatch.
+    est = record_dispatch(agent_id, wrapped)
+    print(
+        f"[dispatch] {agent_id}: ~{est} tokens (len/4 proxy, {len(wrapped)} chars)",
+        file=sys.stderr,
     )
     return wrapped, model
