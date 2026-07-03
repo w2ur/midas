@@ -29,6 +29,11 @@ import pandas as pd
 import yfinance as yf
 
 from engine.config import get_config
+from engine.ohlcv_ingest import (
+    append_new_rows,
+    existing_dates as _existing_dates,
+    flatten_columns,
+)
 from engine.tickers import (
     load_registry,
     merge as _merge_registry,
@@ -203,25 +208,6 @@ def _crypto_symbols() -> list[str]:
     return sorted(symbols)
 
 
-def _existing_dates(path: Path) -> set[str]:
-    if not path.exists():
-        return set()
-    dates: set[str] = set()
-    with path.open() as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            d = row.get("date")
-            if d:
-                dates.add(d)
-    return dates
-
-
 def _fetch_symbol(symbol: str, start: date, end: date) -> pd.DataFrame | None:
     """Fetch OHLCV for a single symbol. Returns None on failure."""
     try:
@@ -238,66 +224,18 @@ def _fetch_symbol(symbol: str, start: date, end: date) -> pd.DataFrame | None:
         return None
     if df is None or df.empty:
         return None
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
-    return df
-
-
-def _safe_float(v) -> float | None:
-    """Coerce a DataFrame cell to float, defending against accidental Series values."""
-    if v is None:
-        return None
-    if isinstance(v, pd.Series):
-        if v.empty:
-            return None
-        v = v.iloc[0]
-    if pd.isna(v):
-        return None
-    return float(v)
-
-
-def _safe_int(v) -> int | None:
-    if v is None:
-        return None
-    if isinstance(v, pd.Series):
-        if v.empty:
-            return None
-        v = v.iloc[0]
-    if pd.isna(v):
-        return None
-    return int(v)
+    return flatten_columns(df)
 
 
 def _write_rows(symbol: str, df: pd.DataFrame) -> int:
-    """Append new daily rows to data/market/ohlcv/{SYMBOL}.jsonl."""
+    """Append new daily rows to data/market/ohlcv/{SYMBOL}.jsonl.
+
+    Thin wrapper over engine.ohlcv_ingest.append_new_rows — resolves the
+    config-backed store path, then delegates the normalize/merge/idempotent-append
+    logic to the tested engine module.
+    """
     path = get_config().ohlcv_dir / f"{symbol}.jsonl"
-    existing = _existing_dates(path)
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    rows_to_append: list[tuple[str, str]] = []
-    for ts, row in df.iterrows():
-        d = ts.date().isoformat() if hasattr(ts, "date") else str(ts)
-        if d in existing:
-            continue
-        record = {
-            "date": d,
-            "open": _safe_float(row.get("Open")),
-            "high": _safe_float(row.get("High")),
-            "low": _safe_float(row.get("Low")),
-            "close": _safe_float(row.get("Close")),
-            "adj_close": _safe_float(row.get("Adj Close")),
-            "volume": _safe_int(row.get("Volume")),
-        }
-        if record["close"] is None:
-            continue
-        rows_to_append.append((d, json.dumps(record)))
-
-    if rows_to_append:
-        rows_to_append.sort(key=lambda pair: pair[0])
-        with path.open("a") as f:
-            for _, line in rows_to_append:
-                f.write(line + "\n")
-    return len(rows_to_append)
+    return append_new_rows(path, df)
 
 
 def main() -> int:
