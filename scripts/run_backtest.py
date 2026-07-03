@@ -19,7 +19,7 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from engine.backtest import run_backtest
+from engine.backtest import GROSS_OF_COSTS_WARNING, run_backtest
 from engine.market_data import MarketDataFetcher
 from engine.survivorship import survivorship_warning
 from engine.types import StrategySpec
@@ -161,8 +161,8 @@ def _parse_args() -> argparse.Namespace:
         "--to",
         dest="end",
         metavar="END_DATE",
-        default="2026-04-14",
-        help="End date (YYYY-MM-DD). Default: 2026-04-14.",
+        default=date.today().isoformat(),
+        help="End date (YYYY-MM-DD). Default: today.",
     )
     parser.add_argument(
         "--output",
@@ -183,6 +183,8 @@ def main() -> None:
 
     start = date.fromisoformat(args.start)
     end = date.fromisoformat(args.end)
+
+    print(f"[WARN] {GROSS_OF_COSTS_WARNING}", file=sys.stderr)
 
     fetcher = MarketDataFetcher(cache_dir=_CACHE_DIR)
 

@@ -40,17 +40,25 @@ def _count_strategy_specs() -> int:
 def _count_active_portfolios() -> int:
     if not _PORTFOLIOS_DIR.exists():
         return 0
-    return sum(1 for d in _PORTFOLIOS_DIR.iterdir() if d.is_dir() and (d / "portfolio.json").exists())
+    return sum(
+        1
+        for d in _PORTFOLIOS_DIR.iterdir()
+        if d.is_dir() and (d / "portfolio.json").exists()
+    )
 
 
 def _count_backtested_combos() -> int:
     if not _FACTOR_RESEARCH.exists():
         return 0
     import json
+
     try:
         data = json.loads(_FACTOR_RESEARCH.read_text())
-        if isinstance(data, list):
-            return len(data)
+        # New shape: {"generated_at", "git_sha", "args", "results": [...]}.
+        # Legacy shape: a bare list of result rows.
+        rows = data.get("results", []) if isinstance(data, dict) else data
+        if isinstance(rows, list):
+            return len(rows)
     except Exception:
         pass
     return 0
@@ -77,7 +85,9 @@ with col1:
 
 with col2:
     portfolios = _count_active_portfolios()
-    st.metric("Active Portfolios", portfolios, help="Portfolios with portfolio.json on disk")
+    st.metric(
+        "Active Portfolios", portfolios, help="Portfolios with portfolio.json on disk"
+    )
 
 with col3:
     combos = _count_backtested_combos()

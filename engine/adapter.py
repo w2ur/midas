@@ -110,7 +110,21 @@ def build_bt_strategy(spec: StrategySpec, price_data: pd.DataFrame) -> bt.Strate
 
 @register_selector("random")
 def _selector_random(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
-    return [bt.algos.SelectRandomly(n=spec.rules.max_positions)]
+    """Reproducible random selection.
+
+    bt.algos.SelectRandomly reads numpy's global RNG, so factor-research runs
+    were not reproducible run-to-run. Seed deterministically from
+    (strategy id, window start) via the same SelectRandomlySeeded the coin-flip
+    baselines already use.
+    """
+    from engine.selectors.random_seeded import SelectRandomlySeeded, make_seed
+
+    if len(price_data.index) > 0:
+        start_iso = price_data.index.min().date().isoformat()
+    else:
+        start_iso = "1970-01-01"
+    seed = make_seed(spec.id, start_iso)
+    return [SelectRandomlySeeded(n=spec.rules.max_positions, seed=seed)]
 
 
 @register_selector("golden-cross")

@@ -16,6 +16,19 @@ import pandas as pd
 from engine.adapter import build_bt_strategy
 from engine.types import StrategySpec
 
+# bt backtests run GROSS of costs. The paper broker's per-asset-class fee model
+# (engine.fees.fee_for) is keyed on the ticker to pick the asset class, but
+# bt's ``commissions(quantity, price)`` hook does not pass the ticker — so a
+# faithful mapping of fee_for into bt requires a non-trivial signature
+# adaptation (a per-ticker commission wrapper bound at Backtest construction).
+# That full wiring is DEFERRED; until then every bt result is gross of fees and
+# callers surface this warning. See METHODOLOGY.md (Costs).
+GROSS_OF_COSTS_WARNING = (
+    "GROSS_OF_COSTS: backtest returns do not model brokerage fees. The paper "
+    "broker applies a per-asset-class fee model on live paper fills, but bt "
+    "backtests here are gross of costs — read returns accordingly."
+)
+
 
 # ---------------------------------------------------------------------------
 # Key normalisation helpers
@@ -49,17 +62,18 @@ def _normalise_spec_dict(spec_dict: dict) -> dict:
 # BacktestResult
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class BacktestResult:
     """All outputs from a single backtest run."""
 
     strategy_id: str
     strategy_name: str
-    total_return: float          # e.g. 0.15 for 15 %
-    cagr: float                  # Compound annual growth rate
-    sharpe: float                # Daily Sharpe ratio
-    max_drawdown: float          # e.g. -0.12 for -12 %
-    daily_values: pd.Series      # Daily portfolio values (dates as index)
+    total_return: float  # e.g. 0.15 for 15 %
+    cagr: float  # Compound annual growth rate
+    sharpe: float  # Daily Sharpe ratio
+    max_drawdown: float  # e.g. -0.12 for -12 %
+    daily_values: pd.Series  # Daily portfolio values (dates as index)
     transactions: pd.DataFrame | None  # Trade log from bt (may be None)
 
     def to_snapshots(self) -> list[dict]:
@@ -78,6 +92,7 @@ class BacktestResult:
 # ---------------------------------------------------------------------------
 # Core runner
 # ---------------------------------------------------------------------------
+
 
 def run_backtest(
     spec_dict: dict,
@@ -142,6 +157,7 @@ def run_backtest(
 # ---------------------------------------------------------------------------
 # Batch runner
 # ---------------------------------------------------------------------------
+
 
 def run_batch(
     spec_dicts: list[dict],

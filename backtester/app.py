@@ -105,7 +105,11 @@ def _build_response(
         coin_flip_curve=coin_flip,
     )
 
+    from engine.backtest import GROSS_OF_COSTS_WARNING
+
     warnings = list(deltas.warnings)
+    # bt backtests are gross of brokerage fees (full fee-model wiring deferred).
+    warnings.append(GROSS_OF_COSTS_WARNING)
     # Survivorship-bias guard: a signal run over a survivorship-prone index
     # universe whose start predates the constituents refresh is trading today's
     # membership over history — flag it (see engine.survivorship).

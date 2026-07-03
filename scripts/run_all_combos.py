@@ -12,15 +12,16 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
+import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 # Add project root to sys.path so engine imports work when run directly.
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from engine.backtest import run_backtest
+from engine.backtest import GROSS_OF_COSTS_WARNING, run_backtest
 from engine.market_data import MarketDataFetcher
 from engine.survivorship import survivorship_warning
 from engine.universes import resolve_universe as _resolve_universe
@@ -57,6 +58,22 @@ _DEFAULT_UNIVERSES = ["dow30", "etf-broad"]
 
 # Universe resolution is delegated to the single engine registry via the
 # `_resolve_universe` import alias above (engine.universes.resolve_universe).
+
+
+def _git_sha() -> str | None:
+    """Return the current git HEAD SHA, or None outside a git checkout."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=_PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        sha = result.stdout.strip()
+        return sha or None
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -208,8 +225,8 @@ def _parse_args() -> argparse.Namespace:
         "--to",
         dest="end",
         metavar="END_DATE",
-        default="2026-04-14",
-        help="End date (YYYY-MM-DD). Default: 2026-04-14.",
+        default=date.today().isoformat(),
+        help="End date (YYYY-MM-DD). Default: today.",
     )
     parser.add_argument(
         "--output",
@@ -243,6 +260,7 @@ def main() -> None:
     )
     print(f"Period: {start} → {end}\n")
 
+    print(f"[WARN] {GROSS_OF_COSTS_WARNING}", file=sys.stderr)
     for universe_id in universes:
         warning = survivorship_warning(universe_id, start)
         if warning is not None:
@@ -304,8 +322,26 @@ def main() -> None:
         else Path(args.output)
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Stamp provenance so a results file is reproducible: when it was generated,
+    # the exact commit, and the arguments that produced it. `results` stays a
+    # top-level key so consumers can read both the metadata and the rows.
+    payload = {
+        "generated_at": datetime.now(timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z"),
+        "git_sha": _git_sha(),
+        "args": {
+            "universes": universes,
+            "selectors": selectors,
+            "managers": managers,
+            "from": start.isoformat(),
+            "to": end.isoformat(),
+        },
+        "warnings": [GROSS_OF_COSTS_WARNING],
+        "results": results,
+    }
     with output_path.open("w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(payload, f, indent=2)
     print(f"Results saved to: {output_path}")
     print(f"Total: {len(results)}/{total_combos} combinations succeeded.")
 
