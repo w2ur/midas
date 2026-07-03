@@ -219,11 +219,19 @@ def _manager_equal_weight(
     return [bt.algos.WeighEqually()]
 
 
+# NOTE: the five managers below (grid-conservative, trailing-stop, scaled-exit,
+# time-boxed, rebalance-monthly) are ALIASES for equal-weight — their distinct
+# position-management behavior is NOT yet implemented. They are kept registered
+# (rather than raising) only because committed strategy specs and the backtester
+# API still reference them; removing them requires rewriting those specs. The
+# default factor-research grid no longer advertises them (see run_all_combos
+# _DEFAULT_MANAGERS), and the README axis list marks them as aspirational.
+# Making them raise instead of silently equal-weighting is DEFERRED.
 @register_manager("grid-conservative")
 def _manager_grid_conservative(
     spec: StrategySpec, price_data: pd.DataFrame
 ) -> list[bt.Algo]:
-    """Grid scaling handled by dip-entry selector re-triggering."""
+    """ALIAS for equal-weight — grid scaling is not implemented."""
     return [bt.algos.WeighEqually()]
 
 
@@ -239,16 +247,19 @@ def _manager_grid_aggressive(
 def _manager_trailing_stop(
     spec: StrategySpec, price_data: pd.DataFrame
 ) -> list[bt.Algo]:
+    """ALIAS for equal-weight — trailing-stop exits are not implemented."""
     return [bt.algos.WeighEqually()]
 
 
 @register_manager("scaled-exit")
 def _manager_scaled_exit(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+    """ALIAS for equal-weight — scaled exits are not implemented."""
     return [bt.algos.WeighEqually()]
 
 
 @register_manager("time-boxed")
 def _manager_time_boxed(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+    """ALIAS for equal-weight — time-boxed holding is not implemented."""
     return [bt.algos.WeighEqually()]
 
 
@@ -256,6 +267,7 @@ def _manager_time_boxed(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt
 def _manager_rebalance_monthly(
     spec: StrategySpec, price_data: pd.DataFrame
 ) -> list[bt.Algo]:
+    """ALIAS for equal-weight — monthly-only rebalance is not implemented."""
     return [bt.algos.WeighEqually()]
 
 

@@ -43,12 +43,13 @@ _BACKTESTABLE_SELECTORS = [
     "random",
 ]
 
+# Only managers with a DISTINCT implemented behavior. grid-conservative,
+# trailing-stop, and rebalance-monthly are aliases for equal-weight (see
+# engine/adapter.py) — advertising them in the default grid produced identical
+# columns dressed up as different strategies.
 _DEFAULT_MANAGERS = [
     "equal-weight",
-    "grid-conservative",
-    "trailing-stop",
     "volatility-sized",
-    "rebalance-monthly",
 ]
 
 # Default to dow30 (survivorship-stable) rather than sp500: backtesting
