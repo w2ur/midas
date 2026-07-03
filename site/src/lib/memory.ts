@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { marked } from "marked";
 import { MEMORY_DIR } from "./paths";
 import type { AgentId } from "./roster";
+import { sanitizeLlmHtml } from "./sanitize";
 
 function memoryFile(id: AgentId): string {
   return path.join(MEMORY_DIR, `${id}.md`);
@@ -21,5 +22,6 @@ export function loadMemory(id: AgentId): string {
 }
 
 export function renderMemoryHtml(markdown: string): string {
-  return marked.parse(markdown, { async: false }) as string;
+  const raw = marked.parse(markdown, { async: false }) as string;
+  return sanitizeLlmHtml(raw);
 }
