@@ -23,39 +23,13 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 from engine.backtest import run_backtest
 from engine.market_data import MarketDataFetcher
 from engine.survivorship import survivorship_warning
-from engine.universes.index import (
-    get_sp500_tickers,
-    get_dow30_tickers,
-    get_nasdaq100_tickers,
-)
-from engine.universes.assets import (
-    get_crypto_tickers,
-    get_forex_tickers,
-    get_metals_tickers,
-    get_voo_only,
-    get_classic_60_40,
-)
+from engine.universes import resolve_universe as _resolve_universe
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
 _CACHE_DIR = _PROJECT_ROOT / "data" / "cache" / "market"
-
-_ETF_SECTORS = [
-    "XLK",
-    "XLF",
-    "XLE",
-    "XLV",
-    "XLI",
-    "XLC",
-    "XLY",
-    "XLP",
-    "XLU",
-    "XLRE",
-    "XLB",
-]
-_ETF_BROAD = ["VOO", "QQQ", "VEA", "VWO", "GLD", "BND", "TLT", "IWM", "DIA", "HYG"]
 
 # Selectors that work in backtesting (excludes claude-analysis and data-follow)
 _BACKTESTABLE_SELECTORS = [
@@ -81,29 +55,8 @@ _DEFAULT_MANAGERS = [
 # early Midas run ~194% (see engine.survivorship / METHODOLOGY.md).
 _DEFAULT_UNIVERSES = ["dow30", "etf-broad"]
 
-_UNIVERSE_FETCHERS = {
-    "sp500": get_sp500_tickers,
-    "dow30": get_dow30_tickers,
-    "nasdaq100": get_nasdaq100_tickers,
-    "crypto-top20": get_crypto_tickers,
-    "forex-majors": get_forex_tickers,
-    "metals-commodities": get_metals_tickers,
-    "etf-sectors": lambda: _ETF_SECTORS,
-    "etf-broad": lambda: _ETF_BROAD,
-    "single-voo": get_voo_only,
-    "classic-60-40": get_classic_60_40,
-}
-
-
-# ---------------------------------------------------------------------------
-# Universe resolution
-# ---------------------------------------------------------------------------
-
-
-def _resolve_universe(universe_id: str) -> list[str]:
-    if universe_id not in _UNIVERSE_FETCHERS:
-        raise ValueError(f"Unknown universe: {universe_id!r}")
-    return _UNIVERSE_FETCHERS[universe_id]()
+# Universe resolution is delegated to the single engine registry via the
+# `_resolve_universe` import alias above (engine.universes.resolve_universe).
 
 
 # ---------------------------------------------------------------------------

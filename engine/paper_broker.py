@@ -209,6 +209,39 @@ def _reject(order_id: str, reason: str) -> Fill:
     )
 
 
+def _resolve_allowed_tickers(allowed_universe: list[str], agent_id: str) -> set[str]:
+    """Resolve an agent's allowed_universe list to a set of tickers.
+
+    An empty ``allowed_universe`` means "no restriction" (allow-all) and yields
+    an empty set — the callers treat an empty set as allow-everything.
+
+    Fail-open guard: if ``allowed_universe`` is NON-empty but every entry fails
+    to resolve (unknown or unimplemented-placeholder universe), that is a loud
+    config error — raising, not silently returning an empty set. An empty set
+    from a non-empty config would otherwise disable the TICKER_NOT_IN_UNIVERSE
+    rail and let the agent trade anything.
+    """
+    if not allowed_universe:
+        return set()
+
+    allowed_tickers: set[str] = set()
+    for u in allowed_universe:
+        try:
+            allowed_tickers.update(resolve_universe(u))
+        except KeyError:
+            logger.warning(
+                "Unknown/unimplemented universe %s in %s config", u, agent_id
+            )
+
+    if not allowed_tickers:
+        raise ValueError(
+            f"allowed_universe {allowed_universe!r} for {agent_id} resolved to an "
+            f"empty allowlist — refusing to fail open (allow-all). Fix the roster "
+            f"universe id(s) or remove the restriction (allowed_universe: [])."
+        )
+    return allowed_tickers
+
+
 def _read_outbox_lines(
     trade_date: date, outbox_dir: Path | None = None
 ) -> tuple[list[Order], list[str]]:
@@ -454,12 +487,7 @@ def fill_day(
                 already_processed.add(o.order_id)
             continue
 
-        allowed_tickers: set[str] = set()
-        for u in config.allowed_universe:
-            try:
-                allowed_tickers.update(resolve_universe(u))
-            except KeyError:
-                logger.warning("Unknown universe %s in %s config", u, agent_id)
+        allowed_tickers = _resolve_allowed_tickers(config.allowed_universe, agent_id)
 
         filled = 0
         for o in agent_orders:
@@ -560,12 +588,7 @@ def _execute_triggered_order(
             return f
         notional_base = converted
 
-    allowed_tickers: set[str] = set()
-    for u in config.allowed_universe:
-        try:
-            allowed_tickers.update(resolve_universe(u))
-        except KeyError:
-            logger.warning("Unknown universe %s in %s config", u, order.agent_id)
+    allowed_tickers = _resolve_allowed_tickers(config.allowed_universe, order.agent_id)
 
     if allowed_tickers and order.ticker not in allowed_tickers:
         f = _reject(order.order_id, "TICKER_NOT_IN_UNIVERSE")

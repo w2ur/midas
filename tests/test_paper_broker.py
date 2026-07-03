@@ -350,6 +350,32 @@ def test_rejects_when_ticker_outside_universe(broker_env):
     assert fills[0].reason == "TICKER_NOT_IN_UNIVERSE"
 
 
+def test_non_empty_universe_resolving_empty_is_loud_not_fail_open(broker_env):
+    """Regression: a non-empty allowed_universe that resolves to an empty
+    allowlist must be a loud config error, NOT allow-all.
+
+    Before the fix, a placeholder universe resolving to [] left allowed_tickers
+    empty, and the broker treats an empty allowed set as allow-everything —
+    silently disabling the TICKER_NOT_IN_UNIVERSE rail (fail open). The guard
+    now raises instead of letting the off-universe order through.
+    """
+    from engine.paper_broker import fill_day
+
+    _seed_ohlcv(broker_env["ohlcv"], "MSFT", [("2026-04-17", 400.0)])
+    # "dividend-aristocrats" is a declared-but-unimplemented placeholder that
+    # resolves to []; the restriction is non-empty, so this is a config error.
+    _write_config(
+        broker_env["config_dir"],
+        "agent1",
+        allowed_universe=["dividend-aristocrats"],
+    )
+    pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=10_000.0)
+    append_order(TRADE_DATE, _make_order("ord_open", "agent1", "BUY", "MSFT", 1))
+
+    with pytest.raises(ValueError, match="refusing to fail open"):
+        fill_day(TRADE_DATE, pm)
+
+
 # ---------------------------------------------------------------------------
 # 9. Rejects when no price data
 # ---------------------------------------------------------------------------
