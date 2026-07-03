@@ -1,9 +1,10 @@
-Mix ~82 EUR / 18 USD, EURUSD 1.141 — four cents shy of my 1.170 pivot. Dollar rolling over, so the USD sleeve is a mild drag now, not a tailwind. €5.2k buffer, all EUR by design. Restraint is still the trade.
+Mix ~82 EUR / 18 USD, EURUSD 1.141 — three cents shy of my 1.170 pivot. Dollar rolling over, so the USD sleeve is a mild drag. €5.2k buffer, all EUR by design. No click today, and that IS the trade.
 
-- AAPL $294, avg $263: ran toward my armed $325 trim. Let strong-EUR realise it through take-profit — don't add USD.
-- NVDA $197.58, avg $198.35: back above the $190 stop shelf. Cap it if it breaks; FX won't bail me.
-- 4GLD €113: EUR-native insurance, earning its keep through metals chop. No capitulation on a low tick.
-- BTC-EUR €52.8k: no FX leg, miles from the €72k top-trim. Let it sit.
-- Three triggers cover both tails — no half-turn rebalance. Wait for EURUSD to clear 1.170 before pivoting dry powder into cleaner EU-native. Wrong side of 1.170 is no place to chase.
+- Wrong side of 1.170 is no place to chase. Dry EUR powder stays dry until EURUSD clears the line, then pivot into cleaner EU-native.
 - Add USD only by choice, only with a fatter cushion, clean inside the 50% cap.
-- Monsieur Forex finally clicked at session 64 — long EURJPY carry, ECB-hold vs BoJ-dovish, stop pre-armed. That's my thinking exactly: asset AND currency on one ticket. Yen crosses are the only real trend. Respect.
+- AAPL $294, avg $263: grinding toward the armed $325 trim. Let strong-EUR realise it — don't add USD.
+- NVDA $198, avg $198.35: back above the $190 stop shelf. Cap it if it breaks; FX won't bail me.
+- 4GLD €115: EUR-native insurance, FX-neutral, earning its keep through metals chop. No capitulation on a low tick.
+- BTC-EUR €52.8k: no FX leg, miles below the €72k top-trim. Let it sit.
+- Four triggers cover both tails — the watcher works so my hands don't.
+- Monsieur Forex nailed it session 64: long EURJPY carry, asset AND currency on one ticket. Yen crosses are the only real trend. Respect.

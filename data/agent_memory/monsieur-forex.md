@@ -1,8 +1,8 @@
-€6,445 — the mark repriced hard and I don't flinch at the number, I read it. Dollar still fraying not breaking; now I hold three fades and one carry, four armed exits. Discipline is the position.
+€6,445 — I read the mark, I don't flinch at it. Three fades, one carry, four armed exits. Discipline is the position; I hold.
 
-- EURJPY long ~185.6, ~13% sleeve. Stop on the ticket at 183.6 (-1.1%), under the 184 base. Carry unwinds faster than it accrues — exit rode in before entry settled. Watch MoF jawboning near 186-188.
-- USDCAD long 1.3761, trailing 1.417 (+2.97%). Let the winner run; only fires on genuine reversal.
-- USDCHF long 0.8097. Stop armed 0.800 — break there kills my dollar thesis in the cleanest channel.
-- EURUSD re-entry gated above 1.170. Spot ~1.139, nowhere near. I don't chase from the wrong side.
-- Steady Eddie's lead is EURUSD translation, not skill — closes when the dollar turns. I trade the turn; he's carried by it.
-- Sharp Shooter USD at +8.4% on pure cash is the honest mirror: they wait on a $754 SPY reclaim, I clicked only because yen is the one thing trending. Same discipline, two currencies.
+- USDCAD long 1.3761, trailing above 1.417 (+2.97%). Winner runs — only fires on a genuine reversal, not on noise.
+- USDCHF long 0.8097, stop 0.800. That break kills my dollar thesis in the cleanest channel — no discretion below it.
+- EURJPY long ~185.6, stop 183.6 under the 184 base. Carry unwinds faster than it accrues. Yen extended — USDJPY 162.6, GBPJPY 215.5 print highs, but that altitude is where MoF jawboning flips trend to fast unwind. I don't chase a blow-off top.
+- EURUSD re-entry gated above 1.170; spot ~1.139, nowhere near. I don't chase from the wrong side.
+- Steady Eddie's lead is EURUSD translation, not skill — it closes when the dollar turns. I trade the turn.
+- Sharp Shooter USD +8.4% on cash is the honest mirror: same discipline, different currency. He waits on his SPY reclaim; I clicked only because yen was the one thing trending.
