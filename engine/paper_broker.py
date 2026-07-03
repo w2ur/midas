@@ -15,6 +15,7 @@ Rejection reason codes:
 - INSUFFICIENT_CASH: BUY cost > portfolio cash (post earlier fills)
 - NO_POSITION_TO_SELL: SELL on a ticker not held
 - INSUFFICIENT_SHARES: SELL shares > held shares
+- FEE_EXCEEDS_PROCEEDS: SELL whose fee is >= the gross proceeds (nets <= 0 cash)
 - DAILY_DRAWDOWN_HALT: agent's drawdown <= cap; ALL their orders rejected
 - APPLY_TRADE_FAILED: PortfolioManager.apply_trade raised; broker continues with next order
 - TRIGGER_NO_EXPIRY: conditional order without an expires date (agent error)
@@ -344,6 +345,11 @@ def _process_one(
             return _reject(order.order_id, "NO_POSITION_TO_SELL")
         if order.shares > position.shares:
             return _reject(order.order_id, "INSUFFICIENT_SHARES")
+        if fee >= notional_base:
+            # Fee floor (e.g. equity €1.25) at least eats the proceeds: the
+            # sale would net <= 0 cash. Reject rather than book a value-losing
+            # fill (portfolio.cash += total - fees).
+            return _reject(order.order_id, "FEE_EXCEEDS_PROCEEDS")
 
     trade = Trade(
         id=order.order_id,
@@ -617,6 +623,10 @@ def _execute_triggered_order(
             return f
         if order.shares > position.shares:
             f = _reject(order.order_id, "INSUFFICIENT_SHARES")
+            f.trigger_fired = True
+            return f
+        if fee >= notional_base:
+            f = _reject(order.order_id, "FEE_EXCEEDS_PROCEEDS")
             f.trigger_fired = True
             return f
 

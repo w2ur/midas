@@ -209,6 +209,46 @@ def test_fills_valid_sell_and_updates_portfolio(broker_env):
     assert p_after.positions[0].shares == 3
 
 
+def test_rejects_sell_when_fee_exceeds_proceeds(broker_env):
+    """A SELL whose fee is >= the gross proceeds must be rejected, not booked.
+
+    The €1.25 equity fee floor exceeds the proceeds of a tiny sale, so the fill
+    would net <= 0 cash (portfolio.cash += total - fees). Reject it.
+    """
+    from engine.paper_broker import fill_day
+    from engine.types import Trade
+
+    _seed_ohlcv(broker_env["ohlcv"], "PENNY", [("2026-04-17", 1.0)])
+    _write_config(broker_env["config_dir"], "agent1", allowed_universe=[])
+    pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=100.0)
+
+    # Seed a position to sell.
+    pm.apply_trade(
+        "agent1",
+        Trade(
+            id="seed_penny",
+            timestamp=datetime(2026, 4, 16, 20, 0, 0, tzinfo=timezone.utc),
+            action="BUY",
+            ticker="PENNY",
+            shares=10,
+            price=1.0,
+            total=10.0,
+            fees=0.0,
+            reasoning="seed",
+        ),
+    )
+
+    # Sell 1 share: proceeds = 1.0, equity fee floor = 1.25 >= 1.0 → reject.
+    assert fee_for("PENNY", 1.0) >= 1.0
+    append_order(TRADE_DATE, _make_order("ord_tiny_sell", "agent1", "SELL", "PENNY", 1))
+
+    fills = fill_day(TRADE_DATE, pm)
+    assert fills[0].status == "rejected"
+    assert fills[0].reason == "FEE_EXCEEDS_PROCEEDS"
+    # Position untouched — nothing was booked.
+    assert pm.load("agent1").positions[0].shares == 10
+
+
 # ---------------------------------------------------------------------------
 # 3. Rejects malformed outbox (shares <= 0)
 # ---------------------------------------------------------------------------
