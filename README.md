@@ -87,6 +87,8 @@ Trades never mutate portfolios directly. Instead:
 
 This split implements the **Brain / Hands** principle documented in CLAUDE.md. Real-money execution later is a drop-in broker swap.
 
+**Conditional (trigger) fires** run the same **order-level** rails as market orders, but the watcher path (`execute_triggered_order`) **deliberately skips the two batch-level rails — `MAX_ORDERS_PER_DAY` and `DAILY_DRAWDOWN_HALT`**: a triggered fire is not a same-day authored order, and the drawdown halt is evaluated once per `fill_day` batch, not per fired order. A fire a drawdown would have halted still fills; the agent sees it in its inbox and re-authors next session.
+
 Per-agent safety rails live in `data/agent_config/{agent_id}.json` (committed). Ticker → currency overrides live in `data/ticker_currencies.json` (committed).
 
 ---
