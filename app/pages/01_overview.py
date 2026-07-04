@@ -114,9 +114,11 @@ def _load_factor_research() -> pd.DataFrame | None:
         return None
     try:
         data = json.loads(_FACTOR_RESEARCH.read_text())
-        if not data:
+        # New shape wraps rows under "results"; legacy shape is a bare list.
+        rows = data.get("results", []) if isinstance(data, dict) else data
+        if not rows:
             return None
-        return pd.DataFrame(data)
+        return pd.DataFrame(rows)
     except Exception:
         return None
 
@@ -126,10 +128,16 @@ backtest_df = _load_factor_research()
 if backtest_df is not None and not backtest_df.empty:
     # Format numeric columns as percentages where applicable.
     display_df = backtest_df.copy()
-    pct_cols = [c for c in display_df.columns if "return" in c.lower() or "drawdown" in c.lower()]
+    pct_cols = [
+        c
+        for c in display_df.columns
+        if "return" in c.lower() or "drawdown" in c.lower()
+    ]
     for col in pct_cols:
         if pd.api.types.is_numeric_dtype(display_df[col]):
-            display_df[col] = display_df[col].apply(lambda v: f"{v:.2%}" if pd.notna(v) else "")
+            display_df[col] = display_df[col].apply(
+                lambda v: f"{v:.2%}" if pd.notna(v) else ""
+            )
 
     st.dataframe(display_df, use_container_width=True)
 else:

@@ -12,10 +12,10 @@ Midas uses a composable strategy system where every strategy is defined by four 
 Strategy = Universe × Selector × Manager × Funding + dividend mode
 ```
 
-- **Universe**: what assets to consider (S&P 500, crypto top 20, congressional trades, etc.)
+- **Universe**: what assets to consider (Dow 30, crypto top 20, congressional trades, etc.)
 - **Selector**: when to buy (golden cross, RSI oversold, fear & greed, etc.)
-- **Manager**: how to size and exit (equal weight, grid, trailing stop, etc.)
-- **Funding**: how capital enters (lump sum, DCA monthly, etc.)
+- **Manager**: how to size positions. Distinct implemented behaviors today are **equal-weight**, **inverse-volatility** (`volatility-sized` / `grid-aggressive`), and **fixed-60-40**. The `trailing-stop`, `scaled-exit`, `time-boxed`, `rebalance-monthly`, and `grid-conservative` names are **aspirational aliases that currently collapse to equal-weight** (see `engine/adapter.py`).
+- **Funding**: how capital enters. Only the **lump-sum `initial`** is applied by the backtest engine today; the DCA fields (`monthly_addition` / `weekly_addition`) and `min_hold_days` / `dividends` are parsed but **not yet wired into bt**.
 
 Deterministic strategies are backtested against years of historical data. Analytical strategies run daily as Claude agents with distinct personas and mandates.
 
@@ -54,7 +54,7 @@ Create a JSON file in `data/strategies/`:
 {
   "id": "my-strategy",
   "name": "My Custom Strategy",
-  "universe": "sp500",
+  "universe": "dow30",
   "selector": "golden-cross",
   "manager": "equal-weight",
   "funding": {"initial": 10000, "monthly_addition": 500},
@@ -86,6 +86,8 @@ Trades never mutate portfolios directly. Instead:
 4. Filled orders mutate portfolios via `PortfolioManager.apply_trade`.
 
 This split implements the **Brain / Hands** principle documented in CLAUDE.md. Real-money execution later is a drop-in broker swap.
+
+**Conditional (trigger) fires** run the same **order-level** rails as market orders, but the watcher path (`execute_triggered_order`) **deliberately skips the two batch-level rails — `MAX_ORDERS_PER_DAY` and `DAILY_DRAWDOWN_HALT`**: a triggered fire is not a same-day authored order, and the drawdown halt is evaluated once per `fill_day` batch, not per fired order. A fire a drawdown would have halted still fills; the agent sees it in its inbox and re-authors next session.
 
 Per-agent safety rails live in `data/agent_config/{agent_id}.json` (committed). Ticker → currency overrides live in `data/ticker_currencies.json` (committed).
 

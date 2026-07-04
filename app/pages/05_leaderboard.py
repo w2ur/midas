@@ -44,9 +44,11 @@ def _load_backtest_results() -> pd.DataFrame | None:
         return None
     try:
         data = json.loads(_FACTOR_RESEARCH.read_text())
-        if not data:
+        # New shape wraps rows under "results"; legacy shape is a bare list.
+        rows = data.get("results", []) if isinstance(data, dict) else data
+        if not rows:
             return None
-        return pd.DataFrame(data)
+        return pd.DataFrame(rows)
     except Exception:
         return None
 

@@ -13,6 +13,7 @@ from engine.output_bundle import (
     save_output_bundle,
 )
 from engine.posts import PostPayload
+from engine.token_cost import record_dispatch, reset_session_costs
 
 
 class TestGetDayNumber:
@@ -191,6 +192,56 @@ class TestAssembleOutputBundle:
                 f"non-running agent {aid!r} is missing 'research_note' key"
             )
             assert bundle["agents"][aid]["research_note"] is None
+
+
+class TestSessionCostsBlock:
+    def test_bundle_reads_ledger_totals_by_default(self) -> None:
+        """The session_costs block is populated from the process-level ledger
+        that the persona dispatch path feeds."""
+        reset_session_costs()
+        record_dispatch("satoshi", "a" * 400)  # +100 est tokens
+        record_dispatch("world", "b" * 200)  # +50 est tokens
+        blog = BlogDraft(title="X", body_md="x", slug="x")
+        bundle = assemble_output_bundle(
+            bundle_date=date(2026, 4, 26),
+            market_data={},
+            agent_results={},
+            agent_posts={},
+            portfolio_summaries={},
+            leaderboard=[],
+            blog_draft=blog,
+            oracle_posts=[],
+        )
+        costs = bundle["session_costs"]
+        assert costs["proxy"] == "len/4"
+        assert costs["total_dispatches"] == 2
+        assert costs["total_est_tokens"] == 150
+        assert costs["by_agent"]["satoshi"]["est_tokens"] == 100
+        reset_session_costs()
+
+    def test_bundle_accepts_explicit_session_costs(self) -> None:
+        explicit = {
+            "proxy": "len/4",
+            "total_dispatches": 1,
+            "total_prompt_chars": 40,
+            "total_est_tokens": 10,
+            "by_agent": {
+                "goldfinger": {"dispatches": 1, "prompt_chars": 40, "est_tokens": 10}
+            },
+        }
+        blog = BlogDraft(title="X", body_md="x", slug="x")
+        bundle = assemble_output_bundle(
+            bundle_date=date(2026, 4, 26),
+            market_data={},
+            agent_results={},
+            agent_posts={},
+            portfolio_summaries={},
+            leaderboard=[],
+            blog_draft=blog,
+            oracle_posts=[],
+            session_costs=explicit,
+        )
+        assert bundle["session_costs"] == explicit
 
 
 class TestSaveOutputBundle:

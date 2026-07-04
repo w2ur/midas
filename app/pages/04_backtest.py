@@ -34,9 +34,11 @@ def _load_results() -> pd.DataFrame | None:
         return None
     try:
         data = json.loads(_FACTOR_RESEARCH.read_text())
-        if not data:
+        # New shape wraps rows under "results"; legacy shape is a bare list.
+        rows = data.get("results", []) if isinstance(data, dict) else data
+        if not rows:
             return None
-        return pd.DataFrame(data)
+        return pd.DataFrame(rows)
     except Exception:
         return None
 
@@ -58,19 +60,31 @@ st.subheader("Results table")
 
 sort_col = st.selectbox(
     "Sort by",
-    options=[c for c in ["total_return", "sharpe", "max_drawdown", "num_trades"] if c in df.columns],
+    options=[
+        c
+        for c in ["total_return", "sharpe", "max_drawdown", "num_trades"]
+        if c in df.columns
+    ],
     index=0,
 )
 ascending = st.checkbox("Ascending", value=False)
-sorted_df = df.sort_values(sort_col, ascending=ascending) if sort_col in df.columns else df
+sorted_df = (
+    df.sort_values(sort_col, ascending=ascending) if sort_col in df.columns else df
+)
 
 # Format numeric columns for display.
 display_df = sorted_df.copy()
 for col in ["total_return", "max_drawdown"]:
     if col in display_df.columns and pd.api.types.is_numeric_dtype(display_df[col]):
-        display_df[col] = display_df[col].apply(lambda v: f"{v:.2%}" if pd.notna(v) else "")
-if "sharpe" in display_df.columns and pd.api.types.is_numeric_dtype(display_df["sharpe"]):
-    display_df["sharpe"] = display_df["sharpe"].apply(lambda v: f"{v:.3f}" if pd.notna(v) else "")
+        display_df[col] = display_df[col].apply(
+            lambda v: f"{v:.2%}" if pd.notna(v) else ""
+        )
+if "sharpe" in display_df.columns and pd.api.types.is_numeric_dtype(
+    display_df["sharpe"]
+):
+    display_df["sharpe"] = display_df["sharpe"].apply(
+        lambda v: f"{v:.3f}" if pd.notna(v) else ""
+    )
 
 st.dataframe(display_df, use_container_width=True)
 
@@ -80,7 +94,9 @@ st.divider()
 # Heatmap: selectors × managers → total_return
 # ---------------------------------------------------------------------------
 
-has_heatmap_cols = all(c in df.columns for c in ["universe", "selector", "manager", "total_return"])
+has_heatmap_cols = all(
+    c in df.columns for c in ["universe", "selector", "manager", "total_return"]
+)
 
 if has_heatmap_cols:
     st.subheader("Heatmap: total return by selector × manager")
@@ -106,8 +122,7 @@ if has_heatmap_cols:
 
         # Format annotations as percentages.
         text_values = [
-            [f"{v:.1%}" if pd.notna(v) else "" for v in row]
-            for row in pivot.values
+            [f"{v:.1%}" if pd.notna(v) else "" for v in row] for row in pivot.values
         ]
 
         fig = go.Figure(

@@ -51,15 +51,37 @@ def get_forex_tickers() -> list[str]:
 def get_metals_tickers() -> list[str]:
     """Return metals and commodities tickers (futures + ETFs) in yfinance format."""
     return [
-        "GC=F",   # Gold futures
-        "SI=F",   # Silver futures
-        "PL=F",   # Platinum futures
-        "CL=F",   # Crude Oil WTI futures
-        "HG=F",   # Copper futures
-        "GLD",    # SPDR Gold ETF
-        "SLV",    # iShares Silver ETF
-        "USO",    # United States Oil Fund ETF
+        "GC=F",  # Gold futures
+        "SI=F",  # Silver futures
+        "PL=F",  # Platinum futures
+        "CL=F",  # Crude Oil WTI futures
+        "HG=F",  # Copper futures
+        "GLD",  # SPDR Gold ETF
+        "SLV",  # iShares Silver ETF
+        "USO",  # United States Oil Fund ETF
     ]
+
+
+def get_etf_sectors() -> list[str]:
+    """Return the 11 SPDR sector ETFs (US equity sector rotation universe)."""
+    return [
+        "XLK",
+        "XLF",
+        "XLE",
+        "XLV",
+        "XLI",
+        "XLC",
+        "XLY",
+        "XLP",
+        "XLU",
+        "XLRE",
+        "XLB",
+    ]
+
+
+def get_etf_broad() -> list[str]:
+    """Return a broad cross-asset ETF universe (equity, bond, gold, intl)."""
+    return ["VOO", "QQQ", "VEA", "VWO", "GLD", "BND", "TLT", "IWM", "DIA", "HYG"]
 
 
 def get_voo_only() -> list[str]:
@@ -84,11 +106,11 @@ def get_bearish_etf_tickers() -> list[str]:
     execution should use `get_bearish_etf_ucits_tickers()` instead.
     """
     return [
-        "SH",    # ProShares Short S&P 500 (-1x)
-        "PSQ",   # ProShares Short QQQ (-1x)
-        "DOG",   # ProShares Short Dow 30 (-1x)
-        "RWM",   # ProShares Short Russell 2000 (-1x)
-        "SDS",   # ProShares UltraShort S&P 500 (-2x)
+        "SH",  # ProShares Short S&P 500 (-1x)
+        "PSQ",  # ProShares Short QQQ (-1x)
+        "DOG",  # ProShares Short Dow 30 (-1x)
+        "RWM",  # ProShares Short Russell 2000 (-1x)
+        "SDS",  # ProShares UltraShort S&P 500 (-2x)
         "SPXS",  # Direxion Daily S&P 500 Bear 3x
         "SPXU",  # ProShares UltraPro Short S&P 500 (-3x)
         "SQQQ",  # ProShares UltraPro Short QQQ (-3x)
@@ -129,13 +151,13 @@ def get_commodities_eur_tickers() -> list[str]:
     yfinance on 2026-04-17 (see fetch_ohlcv smoke runs).
     """
     return [
-        "PHAU.L",   # WisdomTree Physical Gold (USD, LSE) — widely traded
-        "PHAG.L",   # WisdomTree Physical Silver (USD, LSE)
-        "SGLN.L",   # iShares Physical Gold ETC (USD, LSE)
+        "PHAU.L",  # WisdomTree Physical Gold (USD, LSE) — widely traded
+        "PHAG.L",  # WisdomTree Physical Silver (USD, LSE)
+        "SGLN.L",  # iShares Physical Gold ETC (USD, LSE)
         "SGLN.MI",  # iShares Physical Gold ETC (EUR, Milan listing)
         "4GLD.DE",  # Xetra-Gold (EUR, Xetra)
         "PPFB.DE",  # WisdomTree Physical Gold EUR (Xetra)
-        "CRUD.L",   # WisdomTree Brent Crude Oil ETC (USD, LSE)
+        "CRUD.L",  # WisdomTree Brent Crude Oil ETC (USD, LSE)
     ]
 
 
@@ -157,13 +179,13 @@ def get_bearish_etf_ucits_tickers() -> list[str]:
         "3USL.L",  # WisdomTree S&P 500 3x Daily Leveraged (LSE, USD) — replaces UPRO
         "QQQS.L",  # WisdomTree Nasdaq 100 3x Daily Short (LSE, USD) — replaces SQQQ
         "QQQ3.L",  # WisdomTree Nasdaq 100 3x Daily Leveraged (LSE, USD) — replaces TQQQ
-        "DSP5.PA", # Amundi S&P 500 Daily (-1x) Inverse (Euronext, EUR) — replaces SH
+        "DSP5.PA",  # Amundi S&P 500 Daily (-1x) Inverse (Euronext, EUR) — replaces SH
         # --- European-index exposure ---
         "3UKS.L",  # WisdomTree FTSE 100 3x Daily Short (LSE)
         "3EUS.L",  # WisdomTree Euro Stoxx 50 3x Daily Short (LSE)
         "BX4.PA",  # Amundi CAC 40 Daily (-2x) Inverse (Euronext Paris)
         "CL2.PA",  # Amundi CAC 40 Daily 2x Leveraged (Euronext Paris)
-        "XDEB.DE", # Xtrackers ShortDAX Daily x1 Swap (Xetra)
-        "DXSN.DE", # Xtrackers ShortDAX Daily x2 Swap (Xetra)
-        "IBEXA.MC",# Amundi IBEX 35 Daily 2x (Madrid) — the "IBKR example" ticker
+        "XDEB.DE",  # Xtrackers ShortDAX Daily x1 Swap (Xetra)
+        "DXSN.DE",  # Xtrackers ShortDAX Daily x2 Swap (Xetra)
+        "IBEXA.MC",  # Amundi IBEX 35 Daily 2x (Madrid) — the "IBKR example" ticker
     ]

@@ -14,63 +14,29 @@ import pandas as pd  # noqa: E402
 
 from engine.backtest import BacktestResult, run_backtest  # noqa: E402
 from engine.market_data import MarketDataFetcher  # noqa: E402
-from engine.universes.assets import (  # noqa: E402
-    get_bearish_etf_tickers,
-    get_bearish_etf_ucits_tickers,
-    get_classic_60_40,
-    get_commodities_eur_tickers,
-    get_crypto_eur_tickers,
-    get_crypto_tickers,
-    get_forex_tickers,
-    get_metals_tickers,
-    get_voo_only,
-)
-from engine.universes.index import (  # noqa: E402
-    get_cac40_tickers,
-    get_dax_tickers,
-    get_dow30_tickers,
-    get_ftse100_tickers,
-    get_nasdaq100_tickers,
-    get_sp500_tickers,
-    get_stoxx600_tickers,
-)
+from engine.universes import resolve_universe as _engine_resolve_universe  # noqa: E402
 
 from backtester.schemas import SignalConfig  # noqa: E402
-
-_UNIVERSE_RESOLVERS: dict[str, object] = {
-    "sp500": get_sp500_tickers,
-    "dow30": get_dow30_tickers,
-    "nasdaq100": get_nasdaq100_tickers,
-    "crypto-top20": get_crypto_tickers,
-    "forex-majors": get_forex_tickers,
-    "metals-commodities": get_metals_tickers,
-    "single-voo": get_voo_only,
-    "classic-60-40": get_classic_60_40,
-    "bearish-etfs": get_bearish_etf_tickers,
-    "bearish-etfs-ucits": get_bearish_etf_ucits_tickers,
-    "crypto-top20-eur": get_crypto_eur_tickers,
-    "commodities-eur": get_commodities_eur_tickers,
-    "cac40": get_cac40_tickers,
-    "dax": get_dax_tickers,
-    "ftse100": get_ftse100_tickers,
-    "stoxx-600": get_stoxx600_tickers,
-}
 
 _CACHE_DIR = _PROJECT_ROOT / "data" / "cache"
 
 
 class UnknownUniverseError(ValueError):
-    """Raised when a requested universe id is not in the resolver table."""
+    """Raised when a requested universe id is not resolvable (unknown or an
+    unimplemented placeholder)."""
 
 
 def resolve_universe(universe_id: str) -> list[str]:
     """Return the list of tickers for the given universe id.
 
-    Raises UnknownUniverseError if the id is not registered.
+    Delegates to the single engine registry (engine.universes.resolve_universe)
+    and translates its KeyError into UnknownUniverseError so the API layer can
+    map it to an HTTP 400 (see backtester.app).
     """
-    if universe_id not in _UNIVERSE_RESOLVERS:
-        raise UnknownUniverseError(f"Unknown universe: {universe_id!r}")
-    return list(_UNIVERSE_RESOLVERS[universe_id]())
+    try:
+        return _engine_resolve_universe(universe_id)
+    except KeyError as exc:
+        raise UnknownUniverseError(str(exc)) from exc
 
 
 def build_spec_dict(config: SignalConfig, capital: float) -> dict:

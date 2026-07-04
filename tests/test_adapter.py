@@ -34,7 +34,9 @@ class TestAdapter:
             "manager": manager,
             "funding": FundingConfig(initial=10000),
             "dividends": "cash",
-            "rules": StrategyRules(max_positions=5, max_position_pct=30, min_hold_days=3),
+            "rules": StrategyRules(
+                max_positions=5, max_position_pct=30, min_hold_days=3
+            ),
         }
         defaults.update(overrides)
         return StrategySpec(**defaults)
@@ -67,18 +69,28 @@ class TestAdapter:
 
     def test_unknown_selector_raises(self, sample_prices):
         spec = StrategySpec(
-            id="bad", name="Bad", universe="sp500",
-            selector="nonexistent", manager="equal-weight",
-            funding=FundingConfig(), dividends="cash", rules=StrategyRules(),
+            id="bad",
+            name="Bad",
+            universe="sp500",
+            selector="nonexistent",
+            manager="equal-weight",
+            funding=FundingConfig(),
+            dividends="cash",
+            rules=StrategyRules(),
         )
         with pytest.raises(ValueError, match="No selector registered"):
             build_bt_strategy(spec, sample_prices)
 
     def test_unknown_manager_raises(self, sample_prices):
         spec = StrategySpec(
-            id="bad", name="Bad", universe="sp500",
-            selector="random", manager="nonexistent",
-            funding=FundingConfig(), dividends="cash", rules=StrategyRules(),
+            id="bad",
+            name="Bad",
+            universe="sp500",
+            selector="random",
+            manager="nonexistent",
+            funding=FundingConfig(),
+            dividends="cash",
+            rules=StrategyRules(),
         )
         with pytest.raises(ValueError, match="No manager registered"):
             build_bt_strategy(spec, sample_prices)
@@ -93,54 +105,85 @@ class TestAdapter:
     def test_build_and_run_backtest(self, sample_prices):
         spec = self._make_spec("random", "equal-weight")
         strategy = build_bt_strategy(spec, sample_prices)
-        test = bt.Backtest(strategy, sample_prices, initial_capital=spec.funding.initial)
+        test = bt.Backtest(
+            strategy, sample_prices, initial_capital=spec.funding.initial
+        )
         result = bt.run(test)
         assert result.stats is not None
 
+    def test_random_selector_is_reproducible(self, sample_prices):
+        """Seeded random selection: two runs of the same spec+window match.
+
+        Regression for the switch from bt.algos.SelectRandomly (numpy global
+        RNG, non-reproducible) to SelectRandomlySeeded.
+        """
+
+        def _run():
+            spec = self._make_spec("random", "equal-weight", id="repro-check")
+            strategy = build_bt_strategy(spec, sample_prices)
+            test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
+            return float(bt.run(test).stats.loc["total_return", "repro-check"])
+
+        assert _run() == _run()
+
     def test_golden_cross_selector_runs(self, sample_prices):
-        spec = self._make_spec("golden-cross", "equal-weight", rules=StrategyRules(max_positions=3))
+        spec = self._make_spec(
+            "golden-cross", "equal-weight", rules=StrategyRules(max_positions=3)
+        )
         strategy = build_bt_strategy(spec, sample_prices)
         test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
         result = bt.run(test)
         assert result.stats is not None
 
     def test_rsi_selector_runs(self, sample_prices):
-        spec = self._make_spec("rsi-oversold", "equal-weight", rules=StrategyRules(max_positions=3))
+        spec = self._make_spec(
+            "rsi-oversold", "equal-weight", rules=StrategyRules(max_positions=3)
+        )
         strategy = build_bt_strategy(spec, sample_prices)
         test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
         result = bt.run(test)
         assert result.stats is not None
 
     def test_dip_entry_selector_runs(self, sample_prices):
-        spec = self._make_spec("dip-entry", "equal-weight", rules=StrategyRules(max_positions=3))
+        spec = self._make_spec(
+            "dip-entry", "equal-weight", rules=StrategyRules(max_positions=3)
+        )
         strategy = build_bt_strategy(spec, sample_prices)
         test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
         result = bt.run(test)
         assert result.stats is not None
 
     def test_fear_greed_selector_runs(self, sample_prices):
-        spec = self._make_spec("fear-greed", "equal-weight", rules=StrategyRules(max_positions=3))
+        spec = self._make_spec(
+            "fear-greed", "equal-weight", rules=StrategyRules(max_positions=3)
+        )
         strategy = build_bt_strategy(spec, sample_prices)
         test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
         result = bt.run(test)
         assert result.stats is not None
 
     def test_data_follow_selector_runs(self, sample_prices):
-        spec = self._make_spec("data-follow", "equal-weight", rules=StrategyRules(max_positions=3))
+        spec = self._make_spec(
+            "data-follow", "equal-weight", rules=StrategyRules(max_positions=3)
+        )
         strategy = build_bt_strategy(spec, sample_prices)
         test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
         result = bt.run(test)
         assert result.stats is not None
 
     def test_earnings_beat_selector_runs(self, sample_prices):
-        spec = self._make_spec("earnings-beat", "equal-weight", rules=StrategyRules(max_positions=3))
+        spec = self._make_spec(
+            "earnings-beat", "equal-weight", rules=StrategyRules(max_positions=3)
+        )
         strategy = build_bt_strategy(spec, sample_prices)
         test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
         result = bt.run(test)
         assert result.stats is not None
 
     def test_sector_cycle_selector_runs(self, sample_prices):
-        spec = self._make_spec("sector-cycle", "equal-weight", rules=StrategyRules(max_positions=3))
+        spec = self._make_spec(
+            "sector-cycle", "equal-weight", rules=StrategyRules(max_positions=3)
+        )
         strategy = build_bt_strategy(spec, sample_prices)
         test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
         result = bt.run(test)
@@ -218,7 +261,8 @@ class TestAdapter:
         prices = pd.DataFrame(data, index=dates)
 
         spec = self._make_spec(
-            "buy-and-hold", "fixed-60-40",
+            "buy-and-hold",
+            "fixed-60-40",
             rules=StrategyRules(max_positions=2, max_position_pct=100, min_hold_days=1),
         )
         strategy = build_bt_strategy(spec, prices)
@@ -229,7 +273,9 @@ class TestAdapter:
     # ----- Cross-combination test -----
 
     def test_golden_cross_with_volatility_sizing(self, sample_prices):
-        spec = self._make_spec("golden-cross", "volatility-sized", rules=StrategyRules(max_positions=3))
+        spec = self._make_spec(
+            "golden-cross", "volatility-sized", rules=StrategyRules(max_positions=3)
+        )
         strategy = build_bt_strategy(spec, sample_prices)
         test = bt.Backtest(strategy, sample_prices, initial_capital=10000)
         result = bt.run(test)
@@ -239,6 +285,7 @@ class TestAdapter:
 
     def test_all_valid_selectors_registered(self):
         from engine.types import VALID_SELECTORS
+
         # claude-analysis is handled by a separate agent, not bt
         bt_selectors = VALID_SELECTORS - {"claude-analysis"}
         for sel in bt_selectors:
@@ -246,6 +293,7 @@ class TestAdapter:
 
     def test_all_valid_managers_registered(self):
         from engine.types import VALID_MANAGERS
+
         for mgr in VALID_MANAGERS:
             assert mgr in MANAGER_REGISTRY, f"Manager {mgr!r} not registered"
 
@@ -259,11 +307,14 @@ class TestAdapter:
     def test_limit_weights_uses_spec_value(self, sample_prices):
         """Verify the LimitWeights algo uses the spec's max_position_pct."""
         spec = self._make_spec(
-            "random", "equal-weight",
+            "random",
+            "equal-weight",
             rules=StrategyRules(max_positions=5, max_position_pct=25),
         )
         strategy = build_bt_strategy(spec, sample_prices)
         # Find the LimitWeights algo in the pipeline
-        limit_algos = [a for a in strategy.stack.algos if isinstance(a, bt.algos.LimitWeights)]
+        limit_algos = [
+            a for a in strategy.stack.algos if isinstance(a, bt.algos.LimitWeights)
+        ]
         assert len(limit_algos) == 1
         assert limit_algos[0].limit == 0.25

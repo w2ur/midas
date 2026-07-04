@@ -14,6 +14,7 @@ from engine.blog import BlogDraft
 from engine.config import get_config
 from engine.posts import PostPayload
 from engine.research_note import parse_research_note
+from engine.token_cost import session_cost_totals
 
 
 def __getattr__(name: str):
@@ -51,18 +52,23 @@ def assemble_output_bundle(
     leaderboard: list[dict],
     blog_draft: BlogDraft,
     oracle_posts: list[PostPayload],
+    session_costs: dict | None = None,
 ) -> dict:
     """Assemble the complete daily output bundle.
 
     Layout:
         { "date", "market_snapshot", "agents": {id: {commentary, trades, portfolio, posts}},
-          "narrator": {"blog_draft", "posts"}, "leaderboard" }
+          "narrator": {"blog_draft", "posts"}, "leaderboard", "session_costs" }
 
     The agents map always contains the full 10-agent ROSTER, regardless of which
     agents ran this session. Non-running agents get commentary=None, empty
     trades/posts, and their carry-forward portfolio from `portfolio_summaries`.
     This keeps the bundle shape invariant across cadences (weekday/weekend/holiday)
     so the site can always render every dossier.
+
+    `session_costs` is the session-level prompt-size totals block (the len/4 token
+    proxy accumulated by the persona dispatch path). When None, the process-level
+    ledger totals are read via `engine.token_cost.session_cost_totals`.
     """
     agents = {}
     for aid in get_config().trading_roster:
@@ -84,6 +90,8 @@ def assemble_output_bundle(
                 "portfolio": portfolio_summaries.get(aid, {}),
                 "posts": [p.to_dict() for p in agent_posts.get(aid, [])],
             }
+    if session_costs is None:
+        session_costs = session_cost_totals()
     return {
         "date": bundle_date.isoformat(),
         "market_snapshot": market_data,
@@ -93,6 +101,7 @@ def assemble_output_bundle(
             "posts": [p.to_dict() for p in oracle_posts],
         },
         "leaderboard": leaderboard,
+        "session_costs": session_costs,
     }
 
 

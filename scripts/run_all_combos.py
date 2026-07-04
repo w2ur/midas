@@ -12,27 +12,25 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
+import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 # Add project root to sys.path so engine imports work when run directly.
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from engine.backtest import run_backtest
+from engine.backtest import GROSS_OF_COSTS_WARNING, run_backtest
 from engine.market_data import MarketDataFetcher
-from engine.universes.index import get_sp500_tickers, get_dow30_tickers, get_nasdaq100_tickers
-from engine.universes.assets import get_crypto_tickers, get_forex_tickers, get_metals_tickers, get_voo_only, get_classic_60_40
+from engine.survivorship import survivorship_warning
+from engine.universes import resolve_universe as _resolve_universe
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
 _CACHE_DIR = _PROJECT_ROOT / "data" / "cache" / "market"
-
-_ETF_SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLI", "XLC", "XLY", "XLP", "XLU", "XLRE", "XLB"]
-_ETF_BROAD = ["VOO", "QQQ", "VEA", "VWO", "GLD", "BND", "TLT", "IWM", "DIA", "HYG"]
 
 # Selectors that work in backtesting (excludes claude-analysis and data-follow)
 _BACKTESTABLE_SELECTORS = [
@@ -45,43 +43,44 @@ _BACKTESTABLE_SELECTORS = [
     "random",
 ]
 
+# Only managers with a DISTINCT implemented behavior. grid-conservative,
+# trailing-stop, and rebalance-monthly are aliases for equal-weight (see
+# engine/adapter.py) — advertising them in the default grid produced identical
+# columns dressed up as different strategies.
 _DEFAULT_MANAGERS = [
     "equal-weight",
-    "grid-conservative",
-    "trailing-stop",
     "volatility-sized",
-    "rebalance-monthly",
 ]
 
-_DEFAULT_UNIVERSES = ["sp500", "etf-broad"]
+# Default to dow30 (survivorship-stable) rather than sp500: backtesting
+# against sp500's *current* membership over a historical window inflated an
+# early Midas run ~194% (see engine.survivorship / METHODOLOGY.md).
+_DEFAULT_UNIVERSES = ["dow30", "etf-broad"]
 
-_UNIVERSE_FETCHERS = {
-    "sp500": get_sp500_tickers,
-    "dow30": get_dow30_tickers,
-    "nasdaq100": get_nasdaq100_tickers,
-    "crypto-top20": get_crypto_tickers,
-    "forex-majors": get_forex_tickers,
-    "metals-commodities": get_metals_tickers,
-    "etf-sectors": lambda: _ETF_SECTORS,
-    "etf-broad": lambda: _ETF_BROAD,
-    "single-voo": get_voo_only,
-    "classic-60-40": get_classic_60_40,
-}
+# Universe resolution is delegated to the single engine registry via the
+# `_resolve_universe` import alias above (engine.universes.resolve_universe).
 
 
-# ---------------------------------------------------------------------------
-# Universe resolution
-# ---------------------------------------------------------------------------
-
-def _resolve_universe(universe_id: str) -> list[str]:
-    if universe_id not in _UNIVERSE_FETCHERS:
-        raise ValueError(f"Unknown universe: {universe_id!r}")
-    return _UNIVERSE_FETCHERS[universe_id]()
+def _git_sha() -> str | None:
+    """Return the current git HEAD SHA, or None outside a git checkout."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=_PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        sha = result.stdout.strip()
+        return sha or None
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------------------------
 # Combo runner
 # ---------------------------------------------------------------------------
+
 
 def _run_combo(
     universe_id: str,
@@ -128,6 +127,7 @@ def _run_combo(
 # ---------------------------------------------------------------------------
 # Heatmap printer
 # ---------------------------------------------------------------------------
+
 
 def _print_heatmap(
     results: list[dict],
@@ -192,6 +192,7 @@ def _print_full_heatmap(
 # Argument parsing
 # ---------------------------------------------------------------------------
 
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate and backtest all selector × manager combinations.",
@@ -225,8 +226,8 @@ def _parse_args() -> argparse.Namespace:
         "--to",
         dest="end",
         metavar="END_DATE",
-        default="2026-04-14",
-        help="End date (YYYY-MM-DD). Default: 2026-04-14.",
+        default=date.today().isoformat(),
+        help="End date (YYYY-MM-DD). Default: today.",
     )
     parser.add_argument(
         "--output",
@@ -241,6 +242,7 @@ def _parse_args() -> argparse.Namespace:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     args = _parse_args()
@@ -258,6 +260,12 @@ def main() -> None:
         f"({len(universes)} universes × {len(selectors)} selectors × {len(managers)} managers)"
     )
     print(f"Period: {start} → {end}\n")
+
+    print(f"[WARN] {GROSS_OF_COSTS_WARNING}", file=sys.stderr)
+    for universe_id in universes:
+        warning = survivorship_warning(universe_id, start)
+        if warning is not None:
+            print(f"[WARN] {warning}", file=sys.stderr)
 
     fetcher = MarketDataFetcher(cache_dir=_CACHE_DIR)
 
@@ -279,7 +287,9 @@ def main() -> None:
     results: list[dict] = []
     combo_num = 0
 
-    for universe_id, selector, manager in itertools.product(universes, selectors, managers):
+    for universe_id, selector, manager in itertools.product(
+        universes, selectors, managers
+    ):
         combo_num += 1
         if universe_id not in universe_prices:
             print(f"  [{combo_num:>4}/{total_combos}] SKIP (no data for {universe_id})")
@@ -307,10 +317,32 @@ def main() -> None:
         _print_full_heatmap(results, selectors, managers, universes)
 
     # Save output.
-    output_path = _PROJECT_ROOT / args.output if not Path(args.output).is_absolute() else Path(args.output)
+    output_path = (
+        _PROJECT_ROOT / args.output
+        if not Path(args.output).is_absolute()
+        else Path(args.output)
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Stamp provenance so a results file is reproducible: when it was generated,
+    # the exact commit, and the arguments that produced it. `results` stays a
+    # top-level key so consumers can read both the metadata and the rows.
+    payload = {
+        "generated_at": datetime.now(timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z"),
+        "git_sha": _git_sha(),
+        "args": {
+            "universes": universes,
+            "selectors": selectors,
+            "managers": managers,
+            "from": start.isoformat(),
+            "to": end.isoformat(),
+        },
+        "warnings": [GROSS_OF_COSTS_WARNING],
+        "results": results,
+    }
     with output_path.open("w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(payload, f, indent=2)
     print(f"Results saved to: {output_path}")
     print(f"Total: {len(results)}/{total_combos} combinations succeeded.")
 

@@ -19,29 +19,11 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from engine.backtest import run_backtest
+from engine.backtest import GROSS_OF_COSTS_WARNING, run_backtest
 from engine.market_data import MarketDataFetcher
+from engine.survivorship import survivorship_warning
 from engine.types import StrategySpec
-from engine.universes.index import (
-    get_sp500_tickers,
-    get_dow30_tickers,
-    get_nasdaq100_tickers,
-    get_cac40_tickers,
-    get_dax_tickers,
-    get_ftse100_tickers,
-    get_stoxx600_tickers,
-)
-from engine.universes.assets import (
-    get_crypto_tickers,
-    get_crypto_eur_tickers,
-    get_forex_tickers,
-    get_metals_tickers,
-    get_voo_only,
-    get_classic_60_40,
-    get_bearish_etf_tickers,
-    get_bearish_etf_ucits_tickers,
-    get_commodities_eur_tickers,
-)
+from engine.universes import resolve_universe as _resolve_universe
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -50,55 +32,17 @@ from engine.universes.assets import (
 _STRATEGIES_DIR = _PROJECT_ROOT / "data" / "strategies"
 _CACHE_DIR = _PROJECT_ROOT / "data" / "cache" / "market"
 
-_ETF_SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLI", "XLC", "XLY", "XLP", "XLU", "XLRE", "XLB"]
-_ETF_BROAD = ["VOO", "QQQ", "VEA", "VWO", "GLD", "BND", "TLT", "IWM", "DIA", "HYG"]
-
 _COIN_FLIP_ID = "coin-flip-baseline"
 
 
-# ---------------------------------------------------------------------------
-# Universe resolution
-# ---------------------------------------------------------------------------
-
-_UNIVERSE_FETCHERS: dict[str, list[str]] = {}
-
-
-def _resolve_universe(universe_id: str) -> list[str]:
-    """Map a universe ID to a list of tickers."""
-    static_universes = {
-        "etf-sectors": _ETF_SECTORS,
-        "etf-broad": _ETF_BROAD,
-    }
-    if universe_id in static_universes:
-        return static_universes[universe_id]
-
-    dynamic_fetchers = {
-        "sp500": get_sp500_tickers,
-        "dow30": get_dow30_tickers,
-        "nasdaq100": get_nasdaq100_tickers,
-        "crypto-top20": get_crypto_tickers,
-        "forex-majors": get_forex_tickers,
-        "metals-commodities": get_metals_tickers,
-        "single-voo": get_voo_only,
-        "classic-60-40": get_classic_60_40,
-        "bearish-etfs": get_bearish_etf_tickers,
-        "bearish-etfs-ucits": get_bearish_etf_ucits_tickers,
-        "crypto-top20-eur": get_crypto_eur_tickers,
-        "commodities-eur": get_commodities_eur_tickers,
-        "cac40": get_cac40_tickers,
-        "dax": get_dax_tickers,
-        "ftse100": get_ftse100_tickers,
-        "stoxx-600": get_stoxx600_tickers,
-    }
-    if universe_id in dynamic_fetchers:
-        return dynamic_fetchers[universe_id]()
-
-    raise ValueError(f"Unknown universe: {universe_id!r}")
+# Universe resolution is delegated to the single engine registry via the
+# `_resolve_universe` import alias above (engine.universes.resolve_universe).
 
 
 # ---------------------------------------------------------------------------
 # Single backtest
 # ---------------------------------------------------------------------------
+
 
 def _run_single(
     spec_path: Path,
@@ -112,6 +56,9 @@ def _run_single(
     """
     try:
         spec_dict = json.loads(spec_path.read_text())
+        warning = survivorship_warning(spec_dict["universe"], start)
+        if warning is not None:
+            print(f"  [WARN] {warning}", file=sys.stderr)
         tickers = _resolve_universe(spec_dict["universe"])
         price_data = fetcher.fetch_prices(tickers, start, end)
 
@@ -124,6 +71,7 @@ def _run_single(
             "cagr": round(result.cagr, 6),
             "sharpe": round(result.sharpe, 6),
             "max_drawdown": round(result.max_drawdown, 6),
+            "warnings": [warning] if warning is not None else [],
         }
     except Exception as exc:
         strategy_id = spec_path.stem
@@ -134,6 +82,7 @@ def _run_single(
 # ---------------------------------------------------------------------------
 # Leaderboard printer
 # ---------------------------------------------------------------------------
+
 
 def _print_leaderboard(results: list[dict]) -> None:
     """Print a leaderboard table sorted by total return descending."""
@@ -181,6 +130,7 @@ def _print_leaderboard(results: list[dict]) -> None:
 # Argument parsing
 # ---------------------------------------------------------------------------
 
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run Midas strategy backtests.",
@@ -211,8 +161,8 @@ def _parse_args() -> argparse.Namespace:
         "--to",
         dest="end",
         metavar="END_DATE",
-        default="2026-04-14",
-        help="End date (YYYY-MM-DD). Default: 2026-04-14.",
+        default=date.today().isoformat(),
+        help="End date (YYYY-MM-DD). Default: today.",
     )
     parser.add_argument(
         "--output",
@@ -227,11 +177,14 @@ def _parse_args() -> argparse.Namespace:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     args = _parse_args()
 
     start = date.fromisoformat(args.start)
     end = date.fromisoformat(args.end)
+
+    print(f"[WARN] {GROSS_OF_COSTS_WARNING}", file=sys.stderr)
 
     fetcher = MarketDataFetcher(cache_dir=_CACHE_DIR)
 

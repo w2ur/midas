@@ -110,7 +110,21 @@ def build_bt_strategy(spec: StrategySpec, price_data: pd.DataFrame) -> bt.Strate
 
 @register_selector("random")
 def _selector_random(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
-    return [bt.algos.SelectRandomly(n=spec.rules.max_positions)]
+    """Reproducible random selection.
+
+    bt.algos.SelectRandomly reads numpy's global RNG, so factor-research runs
+    were not reproducible run-to-run. Seed deterministically from
+    (strategy id, window start) via the same SelectRandomlySeeded the coin-flip
+    baselines already use.
+    """
+    from engine.selectors.random_seeded import SelectRandomlySeeded, make_seed
+
+    if len(price_data.index) > 0:
+        start_iso = price_data.index.min().date().isoformat()
+    else:
+        start_iso = "1970-01-01"
+    seed = make_seed(spec.id, start_iso)
+    return [SelectRandomlySeeded(n=spec.rules.max_positions, seed=seed)]
 
 
 @register_selector("golden-cross")
@@ -205,11 +219,19 @@ def _manager_equal_weight(
     return [bt.algos.WeighEqually()]
 
 
+# NOTE: the five managers below (grid-conservative, trailing-stop, scaled-exit,
+# time-boxed, rebalance-monthly) are ALIASES for equal-weight — their distinct
+# position-management behavior is NOT yet implemented. They are kept registered
+# (rather than raising) only because committed strategy specs and the backtester
+# API still reference them; removing them requires rewriting those specs. The
+# default factor-research grid no longer advertises them (see run_all_combos
+# _DEFAULT_MANAGERS), and the README axis list marks them as aspirational.
+# Making them raise instead of silently equal-weighting is DEFERRED.
 @register_manager("grid-conservative")
 def _manager_grid_conservative(
     spec: StrategySpec, price_data: pd.DataFrame
 ) -> list[bt.Algo]:
-    """Grid scaling handled by dip-entry selector re-triggering."""
+    """ALIAS for equal-weight — grid scaling is not implemented."""
     return [bt.algos.WeighEqually()]
 
 
@@ -225,16 +247,19 @@ def _manager_grid_aggressive(
 def _manager_trailing_stop(
     spec: StrategySpec, price_data: pd.DataFrame
 ) -> list[bt.Algo]:
+    """ALIAS for equal-weight — trailing-stop exits are not implemented."""
     return [bt.algos.WeighEqually()]
 
 
 @register_manager("scaled-exit")
 def _manager_scaled_exit(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+    """ALIAS for equal-weight — scaled exits are not implemented."""
     return [bt.algos.WeighEqually()]
 
 
 @register_manager("time-boxed")
 def _manager_time_boxed(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt.Algo]:
+    """ALIAS for equal-weight — time-boxed holding is not implemented."""
     return [bt.algos.WeighEqually()]
 
 
@@ -242,6 +267,7 @@ def _manager_time_boxed(spec: StrategySpec, price_data: pd.DataFrame) -> list[bt
 def _manager_rebalance_monthly(
     spec: StrategySpec, price_data: pd.DataFrame
 ) -> list[bt.Algo]:
+    """ALIAS for equal-weight — monthly-only rebalance is not implemented."""
     return [bt.algos.WeighEqually()]
 
 

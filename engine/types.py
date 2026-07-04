@@ -154,11 +154,17 @@ class DailySnapshot:
 
 @dataclass
 class FundingConfig:
-    """Capital funding configuration for a strategy."""
+    """Capital funding configuration for a strategy.
+
+    NOTE: only ``initial`` is consumed by the bt backtest engine. The DCA
+    fields ``monthly_addition`` / ``weekly_addition`` are parsed and preserved
+    for forward compatibility but are NOT yet wired into bt — periodic
+    contributions do not affect backtest results today.
+    """
 
     initial: float = 10_000.0
-    monthly_addition: float = 0.0
-    weekly_addition: float = 0.0
+    monthly_addition: float = 0.0  # UNUSED by the backtest engine (parsed only)
+    weekly_addition: float = 0.0  # UNUSED by the backtest engine (parsed only)
 
 
 # ---------------------------------------------------------------------------
@@ -168,11 +174,16 @@ class FundingConfig:
 
 @dataclass
 class StrategyRules:
-    """Risk and position management rules for a strategy."""
+    """Risk and position management rules for a strategy.
+
+    NOTE: ``max_positions`` and ``max_position_pct`` are enforced in the bt
+    pipeline (SelectN / LimitWeights). ``min_hold_days`` is parsed and exposed
+    in the backtester API form but is NOT enforced by the bt engine today.
+    """
 
     max_positions: int = 10
     max_position_pct: float = 20.0
-    min_hold_days: int = 3
+    min_hold_days: int = 3  # UNUSED by the backtest engine (parsed only)
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +259,9 @@ class StrategySpec:
     selector: str
     manager: str
     funding: FundingConfig
-    dividends: str  # "reinvest" | "cash"
+    # "reinvest" | "cash" — parsed and preserved, but the bt backtest engine
+    # does not currently model dividend handling. UNUSED downstream today.
+    dividends: str
     rules: StrategyRules
 
     @classmethod

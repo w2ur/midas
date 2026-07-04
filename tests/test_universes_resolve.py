@@ -31,3 +31,22 @@ class TestResolveUniverse:
         # Every VALID_UNIVERSES entry must be resolvable (even if empty placeholder).
         for name in VALID_UNIVERSES:
             assert name in _RESOLVERS, f"Missing resolver for {name}"
+
+    def test_etf_broad_now_resolves_to_real_tickers(self) -> None:
+        # Previously a lambda: [] placeholder; the static list now lives in engine.
+        tickers = resolve_universe("etf-broad")
+        assert "VOO" in tickers and "BND" in tickers
+        assert len(tickers) >= 5
+
+    def test_etf_sectors_now_resolves_to_real_tickers(self) -> None:
+        tickers = resolve_universe("etf-sectors")
+        assert "XLK" in tickers
+        assert len(tickers) == 11
+
+    def test_unimplemented_placeholder_raises_not_empty(self) -> None:
+        # A declared-but-unimplemented universe must RAISE, never return [] —
+        # an empty allowlist would fail open at the broker's universe rail.
+        with pytest.raises(KeyError, match="empty ticker list"):
+            resolve_universe("dividend-aristocrats")
+        with pytest.raises(KeyError, match="empty ticker list"):
+            resolve_universe("13f-whales")

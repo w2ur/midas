@@ -3,6 +3,7 @@ import * as path from "node:path";
 import matter from "gray-matter";
 import { marked } from "marked";
 import { BLOG_DIR } from "./paths";
+import { sanitizeLlmHtml } from "./sanitize";
 
 export type BlogPost = {
   date: string;
@@ -52,7 +53,8 @@ export function loadBlogLatest(): BlogPost {
 }
 
 export function renderBlogHtml(markdown: string): string {
-  return marked.parse(markdown, { async: false }) as string;
+  const raw = marked.parse(markdown, { async: false }) as string;
+  return sanitizeLlmHtml(raw);
 }
 
 export function excerpt(body: string, maxChars = 220): string {
