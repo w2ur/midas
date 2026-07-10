@@ -37,8 +37,19 @@ gcloud auth login
 gcloud projects create midas-backtester-<unique-suffix>
 gcloud config set project midas-backtester-<unique-suffix>
 # Link a billing account in the GCP console first; required even on free tier.
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com containerregistry.googleapis.com
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com containerregistry.googleapis.com secretmanager.googleapis.com
 gcloud config set run/region europe-west1
+```
+
+One-time secret setup — the pipeline injects `BACKTESTER_SECRET` from Secret
+Manager, so the secret must exist before the first deploy:
+
+```bash
+printf '%s' "$(openssl rand -hex 32)" | gcloud secrets create backtester-secret --data-file=-
+# Grant the Cloud Run runtime service account access if not already granted:
+gcloud secrets add-iam-policy-binding backtester-secret \
+  --member="serviceAccount:<PROJECT_NUMBER>-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
 ```
 
 Build and deploy (single command, run from the repo root):
@@ -52,31 +63,19 @@ The pipeline (defined in `/cloudbuild.yaml`):
 1. Builds `backtester/Dockerfile` with the repo root as build context (so
    `COPY engine`, `COPY data/market`, etc. resolve).
 2. Pushes the image to `gcr.io/$PROJECT_ID/midas-backtester`.
-3. Deploys it to Cloud Run with sensible defaults (1 GiB / 1 vCPU / 5 min
-   timeout / scale-to-zero).
+3. Deploys it to Cloud Run secured by default: `--no-allow-unauthenticated`
+   (no anonymous access) plus `BACKTESTER_SECRET` injected from Secret
+   Manager (`backtester-secret`), alongside sensible resource defaults
+   (1 GiB / 1 vCPU / 5 min timeout / scale-to-zero). `/healthz` stays public
+   for liveness pings — the auth dependency exempts it explicitly.
 
 Cloud Build prints the deployed service URL near the end of the output —
 something like `https://midas-backtester-xxxxxx-ew.a.run.app`. Save it; the
 site needs it on Vercel as `PUBLIC_BACKTESTER_URL`.
 
-## Secured deploy
-
-Production deploys must be locked down with `--no-allow-unauthenticated` and
-a shared secret, not the open `--allow-unauthenticated` used above for a
-first bring-up:
-
-```bash
-gcloud run deploy midas-backtester \
-  --source . \
-  --region europe-west1 \
-  --no-allow-unauthenticated \
-  --min-instances=0 --max-instances=3 \
-  --set-env-vars "BACKTESTER_SECRET=$(openssl rand -hex 32)"
-```
-
 The service answers only requests carrying `X-Backtester-Secret:
 $BACKTESTER_SECRET`; the `william.revah.paris` Netlify proxy is the sole
-holder of that secret. `/healthz` stays public for liveness pings.
+holder of that secret.
 
 ## Smoke-test the deployed service
 
@@ -97,7 +96,9 @@ viral traffic (good problem) or a runaway loop (bug to fix).
 
 Each time you want to push new code: `gcloud builds submit --config cloudbuild.yaml`
 from the repo root. The image is built fresh and Cloud Run rolls the new
-revision in. Old revisions stay around until you prune them.
+secured revision in — same `--no-allow-unauthenticated` posture, same
+`BACKTESTER_SECRET` pulled fresh from Secret Manager, unchanged across
+redeploys. Old revisions stay around until you prune them.
 
 ## Future: automated deploys
 
