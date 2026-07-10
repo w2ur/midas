@@ -1,8 +1,9 @@
 # Midas Backtester Service
 
 FastAPI service that runs strategy backtests on demand. Wraps the existing
-`engine/` codebase. Deployed to Google Cloud Run; consumed by the
-`/simulate` page on `midas.revah.paris`.
+`engine/` codebase. Deployed to Google Cloud Run as a standalone service,
+consumed by the backtester tool on `william.revah.paris` via a Netlify
+proxy.
 
 ## Local dev
 
@@ -63,17 +64,20 @@ The pipeline (defined in `/cloudbuild.yaml`):
 1. Builds `backtester/Dockerfile` with the repo root as build context (so
    `COPY engine`, `COPY data/market`, etc. resolve).
 2. Pushes the image to `gcr.io/$PROJECT_ID/midas-backtester`.
-3. Deploys it to Cloud Run secured by default: `--no-allow-unauthenticated`
-   (no anonymous access) plus `BACKTESTER_SECRET` injected from Secret
-   Manager (`backtester-secret`), alongside sensible resource defaults
-   (1 GiB / 1 vCPU / 5 min timeout / scale-to-zero). `/healthz` stays public
-   for liveness pings — the auth dependency exempts it explicitly.
+3. Deploys it to Cloud Run reachable over IAM (`--allow-unauthenticated`) —
+   required so the Netlify proxy, which is not a GCP principal, can reach it
+   without a long-lived service-account key — with `BACKTESTER_SECRET`
+   injected from Secret Manager (`backtester-secret`) as the real lock:
+   `/run` and `/catalog` require a matching `X-Backtester-Secret` header,
+   alongside sensible resource defaults (1 GiB / 1 vCPU / 5 min timeout /
+   scale-to-zero, `--max-instances=3` capping abuse). `/healthz` needs no
+   secret and is reachable directly.
 
 Cloud Build prints the deployed service URL near the end of the output —
 something like `https://midas-backtester-xxxxxx-ew.a.run.app`. Save it; the
 site needs it on Vercel as `PUBLIC_BACKTESTER_URL`.
 
-The service answers only requests carrying `X-Backtester-Secret:
+`/run` and `/catalog` answer only requests carrying `X-Backtester-Secret:
 $BACKTESTER_SECRET`; the `william.revah.paris` Netlify proxy is the sole
 holder of that secret.
 
@@ -83,7 +87,8 @@ holder of that secret.
 curl -sf $SERVICE_URL/healthz
 ```
 
-Should return `{"status":"ok"}`.
+Should return `{"status":"ok"}`. No secret header needed — the service is
+IAM-reachable and `/healthz` is unauthenticated at the app layer too.
 
 ## Free-tier monitoring
 
@@ -96,9 +101,9 @@ viral traffic (good problem) or a runaway loop (bug to fix).
 
 Each time you want to push new code: `gcloud builds submit --config cloudbuild.yaml`
 from the repo root. The image is built fresh and Cloud Run rolls the new
-secured revision in — same `--no-allow-unauthenticated` posture, same
-`BACKTESTER_SECRET` pulled fresh from Secret Manager, unchanged across
-redeploys. Old revisions stay around until you prune them.
+revision in — same IAM-open + app-secret posture, same `BACKTESTER_SECRET`
+pulled fresh from Secret Manager, unchanged across redeploys. Old revisions
+stay around until you prune them.
 
 ## Future: automated deploys
 

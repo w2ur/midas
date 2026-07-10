@@ -70,7 +70,7 @@ streamlit run app/main.py
 - `backtester/` — FastAPI service deployed to Google Cloud Run; wraps `engine.backtest.run_backtest`. Being spun out as its own standalone product; **no longer consumed by the narrative site** (the `/simulate` page was removed on 2026-06-28). Local dev: `uvicorn backtester.app:app --reload --port 8080`. Deploy: `backtester/README.md`. The `PUBLIC_BACKTESTER_URL` Vercel env var is now unused by the site.
 
 ## Infrastructure
-- **Cloud Run exception (backtester).** The backtester service runs on Google Cloud Run — a deliberate exception to this project's zero-cost hosting default. Rationale: it is a heavyweight Python container (`bt` + pandas + `engine/`) that edge runtimes (Cloudflare/Vercel/Netlify) cannot host; Cloud Run scales to zero (`min-instances=0`, `max-instances=3` = $0 idle, capped abuse) with 2–5s cold start. Secured with `--no-allow-unauthenticated` + a shared secret (SP3). Hosting is revisited at SP4 during the repo split.
+- **Cloud Run exception (backtester).** The backtester service runs on Google Cloud Run — a deliberate exception to this project's zero-cost hosting default. Rationale: it is a heavyweight Python container (`bt` + pandas + `engine/`) that edge runtimes (Cloudflare/Vercel/Netlify) cannot host; Cloud Run scales to zero (`min-instances=0`, `max-instances=3` = $0 idle, capped abuse) with 2–5s cold start. Secured with an app-layer shared-secret gate (`BACKTESTER_SECRET`, checked by the FastAPI app) plus `--max-instances=3`; IAM stays open (`--allow-unauthenticated`) so the Netlify proxy can reach it without GCP credentials (SP3). Hosting is revisited at SP4 during the repo split.
 
 ## Architecture Principle — Brain / Hands
 

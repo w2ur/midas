@@ -2,9 +2,12 @@
 
 Active only when BACKTESTER_SECRET is set in the environment. When unset
 (local dev, existing test runs), the gate is a no-op. Production deployments
-MUST set it (see backtester/README.md) — that is what closes D10's
-`--allow-unauthenticated` hole: the Netlify proxy is the sole holder of the
-secret, so Cloud Run only answers requests that came through it.
+MUST set it (see backtester/README.md) — this is D10's API-token option:
+Cloud Run itself stays IAM-open (`--allow-unauthenticated`, required so the
+Netlify proxy — not a GCP principal — can reach it without a long-lived
+service-account key), and this app-layer gate is the real lock. Only
+requests carrying the correct `X-Backtester-Secret` header succeed; the
+Netlify proxy is the sole holder of that secret.
 """
 
 from __future__ import annotations
