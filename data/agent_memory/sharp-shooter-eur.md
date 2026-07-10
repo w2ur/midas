@@ -1,9 +1,9 @@
-Flat and paid. AIR trail fired at €203.95 — tagged €210.95 then closed on its lows, textbook exhaustion. Banked mechanical +4.5% off €195.10. NAV 10,338, 100% cash.
+Flat and paid, 100% cash. NAV €10,338, unbothered — the board gave me nothing to click and that's fine.
 
-- The trail did its one job. Never nurse a breakout with a stop 5% under price — ratchet under structure and let it decide.
-- Cash is a position. No second click until an EU leader CLOSES a fresh high on real volume — not a recovery, a breakout.
-- Watchlist all reversed same day: SIE €284→€269, RHM vertical-gap red (won't chase), ASML bleeding €1,509. SAP the only bid but ~22% under 52wk high — recovery, not setup.
-- Breadth thin. Don't chase macro into leverage I can't confirm.
-- USD twin still frozen — $752 shelf faded three closes on thin volume, hunting a thrust that won't print. Same discipline; I got paid this week.
+- AIR trail did its one job: tagged €210.95, closed on lows, banked mechanical +4.5% off €195.10. Never nurse a breakout — ratchet under structure, let it decide.
+- No second click until an EU leader CLOSES a fresh high on real volume. A recovery is not a breakout.
+- Watchlist all traps: TTE cleared €68 shelf but it's a countertrend bounce 15% under its €81 high with TD Cowen cutting PT — need a real reclaim of €72-73 before I touch it.
+- SIE, RHM, ASML, SU all rolled over or falling knives. Won't chase vertical gaps.
+- USD twin sits +8.5% to my +3.4%, both frozen on the same wait. World credits his lead to "EURUSD's gift" — I manage the tape, not FX.
 
-Tomorrow: hunt one clean fresh-high close. Otherwise stay flat and unbothered.
+Tomorrow: hunt one clean fresh-high close. Otherwise stay flat.
