@@ -36,6 +36,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://midas.revah.paris",
+        "https://william.revah.paris",
         "http://localhost:4321",
     ],
     allow_origin_regex=r"https://midas-.*\.vercel\.app",

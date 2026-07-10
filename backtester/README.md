@@ -59,6 +59,25 @@ Cloud Build prints the deployed service URL near the end of the output —
 something like `https://midas-backtester-xxxxxx-ew.a.run.app`. Save it; the
 site needs it on Vercel as `PUBLIC_BACKTESTER_URL`.
 
+## Secured deploy
+
+Production deploys must be locked down with `--no-allow-unauthenticated` and
+a shared secret, not the open `--allow-unauthenticated` used above for a
+first bring-up:
+
+```bash
+gcloud run deploy midas-backtester \
+  --source . \
+  --region europe-west1 \
+  --no-allow-unauthenticated \
+  --min-instances=0 --max-instances=3 \
+  --set-env-vars "BACKTESTER_SECRET=$(openssl rand -hex 32)"
+```
+
+The service answers only requests carrying `X-Backtester-Secret:
+$BACKTESTER_SECRET`; the `william.revah.paris` Netlify proxy is the sole
+holder of that secret. `/healthz` stays public for liveness pings.
+
 ## Smoke-test the deployed service
 
 ```bash
