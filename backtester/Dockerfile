@@ -16,6 +16,7 @@ COPY data/market /app/data/market
 COPY data/baselines /app/data/baselines
 COPY data/portfolios /app/data/portfolios
 COPY data/strategies /app/data/strategies
+COPY data/universes /app/data/universes
 
 ENV PORT=8080
 EXPOSE 8080
