@@ -10,7 +10,7 @@ proxy.
 ```bash
 pip install -r requirements.txt
 uvicorn backtester.app:app --reload --port 8080
-curl http://localhost:8080/healthz
+curl http://localhost:8080/health
 ```
 
 Run tests:
@@ -70,7 +70,7 @@ The pipeline (defined in `/cloudbuild.yaml`):
    injected from Secret Manager (`backtester-secret`) as the real lock:
    `/run` and `/catalog` require a matching `X-Backtester-Secret` header,
    alongside sensible resource defaults (1 GiB / 1 vCPU / 5 min timeout /
-   scale-to-zero, `--max-instances=3` capping abuse). `/healthz` needs no
+   scale-to-zero, `--max-instances=3` capping abuse). `/health` needs no
    secret and is reachable directly.
 
 Cloud Build prints the deployed service URL near the end of the output —
@@ -84,11 +84,13 @@ holder of that secret.
 ## Smoke-test the deployed service
 
 ```bash
-curl -sf $SERVICE_URL/healthz
+curl -sf $SERVICE_URL/health
 ```
 
-Should return `{"status":"ok"}`. No secret header needed — the service is
-IAM-reachable and `/healthz` is unauthenticated at the app layer too.
+Note: the endpoint is `/health`, not `/healthz` — Cloud Run's edge reserves
+the `/healthz` path and never forwards it to the container. Should return
+`{"status":"ok"}`. No secret header needed — the service is IAM-reachable
+and `/health` is unauthenticated at the app layer too.
 
 ## Free-tier monitoring
 

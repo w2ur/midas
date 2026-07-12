@@ -47,8 +47,8 @@ app.add_middleware(
 _run_request_adapter: TypeAdapter[RunRequest] = TypeAdapter(RunRequest)
 
 
-@app.get("/healthz")
-def healthz() -> dict[str, str]:
+@app.get("/health")
+def health() -> dict[str, str]:
     return {"status": "ok"}
 
 

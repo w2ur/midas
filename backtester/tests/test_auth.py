@@ -22,6 +22,6 @@ def test_catalog_accepts_correct_secret(client, monkeypatch):
     assert r.status_code == 200
 
 
-def test_healthz_is_always_exempt(client, monkeypatch):
+def test_health_is_always_exempt(client, monkeypatch):
     monkeypatch.setenv("BACKTESTER_SECRET", "s3cret")
-    assert client.get("/healthz").status_code == 200
+    assert client.get("/health").status_code == 200
