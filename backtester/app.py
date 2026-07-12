@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, TypeAdapter
 
 from backtester.allocation import AllocationError, run_allocation_backtest
+from backtester.auth import require_secret
+from backtester.catalog import build_catalog
 from backtester.comparisons import compute_comparison_deltas
 from backtester.mirror import MirrorError, run_mirror_backtest
 from backtester.runner import (
@@ -34,6 +36,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://midas.revah.paris",
+        "https://william.revah.paris",
         "http://localhost:4321",
     ],
     allow_origin_regex=r"https://midas-.*\.vercel\.app",
@@ -47,6 +50,11 @@ _run_request_adapter: TypeAdapter[RunRequest] = TypeAdapter(RunRequest)
 @app.get("/healthz")
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/catalog", dependencies=[Depends(require_secret)])
+def catalog() -> dict:
+    return build_catalog(datetime.now(timezone.utc).date())
 
 
 def _config_hash(request: BaseModel) -> str:
@@ -152,7 +160,7 @@ def _build_response(
     )
 
 
-@app.post("/run", response_model=RunResponse)
+@app.post("/run", response_model=RunResponse, dependencies=[Depends(require_secret)])
 def run(
     request: SignalRunRequest | AllocationRunRequest | MirrorRunRequest,
 ) -> RunResponse:

@@ -39,6 +39,7 @@ steps:
       - --region=${_REGION}
       - --platform=managed
       - --allow-unauthenticated
+      - --update-secrets=BACKTESTER_SECRET=backtester-secret:latest
       - --memory=1Gi
       - --cpu=1
       - --timeout=300
