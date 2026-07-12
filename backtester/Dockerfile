@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY engine /app/engine
 COPY backtester /app/backtester
+COPY roster.yaml /app/roster.yaml
 COPY data/market /app/data/market
 COPY data/baselines /app/data/baselines
 COPY data/portfolios /app/data/portfolios
