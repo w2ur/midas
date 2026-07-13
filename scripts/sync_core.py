@@ -38,6 +38,7 @@ LIVE_ONLY_TESTS = {
     "test_refresh_leaderboard.py",
     "test_fetch_market_data.py",
     "test_manager_session.py",
+    "test_sync_core.py",  # imports scripts.sync_core, the dev-only tool not in core
 }
 
 GENERIC_DATA_FILES = ["data/ticker_currencies.json", "data/tickers.json"]

@@ -94,3 +94,11 @@ def test_main_check_exits_nonzero_on_drift(tmp_path):
     sync_core.apply(tmp_path)
     (tmp_path / "engine" / "config.py").write_text("# tampered\n", encoding="utf-8")
     assert sync_core.main(["check", "--core", str(tmp_path)]) == 1
+
+
+def test_manifest_excludes_its_own_test():
+    # tests/test_sync_core.py imports scripts.sync_core, which is a dev/CI-only
+    # tool never shipped to core; its test must not enter the manifest either.
+    apply_m, code_m = set(sync_core.apply_manifest()), set(sync_core.code_manifest())
+    assert REL("tests/test_sync_core.py") not in apply_m
+    assert REL("tests/test_sync_core.py") not in code_m
