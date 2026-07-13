@@ -79,7 +79,7 @@ class TestSP500Tickers:
             called.append(True)
             raise AssertionError("network must not be called when data file exists")
 
-        monkeypatch.setattr(ix_mod, "_fetch_wikipedia_tables", boom)
+        monkeypatch.setattr(ix_mod, "_fetch_html_tables", boom)
 
         assert ix_mod.get_sp500_tickers() == ["AAPL"]
         assert not called
@@ -161,29 +161,32 @@ class TestRefreshFunctions:
         def fake_fetch(url):
             return [pd.DataFrame({"Symbol": fresh})]
 
-        monkeypatch.setattr(ix_mod, "_fetch_wikipedia_tables", fake_fetch)
+        monkeypatch.setattr(ix_mod, "_fetch_html_tables", fake_fetch)
 
         result = ix_mod.refresh_sp500()
         assert result == sorted(fresh)
         assert (fake_dir / "sp500.json").exists()
         assert json.loads((fake_dir / "sp500.json").read_text()) == sorted(fresh)
 
-    def test_refresh_nasdaq100_handles_dataframe_or_chain(self, midas_data_root, monkeypatch):
-        """Regression: previous code used `or` between DataFrame returns, which
-        crashes on truthy non-empty frames. Refresh must handle both column names."""
+    def test_refresh_nasdaq100_reads_slickcharts_symbol_column(
+        self, midas_data_root, monkeypatch
+    ):
+        """Source moved to Slickcharts on 2026-07-13 (Wikipedia dropped the
+        constituents table). Refresh reads the largest 'Symbol' table, ignores
+        stray header rows, and writes the committed file."""
         import engine.universes.index as ix_mod
         import pandas as pd
 
         fake_dir = get_config().universes_dir
         fake_dir.mkdir(parents=True, exist_ok=True)
-        fresh = [f"N{i:03d}" for i in range(80)]
+        fresh = [f"N{i:03d}" for i in range(100)]
 
-        # Return a table with the "Ticker" column — first lookup matches,
-        # second never runs. Old code raised ValueError here.
+        # Slickcharts table: a "Symbol" column plus a stray repeated header row.
         def fake_fetch(url):
-            return [pd.DataFrame({"Ticker": fresh})]
+            assert "slickcharts" in url
+            return [pd.DataFrame({"Symbol": ["Symbol", *fresh]})]
 
-        monkeypatch.setattr(ix_mod, "_fetch_wikipedia_tables", fake_fetch)
+        monkeypatch.setattr(ix_mod, "_fetch_html_tables", fake_fetch)
         result = ix_mod.refresh_nasdaq100()
         assert result == sorted(fresh)
 

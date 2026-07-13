@@ -1,10 +1,11 @@
 """Refresh every committed universe file from its upstream source.
 
-Index universes (S&P 500, Nasdaq-100, CAC 40, etc.) re-fetch from Wikipedia.
-Alternative universes (congressional, insider, high-short) re-seed from the
-curated fallback constants in `engine/universes/alternative.py`.
+Index universes (S&P 500, CAC 40, etc.) re-fetch from Wikipedia; Nasdaq-100
+re-fetches from Slickcharts (Wikipedia dropped its constituents table on
+2026-07-13). Alternative universes (congressional, insider, high-short)
+re-seed from the curated fallback constants in `engine/universes/alternative.py`.
 
-Run manually after a Wikipedia layout change, or via the weekly GitHub
+Run manually after an upstream layout change, or via the weekly GitHub
 Actions workflow `.github/workflows/refresh-universes.yml`. The cloud
 trading-session sandbox has no outbound HTTP and MUST NOT call this — it
 reads from the committed `data/universes/*.json` files instead.
