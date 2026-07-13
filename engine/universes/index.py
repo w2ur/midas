@@ -27,11 +27,12 @@ from engine.config import get_config
 _WIKI_USER_AGENT = "midas-fund/0.1 (https://github.com/w2ur/midas; research)"
 
 
-def _fetch_wikipedia_tables(url: str) -> list[pd.DataFrame]:
-    """Fetch a Wikipedia page with a descriptive User-Agent and parse its tables.
+def _fetch_html_tables(url: str) -> list[pd.DataFrame]:
+    """Fetch an HTML page with a descriptive User-Agent and parse its tables.
 
-    Wikipedia rejects pandas' default Python-urllib UA, so we fetch the HTML
-    ourselves before handing it to pd.read_html.
+    Wikipedia (and Slickcharts) reject pandas' default Python-urllib UA, so we
+    fetch the HTML ourselves before handing it to pd.read_html. Used for both
+    the Wikipedia index pages and the Slickcharts Nasdaq-100 source.
     """
     req = urllib.request.Request(url, headers={"User-Agent": _WIKI_USER_AGENT})
     with urllib.request.urlopen(req, timeout=15) as resp:
@@ -98,7 +99,7 @@ def get_sp500_tickers() -> list[str]:
 def refresh_sp500() -> list[str]:
     """Re-fetch S&P 500 from Wikipedia and overwrite the committed file."""
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    tables = _fetch_wikipedia_tables(url)
+    tables = _fetch_html_tables(url)
     table = _largest_table_with_column(tables, "Symbol")
     if table is None:
         raise RuntimeError("S&P 500: no 'Symbol' column on Wikipedia page")
@@ -127,7 +128,7 @@ def get_dow30_tickers() -> list[str]:
 def refresh_dow30() -> list[str]:
     """Re-fetch Dow 30 from Wikipedia and overwrite the committed file."""
     url = "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average"
-    tables = _fetch_wikipedia_tables(url)
+    tables = _fetch_html_tables(url)
     table = _largest_table_with_column(tables, "Symbol")
     if table is None:
         raise RuntimeError("Dow 30: no 'Symbol' column on Wikipedia page")
@@ -155,22 +156,24 @@ def get_nasdaq100_tickers() -> list[str]:
 
 
 def refresh_nasdaq100() -> list[str]:
-    """Re-fetch Nasdaq-100 from Wikipedia and overwrite the committed file."""
-    url = "https://en.wikipedia.org/wiki/Nasdaq-100"
-    tables = _fetch_wikipedia_tables(url)
-    # Wikipedia restructures the page periodically — check both column names.
-    # Cannot use `or` on DataFrames (truthiness is ambiguous) — use sequential check.
-    table = _largest_table_with_column(tables, "Ticker")
+    """Re-fetch Nasdaq-100 from Slickcharts and overwrite the committed file.
+
+    Source moved off Wikipedia on 2026-07-13: the en.wikipedia.org/wiki/Nasdaq-100
+    article dropped its constituents table entirely (the "Components" section is
+    now just an external link to nasdaq.com), so no column-name variant could
+    recover it. Slickcharts publishes a clean weighted table with a "Symbol"
+    column (~100 rows, dual-class shares like GOOGL/GOOG included).
+    """
+    url = "https://www.slickcharts.com/nasdaq100"
+    tables = _fetch_html_tables(url)
+    table = _largest_table_with_column(tables, "Symbol")
     if table is None:
-        table = _largest_table_with_column(tables, "Symbol")
-    if table is None:
-        raise RuntimeError("Nasdaq-100: no 'Ticker' or 'Symbol' column on Wikipedia")
-    col = "Ticker" if "Ticker" in [str(c) for c in table.columns] else "Symbol"
-    raw = [str(t) for t in table[col].dropna().tolist() if str(t) not in (col, "nan")]
+        raise RuntimeError("Nasdaq-100: no 'Symbol' column on Slickcharts page")
+    raw = [str(t) for t in table["Symbol"].dropna().tolist() if str(t) != "Symbol"]
     tickers = sorted({_normalise(t) for t in raw if t})
-    if len(tickers) < 50:
+    if len(tickers) < 90:
         raise RuntimeError(
-            f"Nasdaq-100: {len(tickers)} tickers — Wikipedia layout may have changed"
+            f"Nasdaq-100: {len(tickers)} tickers — Slickcharts layout may have changed"
         )
     _write_data("nasdaq100", tickers)
     return tickers
@@ -226,7 +229,7 @@ def get_cac40_tickers() -> list[str]:
 
 def refresh_cac40() -> list[str]:
     url = "https://en.wikipedia.org/wiki/CAC_40"
-    tables = _fetch_wikipedia_tables(url)
+    tables = _fetch_html_tables(url)
     table = _largest_table_with_column(tables, "Ticker")
     if table is None:
         raise RuntimeError("CAC 40: no 'Ticker' column on Wikipedia page")
@@ -247,7 +250,7 @@ def get_dax_tickers() -> list[str]:
 
 def refresh_dax() -> list[str]:
     url = "https://en.wikipedia.org/wiki/DAX"
-    tables = _fetch_wikipedia_tables(url)
+    tables = _fetch_html_tables(url)
     table = _largest_table_with_column(tables, "Ticker")
     if table is None:
         raise RuntimeError("DAX: no 'Ticker' column on Wikipedia page")
@@ -268,7 +271,7 @@ def get_ftse100_tickers() -> list[str]:
 
 def refresh_ftse100() -> list[str]:
     url = "https://en.wikipedia.org/wiki/FTSE_100_Index"
-    tables = _fetch_wikipedia_tables(url)
+    tables = _fetch_html_tables(url)
     table = _largest_table_with_column(tables, "Ticker")
     if table is None:
         raise RuntimeError("FTSE 100: no 'Ticker' column on Wikipedia page")
@@ -297,7 +300,7 @@ def get_stoxx600_tickers() -> list[str]:
 
 def refresh_stoxx600() -> list[str]:
     url = "https://en.wikipedia.org/wiki/STOXX_Europe_600"
-    tables = _fetch_wikipedia_tables(url)
+    tables = _fetch_html_tables(url)
     table = _largest_table_with_column(tables, "Ticker")
     if table is None:
         raise RuntimeError("STOXX 600: no 'Ticker' column on Wikipedia page")
