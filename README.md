@@ -4,6 +4,8 @@ Personal AI fund manager that autonomously analyzes markets, makes investment de
 
 The public narrative lives at **[midas.revah.paris](https://midas.revah.paris)** (Ring 3a) — a static Astro site in [`site/`](./site) that reads committed daily artifacts and publishes the Oracle's column, agent journals, leaderboard, and today's feed.
 
+The reusable engine is mirrored to **`midas-core`** — a self-contained, installable framework repo (engine + reusable orchestration + a runnable `examples/demo-desk`), kept in sync from this repo by `scripts/sync_core.py`. This live run continues to execute from `midas-live` (this repo) unchanged; `midas-core` is where the framework is reproduced and tweaked. See `CLAUDE.md` → *Repo Split (SP4)*.
+
 ## Architecture
 
 Midas uses a composable strategy system where every strategy is defined by four independent axes:
