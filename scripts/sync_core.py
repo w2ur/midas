@@ -32,13 +32,41 @@ CORE_SCRIPTS = [
 ]
 
 LIVE_ONLY_TESTS = {
+    # Import a live-only script that core does not ship.
     "test_attest_ledger.py",
     "test_backfill_snapshots.py",
     "test_fetch_sentiment.py",
     "test_refresh_leaderboard.py",
+    # Read the committed OHLCV store (data/market/ohlcv), not shipped to core.
     "test_fetch_market_data.py",
     "test_manager_session.py",
-    "test_sync_core.py",  # imports scripts.sync_core, the dev-only tool not in core
+    # Imports scripts.sync_core, the dev-only tool not in core.
+    "test_sync_core.py",
+    # Hardcoded to the live cast (the-manager, satoshi, EUR schedule, real
+    # personas under .claude/agents, €10k/€1M capital). They validate the live
+    # desk's specific configuration, not the reusable engine, so they cannot
+    # pass against the demo desk. Reclassified during SP4 isolation validation.
+    "test_allocator_config.py",
+    "test_backward_compat.py",
+    "test_baseline_manager.py",
+    "test_baselines.py",
+    "test_blog.py",
+    "test_check_triggers.py",
+    "test_daily_log.py",
+    "test_jurisdiction_drivers.py",
+    "test_laboratory_pipeline.py",
+    "test_live_switch.py",
+    "test_manager_context.py",
+    "test_manager_context_golden.py",
+    "test_manager_report.py",
+    "test_output_bundle.py",
+    "test_paper_broker.py",
+    "test_persona_dispatch.py",
+    "test_portfolio_summaries.py",
+    "test_posts.py",
+    "test_roster_parity.py",
+    "test_tax_shadow.py",
+    "test_universe_drift.py",
 }
 
 GENERIC_DATA_FILES = ["data/ticker_currencies.json", "data/tickers.json"]

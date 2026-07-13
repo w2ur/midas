@@ -12,12 +12,18 @@ model, a runnable demo desk, and the deterministic Hands pipeline. Bring your ow
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
+pip install -r requirements.txt   # pinned lockfile (incl. pytest + hypothesis)
+pip install -e .                  # the midas-core package + `midas` CLI
 
 # Point the engine at the bundled demo desk and run its test suite
 export MIDAS_DATA_DIR="$PWD/examples/demo-desk"
 pytest -q
 ```
+
+`requirements.txt` is the fully-pinned lockfile every consumer installs (same
+convention as the upstream live run) — it reproduces the exact tested
+environment. `pyproject.toml`'s looser `dependencies` are for `pip install`
+resolution only.
 
 `examples/demo-desk/` is a minimal two-trader + allocator + oracle desk driven entirely by
 `roster.yaml`. Copy it, edit the roster and the persona files under `.claude/agents/`, and

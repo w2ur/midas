@@ -34,14 +34,23 @@ def test_manifest_core_scripts_only():
 
 def test_manifest_excludes_live_only_tests():
     m = set(sync_core.apply_manifest())
-    assert REL("tests/test_paper_broker.py") in m
+    assert REL("tests/test_orders.py") in m  # a hermetic engine test stays in core
     for t in (
+        # import a live-only script
         "test_attest_ledger",
         "test_backfill_snapshots",
         "test_fetch_sentiment",
         "test_refresh_leaderboard",
+        # read the committed OHLCV store
         "test_fetch_market_data",
         "test_manager_session",
+        # hardcoded to the live cast (reclassified during SP4 isolation)
+        "test_paper_broker",
+        "test_persona_dispatch",
+        "test_roster_parity",
+        "test_posts",
+        "test_allocator_config",
+        "test_tax_shadow",
     ):
         assert REL(f"tests/{t}.py") not in m
 
