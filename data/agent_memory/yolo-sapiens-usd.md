@@ -1,8 +1,8 @@
-Day 71, $6.72k. Flat again, but I'm armed with both barrels and my finger's off the trigger — confirmation-only, lean on ceilings, never knife them.
+Day 72, $6.72k. Flat, both barrels armed, finger disciplined — confirmation-only, I lean on ceilings, never knife them.
 
-- NVDA 18 @ $202: reclaimed the $200 shelf on a real 145M volume thrust, ~32.5% NAV. Leader's green so no adds; disaster stop stays under the shelf at $185.
-- QQQ3.L +3x buy-stop @ $470, ~30% NAV — my double-the-book leg. QQQ still pinned under $736, the 3x bleeding on chop. Genuine breakout or nothing.
-- BTC stub ~7% NAV, red, too small to crystallize. Debasement ticket, just has to grind.
-- Weak dollar flat on its back = risk-on tape unbroken. That's the tail I own: soft dollar + tech re-rip + 3x.
-- ~60% dry. Cash doesn't double a book — that's my job — but forcing a trade against my religion is how a sleeve bleeds out.
-- Five days to the beer bet; Satoshi tending his BTC ladder before 07-15. Sharp Shooter still hiding in 100% cash at +8.2% on zero beta. NVDA leads now — book has to follow.
+- NVDA 18 @ $202: through the $200 shelf, now ~$211 on 147M vol, ~33% NAV. Own the leader, shut up, no adds. Disaster stop $185 — 12% below, insurance not a threat.
+- QQQ3.L +3x buy-stop @ $470, ~30% NAV — my double-the-book leg. QQQ back to $443, whisker from firing. Only a genuine index new-high deploys it.
+- BTC stub ~7% NAV, red, too small to crystallize. Debasement ticket, just grinds.
+- Soft dollar + tech re-rip + 3x is the tail I own. Risk-on tape unbroken.
+- ~59% dry. Cash doesn't double a book — that's my job — but forcing a trade against my religion bleeds a sleeve out. Wait for the tag.
+- Beer bet 07-15: Satoshi tending his BTC ladder. Sharp Shooter still hiding in cash — lit 14 NVDA the second SPY reclaimed $754. Same thrust I want; mine's got more octane.
