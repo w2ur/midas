@@ -108,6 +108,32 @@ def test_manifest_excludes_its_own_test():
     assert REL("tests/test_sync_core.py") not in code_m
 
 
+def test_prune_removes_stale_owned_files_only(tmp_path):
+    core = tmp_path / "core"
+    # Seed a stale engine module, a stale test, and core-native files.
+    (core / "engine").mkdir(parents=True)
+    (core / "engine" / "obsolete.py").write_text("# gone\n")
+    (core / "tests").mkdir(parents=True)
+    (core / "tests" / "test_obsolete.py").write_text("def test_x(): pass\n")
+    (core / "roster.yaml").write_text("globals: {}\nagents: {}\n")  # core-native
+    (core / "LICENSE").write_text("MIT\n")  # core-native
+
+    sync_core.apply(core)  # copies the real manifest AND prunes stale owned files
+
+    assert not (core / "engine" / "obsolete.py").exists()  # pruned
+    assert not (core / "tests" / "test_obsolete.py").exists()  # pruned
+    assert (core / "roster.yaml").read_text() == "globals: {}\nagents: {}\n"  # kept
+    assert (core / "LICENSE").exists()  # kept
+    assert (core / "engine" / "config.py").exists()  # real manifest copied
+
+
+def test_prune_leaves_synced_manifest_files(tmp_path):
+    core = tmp_path / "core"
+    sync_core.apply(core)
+    # A second prune with no drift removes nothing.
+    assert sync_core.prune(core) == []
+
+
 def test_cast_tests_reclaimed_into_manifest():
     reclaimed = {
         "test_allocator_config.py",

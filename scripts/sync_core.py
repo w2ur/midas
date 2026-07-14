@@ -91,11 +91,62 @@ def apply_manifest(root: Path = LIVE_ROOT) -> list[Path]:
     return _rel_sorted(files)
 
 
+# Trees whose contents the manifest fully owns in core. Pruning deletes files
+# HERE that are not in the current apply_manifest(). Core-native files
+# (roster.yaml, README.md, LICENSE, DISCLAIMER.md, .github/, .gitignore) live
+# OUTSIDE these trees and are never touched.
+_OWNED_TREES = ("engine", "scripts", "tests", "examples/demo-desk")
+
+
+def _is_owned(rel: Path) -> bool:
+    """True if rel is a prune candidate — a file in manifest-owned territory."""
+    parts = rel.parts
+    if parts[0] == "engine":
+        return rel.suffix == ".py"
+    if parts[0] == "scripts":
+        return rel.suffix == ".py"  # core scripts/ holds only CORE_SCRIPTS
+    if parts[0] == "tests":
+        return rel.name == "conftest.py" or (
+            rel.name.startswith(("test_", "__init__")) and rel.suffix == ".py"
+        )
+    if parts[:2] == ("examples", "demo-desk"):
+        return True
+    if (
+        parts[0] == "data"
+        and len(parts) == 3
+        and parts[1] in ("strategies", "universes")
+    ):
+        return rel.suffix == ".json"
+    return False
+
+
+def prune(core: Path, root: Path = LIVE_ROOT) -> list[Path]:
+    """Delete core files in owned trees that are no longer in apply_manifest()."""
+    keep = set(apply_manifest(root))
+    removed: list[Path] = []
+    scan_dirs = list(_OWNED_TREES) + ["data/strategies", "data/universes"]
+    for tree in scan_dirs:
+        base = core / tree
+        if not base.exists():
+            continue
+        for p in base.rglob("*"):
+            if not p.is_file() or "__pycache__" in p.parts:
+                continue
+            rel = p.relative_to(core)
+            if _is_owned(rel) and rel not in keep:
+                p.unlink()
+                removed.append(rel)
+    return _rel_sorted(removed)
+
+
 def apply(core: Path, root: Path = LIVE_ROOT) -> None:
     for rel in apply_manifest(root):
         src, dst = root / rel, core / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
+    removed = prune(core, root)
+    if removed:
+        print(f"[sync_core] pruned {len(removed)} stale file(s)")
 
 
 def check(core: Path, root: Path = LIVE_ROOT) -> list[Path]:
@@ -117,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
     core = ns.core.resolve()
     if ns.cmd == "apply":
         apply(core)
-        print(f"[sync_core] applied {len(apply_manifest())} files -> {core}")
+        print(f"[sync_core] applied {len(apply_manifest())} files (+prune) -> {core}")
         return 0
     drift = check(core)
     if drift:
