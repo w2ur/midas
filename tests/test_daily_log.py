@@ -3,6 +3,8 @@
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from engine.daily_log import generate_daily_log
 
 
@@ -56,6 +58,8 @@ class TestPositionsDualShape:
 
 
 class TestDailyLog:
+    pytestmark = pytest.mark.live_cast
+
     def test_generates_markdown_file(self, midas_data_root: Path) -> None:
         market = {"sp500": 6967.38, "gold": 4825.0, "btc": 74181.61}
         agent_results = {

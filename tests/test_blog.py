@@ -4,6 +4,8 @@ import json
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from engine.blog import (
     BlogDraft,
     build_oracle_prompt,
@@ -26,6 +28,7 @@ class TestBlogDraft:
 
 
 class TestBuildOraclePrompt:
+    @pytest.mark.live_cast
     def test_includes_all_agent_data(self) -> None:
         agent_results = {
             "steady-eddie-eur": {"commentary": "Holding.", "trades": []},

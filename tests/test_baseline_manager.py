@@ -430,6 +430,7 @@ class TestRebalance:
 
 
 class TestStepBuildBaselineManager:
+    @pytest.mark.live_cast
     def test_initializes_portfolio_on_first_run(
         self, tmp_path: Path, monkeypatch, midas_data_root
     ) -> None:

@@ -13,8 +13,12 @@ per-agent universe NAMES are pinned in the roster snapshot test.
 
 from __future__ import annotations
 
+import pytest
+
 from engine.config import get_config, reset_config_cache, resolve_agent_universe
 from engine.universes import resolve_universe
+
+pytestmark = pytest.mark.live_cast
 
 EXPECTED_TRADING_ROSTER = frozenset(
     {

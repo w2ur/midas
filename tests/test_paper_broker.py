@@ -1088,6 +1088,7 @@ class TestSafetyFold:
         assert rails.max_orders_per_day == spec_safety.max_orders_per_day
         assert rails.dry_run == spec_safety.dry_run
 
+    @pytest.mark.live_cast
     def test_satoshi_has_folded_permissive_values(self, midas_data_root):
         """satoshi's safety fold preserved the permissive paper-only rails."""
         from engine.paper_broker import AgentConfig
@@ -1098,6 +1099,7 @@ class TestSafetyFold:
         assert rails.max_orders_per_day == 100
         assert rails.dry_run is False
 
+    @pytest.mark.live_cast
     def test_yolo_sapiens_eur_has_folded_permissive_values(self, midas_data_root):
         """Spot-check a second trader to confirm the fold is roster-wide."""
         from engine.paper_broker import AgentConfig

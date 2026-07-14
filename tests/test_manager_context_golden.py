@@ -26,6 +26,8 @@ import pytest
 from engine.config import get_config, reset_config_cache
 from engine.manager_context import build_manager_context, render_manager_context
 
+pytestmark = pytest.mark.live_cast
+
 
 @pytest.fixture(autouse=True)
 def _default_env(monkeypatch):

@@ -4,6 +4,8 @@ import json
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from engine.blog import BlogDraft
 from engine.config import get_config
 from engine.output_bundle import (
@@ -57,6 +59,7 @@ class TestGetDayNumber:
 
 
 class TestAssembleOutputBundle:
+    @pytest.mark.live_cast
     def test_bundle_shape(self) -> None:
         agent_results = {
             "satoshi": {
@@ -111,6 +114,7 @@ class TestAssembleOutputBundle:
         assert bundle["narrator"]["posts"][0]["kind"] == "scoreboard"
         assert bundle["leaderboard"] == leaderboard
 
+    @pytest.mark.live_cast
     def test_bundle_always_contains_full_roster(self) -> None:
         """Even when only one agent ran (weekend cadence), every agent in
         ROSTER appears in the bundle. Non-runners get null commentary, empty

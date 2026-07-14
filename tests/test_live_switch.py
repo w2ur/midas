@@ -147,6 +147,7 @@ class TestFailSafe:
 
 
 class TestCommittedDefault:
+    @pytest.mark.live_cast
     def test_committed_default_is_off(self, monkeypatch):
         """Guard CI against anyone committing live_enabled=true.
 

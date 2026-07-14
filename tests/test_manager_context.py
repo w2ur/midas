@@ -531,6 +531,8 @@ class TestBuildManagerContextOutcomeMemory:
 
 
 class TestRenderManagerContext:
+    pytestmark = pytest.mark.live_cast
+
     def _build_basic_ctx(self, resolved_decisions=None) -> ManagerContext:
         notes = [("satoshi", _make_note(["BTC-EUR"]))]
         price_lookup = {"BTC-EUR": (60000.0, "2026-06-12")}
