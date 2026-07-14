@@ -134,6 +134,25 @@ def test_prune_leaves_synced_manifest_files(tmp_path):
     assert sync_core.prune(core) == []
 
 
+def test_prune_spares_demo_desk_data_fixtures(tmp_path):
+    # examples/demo-desk/data/ is a core-managed test fixture that live never
+    # populates (its universe resolvers regenerate it on the demo desk); prune
+    # must not delete it, even though it is not in live's manifest.
+    core = tmp_path / "core"
+    fixture = core / "examples" / "demo-desk" / "data" / "universes" / "sp500.json"
+    fixture.parent.mkdir(parents=True)
+    fixture.write_text('["AAPL", "MSFT"]')
+    # A stale demo-desk *source* file (not under data/) is still pruned.
+    stale_persona = core / "examples" / "demo-desk" / ".claude" / "agents" / "gone.md"
+    stale_persona.parent.mkdir(parents=True)
+    stale_persona.write_text("# stale\n")
+
+    sync_core.apply(core)
+
+    assert fixture.exists()  # data/ fixture spared
+    assert not stale_persona.exists()  # stale demo-desk source pruned
+
+
 def test_cast_tests_reclaimed_into_manifest():
     reclaimed = {
         "test_allocator_config.py",

@@ -110,7 +110,10 @@ def _is_owned(rel: Path) -> bool:
             rel.name.startswith(("test_", "__init__")) and rel.suffix == ".py"
         )
     if parts[:2] == ("examples", "demo-desk"):
-        return True
+        # Demo-desk source (roster, personas) is synced from live and prunable;
+        # its data/ subtree is a core-managed test fixture (universe resolvers
+        # regenerate it on the demo desk) that live never populates — leave it.
+        return len(parts) > 2 and parts[2] != "data"
     if (
         parts[0] == "data"
         and len(parts) == 3
