@@ -153,6 +153,18 @@ def test_prune_spares_demo_desk_data_fixtures(tmp_path):
     assert not stale_persona.exists()  # stale demo-desk source pruned
 
 
+def test_apply_refuses_live_source_root():
+    # A `apply --core <live-root>` typo would let prune() delete the live-only
+    # scripts/tests and sync_core.py itself. Guard must reject it before copying.
+    with pytest.raises(ValueError, match="live source root"):
+        sync_core.apply(sync_core.LIVE_ROOT)
+
+
+def test_prune_refuses_live_source_root():
+    with pytest.raises(ValueError, match="live source root"):
+        sync_core.prune(sync_core.LIVE_ROOT)
+
+
 def test_cast_tests_reclaimed_into_manifest():
     reclaimed = {
         "test_allocator_config.py",

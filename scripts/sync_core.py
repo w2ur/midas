@@ -123,9 +123,26 @@ def _is_owned(rel: Path) -> bool:
     return False
 
 
-def prune(core: Path, root: Path = LIVE_ROOT) -> list[Path]:
+def _assert_not_live_root(core: Path, root: Path) -> None:
+    """Refuse any destructive op when `core` resolves to the live source tree.
+
+    prune() unlinks owned-tree files absent from the manifest; on the live root
+    that would delete the live-only scripts/tests and sync_core.py itself. Guard
+    against `apply --core <live-checkout>` typos.
+    """
+    if core.resolve() == root.resolve():
+        raise ValueError(
+            f"refusing to operate: --core path {core} is the live source root"
+        )
+
+
+def prune(
+    core: Path, root: Path = LIVE_ROOT, keep: set[Path] | None = None
+) -> list[Path]:
     """Delete core files in owned trees that are no longer in apply_manifest()."""
-    keep = set(apply_manifest(root))
+    _assert_not_live_root(core, root)
+    if keep is None:
+        keep = set(apply_manifest(root))
     removed: list[Path] = []
     scan_dirs = list(_OWNED_TREES) + ["data/strategies", "data/universes"]
     for tree in scan_dirs:
@@ -143,11 +160,13 @@ def prune(core: Path, root: Path = LIVE_ROOT) -> list[Path]:
 
 
 def apply(core: Path, root: Path = LIVE_ROOT) -> None:
-    for rel in apply_manifest(root):
+    _assert_not_live_root(core, root)
+    manifest = apply_manifest(root)
+    for rel in manifest:
         src, dst = root / rel, core / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
-    removed = prune(core, root)
+    removed = prune(core, root, keep=set(manifest))
     if removed:
         print(f"[sync_core] pruned {len(removed)} stale file(s)")
 
