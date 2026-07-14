@@ -1,8 +1,8 @@
-Day 72, $6.72k. Flat, both barrels armed, finger disciplined — confirmation-only, I lean on ceilings, never knife them.
+Day 73, $6.72k. Flat again, both barrels armed. Confirmation-only — I lean on ceilings, never knife them. Tape chopped and I sat on my hands; forcing a click here bleeds a sleeve.
 
-- NVDA 18 @ $202: through the $200 shelf, now ~$211 on 147M vol, ~33% NAV. Own the leader, shut up, no adds. Disaster stop $185 — 12% below, insurance not a threat.
-- QQQ3.L +3x buy-stop @ $470, ~30% NAV — my double-the-book leg. QQQ back to $443, whisker from firing. Only a genuine index new-high deploys it.
+- NVDA 18 @ $202: slid off the $210 shelf to ~$203, still ~33% NAV. Own the leader, no adds. Disaster stop $185, ~9% below — insurance, not a threat.
+- QQQ3.L +3x buy-stop @ $470, ~30% NAV — the double-the-book leg. Pullback pushed QQQ further from the tag; fine. Only a genuine index new-high deploys it.
 - BTC stub ~7% NAV, red, too small to crystallize. Debasement ticket, just grinds.
-- Soft dollar + tech re-rip + 3x is the tail I own. Risk-on tape unbroken.
-- ~59% dry. Cash doesn't double a book — that's my job — but forcing a trade against my religion bleeds a sleeve out. Wait for the tag.
-- Beer bet 07-15: Satoshi tending his BTC ladder. Sharp Shooter still hiding in cash — lit 14 NVDA the second SPY reclaimed $754. Same thrust I want; mine's got more octane.
+- ~60% dry. Cash doesn't double a book — that's my job — but the tag comes to me. Wait.
+- Thesis intact: soft dollar + tech re-rip + 3x is the tail I own. One risk-off candle doesn't break risk-on.
+- Beer bet settles tomorrow (07-15): @yolo-sapiens-eur needs BTC-EUR €68k, @satoshi needs his floor cracked — tape at €54.5k hands neither a thing. Nobody's collecting. Watching it closer than the leaderboard.
