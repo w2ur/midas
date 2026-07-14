@@ -44,13 +44,8 @@ def test_manifest_excludes_live_only_tests():
         # read the committed OHLCV store
         "test_fetch_market_data",
         "test_manager_session",
-        # hardcoded to the live cast (reclassified during SP4 isolation)
-        "test_paper_broker",
-        "test_persona_dispatch",
-        "test_roster_parity",
-        "test_posts",
-        "test_allocator_config",
-        "test_tax_shadow",
+        # imports the dev-only sync_core tool
+        "test_sync_core",
     ):
         assert REL(f"tests/{t}.py") not in m
 
@@ -111,3 +106,44 @@ def test_manifest_excludes_its_own_test():
     apply_m, code_m = set(sync_core.apply_manifest()), set(sync_core.code_manifest())
     assert REL("tests/test_sync_core.py") not in apply_m
     assert REL("tests/test_sync_core.py") not in code_m
+
+
+def test_cast_tests_reclaimed_into_manifest():
+    reclaimed = {
+        "test_allocator_config.py",
+        "test_backward_compat.py",
+        "test_baseline_manager.py",
+        "test_baselines.py",
+        "test_blog.py",
+        "test_check_triggers.py",
+        "test_daily_log.py",
+        "test_jurisdiction_drivers.py",
+        "test_laboratory_pipeline.py",
+        "test_live_switch.py",
+        "test_manager_context.py",
+        "test_manager_context_golden.py",
+        "test_manager_report.py",
+        "test_output_bundle.py",
+        "test_paper_broker.py",
+        "test_persona_dispatch.py",
+        "test_portfolio_summaries.py",
+        "test_posts.py",
+        "test_roster_parity.py",
+        "test_tax_shadow.py",
+        "test_universe_drift.py",
+    }
+    # None of the reclaimed tests remain live-only.
+    assert reclaimed & sync_core.LIVE_ONLY_TESTS == set()
+    # The 7 genuinely un-runnable tests stay live-only.
+    assert sync_core.LIVE_ONLY_TESTS == {
+        "test_attest_ledger.py",
+        "test_backfill_snapshots.py",
+        "test_fetch_sentiment.py",
+        "test_refresh_leaderboard.py",
+        "test_fetch_market_data.py",
+        "test_manager_session.py",
+        "test_sync_core.py",
+    }
+    # All reclaimed tests now ship in the code manifest.
+    manifest_names = {p.name for p in sync_core.code_manifest()}
+    assert reclaimed <= manifest_names
