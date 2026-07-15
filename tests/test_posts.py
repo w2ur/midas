@@ -4,6 +4,8 @@ import json
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from engine.config import get_config
 from engine.posts import (
     PostPayload,
@@ -18,6 +20,7 @@ from engine.posts import (
 class TestAgentRoster:
     """Roster-shape assertions backed by config (no frozen module dicts)."""
 
+    @pytest.mark.live_cast
     def test_12_agents_in_roster(self) -> None:
         cfg = get_config()
         expected = {
@@ -36,6 +39,7 @@ class TestAgentRoster:
         }
         assert set(cfg.roster.keys()) == expected
 
+    @pytest.mark.live_cast
     def test_10_trading_agents(self) -> None:
         cfg = get_config()
         trading = {
@@ -79,6 +83,7 @@ class TestPostPayload:
         reconstructed = PostPayload.from_agent_output("satoshi", d)
         assert reconstructed == post
 
+    @pytest.mark.live_cast
     def test_default_post_at_uses_schedule(self) -> None:
         raw = {"text": "x", "kind": "trade"}
         p = PostPayload.from_agent_output("goldfinger", raw)
@@ -91,6 +96,7 @@ class TestPostPayload:
 
 
 class TestResolvedPostTime:
+    @pytest.mark.live_cast
     def test_fixed_time_returned_verbatim(self) -> None:
         assert resolved_post_time("goldfinger", date(2026, 4, 17)) == "11:00"
 
@@ -100,11 +106,13 @@ class TestResolvedPostTime:
             "yolo-sapiens-eur", d
         )
 
+    @pytest.mark.live_cast
     def test_random_differs_by_date(self) -> None:
         a = resolved_post_time("yolo-sapiens-eur", date(2026, 4, 17))
         b = resolved_post_time("yolo-sapiens-eur", date(2026, 4, 18))
         assert a != b
 
+    @pytest.mark.live_cast
     def test_random_differs_by_agent(self) -> None:
         d = date(2026, 4, 17)
         a = resolved_post_time("yolo-sapiens-eur", d)
@@ -119,6 +127,8 @@ class TestResolvedPostTime:
 
 
 class TestBuildPostPrompt:
+    pytestmark = pytest.mark.live_cast
+
     def test_includes_own_and_others(self) -> None:
         results = {
             "satoshi": {

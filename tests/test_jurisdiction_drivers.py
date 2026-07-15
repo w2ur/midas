@@ -32,6 +32,7 @@ def test_equity_fee_matches_fr_config():
     assert fee_for("AAPL", 100.0) == pytest.approx(1.25)
 
 
+@pytest.mark.live_cast
 def test_pfu_rate_from_config():
     import engine.tax_shadow as ts
 

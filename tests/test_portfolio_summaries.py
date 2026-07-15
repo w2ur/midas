@@ -15,6 +15,8 @@ import pytest
 from engine.config import get_config
 from engine.portfolio import PortfolioManager
 
+pytestmark = pytest.mark.live_cast
+
 
 @pytest.fixture
 def tmp_portfolios(midas_data_root: Path) -> Path:

@@ -148,6 +148,7 @@ def test_coin_flip_starts_at_ten_thousand(tmp_ohlcv):
     assert snaps[0]["currency"] == "EUR"
 
 
+@pytest.mark.live_cast
 def test_global_reference_uses_msci_world(tmp_ohlcv):
     from engine.baselines import compute_global_reference
 

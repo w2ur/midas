@@ -29,6 +29,8 @@ from scripts.daily_session import (
     step_save_content,
 )
 
+pytestmark = pytest.mark.live_cast
+
 
 TRADE_DATE = date(2026, 4, 17)
 

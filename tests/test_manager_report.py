@@ -232,6 +232,7 @@ def test_load_resolved_returns_list(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.live_cast
 def test_book_paths_review_dir_matches_legacy() -> None:
     """review_dir must be sourced from channels_prefix config, not id string-strip.
 

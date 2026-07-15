@@ -6,6 +6,8 @@ import pytest
 
 from engine.config import get_config, reset_config_cache
 
+pytestmark = pytest.mark.live_cast
+
 
 @pytest.fixture(autouse=True)
 def _default_env(monkeypatch):

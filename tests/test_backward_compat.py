@@ -1,6 +1,10 @@
 """Lock the midas-live roster shape so future edits can't silently drift it."""
 
+import pytest
+
 from engine.config import get_config, reset_config_cache
+
+pytestmark = pytest.mark.live_cast
 
 
 def test_ten_traders_plus_oracle(monkeypatch):

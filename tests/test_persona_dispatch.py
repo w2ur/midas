@@ -11,6 +11,8 @@ import pytest
 
 from engine.persona_dispatch import load_persona, wrap_persona_prompt
 
+pytestmark = pytest.mark.live_cast
+
 ROSTER = [
     "steady-eddie-eur",
     "steady-eddie-usd",

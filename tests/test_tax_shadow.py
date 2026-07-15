@@ -20,6 +20,8 @@ Spec:
 
 from __future__ import annotations
 
+import pytest
+
 from engine.tax_shadow import compute_tax_shadow
 
 
@@ -63,6 +65,7 @@ def _make_sell(
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.live_cast
 def test_securities_full_sell_gain_and_pfu():
     """BUY 10@total=1000 fee=1.25, SELL 10@total=1200 fee=1.25 → gain=197.50, PFU=59.25."""
     trades = [
@@ -81,6 +84,7 @@ def test_securities_full_sell_gain_and_pfu():
     assert result["crypto"]["lifetime_pfu"] == pytest.approx(0.0, abs=0.001)
 
 
+@pytest.mark.live_cast
 def test_securities_partial_sell_uses_weighted_average_remaining_basis():
     """BUY 10@1000 fee=1.25, SELL 5@total=650 fee=1.25.
 
@@ -124,6 +128,7 @@ def test_securities_loss_year_zero_pfu_loss_recorded():
     assert sec["lifetime_pfu"] == pytest.approx(0.0, abs=0.001)
 
 
+@pytest.mark.live_cast
 def test_regimes_never_net_crypto_loss_does_not_offset_securities_gain():
     """Crypto loss in 2026 must NOT reduce PFU on securities gain."""
     # Securities: gain
@@ -146,6 +151,7 @@ def test_regimes_never_net_crypto_loss_does_not_offset_securities_gain():
     assert crypto["realized_loss_by_year"]["2026"] > 0
 
 
+@pytest.mark.live_cast
 def test_crypto_disposal_computes_gain_in_crypto_regime_only():
     """Crypto gain stays in crypto regime; securities regime stays zero."""
     trades = [
@@ -323,6 +329,7 @@ def test_buy_only_no_realized_gain():
     assert result["securities"]["lifetime_pfu"] == pytest.approx(0.0, abs=0.001)
 
 
+@pytest.mark.live_cast
 def test_oversell_does_not_corrupt_pool():
     """BUY 5 then SELL 10 — oversell must floor pool at 0, not go negative.
 
@@ -388,6 +395,3 @@ def test_oversell_does_not_corrupt_pool():
     assert sec["lifetime_pfu"] == pytest.approx(1100.0 * 0.30, abs=0.01)
     # Verify no negative state leaked — lifetime_realized must be positive (not NaN/negative).
     assert sec["lifetime_realized"] > 0
-
-
-import pytest

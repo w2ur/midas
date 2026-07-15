@@ -290,6 +290,7 @@ class TestBrokerRailsApplyOnFire:
 
 
 class TestManagerChannelIsolation:
+    @pytest.mark.live_cast
     def test_manager_pending_fires_into_manager_inbox(
         self, broker_env, monkeypatch
     ) -> None:

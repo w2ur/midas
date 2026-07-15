@@ -44,13 +44,8 @@ def test_manifest_excludes_live_only_tests():
         # read the committed OHLCV store
         "test_fetch_market_data",
         "test_manager_session",
-        # hardcoded to the live cast (reclassified during SP4 isolation)
-        "test_paper_broker",
-        "test_persona_dispatch",
-        "test_roster_parity",
-        "test_posts",
-        "test_allocator_config",
-        "test_tax_shadow",
+        # imports the dev-only sync_core tool
+        "test_sync_core",
     ):
         assert REL(f"tests/{t}.py") not in m
 
@@ -111,3 +106,101 @@ def test_manifest_excludes_its_own_test():
     apply_m, code_m = set(sync_core.apply_manifest()), set(sync_core.code_manifest())
     assert REL("tests/test_sync_core.py") not in apply_m
     assert REL("tests/test_sync_core.py") not in code_m
+
+
+def test_prune_removes_stale_owned_files_only(tmp_path):
+    core = tmp_path / "core"
+    # Seed a stale engine module, a stale test, and core-native files.
+    (core / "engine").mkdir(parents=True)
+    (core / "engine" / "obsolete.py").write_text("# gone\n")
+    (core / "tests").mkdir(parents=True)
+    (core / "tests" / "test_obsolete.py").write_text("def test_x(): pass\n")
+    (core / "roster.yaml").write_text("globals: {}\nagents: {}\n")  # core-native
+    (core / "LICENSE").write_text("MIT\n")  # core-native
+
+    sync_core.apply(core)  # copies the real manifest AND prunes stale owned files
+
+    assert not (core / "engine" / "obsolete.py").exists()  # pruned
+    assert not (core / "tests" / "test_obsolete.py").exists()  # pruned
+    assert (core / "roster.yaml").read_text() == "globals: {}\nagents: {}\n"  # kept
+    assert (core / "LICENSE").exists()  # kept
+    assert (core / "engine" / "config.py").exists()  # real manifest copied
+
+
+def test_prune_leaves_synced_manifest_files(tmp_path):
+    core = tmp_path / "core"
+    sync_core.apply(core)
+    # A second prune with no drift removes nothing.
+    assert sync_core.prune(core) == []
+
+
+def test_prune_spares_demo_desk_data_fixtures(tmp_path):
+    # examples/demo-desk/data/ is a core-managed test fixture that live never
+    # populates (its universe resolvers regenerate it on the demo desk); prune
+    # must not delete it, even though it is not in live's manifest.
+    core = tmp_path / "core"
+    fixture = core / "examples" / "demo-desk" / "data" / "universes" / "sp500.json"
+    fixture.parent.mkdir(parents=True)
+    fixture.write_text('["AAPL", "MSFT"]')
+    # A stale demo-desk *source* file (not under data/) is still pruned.
+    stale_persona = core / "examples" / "demo-desk" / ".claude" / "agents" / "gone.md"
+    stale_persona.parent.mkdir(parents=True)
+    stale_persona.write_text("# stale\n")
+
+    sync_core.apply(core)
+
+    assert fixture.exists()  # data/ fixture spared
+    assert not stale_persona.exists()  # stale demo-desk source pruned
+
+
+def test_apply_refuses_live_source_root():
+    # A `apply --core <live-root>` typo would let prune() delete the live-only
+    # scripts/tests and sync_core.py itself. Guard must reject it before copying.
+    with pytest.raises(ValueError, match="live source root"):
+        sync_core.apply(sync_core.LIVE_ROOT)
+
+
+def test_prune_refuses_live_source_root():
+    with pytest.raises(ValueError, match="live source root"):
+        sync_core.prune(sync_core.LIVE_ROOT)
+
+
+def test_cast_tests_reclaimed_into_manifest():
+    reclaimed = {
+        "test_allocator_config.py",
+        "test_backward_compat.py",
+        "test_baseline_manager.py",
+        "test_baselines.py",
+        "test_blog.py",
+        "test_check_triggers.py",
+        "test_daily_log.py",
+        "test_jurisdiction_drivers.py",
+        "test_laboratory_pipeline.py",
+        "test_live_switch.py",
+        "test_manager_context.py",
+        "test_manager_context_golden.py",
+        "test_manager_report.py",
+        "test_output_bundle.py",
+        "test_paper_broker.py",
+        "test_persona_dispatch.py",
+        "test_portfolio_summaries.py",
+        "test_posts.py",
+        "test_roster_parity.py",
+        "test_tax_shadow.py",
+        "test_universe_drift.py",
+    }
+    # None of the reclaimed tests remain live-only.
+    assert reclaimed & sync_core.LIVE_ONLY_TESTS == set()
+    # The 7 genuinely un-runnable tests stay live-only.
+    assert sync_core.LIVE_ONLY_TESTS == {
+        "test_attest_ledger.py",
+        "test_backfill_snapshots.py",
+        "test_fetch_sentiment.py",
+        "test_refresh_leaderboard.py",
+        "test_fetch_market_data.py",
+        "test_manager_session.py",
+        "test_sync_core.py",
+    }
+    # All reclaimed tests now ship in the code manifest.
+    manifest_names = {p.name for p in sync_core.code_manifest()}
+    assert reclaimed <= manifest_names

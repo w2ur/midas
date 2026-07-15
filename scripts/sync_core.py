@@ -42,31 +42,10 @@ LIVE_ONLY_TESTS = {
     "test_manager_session.py",
     # Imports scripts.sync_core, the dev-only tool not in core.
     "test_sync_core.py",
-    # Hardcoded to the live cast (the-manager, satoshi, EUR schedule, real
-    # personas under .claude/agents, €10k/€1M capital). They validate the live
-    # desk's specific configuration, not the reusable engine, so they cannot
-    # pass against the demo desk. Reclassified during SP4 isolation validation.
-    "test_allocator_config.py",
-    "test_backward_compat.py",
-    "test_baseline_manager.py",
-    "test_baselines.py",
-    "test_blog.py",
-    "test_check_triggers.py",
-    "test_daily_log.py",
-    "test_jurisdiction_drivers.py",
-    "test_laboratory_pipeline.py",
-    "test_live_switch.py",
-    "test_manager_context.py",
-    "test_manager_context_golden.py",
-    "test_manager_report.py",
-    "test_output_bundle.py",
-    "test_paper_broker.py",
-    "test_persona_dispatch.py",
-    "test_portfolio_summaries.py",
-    "test_posts.py",
-    "test_roster_parity.py",
-    "test_tax_shadow.py",
-    "test_universe_drift.py",
+    # NOTE: the 21 formerly-live-only cast-coupled tests were reclaimed into
+    # core in SP5. They ship to core byte-identical; the ones that assert on the
+    # live cast carry @pytest.mark.live_cast and skip on the demo desk (see
+    # tests/conftest.py). The rest run against the demo desk too.
 }
 
 GENERIC_DATA_FILES = ["data/ticker_currencies.json", "data/tickers.json"]
@@ -112,11 +91,84 @@ def apply_manifest(root: Path = LIVE_ROOT) -> list[Path]:
     return _rel_sorted(files)
 
 
+# Trees whose contents the manifest fully owns in core. Pruning deletes files
+# HERE that are not in the current apply_manifest(). Core-native files
+# (roster.yaml, README.md, LICENSE, DISCLAIMER.md, .github/, .gitignore) live
+# OUTSIDE these trees and are never touched.
+_OWNED_TREES = ("engine", "scripts", "tests", "examples/demo-desk")
+
+
+def _is_owned(rel: Path) -> bool:
+    """True if rel is a prune candidate — a file in manifest-owned territory."""
+    parts = rel.parts
+    if parts[0] == "engine":
+        return rel.suffix == ".py"
+    if parts[0] == "scripts":
+        return rel.suffix == ".py"  # core scripts/ holds only CORE_SCRIPTS
+    if parts[0] == "tests":
+        return rel.name == "conftest.py" or (
+            rel.name.startswith(("test_", "__init__")) and rel.suffix == ".py"
+        )
+    if parts[:2] == ("examples", "demo-desk"):
+        # Demo-desk source (roster, personas) is synced from live and prunable;
+        # its data/ subtree is a core-managed test fixture (universe resolvers
+        # regenerate it on the demo desk) that live never populates — leave it.
+        return len(parts) > 2 and parts[2] != "data"
+    if (
+        parts[0] == "data"
+        and len(parts) == 3
+        and parts[1] in ("strategies", "universes")
+    ):
+        return rel.suffix == ".json"
+    return False
+
+
+def _assert_not_live_root(core: Path, root: Path) -> None:
+    """Refuse any destructive op when `core` resolves to the live source tree.
+
+    prune() unlinks owned-tree files absent from the manifest; on the live root
+    that would delete the live-only scripts/tests and sync_core.py itself. Guard
+    against `apply --core <live-checkout>` typos.
+    """
+    if core.resolve() == root.resolve():
+        raise ValueError(
+            f"refusing to operate: --core path {core} is the live source root"
+        )
+
+
+def prune(
+    core: Path, root: Path = LIVE_ROOT, keep: set[Path] | None = None
+) -> list[Path]:
+    """Delete core files in owned trees that are no longer in apply_manifest()."""
+    _assert_not_live_root(core, root)
+    if keep is None:
+        keep = set(apply_manifest(root))
+    removed: list[Path] = []
+    scan_dirs = list(_OWNED_TREES) + ["data/strategies", "data/universes"]
+    for tree in scan_dirs:
+        base = core / tree
+        if not base.exists():
+            continue
+        for p in base.rglob("*"):
+            if not p.is_file() or "__pycache__" in p.parts:
+                continue
+            rel = p.relative_to(core)
+            if _is_owned(rel) and rel not in keep:
+                p.unlink()
+                removed.append(rel)
+    return _rel_sorted(removed)
+
+
 def apply(core: Path, root: Path = LIVE_ROOT) -> None:
-    for rel in apply_manifest(root):
+    _assert_not_live_root(core, root)
+    manifest = apply_manifest(root)
+    for rel in manifest:
         src, dst = root / rel, core / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
+    removed = prune(core, root, keep=set(manifest))
+    if removed:
+        print(f"[sync_core] pruned {len(removed)} stale file(s)")
 
 
 def check(core: Path, root: Path = LIVE_ROOT) -> list[Path]:
@@ -138,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
     core = ns.core.resolve()
     if ns.cmd == "apply":
         apply(core)
-        print(f"[sync_core] applied {len(apply_manifest())} files -> {core}")
+        print(f"[sync_core] applied {len(apply_manifest())} files (+prune) -> {core}")
         return 0
     drift = check(core)
     if drift:
