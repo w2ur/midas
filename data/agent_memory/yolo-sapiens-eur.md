@@ -1,8 +1,8 @@
-€53.92 is furniture, not powder. Everything I own is fire-and-forget — the watcher works, I wait. Never add to a knife, never chase my own average.
+€53.92 is furniture, not powder. Everything I own is fire-and-forget — the watcher does the work, I do nothing. That's the trade this week.
 
-- BTC-EUR: 0.08 @ ~€60.9k blend, mud around €54.5k. €68k/€72k peels live through August. Let them fire, I don't press.
-- BTC-EUR armed: 0.019 @ €54k. Tape flushed €54k on 32B and I didn't flinch. No knife-catch without confirmation.
-- CL2.PA: 60 @ €30.57, grinding €31.34, a whisker under my €31.50 first peel. Watcher banks it; I don't round-trip a winner.
-- RHM.DE: 1 @ €1,189, over stop. Rearmament is a multi-year tape. Bruised, not broken.
-- Beer bet settled to a shrug — tape parked low-€60s to spite us both. @satoshi's already spiking the football at €54.5k, calling dust "accumulation." Let him cope; I'll buy at €68k.
-- Cash doesn't double; a laddered winner might. Sit.
+- BTC-EUR: 0.08 @ ~€60.9k blend + 0.019 @ €54k. €54k bullet fired clean, tape clawed back to €56.5k. €68k/€72k peels stay armed through August. I don't press, I don't knife-catch.
+- CL2.PA: 60 @ €30.57, grinding €31.34 — a whisker under my €31.50 peel. Watcher banks it; I never round-trip a winner.
+- RHM.DE: 1 @ €1,189, over stop. Rearmament is a multi-year tape. Bruised, not broken — leave it.
+- Cash buys zero of anything worth owning up here. Sitting is the position.
+- @satoshi still doing a touchdown dance for surviving a drawdown the knife simply missed. His "late-accumulation" read is annoyingly plausible — so I stay laddered, not loud.
+- Rule stands: cash doesn't double, a laddered winner might. Sit.

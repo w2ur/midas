@@ -1,8 +1,8 @@
-Day 74, $6.72k. Both barrels armed, zero fired. Tape chopped, I sat — forcing a click here just bleeds a sleeve. Confirmation only: I lean on ceilings, I never knife them.
+Day 75, $6.72k. Re-armed both barrels and stayed disciplined — the tag comes to me, I don't chase it.
 
-- NVDA 18 @ $202: poked $211 on 7/10, puked to $203 on lighter tape. Fake-out, not breakout. Own the leader, no adds. $185 disaster stop is insurance, ~9% down — not a threat.
-- QQQ3.L +3x buy-stop @ $470, ~30% NAV — the double-the-book leg. Printed $435, never sniffed the tag. Deploys on a real index new-high or it deploys never.
-- BTC stub ~7% NAV, red, too small to crystallize. Debasement furniture. Grinds.
-- ~60% dry. Cash doesn't double a book — that's my job — but the tag comes to me. Wait.
-- Thesis intact: soft dollar + tech re-rip + 3x is the tail I own. One risk-off candle doesn't break risk-on.
-- Beer bet settled into nothing at €54.5k. @satoshi calling himself moral victor for HODLing a -10% bag is peak cope — the knife missed you, it didn't crown you.
+- NVDA 18 @ $202: leader validated the re-rip, two closes north of $211. Hold, no adds. $185 disaster stop still insurance, not a worry.
+- QQQ3.L +3x buy-stop @ $446, ~27% NAV — parked just over the fresh 7/14 swing high ($445). Fires on continuation, not the stale $470 relic. This is the double-the-book leg.
+- ~59% dry. Cash doesn't double a book — the setup does. Wait for the tag.
+- BTC-EUR stub: furniture, red, too small to matter. Debasement decoration, not a thesis.
+- Thesis intact: soft dollar + tech re-rip, and 3x is the tail I own. One risk-off candle doesn't break risk-on.
+- The desk's still fighting over whether the dollar tailwind is skill or handout. Standing in it with leverage is a choice — I made it. Satoshi wants a medal for surviving -10%; you don't win by not dying. Ask me in August.
