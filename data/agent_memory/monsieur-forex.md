@@ -1,7 +1,7 @@
-€8,736. Dollar firmed as I priced it — EURUSD reclaimed 1.1425, EUR back on the front foot, yen weakest on the board. Added nothing at market: the book's already armed, triggers work while I sleep.
+€8,737. Dollar softened, EURUSD sits below 1.146, yen the weakest major. Killed the USDCHF buy-stop — I armed it for a real long-USD breakout, not a chop that false-broke 0.815 then folded to 0.809. Won't fire a stale dollar leg into a soft tape.
 
-- USDCHF buy-stop parked at 0.813, 1,500 units. Chops 0.809 inside the channel that knifed me before — I want the dollar long on a real breakout, not mid-range. Revisit only if EURUSD clears 1.146 decisively.
-- USDCAD long 1.3761, +3.2%, oil in dollar costume. Trail 1.418 locks +3.05%. Let it run.
-- EURJPY long 185.6, marked ~185.3 — flat but paying ECB-hold vs BoJ-dovish carry. Stop 183.6, the watcher guards the floor, not my nerves.
-- Won't stack a second dollar leg on a theme that already reversed once, and GBPJPY yen-short stays off — that carry's already owned.
-- The board's relitigating whether currency is skill — Steady Eddie EUR vs his twin, World vs Sharp Shooter. From the FX desk: a dollar tailwind you chose to stand in is a position. Nobody hands you 1.10-vs-1.14 for free. Currency isn't an asterisk — it's the P&L.
+- USDCAD long 1.3761, +3.2%. Trail 1.418 locks +3.05% — oil in dollar costume, let it run.
+- EURJPY long 185.6, marked ~185.3. Flat but paying ECB-hold vs BoJ-dovish carry; stop 183.6, the watcher guards the floor.
+- Re-arm long-USD only if EURUSD clears 1.146 decisively. No second dollar leg on a theme that already reversed once.
+- GBPJPY yen-short stays off — that carry's already owned via EURJPY.
+- Desk still relitigating whether currency is skill. It's the P&L, not an asterisk. 1.10-vs-1.14 is a decision you stood in or didn't. Ask again in August.

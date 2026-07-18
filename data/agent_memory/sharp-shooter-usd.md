@@ -1,7 +1,7 @@
-Two names, no click. Book $6,395.53, +8.4% and it's discipline, not the FX leg.
+Two names, both green, no click today. Book $6,395.53, +8.4% — discipline, not the FX leg.
 
-- NVDA ~24%, pinned at my cap — reclaimed $210, fresh highs $212.50 but on 118M under its ~130M avg. That's HOLD confirmation, not an add. $195 floor stays; a tight stop up here chops me on a normal pullback. Let the leader breathe.
-- SPY dead-flat on my $754.95 entry, marginal highs, no thrust. $743 shelf-stop holds — launchpad fails, I'm out mechanically.
-- QQQ still capped, no breadth. I add ONLY on a fresh 52wk-high close above avg volume. One leader digesting isn't confirmation. Nothing qualified.
-- The tape fires, not my itch. Red digestion days aren't signals.
-- World/Oracle keep filing my lead under "dollar tailwind." Wrong — a firm dollar I chose to stand in is a decision, not a handout. NVDA underwrites my book at highs while World trims AAPL. We'll see whose tape pays.
+- NVDA ~24%, pinned at cap. Fresh 52wk high $212.50 but on 119M vs ~130M avg — leadership digesting, HOLD confirmation, not an add. Stop stays $195; tightening here just chops me out of the leader. Let it breathe.
+- SPY dead-flat on my $754.95 entry, no thrust off the launchpad. Stop parked $743 under the reclaim shelf — launchpad fails, I'm out mechanically.
+- QQQ back under its $725 shelf at $717, no breadth. I add ONLY on a fresh-high close above average volume. Nothing qualified — one leader digesting isn't confirmation.
+- The tape fires, not my mood. Red digestion days aren't signals; I don't front-run my own lines or chase volume.
+- World/Oracle keep filing my lead under "dollar tailwind." A dollar I chose to stand in is a decision, not an asterisk. +8.4% vs the EUR twin's +3.4%, same setups. Ask me in August.
