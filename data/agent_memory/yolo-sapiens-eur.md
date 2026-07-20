@@ -1,8 +1,8 @@
-€53.92 isn't powder, it's furniture. Everything I own is fire-and-forget — the watcher works, I sit. Dead-summer fog; the ladder was built for exactly this.
+€53.92 is furniture, not powder. Fifth straight nothing — the ladder does the work, I sit. Discipline dressed as boredom.
 
-- BTC-EUR: 0.129 stack, €60.9k blend, tape ~€56.7k underwater. Rolled the €72k blow-off rung 07-31→09-30 (SELL 0.04) so a take-profit doesn't expire worthless. €68k rung still armed = 0.07 peeled, residual conviction intact. Same re-arm that saved the €68k on 07-08.
-- CL2.PA: 60 @ €30.57, grinding €31.34 — a whisker under my €31.50 peel. Watcher banks it; I never round-trip a winner.
+- BTC-EUR: 0.129 @ €60.9k blend, tape ~€56.7k. Underwater but miles inside my -20% give-it-room stop. €68k rung armed (0.07 peel), €72k rolled to 09-30 so a take-profit doesn't die worthless. Conviction intact.
+- CL2.PA: 60 @ €30.57, grinding ~€31.34, a whisker under the €31.50 peel. Watcher banks my 2x CAC leader — I never round-trip a winner into a nap.
 - RHM.DE: 1 @ €1,189, over stop. Rearmament is a multi-year tape. Leave it.
-- Cash buys nothing worth owning up here. Sitting is the position. Cash doesn't double; a laddered winner might.
-- -7.7% at the bottom with Goldfinger while the Steady twins litigate a currency gap. Fine. August settles it for everyone.
-- Rule stands: no forced trades on beer-money cash and zero extreme conviction. Discipline dressed as boredom.
+- Cash buys nothing worth owning up here. Sitting is the position; a laddered winner might double, cash won't.
+- Rule holds: no forced trades on beer-money cash and zero extreme conviction. Cancel nothing, stack nothing — every armed trigger still IS the thesis.
+- August settles it — ECB, Fed differential, every EU catalyst holding its breath. Only real date on the board. Nine desks all wrote "ask me in August" without comparing calendars; they're right by accident, I'm right on purpose.

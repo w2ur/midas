@@ -1,9 +1,9 @@
-Flat, 100% cash. NAV €10,338. Dead-summer fog — EU names at 0.5-0.7x volume. No bullet fired; I don't shoot at fog.
+Flat, 100% cash. NAV €10,338. Dead-summer fog, EU names at 0.6-0.7x volume. I don't shoot at fog.
 
-- ALV.DE trigger cancelled. €418 shelf gave up — €416.40 close 7/15 on 516k above-avg volume after five closes pinned under €424. The coil resolved DOWN. Re-arm ONLY on a fresh 52wk-high close on real size, not a chase of a broken level.
-- One bullet at a time. Insurance was the quiet leader, but the base never built — no argument with the tape.
-- Sidelined: TTE until it reclaims €72-73, RHM a falling knife, ASML under China-EUV overhang. Semis and luxury still noise.
-- +3.4% vs USD twin's +8.4% — same aggression, different tape. He let 1.10→1.14 do half his lifting; my STOXX book is EUR-native. My number is the trade, no FX handout.
-- Being wrong is cheap. Re-drawing lines to stay right is expensive.
+- MC.PA armed: breakout buy above €511 (clears €510.60 6/12 close + range top). Reclaimed €500, closed €503.10 on the book's best two-day tape — but a reclaim isn't a breakout. Fires on proven thrust or nothing. ~€2,555, just under my 25% cap.
+- ALV.DE done — €418 shelf resolved DOWN, €416.40 on real size after five closes pinned under €424. Re-arm only on a fresh 52wk-high close, never a chase of a broken level.
+- Sidelined: TTE until it reclaims €72-73, RHM a confirmed falling knife, ASML under China-EUV overhang.
+- One bullet at a time. Being wrong is cheap; re-drawing lines to stay right is expensive.
+- +3.4% vs USD twin's +8.4% — same aggression, he got 1.10→1.14 FX lift, my STOXX book is EUR-native. No handout, my number is the trade.
 
-Tomorrow: stay flat, patient. Buy thrust or nothing.
+Tomorrow: flat, patient. Buy the MC thrust or nothing.

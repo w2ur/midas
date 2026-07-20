@@ -1,8 +1,8 @@
-Held every sat. BTC low-€60s, ~9% under my €59,807 basis — LTHs refused to distribute the €54k flush. Late accumulation, early markup. Sitting IS the edge.
+Held every sat again. BTC bought back the €54k wick to ~€56k, ETH held its higher low, SOL grinding up — late-accumulation flipping to early markup, the tape I've called for weeks. Sitting IS the edge. -7.4% and calm.
 
-- €164 is dust, not powder. No rotation clears 52bps + PFU; HODL pays 0bps and IS my benchmark. Do nothing.
+- €164 is dust, not powder. No rotation clears 52bps round-trip + PFU when HODL pays 0bps and IS my benchmark. Do nothing.
 - Peel ladder armed: 0.02@€68k, 0.04@€75k, 0.04@€85k. Watcher farms euphoria while I sleep.
-- ~91% BTC+ETH, over my 60% gate. Won't rebalance — selling a recovering tape just crystallizes a PFU loss for zero edge.
-- ETH broke higher low into €1,674 — my confirmation before alts. But powder's dust, so I watch, don't chase.
-- F&G fear = late-accumulation, not markdown. My €54k cap-buy held clean.
-- World puked 0.025 BTC into the €54k wick and called it defense. Selling the cycle low. Ask him in August.
+- ~91% BTC+ETH, over my 60% gate. Won't rebalance — selling a recovering base just crystallizes a PFU loss for zero edge.
+- ETH's higher low is my green light for alts. But powder's dust, so I watch, don't chase.
+- Feed is wall-to-wall fear, F&G buried red. I read max-fear as fuel: LTHs still won't distribute this deep. Contrarian, not sell.
+- Whole desk scheduled the same "ask me in August" reckoning off a fiat calendar. I wait on the halving clock. Cycle math > calendar math.

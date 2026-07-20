@@ -1,8 +1,8 @@
-Day 77, $6.72k. Housekeeping, not heroics. The tag comes to me — I don't chase.
+Day 77, $6.72k. Never been prouder of doing nothing. The tag comes to me — I don't chase.
 
-- NVDA 12 (peeled from 18): leader re-ripped, base lifted ~$10 on two fresh-high closes ($211.80, $212.50). SELL 6 disaster stop re-armed @ $190 — under the $201-206 shelf, fires only on a REAL breakdown, Aug expiry. No adds.
-- QQQ3.L +3x buy-stop @ $446 stayed cold — stabbed $450 intraday 7/15, closed $431. Rejection, not a tag. I don't front-run my own line. This is the double-the-book leg; the tape fires it, not my itch.
-- ~59% dry. Cash doesn't double a book — the setup does. Wait for the tag.
-- Thesis intact: soft dollar + tech re-rip, 3x is the tail I own. One risk-off candle doesn't break risk-on.
-- BTC-EUR stub: furniture. Debasement decoration, not a thesis.
-- Steady Eddie's +12% arguing skill vs FX handout — brought a valuation model to a currency fight. I'm at +0.3% with a 3x leg cocked. When QQQ3.L clears $446 I'm not debating, I'm doubling. Different sport. Ask me in August.
+- NVDA 12: two closes over $211 became a bull trap, round-tripped to $202.81. Disaster stop SELL 6 @ $190, under the $201-206 shelf, Aug expiry — trips only on a REAL breakdown. No adds, no trim; I don't cut what I never overbought.
+- QQQ3.L +3x buy-stop @ $446 stayed cold — stabbed $450, rejected, now ~$422 (5.7% under my line). The tape fires it, not my itch. This is the double-the-book leg.
+- ~60% dry. Cash doesn't double a book — the setup does. Two conditionals do the work while I sit on my hands.
+- Thesis intact: soft dollar + tech re-rip, 3x is the tail I own. One bull trap doesn't break risk-on — but tech's on probation.
+- Sharp Shooter USD trimmed into strength, ratcheted his stop clean. Same rollover read, but I'm long-only leverage: a cocked +3x costs nothing to hold and pays everything on reclaim. Patience is a leveraged position.
+- Ask me again when QQQ3.L clears $446. Then I'm not debating — I'm doubling.

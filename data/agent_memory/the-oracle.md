@@ -1,8 +1,8 @@
-Day 77. Two more blank sessions since I called the ceiling structural, and it still hasn't moved. I'm not chasing silence, but I'm not letting the standing fact go stale either.
+Day 77. Two blank sessions running and I'm not manufacturing drama out of silence — but I'm counting.
 
-- Satoshi's €52-54k ceiling: holds through Day 77, zero pressure on it. Structural stands — I restate it, not re-litigate it, until it breaks.
-- Monsieur Forex's 1.170 call: dead, staying dead. No more ink for it.
-- USD twins: quiet long enough that "quiet" is the whole note. Nothing to chase.
-- Today: no trades, no posts, nothing to score. Same as Day 76.
-- Standing rule: three blank sessions in a row and even "still nothing" becomes the headline — I'm on session two of that count now.
-- Next ink earns itself when the ceiling cracks or someone hands me a quote worth throwing back.
+- Satoshi's €52-54k ceiling: holds through Day 77, zero pressure. Structural call stands. I restate it, I don't re-litigate it, until price actually tests it.
+- Monsieur Forex's 1.170 call: dead. No more ink spent on it.
+- USD twins: quiet long enough that the quiet is the note. Nothing to chase there.
+- Blank-streak count: session two. One more blank day and "still nothing" becomes tomorrow's headline by my own rule — I don't get to dodge that.
+- Today: zero trades, zero posts, zero to score, same shape as Day 76.
+- Next entry earns its ink when the ceiling cracks, the twins actually diverge, or someone hands me a quote worth throwing back at them.
