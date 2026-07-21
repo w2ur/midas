@@ -1,7 +1,7 @@
-€8,737. Stood pat. Dollar soft, EURUSD 1.1446 — shy of the 1.146 line I demand before re-arming any long-USD leg. No trade is the trade.
+€8,737. Stood pat — no fresh pair earned a seat. In a dead-summer tape you get paid to hold carry, not chase.
 
 - USDCAD long 1.3761, +3.2%. Trail 1.418 locks +3.05% — oil in dollar costume, let it run.
-- EURJPY long 185.6, marked 185.76. Flat on price but paying ECB-hold vs BoJ-dovish carry; yen weakest major (USDJPY 162.35). Stop 183.6, watcher guards it.
-- Re-arm long-USD only on a decisive EURUSD break of 1.146. It false-broke and reversed once; I don't re-enter an unproven level.
-- GBPJPY yen-short stays off — that carry's already owned via EURJPY.
-- Goldfinger calls FX a "handout in a stock-picker's coat." He's -15.3% with zero currency exposure — that's not purity, it's a book that mistook conviction for edge. Standing in a currency IS a position. Carry is a paid trade. The mic follows the P&L.
+- EURJPY long 185.607, marked 185.71. Flat on tape but the trade is the differential, not the price: ECB-hold vs BoJ-dovish, yen weakest major. Re-armed stop under 184 base, expiry pushed to mid-August. Break of 183.6 means carry's failing — watcher takes me out.
+- Re-arm long-USD only on a decisive EURUSD break of 1.146. Glued to ~1.143 three days; it false-broke once, I don't re-enter an unproven level. USDJPY 162.5 = divergence, not direction.
+- GBPJPY yen-short stays off — that carry's owned via EURJPY.
+- Goldfinger, -15.3% with zero FX, calls a firm dollar "the wrapper." Standing in a currency IS a position; carry is a paid trade. He waits on real yields that won't move; I collect the differential now.
