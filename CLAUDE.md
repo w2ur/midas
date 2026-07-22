@@ -58,6 +58,7 @@ streamlit run app/main.py
 - `data/agent_config/` — holds `live_switch.json` only (committed); the 10 per-agent JSONs were removed; per-agent safety rails now live in `roster.yaml` (enforced by the broker)
 - `data/ticker_currencies.json` — ticker → ISO currency override map (committed)
 - `data/orders/{outbox,inbox}/` — Brain/Hands trade flow (committed)
+- `data/orders/dropped/` — Brain-side audit ledger for agent trades that were not valid orders (non-BUY/SELL action, missing ticker, non-numeric/non-positive shares); `step_author_orders` records each with a reason code instead of crashing or silently skipping (committed; the authoring-time analogue of the broker's inbox rejection codes)
 - `data/orders/{manager-pending,manager-cancels,manager-inbox}/` — Manager channel conditional orders (pending/cancels) and fills (committed, isolated from the public inbox the site reads)
 - `data/agent_memory/` — Ring 2 per-agent journals, 11 markdown files, first-person + biased, rewritten each session (committed)
 - `data/baselines/` — per-agent passive benchmark + coin-flip phantom portfolios, plus `global/msci_world.json`; same snapshot shape as `data/portfolios/`; written by `scripts/backfill_baselines.py` (one-shot) and refreshed by Step 9a of the daily session (committed)
