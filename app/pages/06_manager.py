@@ -59,6 +59,7 @@ _ORDERS_DIR = _ROOT / "data" / "orders"
 _REVIEW_DIR = _ORDERS_DIR / f"{_ALLOCATOR_SPEC.channels_prefix}-review"
 _INBOX_DIR = _ORDERS_DIR / f"{_ALLOCATOR_SPEC.channels_prefix}-inbox"
 _PENDING_DIR = _ORDERS_DIR / f"{_ALLOCATOR_SPEC.channels_prefix}-pending"
+_OUTBOX_DIR = _ORDERS_DIR / f"{_ALLOCATOR_SPEC.channels_prefix}-outbox"
 
 _BASELINE_ID = "baseline-manager"
 _INITIAL_CAPITAL_EUR = 2000.0
@@ -232,9 +233,9 @@ if decisions:
         if positions_d:
             statuses = authored_status(
                 d,
-                agent_id=_MANAGER_ID,
                 inbox_index=inbox_index,
                 pending_dir=_PENDING_DIR,
+                outbox_dir=_OUTBOX_DIR,
             )
             summary_txt = "; ".join(
                 _position_label(p, status) for p, status in zip(positions_d, statuses)
