@@ -185,3 +185,161 @@ def load_resolved(resolved_path: Path) -> list[ResolvedOutcome]:
     except (OSError, json.JSONDecodeError):
         return []
     return raw if isinstance(raw, list) else []
+
+
+# ---------------------------------------------------------------------------
+# Authored-order terminal status
+#
+# The decision log records what the Manager *authored*; a conditional order's
+# outcome (fired / expired / cancelled) or open state (armed) lives in the
+# separate broker channels. These helpers join the two so the log can mark an
+# armed-but-unfired conditional distinctly from an executed buy — the
+# 2026-07-18 confusion where "BUY QQQ3.L €250" (a trigger that expired unfired)
+# read identically to a real fill.
+# ---------------------------------------------------------------------------
+
+
+def index_manager_inbox(inbox_dir: Path) -> dict[str, dict]:
+    """Map ``order_id -> its terminal inbox record`` across every ``{date}.jsonl``.
+
+    A conditional authored on day D fills (or expires) on a *later* day, so its
+    record lands in the inbox file dated by the processing day — not D. The join
+    therefore has to scan the whole directory rather than a single date's file.
+    Files are read in sorted (chronological) order so a later record wins on a
+    duplicated id. Blank/malformed lines and unreadable files are skipped.
+    Returns ``{}`` if the directory is absent.
+    """
+    index: dict[str, dict] = {}
+    inbox_dir = Path(inbox_dir)
+    if not inbox_dir.is_dir():
+        return index
+    for f in sorted(inbox_dir.glob("*.jsonl")):
+        try:
+            lines = f.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            oid = rec.get("order_id") if isinstance(rec, dict) else None
+            if oid:
+                index[oid] = rec
+    return index
+
+
+def authored_status(
+    decision: Decision,
+    *,
+    inbox_index: dict[str, dict],
+    pending_dir: Path,
+    outbox_dir: Path,
+) -> list[str]:
+    """Per-position terminal status label for an authored daily decision.
+
+    Each authored position is matched to the order the broker actually emitted
+    by reading that day's outbox (``{outbox_dir}/{date}.jsonl``) and joining on
+    ``ticker`` — deliberately NOT on the position's index. The broker emits an
+    order only for *tradable* positions: ``manager_decision_to_orders`` skips
+    HOLD actions, tickers with no store price, and zero-size positions. So a
+    position's index in the persisted decision does not track the order's
+    ``seq``, and inferring ``order_id`` from the index would shift every label
+    after a skipped position (the exact mislabeling this whole feature fixes).
+    Reading the ``order_id`` straight from the outbox is immune to that drift.
+
+    The resolved ``order_id`` is looked up against the inbox (``inbox_index``
+    from :func:`index_manager_inbox`) then the pending channel:
+
+      - ``"filled"``            — a market or fired-conditional fill
+      - ``"expired MM-DD"``     — a conditional that expired unfired
+      - ``"cancelled MM-DD"``   — cancelled by the agent
+      - ``"rejected: REASON"``  — any other broker rejection
+      - ``"armed"``             — still-open conditional in ``pending_dir``
+      - ``""``                  — no emitted order (a position the broker
+                                  skipped) or no terminal record yet (in flight)
+
+    Returns one label per position, in order; ``[]`` for a HOLD day. Never
+    raises — a missing date/outbox degrades every label to ``""``.
+    """
+    positions = decision.get("positions", []) or []
+    ids_by_ticker = _outbox_order_ids_by_ticker(outbox_dir, decision.get("date", ""))
+    pending_dir = Path(pending_dir)
+
+    labels: list[str] = []
+    for pos in positions:
+        queue = ids_by_ticker.get(pos.get("ticker"))
+        if not queue:
+            labels.append("")  # broker emitted no order for this position
+            continue
+        oid = queue.pop(0)  # consume in emit order if a ticker repeats in a day
+        rec = inbox_index.get(oid)
+        if rec is not None:
+            labels.append(_inbox_status_label(rec))
+        elif (pending_dir / f"{oid}.json").is_file():
+            labels.append("armed")
+        else:
+            labels.append("")
+    return labels
+
+
+def _outbox_order_ids_by_ticker(
+    outbox_dir: Path, date_str: str
+) -> dict[str, list[str]]:
+    """``ticker -> [order_id, ...]`` from a day's outbox, preserving emit order.
+
+    The outbox (``{outbox_dir}/{date}.jsonl``) is the broker's authoritative
+    record of the orders it actually created for that session — one line per
+    emitted order, each carrying both ``order_id`` and ``ticker``. Repeated
+    tickers keep their emit order so a caller can match repeated authored
+    positions positionally within a ticker. A missing/malformed file or line
+    contributes nothing; an absent date yields ``{}``.
+    """
+    out: dict[str, list[str]] = {}
+    if not date_str:
+        return out
+    path = Path(outbox_dir) / f"{date_str}.jsonl"
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return out
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(rec, dict):
+            continue
+        ticker = rec.get("ticker")
+        oid = rec.get("order_id")
+        if ticker and oid:
+            out.setdefault(ticker, []).append(oid)
+    return out
+
+
+def _inbox_status_label(rec: dict) -> str:
+    """Terminal label for a single inbox fill record."""
+    if rec.get("status") == "filled":
+        return "filled"
+    reason = rec.get("reason")
+    if reason == "TRIGGER_EXPIRED":
+        return f"expired {_short_date(rec)}".rstrip()
+    if reason == "CANCELLED_BY_AGENT":
+        return f"cancelled {_short_date(rec)}".rstrip()
+    if reason:
+        return f"rejected: {reason}"
+    return rec.get("status") or ""
+
+
+def _short_date(rec: dict) -> str:
+    """``MM-DD`` from a record's ``ts_filled`` ISO timestamp, or ``""``."""
+    ts = rec.get("ts_filled")
+    if isinstance(ts, str) and len(ts) >= 10:
+        return ts[5:10]  # "YYYY-MM-DDT..." -> "MM-DD"
+    return ""

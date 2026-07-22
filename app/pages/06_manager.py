@@ -31,7 +31,9 @@ if str(_ROOT) not in sys.path:
 
 from engine.config import get_config
 from engine.manager_report import (
+    authored_status,
     build_manager_summary,
+    index_manager_inbox,
     load_decisions,
     load_resolved,
     read_portfolio,
@@ -53,7 +55,11 @@ if not _cfg.allocators:
 
 _MANAGER_ID = _cfg.allocators[0]
 _ALLOCATOR_SPEC = _cfg.allocator_spec(_MANAGER_ID)
-_REVIEW_DIR = _ROOT / "data" / "orders" / f"{_ALLOCATOR_SPEC.channels_prefix}-review"
+_ORDERS_DIR = _ROOT / "data" / "orders"
+_REVIEW_DIR = _ORDERS_DIR / f"{_ALLOCATOR_SPEC.channels_prefix}-review"
+_INBOX_DIR = _ORDERS_DIR / f"{_ALLOCATOR_SPEC.channels_prefix}-inbox"
+_PENDING_DIR = _ORDERS_DIR / f"{_ALLOCATOR_SPEC.channels_prefix}-pending"
+_OUTBOX_DIR = _ORDERS_DIR / f"{_ALLOCATOR_SPEC.channels_prefix}-outbox"
 
 _BASELINE_ID = "baseline-manager"
 _INITIAL_CAPITAL_EUR = 2000.0
@@ -200,15 +206,39 @@ st.caption(
     "place orders — early HOLD decisions are expected, not a malfunction."
 )
 
+_TRIGGER_OP_SYMBOLS = {">=": "≥", "<=": "≤"}
+
+
+def _position_label(position: dict, status: str) -> str:
+    """`BUY TICKER €N` — annotated with the conditional trigger and the order's
+    terminal status so an armed/expired conditional never reads as a fill."""
+    label = (
+        f"{position.get('action', '?').upper()} {position.get('ticker', '?')} "
+        f"€{position.get('size_eur', 0):,.0f}"
+    )
+    trigger = position.get("trigger")
+    if trigger:
+        op = _TRIGGER_OP_SYMBOLS.get(trigger.get("op", ""), trigger.get("op", ""))
+        label += f" · {op}{trigger.get('level', 0):g}"
+    if status:
+        label += f" — {status}"
+    return label
+
+
 if decisions:
+    inbox_index = index_manager_inbox(_INBOX_DIR)
     rows = []
     for d in decisions:
         positions_d = d.get("positions", []) or []
         if positions_d:
+            statuses = authored_status(
+                d,
+                inbox_index=inbox_index,
+                pending_dir=_PENDING_DIR,
+                outbox_dir=_OUTBOX_DIR,
+            )
             summary_txt = "; ".join(
-                f"{p.get('action', '?').upper()} {p.get('ticker', '?')} "
-                f"€{p.get('size_eur', 0):,.0f}"
-                for p in positions_d
+                _position_label(p, status) for p, status in zip(positions_d, statuses)
             )
         else:
             summary_txt = "HOLD — " + (d.get("hold_reasoning", "") or "")
