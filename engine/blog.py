@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -25,6 +26,12 @@ def _truncate(text: str, cap: int) -> str:
     return text[: cap - 1].rstrip() + "…"
 
 
+def _slugify(text: str) -> str:
+    """Lower-case ASCII slug (letters/digits joined by single hyphens)."""
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return slug or "untitled"
+
+
 @dataclass
 class BlogDraft:
     """Daily blog post draft produced by The Oracle."""
@@ -38,7 +45,14 @@ class BlogDraft:
 
     @classmethod
     def from_dict(cls, d: dict) -> "BlogDraft":
-        return cls(title=d["title"], body_md=d["body_md"], slug=d["slug"])
+        # The Oracle sometimes omits or blanks required keys; degrade to sane
+        # defaults so the blog step never crashes the unattended session on
+        # loose output (2026-07-17 incident). A "Day N: …" title slugifies to
+        # the "day-n-…" convention.
+        title = d.get("title") or "Midas Daily"
+        body_md = d.get("body_md") or ""
+        slug = d.get("slug") or _slugify(title)
+        return cls(title=title, body_md=body_md, slug=slug)
 
 
 def build_oracle_prompt(
@@ -125,7 +139,7 @@ def parse_oracle_response(response: str) -> tuple[BlogDraft, list[PostPayload]]:
         end = len(lines) - 1 if lines[-1].strip().startswith("```") else len(lines)
         text = "\n".join(lines[start:end]).strip()
     data = json.loads(text)
-    draft = BlogDraft.from_dict(data["blog_draft"])
+    draft = BlogDraft.from_dict(data.get("blog_draft") or {})
     posts = [
         PostPayload.from_agent_output("the-oracle", p) for p in data.get("posts", [])
     ]

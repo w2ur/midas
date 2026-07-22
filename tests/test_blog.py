@@ -177,6 +177,37 @@ class TestParseOracleResponse:
         assert draft.title == "T"
         assert posts == []
 
+    def test_missing_slug_is_derived_from_title(self) -> None:
+        # The Oracle sometimes omits the required slug; the pipeline must not
+        # crash (2026-07-17 incident) — derive it from the title instead.
+        resp = json.dumps(
+            {
+                "blog_draft": {"title": "Day 2: The Grind", "body_md": "Body"},
+                "posts": [],
+            }
+        )
+        draft, _ = parse_oracle_response(resp)
+        assert draft.slug == "day-2-the-grind"
+
+    def test_blank_slug_is_derived_from_title(self) -> None:
+        draft = BlogDraft.from_dict(
+            {"title": "Rally & Rout", "body_md": "B", "slug": ""}
+        )
+        assert draft.slug == "rally-rout"
+
+    def test_missing_body_and_title_degrade_without_crashing(self) -> None:
+        # Oracle omits body_md (and title): degrade to defaults, don't KeyError.
+        draft = BlogDraft.from_dict({"slug": "day-5"})
+        assert draft.body_md == ""
+        assert draft.title == "Midas Daily"
+        assert draft.slug == "day-5"
+
+    def test_missing_blog_draft_key_does_not_crash(self) -> None:
+        draft, posts = parse_oracle_response(json.dumps({"posts": []}))
+        assert draft.title == "Midas Daily"
+        assert draft.body_md == ""
+        assert posts == []
+
 
 class TestSaveDailyBlogDraft:
     def test_writes_frontmatter_and_body(self, midas_data_root: Path) -> None:
