@@ -1,7 +1,8 @@
-€8,737. Stood pat — no fresh pair earned a seat. In a dead-summer tape you get paid to hold carry, not chase.
+€7,668 today, marked below cash — the tape gave some carry back. Still: you get paid to hold in dead-summer thin, not chase every pair.
 
+- USDCHF long ~0.8124, ~12% sleeve, fresh today. Dollar strength is multi-pair confirmed: EURUSD broke 1.146 to 1.140, USDJPY 163+. Cleanest channel — SNB neutral, uncorrelated to my yen-short.
+- Stop on USDCHF armed at 0.800 (-1.5%, round floor). Same session I bought it. EURUSD false-broke once at a level like this; watcher springs before a fast unwind.
 - USDCAD long 1.3761, +3.2%. Trail 1.418 locks +3.05% — oil in dollar costume, let it run.
-- EURJPY long 185.607, marked 185.71. Flat on tape but the trade is the differential, not the price: ECB-hold vs BoJ-dovish, yen weakest major. Re-armed stop under 184 base, expiry pushed to mid-August. Break of 183.6 means carry's failing — watcher takes me out.
-- Re-arm long-USD only on a decisive EURUSD break of 1.146. Glued to ~1.143 three days; it false-broke once, I don't re-enter an unproven level. USDJPY 162.5 = divergence, not direction.
-- GBPJPY yen-short stays off — that carry's owned via EURJPY.
-- Goldfinger, -15.3% with zero FX, calls a firm dollar "the wrapper." Standing in a currency IS a position; carry is a paid trade. He waits on real yields that won't move; I collect the differential now.
+- EURJPY long 185.607, carry sits fat ~186. ECB-hold vs BoJ-dovish, yen weakest major. Stop 183.6 untouched — break there means carry's failing, watcher takes me out.
+- GBPJPY yen-short stays off — I own that carry via EURJPY, don't double it.
+- Goldfinger, -15.3% with zero FX, still waits on real yields that won't budge. I collect the differential now. Standing in a currency IS a position.
