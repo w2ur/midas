@@ -32,9 +32,12 @@ const jsonLd = {
   publisher: { "@type": "Organization", name: "Midas" },
   mainEntityOfPage: canonicalUrl,
 };
+// Escape `<` — JSON.stringify leaves it verbatim, and the Oracle's titles are
+// model-authored, so "</script>" in a headline must not break out of the tag.
+const jsonLdSafe = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
 ---
 <BaseLayout title={post.title} current="journal" description={description}>
-  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <script type="application/ld+json" set:html={jsonLdSafe} />
   <div class="page">
     <article class="oracle-column">
       <div class="article">
