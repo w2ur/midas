@@ -1,6 +1,6 @@
 # Midas — Methodology & Limitations
 
-*Pre-registered evaluation methodology. This document states what Midas measures, how, and — deliberately, up front — everything that is wrong or unproven about it. It is versioned in git; the commit history is the record of what was claimed when.*
+*Pre-registered evaluation methodology. This document states what Midas measures, how, and — deliberately, up front — everything that is wrong or unproven about it. It is versioned in git, and every substantive change is logged, dated, in the changelog at the end of this document — the public record of what was claimed when. (The full commit history lives in the live-desk repository, which is not public today; see "The engine is open source" below.)*
 
 Last substantive update: 2026-07-24.
 
