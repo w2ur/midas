@@ -56,7 +56,7 @@ These are real and we surface them rather than letting a reader discover them as
 
 ## How execution is disciplined
 
-- **Safety lives in the broker, not the prompt.** The paper broker enforces 14 distinct rejection/cancel reason codes (cash, shares, notional, universe, drawdown, FX-rate, order-count, trigger-expiry, agent cancellations, and more). A persona's prompt is aspirational; the broker is what actually constrains it.
+- **Safety lives in the broker, not the prompt.** The paper broker enforces 15 distinct rejection/cancel reason codes (cash, shares, notional, universe, drawdown, FX-rate, order-count, trigger-expiry, agent cancellations, and more). A persona's prompt is aspirational; the broker is what actually constrains it.
 - **Decision-time air gap.** Trading sessions run with **no outbound HTTP**. Prices — and, for the two agents in the sentiment A/B below, news headlines — come only from committed stores, populated out-of-band by separate scheduled jobs. Agents never fetch the web at decision time. This makes two failure modes that affect comparable systems *structurally impossible* here: tool-level look-ahead leakage, and live-fetch instability. Headlines, when used, are pre-sanitized committed data treated as untrusted input (see the A/B section).
 - **Idempotent, auditable order flow.** Orders and fills are committed JSONL keyed on deterministic order IDs; re-running a session cannot double-fill. Conditional orders carry mandatory expiries and fire through a separate watcher.
 
@@ -86,7 +86,7 @@ That ten Claude agents have paper-traded autonomously, every weekday since 2026-
 
 ## The engine is open source
 
-The engine that runs this experiment is public at [github.com/w2ur/midas-core](https://github.com/w2ur/midas-core) under the MIT licence. That includes the **Brain/Hands** architecture — agents author orders to an outbox on disk; a paper broker enforces 14 distinct rejection/cancel reason codes and writes fills to an inbox — the `roster.yaml` config that drives the whole cast (traders, a narrator, and an allocator, each with its own safety rails enforced in the broker rather than the prompt), and a runnable demo desk with a documented walkthrough. Anyone can clone it and stand up their own desk: the quickstart in the [midas-core README](https://github.com/w2ur/midas-core#readme) is the starting point.
+The engine that runs this experiment is public at [github.com/w2ur/midas-core](https://github.com/w2ur/midas-core) under the MIT licence. That includes the **Brain/Hands** architecture — agents author orders to an outbox on disk; a paper broker enforces 15 distinct rejection/cancel reason codes and writes fills to an inbox — the `roster.yaml` config that drives the whole cast (traders, a narrator, and an allocator, each with its own safety rails enforced in the broker rather than the prompt), and a runnable demo desk with a documented walkthrough. Anyone can clone it and stand up their own desk: the quickstart in the [midas-core README](https://github.com/w2ur/midas-core#readme) is the starting point.
 
 What is **not** public is this live desk's own repository — the full data ledger of orders, fills, and snapshots. The site renders those committed artifacts, but the repository itself is private today. So the framework is open and reproducible; the specific book you are reading here is shown, not shared.
 
@@ -105,6 +105,6 @@ What is **not** public is this live desk's own repository — the full data ledg
 ## Colophon
 
 - **Cadence.** Weekdays at 20:00 UTC the full ten-agent roster trades; the Oracle narrates. Weekends run a valuation-only refresh — no agents, no new trades — so the leaderboard stays current without manufacturing weekend activity.
-- **Execution.** A paper broker enforces 14 distinct rejection/cancel reason codes on every order. Safety lives in the broker, not the prompt.
+- **Execution.** A paper broker enforces 15 distinct rejection/cancel reason codes on every order, and the conditional-order watcher adds a sixteenth (`TRIGGER_EXPIRED`). Safety lives in the broker, not the prompt.
 - **Stack.** A Python engine (`bt` for deterministic strategies, `yfinance` for historical data, Claude agents for the analytical ones); the paper broker; and this site — Astro, static output, rendered entirely from committed artifacts and deployed on Vercel.
 - **Author.** Built and run by William — [william.revah.paris](https://william.revah.paris).
