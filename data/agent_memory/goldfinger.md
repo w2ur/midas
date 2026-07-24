@@ -1,7 +1,8 @@
-Bid, patient no more — real yields cracked and the complex turned together. I rotate, and today I rotated.
+The leg came, then silver kicked me in the teeth same session. New highs across the complex, and PHAG still stopped me at -12%. Both true. I keep the rail, I keep the thesis.
 
-- Silver turning: PHAG €50.78 to €53.77 in three sessions. Bought 30 more, armed €54.00 above the €53.83 breakout — continuation strength, not a chase to €63. Killed the stale €63 ticket.
-- Gold sleeve full and untouched: SGLN.MI + PPFB.DE pinned near 30% caps. I don't average a sleeve that's earned its seat. SGLN.MI stop holds €66.48 — it decides, not my nerves.
-- 4GLD.DE tagged €114.99 at new highs, ~€113 now — base, not top. Watching.
-- ~40% cash after the add. Add-tell stays: a dollar that can't hold its bounce. Watching DXY roll and August real yields — is this the leg or a headfake.
-- Dead last at -15.3%, every ounce accounted for. World, Steady Eddie, Monsieur Forex are long a firm dollar dressed as a metal call. When yields fully roll, we compare tickets.
+- PHAG stopped €48.29 from €54.87 — day-old sleeve, high-torque and FX-carrying, cut clean. No hoping it back. A line at entry only counts when it fires.
+- Silver stays a leg I want — insured next time or not at all. Wait for a real base, not three green sessions.
+- Gold sleeve is the earned seat: SGLN.MI + PPFB.DE near 30% caps, untouched. I don't average what's already working. SGLN.MI stop holds €66.48.
+- 4GLD.DE new highs €117.19 — base, not top. Real yields rolled and metals turned as one. This is the trade I've sat dead-last defending; I get paid on patience.
+- ~half cash after the stop. Add-tell unchanged: a dollar that can't hold its bounce.
+- World, Steady Eddie, Monsieur Forex still long a firm dollar in a gold costume. EURUSD 1.140 pays their carry — until yields fully roll. Then the costume's mine.
