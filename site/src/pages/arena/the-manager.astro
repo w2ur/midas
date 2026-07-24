@@ -4,7 +4,6 @@ import AgentCrest from "@/components/AgentCrest.astro";
 import PortfolioTable from "@/components/PortfolioTable.astro";
 import BaselineChart from "@/components/BaselineChart.astro";
 import type { AgentPortfolio } from "@/lib/output";
-import { loadLastClose } from "@/lib/ohlcv";
 import { tickerSlug } from "@/lib/orders";
 import {
   MANAGER,
@@ -35,17 +34,20 @@ const retStr = retPct === null ? "—" : `${retPct > 0 ? "+" : ""}${retPct.toFix
 
 const asOf = portfolio?.last_updated ?? latestSnap?.date ?? MANAGER.public_since;
 
-// Build an AgentPortfolio for PortfolioTable. `deployed` is the mark-to-market
-// sum of the positions in native currency — the same convention PortfolioTable
-// uses for its Value column and weight bars, so the summary stays self-consistent.
+// Build an AgentPortfolio for PortfolioTable. `deployed` must be the engine's
+// FX-converted EUR figure (snapshot `positions_value`), NOT a sum of native
+// closes: this book is majority foreign-currency (USD/GBP/BTC), so a native
+// sum labeled EUR would contradict the Book value stat above by real FX
+// amounts. Per-position values in the table stay native-currency by the
+// site-wide convention; only the cash/deployed/total summary is EUR.
 const pfPositions = portfolio?.positions ?? [];
-const deployed = pfPositions.reduce((acc, p) => {
-  const q = loadLastClose(p.ticker, asOf);
-  return acc + (q ? q.close * p.shares : 0);
-}, 0);
+// Cash AND deployed both come from the same snapshot so the summary total
+// equals the Book value stat — portfolio.json can be one session ahead of the
+// last snapshot (a trigger fill), and mixing the two dates would put two
+// disagreeing EUR totals on the same page.
 const agentPortfolio: AgentPortfolio = {
-  cash: portfolio?.cash ?? 0,
-  deployed,
+  cash: latestSnap?.cash ?? portfolio?.cash ?? 0,
+  deployed: latestSnap?.positions_value ?? 0,
   positions: pfPositions.map((p) => ({ ticker: p.ticker, shares: p.shares })),
   currency: "EUR",
 };
@@ -131,7 +133,10 @@ function statusCls(status: string): string {
 
     <section class="dsec holdings">
       <h2>Portfolio</h2>
-      <p class="note">Positions as of {asOf}. Cash is EUR; foreign positions shown in native currency.</p>
+      <p class="note">
+        Positions as of {asOf}. Cash, deployed, and total are EUR from the engine's FX-converted
+        snapshot{latestSnap ? ` (${latestSnap.date})` : ""}; per-position values shown in native currency.
+      </p>
       <PortfolioTable portfolio={agentPortfolio} asOf={asOf} />
     </section>
 
@@ -143,20 +148,25 @@ function statusCls(status: string): string {
         <p class="empty">No decision records yet.</p>
       ) : (
         <ol class="decision-list">
-          {reviews.map((r) => (
-            <li class="decision">
-              <div class="decision-head">
-                <span class="d-date">{r.date}</span>
-                <span class="d-conv">conviction {r.conviction}/10</span>
-                <span class={`d-tag ${r.positions.length > 0 ? "act" : "hold"}`}>
-                  {r.positions.length > 0
-                    ? `${r.positions.length} position${r.positions.length > 1 ? "s" : ""}`
-                    : "hold"}
-                </span>
-              </div>
-              <pre class="d-render">{r.render}</pre>
-            </li>
-          ))}
+          {reviews.map((r) => {
+            // The decision engine supports explicit HOLD entries inside `positions`
+            // (engine/manager_decision.py) — only non-HOLD entries are commitments.
+            const committed = r.positions.filter((p) => p.action !== "HOLD");
+            return (
+              <li class="decision">
+                <div class="decision-head">
+                  <span class="d-date">{r.date}</span>
+                  <span class="d-conv">conviction {r.conviction}/10</span>
+                  <span class={`d-tag ${committed.length > 0 ? "act" : "hold"}`}>
+                    {committed.length > 0
+                      ? `${committed.length} position${committed.length > 1 ? "s" : ""}`
+                      : "hold"}
+                  </span>
+                </div>
+                <pre class="d-render">{r.render}</pre>
+              </li>
+            );
+          })}
         </ol>
       )}
     </section>

@@ -42,8 +42,12 @@ function readJson<T>(p: string): T | null {
 
 function readJsonl<T>(file: string): T[] {
   if (!fs.existsSync(file)) return [];
+  // Same bare-NaN guard as readJson: Python's json.dumps emits literal `NaN`
+  // for float("nan"), which JSON.parse rejects — a single bad row must not
+  // crash the whole site build.
   return fs
     .readFileSync(file, "utf-8")
+    .replace(/:\s*NaN/g, ": null")
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean)
@@ -242,6 +246,28 @@ export function loadManagerFills(): ManagerFill[] {
   return fills.sort((a, b) =>
     a.date === b.date ? b.order_id.localeCompare(a.order_id) : b.date.localeCompare(a.date),
   );
+}
+
+/** Manager fills reshaped to lib/orders' `Order` contract (agent_id = the-manager),
+ * so ticker pages can merge them into the public per-ticker history. Lives here
+ * (not in the page frontmatter) because Astro's getStaticPaths is hoisted and can
+ * only see module imports. */
+export function loadManagerOrdersAsOrders(): import("./orders").Order[] {
+  return loadManagerFills().map((f) => ({
+    order_id: f.order_id,
+    agent_id: MANAGER_ID,
+    date: f.date,
+    action: f.action,
+    ticker: f.ticker,
+    shares: f.shares,
+    reasoning: f.reasoning,
+    currency: f.currency,
+    status: f.status,
+    fill_price: f.fill_price,
+    fill_currency: f.fill_currency,
+    fees: f.fees,
+    reject_reason: f.reject_reason,
+  }));
 }
 
 /** (latest - initial) / initial as a percent over a snapshot series. null if empty. */

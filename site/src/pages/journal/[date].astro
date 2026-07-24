@@ -9,7 +9,10 @@ export function getStaticPaths() {
 const { date } = Astro.params as { date: string };
 const post = loadBlogByDate(date);
 const html = renderBlogHtml(post.body);
-const description = excerpt(post.body, 200);
+// Fall back to the old title-based description when the excerpt is empty (a
+// headings-only or degraded Oracle body): an empty string would pass through
+// BaseLayout's default and ship an empty <meta name="description">.
+const description = excerpt(post.body, 200) || `The Oracle — ${post.title}`;
 
 const all = listBlogDates();
 const idx = all.indexOf(date);
