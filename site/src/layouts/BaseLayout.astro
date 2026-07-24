@@ -26,12 +26,15 @@ const ogImage = new URL("/og.png", site).toString();
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="application/rss+xml" title="Midas — The Oracle" href="/rss.xml" />
     <link rel="preload" as="font" type="font/woff2" href={archivoFont} crossorigin />
     <link rel="preload" as="font" type="font/woff2" href={newsreaderFont} crossorigin />
     <meta property="og:title" content={`${title} — Midas`} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="Midas" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />

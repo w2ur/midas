@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import { listBlogDates, loadBlogByDate, renderBlogHtml } from "@/lib/blog";
+import { listBlogDates, loadBlogByDate, renderBlogHtml, excerpt } from "@/lib/blog";
 
 export function getStaticPaths() {
   return listBlogDates().map((date) => ({ params: { date } }));
@@ -9,6 +9,7 @@ export function getStaticPaths() {
 const { date } = Astro.params as { date: string };
 const post = loadBlogByDate(date);
 const html = renderBlogHtml(post.body);
+const description = excerpt(post.body, 200);
 
 const all = listBlogDates();
 const idx = all.indexOf(date);
@@ -20,8 +21,20 @@ function humanDate(iso: string): string {
     weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
   });
 }
+
+const canonicalUrl = new URL(`/journal/${post.date}`, Astro.site ?? "https://midas.revah.paris").toString();
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: post.title,
+  datePublished: `${post.date}T00:00:00Z`,
+  author: { "@type": "Person", name: "The Oracle" },
+  publisher: { "@type": "Organization", name: "Midas" },
+  mainEntityOfPage: canonicalUrl,
+};
 ---
-<BaseLayout title={post.title} current="journal" description={`The Oracle — ${post.title}`}>
+<BaseLayout title={post.title} current="journal" description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <div class="page">
     <article class="oracle-column">
       <div class="article">
