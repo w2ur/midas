@@ -48,7 +48,12 @@ jobs:
       - name: Refresh universes
         run: python scripts/refresh_universes.py
 
+      # Runs even when the refresh step exits non-zero (a skipped index):
+      # the successful indexes still get committed, while the job stays red
+      # so the owner gets the workflow-failure email. A broken scraper must
+      # neither stall the other indexes nor fail silently.
       - name: Commit and push updates
+        if: ${{ success() || failure() }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

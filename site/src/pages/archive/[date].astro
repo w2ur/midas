@@ -81,6 +81,7 @@ const title = blog?.title ?? `Session · ${date}`;
   <section class="page hero">
     <h1>{title}</h1>
     <p class="lede">The paper, frozen as of close on {humanDate(date)}.</p>
+    {hasPosts && <p class="lede"><a href={`/feed/${date}`}>See the full feed for this date →</a></p>}
   </section>
 
   <section class="page today">

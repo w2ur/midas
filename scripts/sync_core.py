@@ -23,6 +23,10 @@ CORE_SCRIPTS = [
     "check_triggers.py",
     "session_state.py",
     "fetch_market_data.py",
+    # Price-data bootstrap for forks: config-driven (no live-cast coupling), it
+    # populates data/market/ohlcv from yfinance. Shipping it also un-breaks the
+    # `midas fetch-ohlcv` subcommand, which maps to scripts.fetch_ohlcv.
+    "fetch_ohlcv.py",
     "resolve_manager_outcomes.py",
     "backfill_baselines.py",
     "build_tax_shadow.py",

@@ -1,13 +1,22 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import AgentCrest from "@/components/AgentCrest.astro";
-import { buildTickerIndex, loadAllOrders, type Order } from "@/lib/orders";
+import { buildTickerIndex, tickerSlug, loadAllOrders, type Order } from "@/lib/orders";
 import { isTradingAgent, getAgent } from "@/lib/roster";
 import { isCrestId } from "@/lib/crests";
 import { tickerName } from "@/lib/tickers";
+import { MANAGER, loadManagerOrdersAsOrders } from "@/lib/manager";
 
+// The Manager's channels are public since 2026-07-24: its orders join the
+// per-ticker history, and its tickers generate pages — a manager-only ticker
+// must never leave a dead link on the dossier. (The loader lives in lib/manager
+// because getStaticPaths is hoisted and only sees module imports.)
 export function getStaticPaths() {
   const idx = buildTickerIndex();
+  for (const o of loadManagerOrdersAsOrders()) {
+    const slug = tickerSlug(o.ticker);
+    if (!idx.has(slug)) idx.set(slug, o.ticker);
+  }
   return Array.from(idx.entries()).map(([slug, ticker]) => ({
     params: { slug },
     props: { ticker },
@@ -18,7 +27,7 @@ const { ticker } = Astro.props;
 const { slug } = Astro.params as { slug: string };
 const name = tickerName(ticker);
 
-const all = loadAllOrders().filter((o) => o.ticker === ticker);
+const all = [...loadAllOrders(), ...loadManagerOrdersAsOrders()].filter((o) => o.ticker === ticker);
 all.sort((a, b) => (a.date === b.date ? a.order_id.localeCompare(b.order_id) : b.date.localeCompare(a.date)));
 
 const byAgent = new Map<string, Order[]>();
@@ -33,6 +42,7 @@ const filledCount = all.filter((o) => o.status === "filled").length;
 const rejectedCount = all.filter((o) => o.status === "rejected").length;
 
 function displayName(id: string): string {
+  if (id === MANAGER.id) return MANAGER.display_name;
   return isTradingAgent(id) ? getAgent(id).display_name : id;
 }
 

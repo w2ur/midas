@@ -1,14 +1,14 @@
 # Midas — Methodology & Limitations
 
-*Pre-registered evaluation methodology. This document states what Midas measures, how, and — deliberately, up front — everything that is wrong or unproven about it. It is versioned in git; the commit history is the record of what was claimed when.*
+*Pre-registered evaluation methodology. This document states what Midas measures, how, and — deliberately, up front — everything that is wrong or unproven about it. It is versioned in git, and every substantive change is logged, dated, in the changelog at the end of this document — the public record of what was claimed when. (The full commit history lives in the live-desk repository, which is not public today; see "The engine is open source" below.)*
 
-Last substantive update: 2026-06-28.
+Last substantive update: 2026-07-24.
 
 ---
 
 ## What Midas is
 
-Midas is a public experiment: ten Claude trading personas, each started with €10,000 of **paper** money on **2026-04-17**, author orders autonomously every weekday with no human in the loop. An eleventh agent, the Oracle, narrates but does not trade. Every order, the reasoning behind it, every fill, and every portfolio snapshot is committed to a public git repository. The site at `midas.revah.paris` renders entirely from those committed artifacts.
+Midas is a public experiment: ten Claude trading personas, each started with €10,000 of **paper** money on **2026-04-17**, author orders autonomously every weekday with no human in the loop. An eleventh agent, the Oracle, narrates but does not trade. Every order, the reasoning behind it, every fill, and every portfolio snapshot is committed to a git repository and rendered on this site. The engine that runs the desk is open source (MIT); the full live-desk repository — the complete data ledger — is not public today. The site at `midas.revah.paris` renders entirely from those committed artifacts.
 
 This is an experiment in *process and transparency*, not a demonstration of trading skill. Read the limitations section before drawing any conclusion from a number on the leaderboard.
 
@@ -80,12 +80,22 @@ These are real and we surface them rather than letting a reader discover them as
 
 ## What you may fairly conclude today
 
-That ten Claude agents have paper-traded autonomously, every weekday since 2026-04-17, with every decision and its reasoning committed to a public ledger you can audit line by line; that each is measured against both a passive benchmark and a random-trade control shown beside its return; and that the whole thing was built and run by one person. Nothing about returns, edge, or whether "AI can trade." Those questions are deliberately deferred to the thresholds above.
+That ten Claude agents have paper-traded autonomously, every weekday since 2026-04-17, with every decision and its reasoning committed to git and rendered on this site line by line (the engine is open source; the full live-desk repository is not public today); that each is measured against both a passive benchmark and a random-trade control shown beside its return; and that the whole thing was built and run by one person. Nothing about returns, edge, or whether "AI can trade." Those questions are deliberately deferred to the thresholds above.
+
+<a id="open-source"></a>
+
+## The engine is open source
+
+The engine that runs this experiment is public at [github.com/w2ur/midas-core](https://github.com/w2ur/midas-core) under the MIT licence. That includes the **Brain/Hands** architecture — agents author orders to an outbox on disk; a paper broker enforces 14 distinct rejection/cancel reason codes and writes fills to an inbox — the `roster.yaml` config that drives the whole cast (traders, a narrator, and an allocator, each with its own safety rails enforced in the broker rather than the prompt), and a runnable demo desk with a documented walkthrough. Anyone can clone it and stand up their own desk: the quickstart in the [midas-core README](https://github.com/w2ur/midas-core#readme) is the starting point.
+
+What is **not** public is this live desk's own repository — the full data ledger of orders, fills, and snapshots. The site renders those committed artifacts, but the repository itself is private today. So the framework is open and reproducible; the specific book you are reading here is shown, not shared.
 
 ## Methodology changelog
 
 *Methodology changes are logged here rather than silently applied — pre-registration honesty.*
 
+- **2026-07-24 — Engine open-sourced + repository-visibility wording corrected.** The reusable engine and framework behind this experiment has been public at [`midas-core`](https://github.com/w2ur/midas-core) (MIT) since 2026-07-15 — the Brain/Hands broker, the `roster.yaml`-driven cast, and a runnable demo desk. This document previously described artifacts as "committed to a public git repository"; that phrasing is corrected to distinguish the **open-source engine** from the **private live-desk ledger**. The site still renders every committed artifact; the live repository itself is not public today. Documentation and positioning only — no data or execution behavior changed.
+- **2026-07-24 — Manager made public.** The Manager's dossier — portfolio history, fills, and decision log — is now published at [`/arena/the-manager`](/arena/the-manager). This supersedes the "Manager artifacts remain private and off the public site" clause of the 2026-06-28 entry. The Manager stays **off the ranked leaderboard** — different capital, inception, and mandate, so it is not comparable to the ten traders — and its order channels stay isolated from the public inbox. Rationale: the experiment's transparency principle extends to the allocator now that the allocator architecture itself is open in the core.
 - **2026-07-03 — Trigger-rails documentation corrected.** Docs previously said conditional-trigger fires apply "the same safety rails" as market orders. In fact the watcher path deliberately skips two *batch-level* rails — `MAX_ORDERS_PER_DAY` and `DAILY_DRAWDOWN_HALT` — while keeping every order-level rail (notional, universe, cash/position/shares, FX, apply_trade). Documentation-only fix (CLAUDE.md, README); no rail behavior changed.
 - **2026-07-03 — Backtest honesty + reproducibility.** `bt` backtests are flagged gross of costs (`GROSS_OF_COSTS` warning in the CLI and API; full fee-model wiring deferred because bt's commission hook lacks the ticker). The `random` selector is now seeded deterministically from (strategy id, window start) so factor-research runs reproduce run-to-run instead of reading numpy's global RNG. The CLI `--to` default changed from a hardcoded date to today. Factor-research output is stamped with `generated_at`, the git SHA, and the run arguments.
 - **2026-07-03 — Survivorship-bias guard.** Index universes resolve to current constituents, so historical factor-research runs were survivorship-biased (an S&P 500 run from 2024 was inflated ~194%). Added a `SURVIVORSHIP_BIAS` warning (`engine/survivorship.py`) surfaced by `scripts/run_backtest.py`, `scripts/run_all_combos.py`, and the backtester API `warnings` field whenever a run starts before the universe file's last refresh. Moved the factor-research and Add-a-Strategy defaults from `sp500` to `dow30`/`etf-broad`. Reporting-only: no historical result is rewritten.

@@ -1,0 +1,506 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import AgentCrest from "@/components/AgentCrest.astro";
+import PortfolioTable from "@/components/PortfolioTable.astro";
+import BaselineChart from "@/components/BaselineChart.astro";
+import type { AgentPortfolio } from "@/lib/output";
+import { tickerSlug } from "@/lib/orders";
+import {
+  MANAGER,
+  loadManagerPortfolio,
+  loadManagerSnapshots,
+  loadManagerBaseline,
+  loadManagerReviews,
+  loadManagerResolved,
+  loadManagerFills,
+  snapshotReturnPct,
+} from "@/lib/manager";
+
+// This is a static route. It wins over [agent_id].astro because that page's
+// getStaticPaths emits only TRADING_AGENTS (the Manager is deliberately not one).
+
+const portfolio = loadManagerPortfolio();
+const snapshots = loadManagerSnapshots();
+const baseline = loadManagerBaseline();
+const reviews = loadManagerReviews();
+const resolved = loadManagerResolved();
+const fills = loadManagerFills();
+
+const latestSnap = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
+const daysLive = snapshots.length;
+const retPct = snapshotReturnPct(snapshots);
+const retCls = retPct === null ? "" : retPct > 0 ? "pos" : retPct < 0 ? "neg" : "";
+const retStr = retPct === null ? "—" : `${retPct > 0 ? "+" : ""}${retPct.toFixed(2)}%`;
+
+const asOf = portfolio?.last_updated ?? latestSnap?.date ?? MANAGER.public_since;
+
+// Build an AgentPortfolio for PortfolioTable. `deployed` must be the engine's
+// FX-converted EUR figure (snapshot `positions_value`), NOT a sum of native
+// closes: this book is majority foreign-currency (USD/GBP/BTC), so a native
+// sum labeled EUR would contradict the Book value stat above by real FX
+// amounts. Per-position values in the table stay native-currency by the
+// site-wide convention; only the cash/deployed/total summary is EUR.
+const pfPositions = portfolio?.positions ?? [];
+// Cash AND deployed both come from the same snapshot so the summary total
+// equals the Book value stat — portfolio.json can be one session ahead of the
+// last snapshot (a trigger fill), and mixing the two dates would put two
+// disagreeing EUR totals on the same page.
+const agentPortfolio: AgentPortfolio = {
+  cash: latestSnap?.cash ?? portfolio?.cash ?? 0,
+  deployed: latestSnap?.positions_value ?? 0,
+  positions: pfPositions.map((p) => ({ ticker: p.ticker, shares: p.shares })),
+  currency: "EUR",
+};
+
+const eur = (n: number) =>
+  new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(n);
+
+function statusLabel(f: (typeof fills)[number]): string {
+  if (f.status === "rejected") return f.reject_reason ?? "rejected";
+  if (f.status === "pending") return f.trigger ? "pending trigger" : "pending";
+  return f.trigger_fired ? "filled on trigger" : "filled";
+}
+function statusCls(status: string): string {
+  return status === "filled" ? "ok" : status === "rejected" ? "bad" : "wait";
+}
+---
+<BaseLayout
+  title={MANAGER.display_name}
+  current="arena"
+  description="The Manager — a paper allocator that sizes positions from the ten analysts' convictions. Off the ranked leaderboard by design; its record is visible, not comparable."
+>
+  <article class="page dossier" data-agent={MANAGER.id}>
+    <header class="dossier-head">
+      <p class="session-stamp">
+        <span class="mk" aria-hidden="true"></span>
+        DOSSIER · ALLOCATOR · EUR BASE · OFF THE LEADERBOARD
+      </p>
+      <div class="namerow">
+        <AgentCrest id={MANAGER.id} size={60} />
+        <h1>{MANAGER.display_name}</h1>
+      </div>
+      <p class="tagline">{MANAGER.archetype}.</p>
+
+      <p class="framing">
+        A paper allocator. Since <strong>{MANAGER.inception}</strong> it has run a
+        <strong>EUR {eur(MANAGER.initial_capital)}</strong> book, sizing conditional entries from the
+        ten analysts' convictions rather than trading a universe of its own. It sits
+        <strong>off the ranked leaderboard by design</strong> — different capital
+        (EUR {eur(MANAGER.initial_capital)} vs 10,000), a different start date
+        ({MANAGER.inception} vs 2026-04-17), and a different mandate — so its record is shown here,
+        not scored against the arena. Its order channels stay isolated from the public inbox.
+        Public since {MANAGER.public_since}. <a href="/methodology">How Midas works →</a>
+      </p>
+
+      <dl class="statrow">
+        <div class="statcell">
+          <dt>Return (EUR)</dt>
+          <dd class={`val phosphor ${retCls}`}>{retStr}</dd>
+        </div>
+        <div class="statcell">
+          <dt>Book value (EUR)</dt>
+          <dd class="val">{latestSnap ? eur(latestSnap.portfolio_value) : "—"}</dd>
+        </div>
+        <div class="statcell">
+          <dt>Starting capital</dt>
+          <dd class="val"><span class="unit">EUR</span> {eur(MANAGER.initial_capital)}</dd>
+        </div>
+        <div class="statcell">
+          <dt>Days live</dt>
+          <dd class="val">{daysLive}</dd>
+        </div>
+        <div class="statcell">
+          <dt>Inception</dt>
+          <dd class="val small">{MANAGER.inception}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <section class="dsec perf-section">
+      <p class="eyebrow">Performance</p>
+      <h2>Book value since inception</h2>
+      <BaselineChart
+        agent={snapshots}
+        benchmark={baseline}
+        coinflip={[]}
+        benchmarkLabel="Deterministic baseline twin"
+      />
+      <p class="chart-note">
+        The reference line is the Manager's deterministic baseline twin — the same EUR 2,000 book run
+        by a fixed rule instead of judgement. Both indexed to their first session.
+      </p>
+    </section>
+
+    <section class="dsec holdings">
+      <h2>Portfolio</h2>
+      <p class="note">
+        Positions as of {asOf}. Cash, deployed, and total are EUR from the engine's FX-converted
+        snapshot{latestSnap ? ` (${latestSnap.date})` : ""}; per-position values shown in native currency.
+      </p>
+      <PortfolioTable portfolio={agentPortfolio} asOf={asOf} />
+    </section>
+
+    <section class="dsec decisions">
+      <p class="eyebrow">Decision log</p>
+      <h2>What it decided, session by session</h2>
+      <p class="note">Reverse-chronological. The allocator's own record — every commit and every hold.</p>
+      {reviews.length === 0 ? (
+        <p class="empty">No decision records yet.</p>
+      ) : (
+        <ol class="decision-list">
+          {reviews.map((r) => {
+            // The decision engine supports explicit HOLD entries inside `positions`
+            // (engine/manager_decision.py) — only non-HOLD entries are commitments.
+            const committed = r.positions.filter((p) => p.action !== "HOLD");
+            return (
+              <li class="decision">
+                <div class="decision-head">
+                  <span class="d-date">{r.date}</span>
+                  <span class="d-conv">conviction {r.conviction}/10</span>
+                  <span class={`d-tag ${committed.length > 0 ? "act" : "hold"}`}>
+                    {committed.length > 0
+                      ? `${committed.length} position${committed.length > 1 ? "s" : ""}`
+                      : "hold"}
+                  </span>
+                </div>
+                <pre class="d-render">{r.render}</pre>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
+
+    <section class="dsec fills">
+      <p class="eyebrow">Execution</p>
+      <h2>Orders &amp; fills</h2>
+      <p class="note">
+        The Manager's isolated channels, joined by order id. Notional is the EUR base amount;
+        rejections carry the broker's reason code.
+      </p>
+      {fills.length === 0 ? (
+        <p class="empty">No orders yet.</p>
+      ) : (
+        <ol class="fill-list">
+          {fills.map((f) => (
+            <li class="fill">
+              <div class="fill-row">
+                <span class="f-date">{f.date}</span>
+                <a class="f-tick" href={`/ticker/${tickerSlug(f.ticker)}`}>{f.ticker}</a>
+                <span class="f-action">{f.action}</span>
+                <span class="f-notional">
+                  {f.notional_base !== null ? `EUR ${eur(f.notional_base)}` : "—"}
+                </span>
+                <span class={`f-status ${statusCls(f.status)}`}>{statusLabel(f)}</span>
+              </div>
+              {f.trigger && (
+                <p class="f-trigger">
+                  trigger {f.trigger.op} {f.trigger.level}{f.expires ? ` · expires ${f.expires}` : ""}
+                </p>
+              )}
+              <p class="f-reasoning">{f.reasoning}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+
+    {resolved.length > 0 && (
+      <section class="dsec resolved">
+        <p class="eyebrow">Memory</p>
+        <h2>Resolved outcomes</h2>
+        <p class="note">
+          Closed theses the allocator scores against itself — realized return and alpha versus MSCI World.
+          Used as its own outcome memory, not a public ranking.
+        </p>
+        <div class="resolved-wrap">
+          <table class="resolved-tbl">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Ticker</th>
+                <th>Action</th>
+                <th class="num">Realized</th>
+                <th class="num">vs MSCI World</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resolved.map((r) => (
+                <tr>
+                  <td>{r.date}</td>
+                  <td><a class="tick" href={`/ticker/${tickerSlug(r.ticker)}`}>{r.ticker}</a></td>
+                  <td>{r.action}</td>
+                  <td class={`num ${r.realized_return_pct >= 0 ? "pos" : "neg"}`}>
+                    {r.realized_return_pct >= 0 ? "+" : ""}{r.realized_return_pct.toFixed(2)}%
+                  </td>
+                  <td class={`num ${r.alpha_vs_msci_pct >= 0 ? "pos" : "neg"}`}>
+                    {r.alpha_vs_msci_pct >= 0 ? "+" : ""}{r.alpha_vs_msci_pct.toFixed(2)} pts
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )}
+
+    <p class="back"><a href="/arena">← All agents</a></p>
+  </article>
+</BaseLayout>
+<style>
+  /* Header — mirrors the [agent_id] dossier idiom. */
+  .dossier-head { padding-bottom: var(--sp-2); }
+  .session-stamp {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-4);
+  }
+  .session-stamp .mk {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--agent-color, var(--accent));
+    flex: none;
+  }
+  .namerow { display: flex; align-items: center; gap: var(--sp-4); margin: 0 0 var(--sp-4); }
+  .namerow h1 { margin: 0; }
+  .tagline {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: var(--fs-lg);
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-4);
+    max-width: var(--measure-wide);
+  }
+  .framing {
+    max-width: var(--measure-wide);
+    color: var(--ink-muted);
+    font-size: var(--fs-base);
+    line-height: 1.6;
+    margin: 0;
+  }
+  .framing strong { color: var(--ink); font-weight: 600; }
+  .framing a {
+    font-family: var(--font-display);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Stat row */
+  .statrow {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    margin: var(--sp-6) 0 0;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .statcell { background: var(--bg-elev); padding: var(--sp-4) var(--sp-5); }
+  .statcell dt {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-2);
+  }
+  .statcell .val {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .statcell .val.small { font-size: var(--fs-md); }
+  .statcell .val.pos { color: var(--pos); }
+  .statcell .val.neg { color: var(--neg); }
+  .statcell .val .unit { font-size: 0.6em; color: var(--ink-faint); }
+  @media (max-width: 60rem) { .statrow { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 30rem) { .statrow { grid-template-columns: 1fr; } }
+
+  /* Sections */
+  .dsec {
+    margin-top: var(--sp-7);
+    padding-top: var(--sp-6);
+    border-top: 1px solid var(--rule);
+  }
+  .dsec h2 { margin-top: 0; }
+  .dsec .eyebrow + h2 { margin-top: var(--sp-1); }
+  .note {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-5);
+  }
+  .chart-note {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+    line-height: 1.5;
+    max-width: var(--measure);
+    margin: 0;
+  }
+  .empty { color: var(--ink-muted); font-style: italic; margin: 0; }
+
+  /* Decision log — machine voice: monospace render blocks. */
+  .decision-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--sp-4); }
+  .decision {
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--agent-color, var(--accent));
+    border-radius: var(--r-md);
+    background: var(--bg-elev);
+    padding: var(--sp-4) var(--sp-5);
+  }
+  .decision-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: var(--sp-3);
+  }
+  .d-date { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .d-conv { color: var(--agent-color, var(--accent)); font-variant-numeric: tabular-nums; }
+  .d-tag {
+    margin-left: auto;
+    padding: 0.15em 0.6em;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--rule-strong);
+    color: var(--ink-muted);
+  }
+  .d-tag.act { color: var(--ink); border-color: var(--agent-color, var(--accent)); }
+  .d-render {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    color: var(--ink-muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+  }
+
+  /* Fills */
+  .fill-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--sp-4); }
+  .fill {
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    background: var(--bg-elev);
+    padding: var(--sp-4) var(--sp-5);
+  }
+  .fill-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-sm);
+  }
+  .f-date { color: var(--ink-muted); }
+  .f-tick {
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: 1px dotted var(--rule-strong);
+  }
+  .f-tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .f-action { color: var(--ink-muted); letter-spacing: 0.06em; }
+  .f-notional { color: var(--ink); }
+  .f-status {
+    margin-left: auto;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.15em 0.6em;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--rule-strong);
+  }
+  .f-status.ok { color: var(--pos); border-color: color-mix(in srgb, var(--pos) 45%, transparent); }
+  .f-status.bad { color: var(--neg); border-color: color-mix(in srgb, var(--neg) 45%, transparent); }
+  .f-status.wait { color: var(--ink-muted); }
+  .f-trigger {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+    margin: var(--sp-3) 0 0;
+  }
+  .f-reasoning {
+    font-family: var(--font-display);
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    color: var(--ink-muted);
+    max-width: var(--measure);
+    margin: var(--sp-3) 0 0;
+  }
+
+  /* Resolved outcomes */
+  .resolved-wrap {
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    overflow-x: auto;
+    background: var(--bg-elev);
+  }
+  table.resolved-tbl { width: 100%; border-collapse: collapse; margin: 0; }
+  table.resolved-tbl th {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-align: left;
+    padding: var(--sp-3) var(--sp-5);
+    background: var(--bg-elev2);
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  table.resolved-tbl th.num { text-align: right; }
+  table.resolved-tbl td {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-sm);
+    color: var(--ink-muted);
+    padding: var(--sp-4) var(--sp-5);
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  table.resolved-tbl tr:last-child td { border-bottom: 0; }
+  table.resolved-tbl td.num { text-align: right; }
+  table.resolved-tbl td.num.pos { color: var(--pos); }
+  table.resolved-tbl td.num.neg { color: var(--neg); }
+  .tick {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--rule-strong);
+  }
+  .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .back { margin-top: var(--sp-7); }
+  .back a {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: var(--fs-sm);
+  }
+</style>

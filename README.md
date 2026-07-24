@@ -4,7 +4,7 @@ Personal AI fund manager that autonomously analyzes markets, makes investment de
 
 The public narrative lives at **[midas.revah.paris](https://midas.revah.paris)** (Ring 3a) — a static Astro site in [`site/`](./site) that reads committed daily artifacts and publishes the Oracle's column, agent journals, leaderboard, and today's feed.
 
-The reusable engine is mirrored to **`midas-core`** — a self-contained, installable framework repo (engine + reusable orchestration + a runnable `examples/demo-desk`), kept in sync from this repo by `scripts/sync_core.py`. This live run continues to execute from `midas-live` (this repo) unchanged; `midas-core` is where the framework is reproduced and tweaked. See `CLAUDE.md` → *Repo Split (SP4)*.
+The reusable engine is **open source** at **[`w2ur/midas-core`](https://github.com/w2ur/midas-core)** (MIT) — a self-contained, installable framework repo (engine + reusable orchestration + a runnable `examples/demo-desk`), kept in sync from this repo by `scripts/sync_core.py`. This live run continues to execute from `midas-live` (this repo, private) unchanged; `midas-core` is where the framework is reproduced and tweaked. See `CLAUDE.md` → *Repo Split (SP4)*.
 
 ## Architecture
 
@@ -84,14 +84,14 @@ Trades never mutate portfolios directly. Instead:
 
 1. Agent outputs `{action, ticker, shares, reasoning}`.
 2. The orchestrator (`scripts/daily_session.py::step_author_orders`) appends a canonical `Order` record to `data/orders/outbox/YYYY-MM-DD.jsonl`.
-3. The paper broker (`engine/paper_broker.py::fill_day`) applies 9 safety rails (notional cap, order-count cap, universe allowlist, drawdown halt, price lookup, cash/position checks, long-only shares>0, malformed-line resilience, apply_trade fault tolerance) and writes `data/orders/inbox/YYYY-MM-DD.jsonl`.
+3. The paper broker (`engine/paper_broker.py::fill_day`) enforces 14 distinct rejection/cancel reason codes (notional cap, order-count cap, universe allowlist, drawdown halt, price lookup, cash/position checks, long-only shares>0, FX-rate, trigger-expiry, agent cancellations, and more) and writes `data/orders/inbox/YYYY-MM-DD.jsonl`.
 4. Filled orders mutate portfolios via `PortfolioManager.apply_trade`.
 
 This split implements the **Brain / Hands** principle documented in CLAUDE.md. Real-money execution later is a drop-in broker swap.
 
 **Conditional (trigger) fires** run the same **order-level** rails as market orders, but the watcher path (`execute_triggered_order`) **deliberately skips the two batch-level rails — `MAX_ORDERS_PER_DAY` and `DAILY_DRAWDOWN_HALT`**: a triggered fire is not a same-day authored order, and the drawdown halt is evaluated once per `fill_day` batch, not per fired order. A fire a drawdown would have halted still fills; the agent sees it in its inbox and re-authors next session.
 
-Per-agent safety rails live in `data/agent_config/{agent_id}.json` (committed). Ticker → currency overrides live in `data/ticker_currencies.json` (committed).
+Per-agent safety rails live in `roster.yaml` (enforced by the broker); `data/agent_config/` holds only `live_switch.json`. Ticker → currency overrides live in `data/ticker_currencies.json` (committed).
 
 ---
 

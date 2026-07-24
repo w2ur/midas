@@ -10,12 +10,18 @@ describe("crests", () => {
       expect(CREST_PATHS[id].length).toBeGreaterThan(10);
     }
   });
-  it("has exactly 11 crests, no extras", () => {
-    expect(Object.keys(CREST_PATHS)).toHaveLength(11);
+  it("has exactly 12 crests, no extras", () => {
+    // 10 trading agents + the Oracle + the Manager (allocator).
+    expect(Object.keys(CREST_PATHS)).toHaveLength(12);
   });
-  it("isCrestId accepts agents + Oracle, rejects others", () => {
+  it("the Manager (allocator) has its own non-empty crest", () => {
+    expect(CREST_PATHS["the-manager"]).toBeTruthy();
+    expect(CREST_PATHS["the-manager"].length).toBeGreaterThan(10);
+  });
+  it("isCrestId accepts agents + Oracle + Manager, rejects others", () => {
     expect(isCrestId("satoshi")).toBe(true);
     expect(isCrestId("the-oracle")).toBe(true);
+    expect(isCrestId("the-manager")).toBe(true);
     expect(isCrestId("nope")).toBe(false);
   });
   it("twins share a glyph (differ only by colour)", () => {
