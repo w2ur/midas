@@ -1,6 +1,6 @@
 import type { AgentId } from "./roster";
 
-export type CrestId = AgentId | "the-oracle";
+export type CrestId = AgentId | "the-oracle" | "the-manager";
 
 // Inner SVG (24×24 viewBox). The outer <svg> + stroke attrs come from AgentCrest.astro.
 // Form encodes the mandate; var(--agent-color) identifies the individual agent.
@@ -29,6 +29,12 @@ const GLOBE =
 const EYE =
   '<path d="M3 12 Q12 5 21 12 Q12 19 3 12 Z"/><circle cx="12" cy="12" r="3"/>' +
   '<circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/>';
+// Balance scales — the allocator weighs the analysts' convictions, not a trader.
+const SCALES =
+  '<line x1="12" y1="4.5" x2="12" y2="19"/><line x1="8" y1="19" x2="16" y2="19"/>' +
+  '<circle cx="12" cy="4.5" r="1.2"/><line x1="5" y1="7.5" x2="19" y2="7.5"/>' +
+  '<line x1="5" y1="7.5" x2="5" y2="9"/><line x1="19" y1="7.5" x2="19" y2="9"/>' +
+  '<path d="M2.5 9 a2.5 2.5 0 0 0 5 0"/><path d="M16.5 9 a2.5 2.5 0 0 0 5 0"/>';
 
 export const CREST_PATHS: Record<CrestId, string> = {
   "steady-eddie-eur": ANCHOR,
@@ -42,6 +48,7 @@ export const CREST_PATHS: Record<CrestId, string> = {
   goldfinger: INGOT,
   world: GLOBE,
   "the-oracle": EYE,
+  "the-manager": SCALES,
 };
 
 export function isCrestId(id: string): id is CrestId {

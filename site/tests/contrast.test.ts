@@ -43,6 +43,9 @@ const bg = token("bg");
 const AGENTS = [
   "steady-eddie-eur", "steady-eddie-usd", "sharp-shooter-eur", "sharp-shooter-usd",
   "yolo-sapiens-eur", "yolo-sapiens-usd", "satoshi", "monsieur-forex", "goldfinger", "world",
+  // The Manager (allocator) is off the ranked roster but its kit colour is still
+  // contrast-guarded like any agent's — see lib/manager.ts.
+  "the-manager",
 ];
 function agentColor(id: string): { light: string; dark: string } {
   const re = new RegExp(

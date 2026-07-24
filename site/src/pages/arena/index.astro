@@ -4,6 +4,7 @@ import { TRADING_AGENTS } from "@/lib/roster";
 import { loadLatest } from "@/lib/output";
 import { loadBenchmark, returnPct } from "@/lib/baselines";
 import AgentCrest from "@/components/AgentCrest.astro";
+import { MANAGER, loadManagerSnapshots, snapshotReturnPct } from "@/lib/manager";
 
 const bundle = loadLatest();
 const pctByAgent = new Map(bundle.leaderboard.map((r) => [r.agent, r.return_pct]));
@@ -22,8 +23,17 @@ function fmtPct(n: number): string {
   const sign = n > 0 ? "+" : "";
   return `${sign}${n.toFixed(2)}%`;
 }
+
+// The Manager (allocator) is off the ranked leaderboard by design — different
+// capital, start date, and mandate. Surfaced below the grid as an unranked
+// reference card, never scored against the arena.
+const managerRet = snapshotReturnPct(loadManagerSnapshots());
 ---
-<BaseLayout title="The Arena" current="arena">
+<BaseLayout
+  title="The Arena"
+  current="arena"
+  description="Ten AI agents run real-market paper simulations from the same starting capital, ranked by EUR-normalized return. Plus the Manager, an allocator kept off the ranked board."
+>
   <section class="page arena-head">
     <p class="kicker">The Arena · {bundle.date}</p>
     <h1>The Arena</h1>
@@ -49,6 +59,27 @@ function fmtPct(n: number): string {
         </a>
       );
     })}
+  </section>
+
+  <section class="unranked">
+    <p class="unranked-eyebrow">Off the leaderboard · allocator</p>
+    <a class="unranked-card" href={`/arena/${MANAGER.id}`} data-agent={MANAGER.id}>
+      <AgentCrest id={MANAGER.id} size={44} />
+      <div class="unranked-body">
+        <span class="unranked-name">{MANAGER.display_name}</span>
+        <span class="unranked-arch">{MANAGER.archetype}.</span>
+        <span class="unranked-meta">
+          EUR {MANAGER.initial_capital.toLocaleString("en-GB")} book · since {MANAGER.inception} ·
+          not comparable to the ranked agents
+        </span>
+      </div>
+      <span class="unranked-ret">
+        {managerRet !== null && (
+          <span class={managerRet > 0 ? "pos" : managerRet < 0 ? "neg" : ""}>{fmtPct(managerRet)}</span>
+        )}
+        <span class="unranked-open">Open dossier →</span>
+      </span>
+    </a>
   </section>
 </BaseLayout>
 <style>
@@ -104,4 +135,68 @@ function fmtPct(n: number): string {
   .tile-vs-delta.pos { color: var(--pos); }
   .tile-vs-delta.neg { color: var(--neg); }
   .tile-vs-label { color: var(--ink-muted); }
+
+  /* Unranked reference card — clearly separated from the ranked grid. */
+  .unranked { margin-top: var(--sp-7); padding-top: var(--sp-6); border-top: 1px solid var(--rule); }
+  .unranked-eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-4);
+  }
+  .unranked-card {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-5);
+    padding: var(--sp-5);
+    border: 1px dashed var(--rule-strong);
+    border-radius: var(--r-md);
+    background: var(--bg-elev);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease;
+  }
+  .unranked-card:hover { border-color: var(--agent-color, var(--accent)); }
+  .unranked-body { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+  .unranked-name {
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: var(--lh-tight, 1.15);
+  }
+  .unranked-arch { color: var(--ink-muted); font-size: var(--fs-sm); }
+  .unranked-meta {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+  .unranked-ret {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--sp-2);
+    flex: none;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-lg);
+    color: var(--ink);
+  }
+  .unranked-ret .pos { color: var(--pos); }
+  .unranked-ret .neg { color: var(--neg); }
+  .unranked-open {
+    font-family: var(--font-display);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--agent-color, var(--accent));
+    white-space: nowrap;
+  }
+  @media (max-width: 34rem) {
+    .unranked-card { flex-wrap: wrap; }
+    .unranked-ret { margin-left: 0; align-items: flex-start; flex-direction: row; align-items: baseline; }
+  }
 </style>
