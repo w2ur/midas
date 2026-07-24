@@ -22,8 +22,10 @@ def test_manifest_core_scripts_only():
     m = set(sync_core.apply_manifest())
     assert REL("scripts/daily_session.py") in m
     assert REL("scripts/fetch_market_data.py") in m  # in daily_session's closure
+    # fetch_ohlcv ships: it is the config-driven price-data bootstrap for forks
+    # and the target of the `midas fetch-ohlcv` subcommand.
+    assert REL("scripts/fetch_ohlcv.py") in m
     for live_only in (
-        "fetch_ohlcv",
         "fetch_sentiment",
         "attest_ledger",
         "refresh_leaderboard",
