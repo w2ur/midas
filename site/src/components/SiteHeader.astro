@@ -7,6 +7,7 @@ const nav = [
   { href: "/feed", label: "Feed", key: "feed" },
   { href: "/archive", label: "Archive", key: "archive" },
   { href: "/methodology", label: "Methodology", key: "methodology" },
+  { href: "/open-source", label: "Source", key: "open-source" },
 ];
 ---
 <header class="site-header">
@@ -156,7 +157,7 @@ const nav = [
 
       // Safety: if the viewport grows past the mobile breakpoint while open,
       // close so we never strand an inert/scroll-locked page behind a hidden drawer.
-      var mq = window.matchMedia("(min-width: 48rem)");
+      var mq = window.matchMedia("(min-width: 52rem)");
       mq.addEventListener("change", function (e) { if (e.matches && !drawer.hidden) close(); });
     }
   })();
@@ -322,14 +323,14 @@ const nav = [
   }
   .nav-drawer nav a:hover { color: var(--ink); }
   .nav-drawer nav a[aria-current="page"] { color: var(--accent); }
-  @media (min-width: 48rem) {
+  @media (min-width: 52rem) {
     .nav-drawer { display: none !important; }
   }
 
   /* ── Responsive masthead ──
      No-JS mobile: the inline nav wraps to its own row and stacks (usable).
      JS mobile: the inline nav is replaced by the hamburger + drawer. */
-  @media (max-width: 47.999rem) {
+  @media (max-width: 51.999rem) {
     .masthead {
       flex-wrap: wrap;
       padding-block: var(--sp-2);
