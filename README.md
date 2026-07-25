@@ -84,7 +84,7 @@ Trades never mutate portfolios directly. Instead:
 
 1. Agent outputs `{action, ticker, shares, reasoning}`.
 2. The orchestrator (`scripts/daily_session.py::step_author_orders`) appends a canonical `Order` record to `data/orders/outbox/YYYY-MM-DD.jsonl`.
-3. The paper broker (`engine/paper_broker.py::fill_day`) enforces 14 distinct rejection/cancel reason codes (notional cap, order-count cap, universe allowlist, drawdown halt, price lookup, cash/position checks, long-only shares>0, FX-rate, trigger-expiry, agent cancellations, and more) and writes `data/orders/inbox/YYYY-MM-DD.jsonl`.
+3. The paper broker (`engine/paper_broker.py::fill_day`) enforces 15 distinct rejection/cancel reason codes (notional cap, order-count cap, universe allowlist, drawdown halt, price lookup, cash/position checks, long-only shares>0, FX-rate, trigger-expiry, agent cancellations, and more) and writes `data/orders/inbox/YYYY-MM-DD.jsonl`.
 4. Filled orders mutate portfolios via `PortfolioManager.apply_trade`.
 
 This split implements the **Brain / Hands** principle documented in CLAUDE.md. Real-money execution later is a drop-in broker swap.

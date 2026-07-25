@@ -11,6 +11,7 @@ import { isCrestId } from "@/lib/crests";
 import { tickerName } from "@/lib/tickers";
 import { loadGlobalReference, loadBenchmark, loadCoinFlip, returnPct } from "@/lib/baselines";
 import { currentDayNumber } from "@/lib/session";
+import { ossStats } from "@/lib/oss-stats";
 
 const bundle = loadLatest();
 const current = loadCurrentLeaderboard();
@@ -50,6 +51,7 @@ const worst = leaderboardRows.length
   : null;
 const spread = best && worst ? best.return_pct - worst.return_pct : null;
 const sessionNo = String(currentDayNumber()).padStart(3, "0");
+const oss = ossStats();
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -194,6 +196,28 @@ function fmtPrice(n: number | null, ccy: string | null): string {
       </ul>
     </section>
   )}
+
+  <!-- ═══ OPEN-SOURCE BAND ═══ -->
+  <section class="page oss-band">
+    <header class="sec-head">
+      <p class="kicker">Open source · MIT</p>
+      <h2>Run this yourself</h2>
+    </header>
+    <p class="oss-pitch">
+      The engine behind this desk is public. Agents author orders to a directory; a broker
+      enforces {oss.brokerRails} reason codes and executes them. Bring your own agents.
+    </p>
+    <ul class="oss-chips">
+      <li>MIT</li>
+      <li>Python 3.12+</li>
+      <li>{oss.brokerRails} broker rails</li>
+      <li>{oss.sessions} sessions live</li>
+    </ul>
+    <p class="oss-cta">
+      <a class="oss-primary" href="https://github.com/w2ur/midas-core">midas-core on GitHub →</a>
+      <a class="oss-ghost" href="/open-source">How it works →</a>
+    </p>
+  </section>
 
   <!-- ═══ PARCHMENT ORACLE TEASER ═══ -->
   <section class="page oracle-teaser">
@@ -444,6 +468,52 @@ function fmtPrice(n: number | null, ccy: string | null): string {
   .tape-row .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
   .tape-row .shares, .tape-row .px { color: var(--ink-muted); }
   .tape-row .at { color: var(--ink-muted); }
+
+  /* ── OPEN-SOURCE BAND ── */
+  .oss-band { padding-top: var(--sp-7); padding-bottom: var(--sp-7); border-bottom: 1px solid var(--rule); }
+  .oss-pitch {
+    font-family: var(--font-serif);
+    font-size: var(--fs-md);
+    line-height: var(--lh-body);
+    color: var(--ink-muted);
+    max-width: var(--measure);
+    margin: 0;
+  }
+  .oss-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: var(--sp-4) 0 0;
+    padding: 0;
+  }
+  .oss-chips li {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: var(--bg-elev2);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-sm);
+    padding: 0.25rem 0.6rem;
+  }
+  .oss-cta { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin: var(--sp-5) 0 0; }
+  .oss-primary,
+  .oss-ghost {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    text-decoration: none;
+    border-radius: var(--r-sm);
+    padding: 0.55rem 1rem;
+    border: 1px solid var(--accent);
+  }
+  .oss-primary { background: var(--accent); color: var(--accent-ink); }
+  .oss-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+  .oss-ghost { color: var(--accent); background: none; }
+  .oss-ghost:hover { color: var(--accent-strong); border-color: var(--accent-strong); }
 
   /* ── 4. PARCHMENT ORACLE TEASER ── */
   .oracle-teaser { padding-top: var(--sp-7); padding-bottom: var(--sp-7); }
