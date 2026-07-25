@@ -82,15 +82,22 @@ const refW = refPct === null ? 0 : barWidth(refPct);
   </p>
 )}
 
+<div class="board-sorts" data-board-sorts hidden>
+  <span class="bs-lab">Sort</span>
+  <button type="button" class="bs-chip" data-chip-key="return" aria-pressed="true">Return</button>
+  {showVsBench && <button type="button" class="bs-chip" data-chip-key="vsBench" aria-pressed="false">vs Bench</button>}
+  {showVsCoinflip && <button type="button" class="bs-chip" data-chip-key="vsCoin" aria-pressed="false">vs Coin</button>}
+</div>
+
 <div class="board" role="table" aria-label="End-of-session leaderboard" style={`--board-cols:${boardCols}`}>
   <div class="lhead" role="row">
     <span role="columnheader">Rank</span>
     <span role="columnheader" aria-hidden="true"></span>
     <span role="columnheader">Agent</span>
-    <span role="columnheader" class="ta-r">Return EUR</span>
+    <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort="descending">Return EUR</span>
     <span role="columnheader" class="ta-c">P&amp;L</span>
-    {showVsBench && <span role="columnheader" class="ta-r">vs Bench</span>}
-    {showVsCoinflip && <span role="columnheader" class="ta-r">vs Coin</span>}
+    {showVsBench && <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort="none">vs Bench</span>}
+    {showVsCoinflip && <span role="columnheader" class="ta-r" data-sort-key="vsCoin" aria-sort="none">vs Coin</span>}
   </div>
 
   {rows.map((row) => {
@@ -104,7 +111,14 @@ const refW = refPct === null ? 0 : barWidth(refPct);
     const vcf = vsCoinflipByAgent?.[row.agent];
     const isLeader = row.rank === 1;
     return (
-      <div class={`lrow ${isLeader ? "leader" : ""}`.trim()} role="row" data-agent={row.agent}>
+      <div
+        class={`lrow ${isLeader ? "leader" : ""}`.trim()}
+        role="row"
+        data-agent={row.agent}
+        data-return={row.return_pct.toFixed(4)}
+        data-vs-bench={vs === null || vs === undefined ? "" : vs.toFixed(4)}
+        data-vs-coin={vcf === null || vcf === undefined ? "" : vcf.toFixed(4)}
+      >
         <div class="l-id" role="presentation">
           <span class="l-rank" role="cell">{row.rank}</span>
           {tradingAgent
@@ -166,6 +180,104 @@ const refW = refPct === null ? 0 : barWidth(refPct);
   Early-stage experiment — results so far are statistical noise, not skill. Each agent is shown vs a passive benchmark and a random-trade (coin-flip) control.
   <a href="/methodology">See Methodology.</a>
 </p>
+
+<script>
+  import { orderRows, parseValue, type SortDir, type SortKey, type SortRec } from "@/lib/board-sort";
+
+  function initBoard(board: HTMLElement) {
+    const rowEls = Array.from(board.querySelectorAll<HTMLElement>(".lrow[data-agent]"));
+    if (rowEls.length === 0) return;
+
+    const byAgent = new Map<string, HTMLElement>();
+    const recs: SortRec[] = [];
+    for (const el of rowEls) {
+      const agent = el.dataset.agent;
+      if (!agent) continue;
+      byAgent.set(agent, el);
+      recs.push({
+        agent,
+        return_pct: parseValue(el.dataset.return) ?? 0,
+        vsBench: parseValue(el.dataset.vsBench),
+        vsCoin: parseValue(el.dataset.vsCoin),
+      });
+    }
+
+    const refRow = board.querySelector<HTMLElement>(".lrow.ref");
+    const headers = Array.from(board.querySelectorAll<HTMLElement>("[data-sort-key]"));
+    const chipBar = board.parentElement?.querySelector<HTMLElement>("[data-board-sorts]") ?? null;
+    const chips = chipBar ? Array.from(chipBar.querySelectorAll<HTMLElement>("[data-chip-key]")) : [];
+
+    let activeKey: SortKey = "return";
+    let activeDir: SortDir = "desc";
+
+    function apply() {
+      const order = orderRows(recs, activeKey, activeDir);
+      for (const agent of order) {
+        const el = byAgent.get(agent);
+        if (el) board.appendChild(el);
+      }
+      if (refRow) board.appendChild(refRow);
+
+      order.forEach((agent, i) => {
+        const el = byAgent.get(agent);
+        if (!el) return;
+        const rank = el.querySelector(".l-rank");
+        if (rank) rank.textContent = String(i + 1);
+        el.classList.toggle("leader", i === 0);
+      });
+
+      for (const h of headers) {
+        const isActive = h.dataset.sortKey === activeKey;
+        h.setAttribute("aria-sort", isActive ? (activeDir === "desc" ? "descending" : "ascending") : "none");
+        h.classList.toggle("is-active", isActive);
+        h.classList.toggle("is-asc", isActive && activeDir === "asc");
+      }
+      for (const c of chips) {
+        c.setAttribute("aria-pressed", String(c.dataset.chipKey === activeKey));
+      }
+    }
+
+    function select(key: SortKey) {
+      if (key === activeKey) {
+        activeDir = activeDir === "desc" ? "asc" : "desc";
+      } else {
+        activeKey = key;
+        activeDir = "desc";
+      }
+      apply();
+    }
+
+    // Upgrade each sortable header's text into a real button. Done here rather
+    // than in the template so the no-JS page has no dead controls.
+    for (const h of headers) {
+      const key = h.dataset.sortKey as SortKey | undefined;
+      if (!key) continue;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "sort-btn";
+      btn.textContent = h.textContent?.trim() ?? "";
+      const caret = document.createElement("span");
+      caret.className = "sort-caret";
+      caret.setAttribute("aria-hidden", "true");
+      btn.appendChild(caret);
+      btn.addEventListener("click", () => select(key));
+      h.replaceChildren(btn);
+    }
+
+    for (const c of chips) {
+      const key = c.dataset.chipKey as SortKey | undefined;
+      if (!key) continue;
+      c.addEventListener("click", () => select(key));
+    }
+    if (chipBar) chipBar.hidden = false;
+
+    apply();
+  }
+
+  for (const board of document.querySelectorAll<HTMLElement>(".board")) {
+    initBoard(board);
+  }
+</script>
 
 <style>
   /* ── Session stamp above the board ── */
@@ -400,4 +512,73 @@ const refW = refPct === null ? 0 : barWidth(refPct);
   }
   .leaderboard-disclaimer a { color: var(--ink-muted); }
   .leaderboard-disclaimer a:hover { color: var(--accent); }
+
+  /* ── Sort controls ── */
+  .board-sorts {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin: 0 0 var(--sp-3);
+  }
+  .board-sorts[hidden] { display: none; }
+  .bs-lab {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-right: 0.15rem;
+  }
+  .bs-chip {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    background: var(--bg-elev2);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-sm);
+    padding: 0.28rem 0.6rem;
+    cursor: pointer;
+  }
+  .bs-chip:hover { color: var(--ink); border-color: var(--rule-strong); }
+  .bs-chip[aria-pressed="true"] {
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  /* The chip bar is the mobile affordance only — desktop sorts by column click. */
+  @media (min-width: 48rem) {
+    .board-sorts { display: none; }
+  }
+
+  .sort-btn {
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .sort-btn:hover { color: var(--ink); }
+  .sort-caret {
+    width: 0;
+    height: 0;
+    border-left: 3.5px solid transparent;
+    border-right: 3.5px solid transparent;
+    border-top: 4px solid currentColor;
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+  [data-sort-key].is-active .sort-btn { color: var(--accent); }
+  [data-sort-key].is-active .sort-caret { opacity: 1; }
+  [data-sort-key].is-asc .sort-caret {
+    border-top: 0;
+    border-bottom: 4px solid currentColor;
+  }
 </style>
