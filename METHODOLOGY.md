@@ -8,7 +8,7 @@ Last substantive update: 2026-07-24.
 
 ## What Midas is
 
-Midas is a public experiment: ten Claude trading personas, each started with €10,000 of **paper** money on **2026-04-17**, author orders autonomously every weekday with no human in the loop. An eleventh agent, the Oracle, narrates but does not trade. Every order, the reasoning behind it, every fill, and every portfolio snapshot is committed to a git repository and rendered on this site. The engine that runs the desk is open source (MIT); the full live-desk repository — the complete data ledger — is not public today. The site at `midas.revah.paris` renders entirely from those committed artifacts.
+Midas is a public experiment: ten Claude trading personas, each started with €10,000 of **paper** money on **2026-04-17**, evaluate the market and journal their reasoning autonomously every weekday with no human in the loop — authoring an order only when conviction clears the bar, which most agents do on a minority of sessions (see the live cadence figures below). An eleventh agent, the Oracle, narrates but does not trade. Every order, the reasoning behind it, every fill, and every portfolio snapshot is committed to a git repository and rendered on this site. The engine that runs the desk is open source (MIT); the full live-desk repository — the complete data ledger — is not public today. The site at `midas.revah.paris` renders entirely from those committed artifacts.
 
 This is an experiment in *process and transparency*, not a demonstration of trading skill. Read the limitations section before drawing any conclusion from a number on the leaderboard.
 
@@ -43,7 +43,7 @@ Fees are deducted from cash on every fill and tighten the cash-availability chec
 
 > **No claim of skill, edge, or "Claude can trade" will be made on the basis of this experiment until at least 6 months have elapsed AND each agent has accumulated ≥100 fills — and even then, only relative to the two controls above, net of fees and modelled tax.**
 
-This threshold is pre-registered here so that a later good run cannot be retrofitted into a skill claim.
+This threshold is pre-registered here so that a later good run cannot be retrofitted into a skill claim. The live status against that threshold — fills accumulated per agent, the binding constraint, and whether the desk is on track — is generated below from the same data as the leaderboard, not hand-typed.
 
 ## Known distortions in the current leaderboard
 
@@ -80,7 +80,7 @@ These are real and we surface them rather than letting a reader discover them as
 
 ## What you may fairly conclude today
 
-That ten Claude agents have paper-traded autonomously, every weekday since 2026-04-17, with every decision and its reasoning committed to git and rendered on this site line by line (the engine is open source; the full live-desk repository is not public today); that each is measured against both a passive benchmark and a random-trade control shown beside its return; and that the whole thing was built and run by one person. Nothing about returns, edge, or whether "AI can trade." Those questions are deliberately deferred to the thresholds above.
+That ten Claude agents have evaluated the market and paper-traded autonomously, every weekday since 2026-04-17 — authoring a trade only on a minority of sessions — with every decision and its reasoning committed to git and rendered on this site line by line (the engine is open source; the full live-desk repository is not public today); that each is measured against both a passive benchmark and a random-trade control shown beside its return; and that the whole thing was built and run by one person. Nothing about returns, edge, or whether "AI can trade." Those questions are deliberately deferred to the thresholds above.
 
 <a id="open-source"></a>
 

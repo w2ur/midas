@@ -1,0 +1,189 @@
+---
+// Generated pre-registration status — the live readout of METHODOLOGY.md's
+// pre-registered "no skill claim before 6 months AND ≥100 fills/agent" bar.
+// Every figure here is computed at build time from cadenceStats(); none of it
+// is hand-typed, so it can't drift from the leaderboard's own numbers.
+import { cadenceStats, preRegistrationStatus } from "@/lib/cadence";
+import { getAgent } from "@/lib/roster";
+
+const cadence = cadenceStats();
+const status = preRegistrationStatus();
+const minAgentName = getAgent(status.minAgent.id).display_name;
+
+const perAgentSorted = [...cadence.perAgent].sort((a, b) => a.fills - b.fills);
+
+function fmtMonths(n: number): string {
+  return `${n.toFixed(1)} months`;
+}
+
+const monthsShort = status.monthsSinceInception.toFixed(1);
+const projectedShort =
+  status.projectedMonthsToReachBar === null ? null : fmtMonths(status.projectedMonthsToReachBar);
+---
+
+<aside class="prereg" aria-label="Pre-registration status">
+  <p class="prereg-kicker">Generated · live from the fill data · not hand-typed</p>
+  <h3 class="prereg-h">Pre-registration status</h3>
+
+  <div class="prereg-grid">
+    <div class="prereg-cell">
+      <span class="prereg-lab">Time elapsed</span>
+      <b class="prereg-fig">{monthsShort} / {status.monthsRequired} mo</b>
+    </div>
+    <div class="prereg-cell">
+      <span class="prereg-lab">Binding constraint</span>
+      <b class="prereg-fig">
+        {status.minAgent.fills} / {status.fillsPerAgentRequired} fills
+      </b>
+    </div>
+    <div class="prereg-cell">
+      <span class="prereg-lab">On track?</span>
+      <b class={`prereg-fig ${status.onTrack ? "ok" : "no"}`}>
+        {status.onTrack ? "Yes" : "No"}
+      </b>
+    </div>
+  </div>
+
+  <p class="prereg-body">
+    The pre-registered bar is <strong>per agent</strong>, not aggregate — the whole desk clears
+    it only once every single agent has ≥{status.fillsPerAgentRequired} fills. As of {cadence.asOf},
+    the binding constraint is <strong>{minAgentName}</strong>, with {status.minAgent.fills} fills
+    since inception ({status.daysSinceInception} days ago) — the fewest of any roster agent.
+    {minAgentName} has authored {status.minAgent.fills} fills over {status.daysSinceInception} days,
+    a rate of {(status.minAgent.fills / status.daysSinceInception).toFixed(3)} fills/day. Holding that
+    rate constant, reaching {status.fillsPerAgentRequired} fills would take{" "}
+    {projectedShort ?? "an unbounded amount of time (zero fills so far)"} — against a{" "}
+    {status.monthsRequired}-month pre-registered window.
+    <strong>{status.onTrack ? "The desk is on track to clear the bar in time." : "At the current per-agent cadence, the desk is not on track to clear the bar in time."}</strong>
+  </p>
+
+  <table class="prereg-table">
+    <caption class="sr-only">Fills per agent against the {status.fillsPerAgentRequired}-fill bar</caption>
+    <thead>
+      <tr>
+        <th scope="col">Agent</th>
+        <th scope="col" class="num">Fills</th>
+        <th scope="col" class="num">Of {status.fillsPerAgentRequired}</th>
+        <th scope="col">Last fill</th>
+      </tr>
+    </thead>
+    <tbody>
+      {perAgentSorted.map((a) => (
+        <tr class={a.id === status.minAgent.id ? "min-row" : ""}>
+          <td>{getAgent(a.id).display_name}</td>
+          <td class="num">{a.fills}</td>
+          <td class="num">{((a.fills / status.fillsPerAgentRequired) * 100).toFixed(0)}%</td>
+          <td>{a.lastFillDate ?? "—"}{a.daysDormant !== null && a.daysDormant > 0 ? ` (${a.daysDormant}d ago)` : ""}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <p class="prereg-foot">
+    Aggregate context: {cadence.totalFills} roster fills across {cadence.sessions} sessions,
+    landing on {cadence.daysWithFill} distinct days. Aggregate fills are not the bar — the
+    per-agent minimum above is.
+  </p>
+</aside>
+
+<style>
+  .prereg {
+    position: relative;
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    padding: var(--sp-5);
+    margin: var(--sp-6, 2rem) 0;
+  }
+  .prereg::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--rule-strong);
+    border-radius: var(--r-md) 0 0 var(--r-md);
+  }
+  .prereg-kicker {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-2, 0.5rem);
+  }
+  .prereg-h {
+    font-family: var(--font-display);
+    font-size: var(--fs-lg, var(--fs-md));
+    margin: 0 0 var(--sp-4, 1rem);
+  }
+  .prereg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: var(--sp-3);
+    padding-bottom: var(--sp-4);
+    margin-bottom: var(--sp-4);
+    border-bottom: 1px solid var(--rule);
+  }
+  .prereg-cell { display: flex; flex-direction: column; gap: var(--sp-1, 0.35rem); }
+  .prereg-lab {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .prereg-fig {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-lg, var(--fs-md));
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .prereg-fig.ok { color: var(--pos); }
+  .prereg-fig.no { color: var(--neg); }
+  .prereg-body {
+    font-family: var(--font-serif);
+    line-height: var(--lh-body);
+    color: var(--ink);
+    margin: 0 0 var(--sp-4);
+  }
+  .prereg-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+  }
+  .prereg-table th, .prereg-table td {
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .prereg-table th {
+    color: var(--ink-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .prereg-table td.num, .prereg-table th.num { text-align: right; }
+  .prereg-table tr.min-row td { color: var(--accent); font-weight: 500; }
+  .prereg-foot {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+    margin: var(--sp-4) 0 0;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>

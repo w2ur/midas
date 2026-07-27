@@ -3,11 +3,23 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { marked } from "marked";
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import PreRegistrationStatus from "@/components/PreRegistrationStatus.astro";
 import { REPO_ROOT } from "@/lib/paths";
 
 const mdPath = path.join(REPO_ROOT, "METHODOLOGY.md");
 const raw = fs.existsSync(mdPath) ? fs.readFileSync(mdPath, "utf-8") : "";
-const html = marked.parse(raw, { async: false }) as string;
+
+// The generated pre-registration status block is not hand-typed prose in
+// METHODOLOGY.md — it's an Astro component rendered from live cadence data
+// (see PreRegistrationStatus.astro). Split the markdown around the noise
+// statement so the block lands right after the pre-registered threshold and
+// before the known-distortions section.
+const STATUS_MARKER = "## Known distortions in the current leaderboard";
+const splitIdx = raw.indexOf(STATUS_MARKER);
+const beforeStatus = splitIdx === -1 ? raw : raw.slice(0, splitIdx);
+const afterStatus = splitIdx === -1 ? "" : raw.slice(splitIdx);
+const htmlBefore = marked.parse(beforeStatus, { async: false }) as string;
+const htmlAfter = marked.parse(afterStatus, { async: false }) as string;
 ---
 <BaseLayout
   title="Methodology"
@@ -18,7 +30,11 @@ const html = marked.parse(raw, { async: false }) as string;
     <header class="methodology-head">
       <p class="kicker">The Midas Experiment</p>
     </header>
-    <article class="article methodology-body" set:html={html} />
+    <article class="article methodology-body" set:html={htmlBefore} />
+    <div class="methodology-status">
+      <PreRegistrationStatus />
+    </div>
+    <article class="article methodology-body" set:html={htmlAfter} />
   </div>
 </BaseLayout>
 <style>
@@ -26,6 +42,7 @@ const html = marked.parse(raw, { async: false }) as string;
      Archivo title, and a mono amber kicker. Head is measure-width and centred
      so its left edge aligns with the centred .article column. */
   .methodology-head { max-width: var(--measure); margin: 0 auto; }
+  .methodology-status { max-width: var(--measure); margin: 0 auto; }
   .kicker {
     font-family: var(--font-mono);
     text-transform: uppercase;
