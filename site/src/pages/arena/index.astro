@@ -5,6 +5,7 @@ import { loadLatest } from "@/lib/output";
 import { loadBenchmark, returnPct } from "@/lib/baselines";
 import AgentCrest from "@/components/AgentCrest.astro";
 import { MANAGER, loadManagerSnapshots, snapshotReturnPct } from "@/lib/manager";
+import { getLedgerNote } from "@/lib/ledger-notes";
 
 const bundle = loadLatest();
 const pctByAgent = new Map(bundle.leaderboard.map((r) => [r.agent, r.return_pct]));
@@ -44,12 +45,18 @@ const managerRet = snapshotReturnPct(loadManagerSnapshots());
     {tiles.map(({ agent, pct }) => {
       const cls = pct > 0 ? "pos" : pct < 0 ? "neg" : "";
       const vs = vsBenchByAgent[agent.id];
+      const ledgerNote = getLedgerNote(agent.id);
       return (
         <a class="arena-tile" href={`/arena/${agent.id}`} data-agent={agent.id}>
           <AgentCrest id={agent.id} size={40} />
           <span class="tile-name">{agent.display_name}</span>
           <span class="tile-arch">{agent.archetype} · {agent.base_currency}</span>
-          <span class={`tile-ret ${cls}`}>{fmtPct(pct)}</span>
+          <span class={`tile-ret ${cls}`}>
+            {fmtPct(pct)}
+            {ledgerNote && (
+              <span class="tile-flag" title={`${ledgerNote.label} — see dossier`}>†</span>
+            )}
+          </span>
           {vs != null && (
             <span class="tile-vs">
               <span class={`tile-vs-delta ${vs >= 0 ? "pos" : "neg"}`}>{fmtPct(vs)}</span>
@@ -126,6 +133,13 @@ const managerRet = snapshotReturnPct(loadManagerSnapshots());
   }
   .tile-ret.pos { color: var(--pos); }
   .tile-ret.neg { color: var(--neg); }
+  .tile-flag {
+    font-family: var(--font-mono);
+    font-size: 0.7em;
+    color: var(--ink-faint);
+    margin-left: 0.15em;
+    vertical-align: super;
+  }
   .tile-vs {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;

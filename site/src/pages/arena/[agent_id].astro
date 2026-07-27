@@ -11,6 +11,7 @@ import { loadAllOrders } from "@/lib/orders";
 import { loadBenchmark, loadCoinFlip, returnPct, AGENT_BENCHMARK_LABELS } from "@/lib/baselines";
 import { loadPortfolioSnapshots } from "@/lib/portfolios";
 import { currentDayNumber } from "@/lib/session";
+import { getLedgerNote } from "@/lib/ledger-notes";
 
 export function getStaticPaths() {
   return TRADING_AGENTS.map((a) => ({ params: { agent_id: a.id } }));
@@ -75,6 +76,7 @@ const lastActiveDate = agentOrders.length > 0 ? agentOrders[0].date : null;
 const sessionStamp = String(currentDayNumber()).padStart(3, "0");
 const startCcy = agent.base_currency === "USD" ? "USD" : "EUR";
 const benchLabel = AGENT_BENCHMARK_LABELS[agent.id] ?? "benchmark";
+const ledgerNote = getLedgerNote(agent.id);
 ---
 <BaseLayout title={agent.display_name} current="arena" description={`${agent.display_name} — ${agent.archetype}`}>
   <article class="page dossier" data-agent={agent.id}>
@@ -93,7 +95,14 @@ const benchLabel = AGENT_BENCHMARK_LABELS[agent.id] ?? "benchmark";
       <dl class="statrow">
         <div class="statcell">
           <dt>Return (EUR)</dt>
-          <dd class={`val phosphor ${pnlCls}`}>{pnlStr}</dd>
+          <dd class={`val phosphor ${pnlCls}`}>
+            {pnlStr}
+            {ledgerNote && (
+              <sup class="ledger-flag">
+                <a href={ledgerNote.methodologyHref} title={ledgerNote.label}>†</a>
+              </sup>
+            )}
+          </dd>
         </div>
         <div class="statcell">
           <dt>Starting capital</dt>
@@ -112,6 +121,13 @@ const benchLabel = AGENT_BENCHMARK_LABELS[agent.id] ?? "benchmark";
           <dd class={`val ${deltaCls(vsCoin)}`}>{fmtDelta(vsCoin)}</dd>
         </div>
       </dl>
+
+      {ledgerNote && (
+        <p class="ledger-note-banner">
+          <strong>{ledgerNote.label}.</strong> {ledgerNote.summary}{" "}
+          <a href={ledgerNote.methodologyHref}>Full incident record →</a>
+        </p>
+      )}
     </header>
 
     <section class="dsec perf-section">
@@ -235,6 +251,32 @@ const benchLabel = AGENT_BENCHMARK_LABELS[agent.id] ?? "benchmark";
   .statcell .val .unit { font-size: 0.6em; color: var(--ink-faint); }
   @media (max-width: 60rem) { .statrow { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 30rem) { .statrow { grid-template-columns: 1fr; } }
+
+  /* ── Ledger note — a known, deliberately-unreconciled artifact ── */
+  .ledger-flag a {
+    font-family: var(--font-mono);
+    color: var(--ink-muted);
+    text-decoration: none;
+    margin-left: 0.15em;
+  }
+  .ledger-flag a:hover { color: var(--accent); }
+  .ledger-note-banner {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    line-height: 1.6;
+    color: var(--ink-muted);
+    border: 1px dashed var(--rule-strong);
+    border-radius: var(--r-sm);
+    padding: var(--sp-3) var(--sp-4);
+    margin: var(--sp-5) 0 0;
+    max-width: var(--measure-wide);
+  }
+  .ledger-note-banner strong {
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ledger-note-banner a { color: var(--accent); }
 
   /* ── Sections ── */
   .dsec {
