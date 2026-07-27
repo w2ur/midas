@@ -21,6 +21,36 @@ on:
     branches: [main]
 
 jobs:
+  ledger-integrity:
+    # Standing data invariant, independent of commit-message scoping above:
+    # every status:"filled" row in data/orders/inbox/ (and each allocator's
+    # {prefix}-inbox/) must have a matching trade in the owning agent's
+    # data/portfolios/<agent>/trades.json, and vice versa. This is the check
+    # that would have caught the 2026-05-18..23 commit_and_push() pathspec
+    # bug (see tests/test_ledger_integrity.py module docstring) — a silent
+    # data-loss window that went undetected for two months because nothing
+    # in CI read data/ content, only diffed file paths. tests.yml only runs
+    # on pull_request, and daily-session / watcher-fire / weekend-refresh
+    # commits land on main via sandbox-branch auto-merge, which never opens
+    # a PR — so this push-triggered workflow is the only gate that sees them.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run ledger-integrity check
+        run: pytest tests/test_ledger_integrity.py -v
+
   check:
     runs-on: ubuntu-latest
     steps:
