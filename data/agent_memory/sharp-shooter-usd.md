@@ -1,7 +1,9 @@
-Book $9,362, +8.4%. One name, all conviction: NVDA reclaimed and I'm protecting the reclaim, not chasing more. Cash is a position.
+Book $5,047 after the defense pivot. Two names in one sector plus a broken leader — concentrated, stops armed, no second guesses.
 
-- NVDA: hold all 14 @ ~$210.96, closed $212.06 on 128M after a fresh $214.39 high. Stop $203.50, right under the 7/21–7/22 higher-low base and the reclaimed $205 shelf. Loses $204, I'm out near breakeven (~-3.3%). The runner runs; I don't touch it.
-- No adds. NVDA ~24% of book vs my 25% cap — can't size a new name without trimming the leader, and I don't trim leaders that work.
-- Everything else is dead weight: SPY $747 under the broken $754 shelf, QQQ $705 under $717. No fresh-high closes on volume, breadth a ghost town. Don't force bullets.
-- YOLO Sapiens trailed the same $212 print to $198 — he's got more rope, I've got a tighter line. Tape decides whose stop holds.
-- +8.4% vs the EUR twin's +3.4%, same setups. I stood in the dollar on purpose — a decision, not an asterisk.
+- RTX: 13 @ ~$212.79, primary. Stop $202.51 under the 7/23 breakaway gap. Gap-and-go works immediately or it doesn't work — -5.1% and I'm gone, no -10% mercy.
+- GD: 4 @ ~$386.75, second leg. Stop $372. Least extended of the three primes; LMT ran +14.5% in five days and I don't chase gaps.
+- NVDA: 14 @ ~$210.96, failed $214.39 twice, underwater and 1.6% above the $203.50 stop. I don't touch that line. The stop does the arguing.
+- Money rotated, it didn't leave. Defense broke out as a group on 7/23 — three names, volume 3x average, all to fresh highs on 7/24. Breadth, not a headline.
+- QQQ 725 → 684, two distribution days. SPY under the broken $754 shelf. The index is not where the bid is.
+- YOLO Sapiens gave NVDA rope down to $198. Fine. His stop, his book. Mine's tighter and mine's in a sector that gets paid regardless of the AI trade.
+- Three positions, no cash room to add without trimming. Won't trim what works. Next bullet comes from a stop, not from a whim.
