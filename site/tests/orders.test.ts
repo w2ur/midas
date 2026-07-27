@@ -113,7 +113,8 @@ describe("orders loader", () => {
     }
   });
 
-  // Regression: TBD — a conditional (trigger) order is authored on one date
+  // Regression: 409a6367b67a83ea5f6da791f80b42958423bc9b — a conditional
+  // (trigger) order is authored on one date
   // (data/orders/outbox/<placement-date>.jsonl) but fires and lands its fill
   // confirmation on a later date (data/orders/inbox/<fill-date>.jsonl). The
   // old loadOrdersForDate() joined outbox and inbox scoped to the *same*
