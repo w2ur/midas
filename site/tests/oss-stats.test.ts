@@ -3,6 +3,7 @@ import { BROKER_RAILS, WATCHER_RAILS } from "../src/lib/rails";
 import { ossStats } from "../src/lib/oss-stats";
 import { loadAllOrders } from "../src/lib/orders";
 import { currentDayNumber } from "../src/lib/session";
+import { cadenceStats } from "../src/lib/cadence";
 
 describe("rails registry", () => {
   it("carries the 15 broker codes", () => {
@@ -36,9 +37,14 @@ describe("ossStats", () => {
     expect(ossStats().sessions).toBe(currentDayNumber());
   });
 
-  it("counts only filled orders", () => {
-    const all = loadAllOrders();
-    expect(ossStats().fills).toBe(all.filter((o) => o.status === "filled").length);
+  it("agrees with cadenceStats().totalFills — one fill count across the whole site", () => {
+    // Not `loadAllOrders().filter(o => o.status === "filled").length`: that
+    // reads one higher (166) than trades.json (165) because of a single
+    // known ledger anomaly (ord_2026-05-21_sharp-shooter-eur_001 — see
+    // cadence.ts's module doc). ossStats().fills is sourced from
+    // cadenceStats() specifically so /open-source can never show a
+    // different fill count than / or /methodology.
+    expect(ossStats().fills).toBe(cadenceStats().totalFills);
   });
 
   it("reports fewer fills than total orders — rejections exist and are counted separately", () => {

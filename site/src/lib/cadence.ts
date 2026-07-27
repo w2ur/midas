@@ -9,22 +9,33 @@
  * written by the same code path that actually mutates a portfolio on a
  * fill — rather than from `loadAllOrders().filter(o => o.status ===
  * "filled")` (the join over `data/orders/{outbox,inbox}` that `oss-stats.ts`
- * and the rest of the site use). **The two sources disagree, and the
- * disagreement is real, not a modelling choice:** at time of writing,
- * trades.json reports 165 roster fills; the orders join reports only 125.
- * The gap traces to incomplete inbox data, not to trades that didn't
- * happen — 10 session dates are missing their `data/orders/inbox/*.jsonl`
- * file entirely (e.g. 2026-05-20, 7 orders authored, no inbox file at
- * all), and roughly 30 further fills are missing their individual
- * confirmation row from inbox files that do otherwise exist, even though
- * the corresponding portfolio was mutated. trades.json has no such gap —
- * it is the ground truth for "did this order fill." (There is one fill in
- * the opposite direction — `ord_2026-05-21_sharp-shooter-eur_001` reads
- * "filled" in the orders join but never landed in trades.json — a single
- * anomaly, not a pattern.) This is a pre-existing gap in the inbox ledger
- * outside this module's scope to fix (it lives in `data/orders/`, written
- * by the broker in `engine/`); it is flagged here, in the stale-data test,
- * and in the implementer's handoff report so it isn't silently absorbed.
+ * also reads, via this module — see below).
+ *
+ * These two sources used to disagree by 40 fills (165 vs 125). That was a
+ * real bug, not a modelling choice: `loadOrdersForDate()` joined outbox and
+ * inbox rows scoped to the *same* date file, but a conditional (trigger)
+ * order is authored on one date and can fire — and get its inbox
+ * confirmation written — on a *later* date. 41 roster fills fell into that
+ * gap and silently read back as "pending" forever. Fixed in `orders.ts`
+ * (global order_id → inbox-row index instead of a per-date join; see its
+ * module comments and `tests/orders.test.ts`). The two sources now agree to
+ * within one row (166 orders-join vs 165 here) — see the anomaly below.
+ *
+ * ── Known ledger anomaly: `ord_2026-05-21_sharp-shooter-eur_001` ──
+ * This order's inbox row reads `status: "filled"` (trigger fired same day,
+ * `fill_price: 1249.0`), but it never landed in
+ * `data/portfolios/sharp-shooter-eur/trades.json`, and the portfolio's own
+ * cash snapshots show no credit around 2026-05-21 (cash is flat at
+ * 3217.040054321289 across every snapshot from 2026-05-20 to 2026-05-27) —
+ * plus a later order (2026-06-24) still references holding and trimming the
+ * same ASML.AS position as if this sale never happened. That's a genuine
+ * ledger inconsistency (the broker wrote a fill confirmation for a trade
+ * that was never applied to the portfolio), not a site display bug, and not
+ * something this module papers over: trades.json is deliberately still the
+ * fill source of truth here, so this one stray inbox row is simply not
+ * counted. It lives in `data/orders/`, written by the broker in `engine/` —
+ * out of this module's (and this codebase area's) scope to fix. Flagged for
+ * investigation, not silently absorbed.
  */
 
 import * as fs from "node:fs";

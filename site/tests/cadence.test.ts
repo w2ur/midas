@@ -5,6 +5,7 @@ import { cadenceStats, preRegistrationStatus } from "../src/lib/cadence";
 import { TRADING_AGENTS } from "../src/lib/roster";
 import { listDates } from "../src/lib/output";
 import { DATA_DIR } from "../src/lib/paths";
+import { loadAllOrders } from "../src/lib/orders";
 
 const ORDER_ID_DATE_RE = /^ord_(\d{4}-\d{2}-\d{2})_/;
 
@@ -92,6 +93,21 @@ describe("cadenceStats", () => {
     // asOf is pinned indirectly via the session-count test above (2026-07-24).
     expect(s.asOf).toBe("2026-07-24");
     expect(satoshi.daysDormant).toBe(50);
+  });
+
+  it("agrees with the orders outbox/inbox join to within the one known ledger anomaly", () => {
+    // See cadence.ts's module doc: the orders join (loadAllOrders(), now
+    // fixed to resolve conditional-order fills across dates) reports 166
+    // roster fills; trades.json reports 165. The +1 is a single stray inbox
+    // row (ord_2026-05-21_sharp-shooter-eur_001) that was never applied to
+    // the portfolio — a genuine ledger anomaly, not a counting bug. If this
+    // gap ever changes, that's new information worth re-investigating, not
+    // silently absorbing.
+    const roster = new Set(TRADING_AGENTS.map((a) => a.id));
+    const joinFilled = loadAllOrders().filter(
+      (o) => o.status === "filled" && roster.has(o.agent_id as (typeof TRADING_AGENTS)[number]["id"]),
+    ).length;
+    expect(joinFilled - cadenceStats().totalFills).toBe(1);
   });
 });
 

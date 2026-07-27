@@ -5,14 +5,19 @@
  * is static, but the numbers on it move with the desk.
  */
 
-import { loadAllOrders } from "./orders";
 import { currentDayNumber } from "./session";
 import { BROKER_RAILS, WATCHER_RAILS } from "./rails";
+import { cadenceStats } from "./cadence";
 
 export interface OssStats {
   /** Narrative session count — the Oracle's "Day N". */
   sessions: number;
-  /** Orders that actually reached a fill, across every session. */
+  /** Roster fills — same figure and source as cadenceStats().totalFills, so
+   *  this page can never show a different fill count than the homepage or
+   *  methodology page. (Previously this counted loadAllOrders().filter(o =>
+   *  o.status === "filled").length directly; that read 166, one more than
+   *  trades.json's 165, because of a single stray inbox row — see the
+   *  "known ledger anomaly" note in cadence.ts.) */
   fills: number;
   /** Reason codes the broker can emit. */
   brokerRails: number;
@@ -21,10 +26,9 @@ export interface OssStats {
 }
 
 export function ossStats(): OssStats {
-  const fills = loadAllOrders().filter((o) => o.status === "filled").length;
   return {
     sessions: currentDayNumber(),
-    fills,
+    fills: cadenceStats().totalFills,
     brokerRails: BROKER_RAILS.length,
     handsRails: BROKER_RAILS.length + WATCHER_RAILS.length,
   };

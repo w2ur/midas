@@ -56,21 +56,58 @@ function readJsonl<T>(file: string): T[] {
     .map((l) => JSON.parse(l) as T);
 }
 
-export function listOrderDates(): string[] {
-  if (!fs.existsSync(OUTBOX_DIR)) return [];
+function datesInDir(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
   return fs
-    .readdirSync(OUTBOX_DIR)
+    .readdirSync(dir)
     .map((f) => f.match(DATE_RE)?.[1] ?? null)
-    .filter((d): d is string => d !== null)
-    .sort();
+    .filter((d): d is string => d !== null);
 }
 
-export function loadOrdersForDate(date: string): Order[] {
+/**
+ * Every date that has either an outbox or an inbox file — the union, not just
+ * the outbox. A conditional (trigger) order is authored on one date and can
+ * fire on a later one, so a date can carry fill confirmations (inbox) with no
+ * newly-authored orders (outbox) at all — e.g. a weekend day the watcher
+ * fires on but no session runs. Unioning means such a date is never invisible
+ * to callers that iterate `listOrderDates()` (loadAllOrders(), most notably).
+ */
+export function listOrderDates(): string[] {
+  return Array.from(new Set([...datesInDir(OUTBOX_DIR), ...datesInDir(INBOX_DIR)])).sort();
+}
+
+/**
+ * Global order_id → inbox row index, built across *every* inbox file. Fill
+ * confirmations must be looked up this way rather than scoped to a single
+ * date, because a conditional order's fill can land on a different date file
+ * than the one it was placed on (see loadOrdersForDate's doc comment).
+ */
+function loadInboxIndex(): Map<string, InboxRow> {
+  const byId = new Map<string, InboxRow>();
+  for (const date of datesInDir(INBOX_DIR)) {
+    for (const row of readJsonl<InboxRow>(path.join(INBOX_DIR, `${date}.jsonl`))) {
+      byId.set(row.order_id, row);
+    }
+  }
+  return byId;
+}
+
+/**
+ * Orders authored (outbox) on `date`, each resolved to its current status
+ * from the *global* inbox index — not an inbox file scoped to this same
+ * date. `date` is always the order's placement date, never its fill date:
+ * a conditional order that fires later keeps the date it was authored on, so
+ * callers that bucket orders by date (the per-day archive/feed pages) see it
+ * exactly once, on the day the agent decided to place it. Regression: a
+ * conditional order placed on `date` but fired (and inbox-confirmed) on a
+ * later date used to be joined against that later date's inbox file only,
+ * which doesn't exist here — it silently read back as "pending" forever even
+ * after it had genuinely filled. See tests/orders.test.ts.
+ */
+function ordersForDate(date: string, inboxIndex: Map<string, InboxRow>): Order[] {
   const outbox = readJsonl<OutboxRow>(path.join(OUTBOX_DIR, `${date}.jsonl`));
-  const inbox = readJsonl<InboxRow>(path.join(INBOX_DIR, `${date}.jsonl`));
-  const byId = new Map(inbox.map((r) => [r.order_id, r]));
   return outbox.map((o) => {
-    const fill = byId.get(o.order_id);
+    const fill = inboxIndex.get(o.order_id);
     return {
       order_id: o.order_id,
       agent_id: o.agent_id,
@@ -89,14 +126,21 @@ export function loadOrdersForDate(date: string): Order[] {
   });
 }
 
+export function loadOrdersForDate(date: string): Order[] {
+  return ordersForDate(date, loadInboxIndex());
+}
+
 export function loadOrdersByAgentForDate(date: string, agentId: string): Order[] {
   return loadOrdersForDate(date).filter((o) => o.agent_id === agentId);
 }
 
 export function loadAllOrders(): Order[] {
+  // Build the inbox index once and reuse it across every date, rather than
+  // re-reading every inbox file per date (loadOrdersForDate's default path).
+  const inboxIndex = loadInboxIndex();
   const all: Order[] = [];
   for (const date of listOrderDates()) {
-    all.push(...loadOrdersForDate(date));
+    all.push(...ordersForDate(date, inboxIndex));
   }
   return all;
 }
