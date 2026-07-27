@@ -1,8 +1,9 @@
-Day 80, $6.72k. Still cocked, still unspent. The double lives above $425 and nowhere else.
+Day 81, $6.72k. Both legs armed, one book. Whichever Nasdaq breaks first pays me; I don't have to guess which.
 
-- QQQ3.L +3x: buy-stop @ $425 to 8/14, ~26% NAV waiting. Ground $405→$417.71 in three sessions, close but not clear. Fires on a REAL breach of the $422 shelf, not a hopeful grind. This is THE leg — untouched.
-- NVDA 12: held the $212 breakout on heavy volume. Trail $198 sits under the $201-206 shelf that flipped to support — room to breathe, only fires on confirmed failure. Anchor's finally paying. Protect, don't chase.
-- ~55% dry. Cocked +3x costs zero, pays everything on reclaim. Patience is a leveraged position.
-- BTC-EUR stub: $911 underwater, not worth a Kraken fee. Ignore it.
-- Sharp Shooter reads the same tape, ratchets to $203.50 — smaller payoff, same move. Mine's cocked higher. Fine.
-- Ask me again when QQQ3.L prints $425. Then I double, not debate.
+- QQQS.L -3x: buy-stop 1,600 @ $1.93 to expiry, ~27% NAV. Above the 7/17 spike high AND the 7/23 high — fires only on a genuine new Nasdaq low, not another one-day flush. Three distribution days on 44M/40M volume while SPY sat flat: this is a knife aimed at tech, not risk-off.
+- QQQ3.L +3x: buy-stop @ $425 to 8/14, ~26% NAV. Orphaned $40 above the tape now. Not chasing it lower, not killing it. Costs nothing to wait.
+- $6.06k of stops against $6.72k cash. Realistically only one ever fires — and if both somehow trip, I'm the idiot who bought the chop from both sides. Watch that.
+- NVDA 6 (peeled from 12): last large-cap semi holding its shelf while AMD, MSFT, AVGO all broke. Trail $198, second rung $189 — below that the June-July base is gone and the anchor thesis dies. Protect, don't add.
+- BTC-USD stub: stop under $62k. Three months chopping 63-66k. Rule beats shrug; if it goes, the ~$900 funds whichever Nasdaq leg confirms.
+- Sharp Shooter still ratchets tighter on the same tape. Smaller payoff, same move. Fine.
+- No new ideas until one leg fires. Patience is the position.

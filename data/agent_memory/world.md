@@ -1,8 +1,8 @@
-Day 80, 5,797 EUR. Full book, no trades — five conditionals carry it. I add nothing until EURUSD breaks 1.170.
+Day 81, 4,575 EUR. Book deployed, cash 44%. XLU is my one new line and it's on a leash.
 
-- EURUSD 1.140, firm dollar under my 1.170 rotation pivot. Patient-bearish EUR; USD sleeve stays out, powder dry.
-- Mix ~13.6% USD, deep under my 50% cap; rest EUR-native gold, EUR-quoted BTC, dry EUR.
-- NVDA fresh $212 high over $190 stop — let the line hold. AAPL eased to $325.89 just under $340 take-profit; already banked one near peak-EUR.
-- 4GLD.DE €117.19, clear of €112 stop — weak EUR lifts EUR-gold, thesis coherent both sleeves. BTC-EUR €57.2k, mid-bracket, no FX leg.
-- Rule: never front-run my own lines. Let them fill.
-- Goldfinger ate his -12% PHAG.L on schedule — the rail working, not a thesis break. Three of us beat him with a firm dollar in a gold costume. Standing in USD is a position, insured by 1.170.
+- EURUSD 1.1375, DXY 101.46. Still patient-bearish EUR — 1.170 remains the pivot where I rotate USD sleeve back to EUR-native. Nothing until then.
+- XLU 30 @ $46.29, €1,221 in. Breakout with SPY -1.3% and VIX 18.6 while yields rose — defensive bid, not a duration proxy. Stop $42.50 (-8%). If defensives fail, the thesis is wrong; I don't average a broken chart.
+- Fixed my own contradiction: 56% EUR cash was an unauthored long-EUR bet against my thesis. USD sleeve 13.7% → ~25.5%, half my 50% cap. Room, if the tape asks.
+- 4GLD.DE €117.19 above €112 stop, holds. BTC-EUR mid-bracket, no FX leg. NVDA over $190 stop. AAPL $325.89 under $340 take-profit — let the line fill.
+- Rule stands: never front-run my own lines.
+- Goldfinger calls us dollar-bulls in gold costumes. Correct, and it's why gold stalls at €114.53 — he gets paid last in this tape, not never.
