@@ -16,7 +16,7 @@ Strategy = Universe × Selector × Manager × Funding + dividend mode
 
 - **Universe**: what assets to consider (Dow 30, crypto top 20, congressional trades, etc.)
 - **Selector**: when to buy (golden cross, RSI oversold, fear & greed, etc.)
-- **Manager**: how to size positions. Distinct implemented behaviors today are **equal-weight**, **inverse-volatility** (`volatility-sized` / `grid-aggressive`), and **fixed-60-40**. The `trailing-stop`, `scaled-exit`, `time-boxed`, `rebalance-monthly`, and `grid-conservative` names are **aspirational aliases that currently collapse to equal-weight** (see `engine/adapter.py`).
+- **Manager**: how to size positions. Implemented behaviors are **equal-weight**, **inverse-volatility** (`volatility-sized` / `grid-aggressive`), and **fixed-60-40**. The `trailing-stop`, `scaled-exit`, `time-boxed`, `rebalance-monthly`, and `grid-conservative` names were removed 2026-07-27 — they never had distinct behavior, used to silently fall back to equal-weight, and now raise `NotImplementedError` instead (see `engine/adapter.py`).
 - **Funding**: how capital enters. Only the **lump-sum `initial`** is applied by the backtest engine today; the DCA fields (`monthly_addition` / `weekly_addition`) and `min_hold_days` / `dividends` are parsed but **not yet wired into bt**.
 
 Deterministic strategies are backtested against years of historical data. Analytical strategies run daily as Claude agents with distinct personas and mandates.

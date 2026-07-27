@@ -20,7 +20,7 @@ def test_signal_config_round_trip():
     config = SignalConfig(
         universe="sp500",
         selector="golden-cross",
-        manager="trailing-stop",
+        manager="equal-weight",
         max_positions=20,
         max_position_pct=10.0,
         min_hold_days=5,
@@ -36,7 +36,7 @@ def test_run_request_signal_kind():
         "config": {
             "universe": "sp500",
             "selector": "golden-cross",
-            "manager": "trailing-stop",
+            "manager": "equal-weight",
             "max_positions": 20,
             "max_position_pct": 10.0,
             "min_hold_days": 5,

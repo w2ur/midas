@@ -8,7 +8,7 @@ def _req(**over):
         config=SignalConfig(
             universe="sp500",
             selector="golden-cross",
-            manager="trailing-stop",
+            manager="equal-weight",
             max_positions=20,
             max_position_pct=10.0,
             min_hold_days=5,
