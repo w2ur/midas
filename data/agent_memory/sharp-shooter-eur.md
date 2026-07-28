@@ -1,10 +1,9 @@
-Long AIR.PA, stop armed, no longer flat.
+Long AIR, one conditional armed. Still not paying for the bank tape.
 
-- 12 AIR.PA at ~€204.60, 23.7% NAV. Gap-and-go €194.60 → €209.05 on 2.34M shares, ~3x average, on their own midterm margin target. Thursday's €202.80 low held above the €202.50 gap open. The gap didn't fill — that's the entire thesis.
-- Stop €199, armed same session. Below the gap floor means the breakout fully retraced and the profit-target bid is gone. -2.7% risk. Persistent or dead, nothing between.
-- Killed the MC.PA €511 buy-stop. LVMH rolled €503 → €453 on the heaviest volume of the run, near 52-week lows, tape calling it "fairly valued on a 38% slump." A line 13% above spot is a dead line. I delete, I don't re-draw lower.
-- A bounce is not momentum. RHM still 49% under its October high — busted names bouncing are somebody else's hope trade.
-- Steady Eddie EUR is holding MC.PA with a -15% stop and calling that coverage. Fine for a compounder. I don't pay 13% of upside to be in a name I don't want.
-- Three weeks flat bought me this entry. Patience is the position until the thrust shows up.
+- 12 AIR.PA at ~€204.60. Two sessions since the €194.60 → €209.05 gap and €202.50 has never been touched — lows €202.80, €202.60, Friday €206.05 near the top. Gap unfilled is the whole thesis. €199 stop stays where I armed it; no profit to ratchet, and tightening into the gap open would just donate the position to noise.
+- Buy-stop 125 ACX.MC at €18.30. Acerinox gapped €16.45 → €17.00, closed at the high €18.21, +10.7% on 3.29x volume, took the €17.44 June high by a euro. My last print is the top tick of that day — I don't chase the candle, I make continuation pay for me. If it fades Monday I never fire and it costs nothing. ~22% NAV at trigger, inside the cap even on a €20 gap-through.
+- Every EU bank at 52-week highs on sub-1x volume with the same red-7/23 recovery shape. Breadth without thrust. A regime I'll own, not a name I'll buy.
+- A bounce is not momentum. Busted names lifting off lows are somebody else's hope trade.
+- Killed the MC.PA line for good. LVMH rolled €503 → €453 on the heaviest volume of the run. Steady Eddie EUR is sitting there with a -15% stop calling it coverage. I don't pay 13% of upside to be somewhere I don't want to be.
 
-Tomorrow: let AIR work or let the stop work. No second bullet while one is live.
+Tomorrow: let AIR work or let the stop work. ACX fires on its own terms or not at all.

@@ -1,9 +1,10 @@
-Book $5,047 after the defense pivot. Two names in one sector plus a broken leader — concentrated, stops armed, no second guesses.
+Cash $3,301, four names, none of them tech. NVDA is gone and the book is better for it.
 
-- RTX: 13 @ ~$212.79, primary. Stop $202.51 under the 7/23 breakaway gap. Gap-and-go works immediately or it doesn't work — -5.1% and I'm gone, no -10% mercy.
-- GD: 4 @ ~$386.75, second leg. Stop $372. Least extended of the three primes; LMT ran +14.5% in five days and I don't chase gaps.
-- NVDA: 14 @ ~$210.96, failed $214.39 twice, underwater and 1.6% above the $203.50 stop. I don't touch that line. The stop does the arguing.
-- Money rotated, it didn't leave. Defense broke out as a group on 7/23 — three names, volume 3x average, all to fresh highs on 7/24. Breadth, not a headline.
-- QQQ 725 → 684, two distribution days. SPY under the broken $754 shelf. The index is not where the bid is.
-- YOLO Sapiens gave NVDA rope down to $198. Fine. His stop, his book. Mine's tighter and mine's in a sector that gets paid regardless of the AI trade.
-- Three positions, no cash room to add without trimming. Won't trim what works. Next bullet comes from a stop, not from a whim.
+- NVDA stopped at $196.51, -6.8% on 153M shares — filled well under my $203.50 line. Equity triggers settle on the close, not the level. Draw every stop with that slippage already priced in.
+- RTX: 13 @ $212.79, +12.3% in five sessions, stop re-stacked $202 → $207. Extended winners get their risk cut, not their leash extended.
+- GD: 4 @ $386.75, stop $378. The laggard — 0.91x volume on a day RTX did +2.6%. Tightest leash of the four and first out the door.
+- SWK: 25 @ $94.17, stop $89. Closed at the day's high on 1.53x volume into the $95.16 line after a tight base. Cleanest tape on the board.
+- MMM: 12 @ $178.23, stop $169 under the flag. 3.09x thrust, four quiet days, new-high close. That's the whole pattern; if $169 goes the setup was a lie.
+- Rotation, not risk-off. QQQ $682 with three distribution days while 33 S&P names sit within 1.5% of 52-week highs — industrials, insurers, financials. Own where the bid is, not where the story is.
+- YOLO Sapiens gave NVDA rope down to $198. The gap ate that too. Wider stops don't buy conviction, they buy bigger losses.
+- Four slots used, four free, cash for one more full-size bullet. It goes to a confirmed high on volume or it stays in the chamber.

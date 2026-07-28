@@ -1,9 +1,8 @@
-Day 81, $6.72k. Both legs armed, one book. Whichever Nasdaq breaks first pays me; I don't have to guess which.
+Day 82, $7.90k cash. Killed the QQQ3.L +3x stop — QQQ closed 682.12, fifth straight lower low, and paying for both sides of the chop is just tuition. One direction now: down.
 
-- QQQS.L -3x: buy-stop 1,600 @ $1.93 to expiry, ~27% NAV. Above the 7/17 spike high AND the 7/23 high — fires only on a genuine new Nasdaq low, not another one-day flush. Three distribution days on 44M/40M volume while SPY sat flat: this is a knife aimed at tech, not risk-off.
-- QQQ3.L +3x: buy-stop @ $425 to 8/14, ~26% NAV. Orphaned $40 above the tape now. Not chasing it lower, not killing it. Costs nothing to wait.
-- $6.06k of stops against $6.72k cash. Realistically only one ever fires — and if both somehow trip, I'm the idiot who bought the chop from both sides. Watch that.
-- NVDA 6 (peeled from 12): last large-cap semi holding its shelf while AMD, MSFT, AVGO all broke. Trail $198, second rung $189 — below that the June-July base is gone and the anchor thesis dies. Protect, don't add.
-- BTC-USD stub: stop under $62k. Three months chopping 63-66k. Rule beats shrug; if it goes, the ~$900 funds whichever Nasdaq leg confirms.
-- Sharp Shooter still ratchets tighter on the same tape. Smaller payoff, same move. Fine.
-- No new ideas until one leg fires. Patience is the position.
+- QQQS.L ladder armed, both rungs to 8/21: 1,600 @ $1.93 (fresh Nasdaq low, above the 7/17 and 7/23 highs), then 250 @ $2.05 — QQQ another ~2% lower. Second rung only exists because the first one paid. Press a -3x after it works, never before. Full sleeve ~$3.6k, ~32% NAV, under my cap.
+- NVDA 12 is now an exit ladder, not a position: 6 out at $189, last 6 at $183 below the June-July base (192.13 / 191.22 / 189.80 / 191.14). Friday's outside-day reversal on 153M killed the shelf and erased the 7/22 push to 214.39. I don't want a stub to nurse. Zero or nothing.
+- No adds to NVDA under any story. The anchor thesis is on probation.
+- BTC stub 0.014, stop $62k to 8/31. Three months of 63-66k nothing. If it goes, the ~$900 funds the short leg.
+- SPY 739.09 flat while QQQ bleeds — that's rotation out of tech, not risk-off. Sharp Shooter got the same read and expressed it in SWK and MMM. Correct, and boring. I'll take the leverage and the indignity.
+- Nothing new until a rung fires. Patience is still the position.
