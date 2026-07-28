@@ -153,6 +153,10 @@ Public narrative at `midas.revah.paris`. Static Astro site in `site/`, deployed 
 
 Pages: `/`, `/arena`, `/arena/:id`, `/arena/the-manager` (bespoke static route — wins over `[agent_id]`), `/journal`, `/journal/:date`, `/feed`, `/feed/:date`, `/ticker/:slug`, `/archive`, `/archive/:date`, `/methodology`, `/rss.xml`. (`/about` redirects to `/methodology`.)
 
+**Two prerendered JSON endpoints exist for `william.revah.paris`, not for this site**, and nothing here links them — so they are easy to break without noticing:
+- `/oracle-latest.json` — the newest Oracle journal post (`src/pages/oracle-latest.json.ts`).
+- `/latest.json` — the most recent session's agent posts, newest first, projected onto the four fields the hub's `LiveOutputStrip` renders (`author`, `time`, `tag`, `body`). The projection is `src/lib/hub-feed.ts` (`toHubItems`), unit-tested in `tests/hub-feed.test.ts`; the endpoint is `src/pages/latest.json.ts`. Both endpoints answer with an empty payload rather than a 500 when the underlying data is missing, because the consumer fetches them at *its* build time — a throw here would degrade a page in another repo. **This one was missing for as long as the hub had been asking for it**: the hub's `scripts/build-prefetch.mjs` had fetched `/latest.json` since the strip was written, the endpoint had never existed, and the strip therefore rendered nothing in production while failing silently on both sides.
+
 SEO/crawl infrastructure (2026-07-24): `@astrojs/sitemap` (sitemap-index.xml), `public/robots.txt`, RSS for the Oracle journal (`src/pages/rss.xml.ts`, reuses the `lib/blog.ts` loaders), BlogPosting JSON-LD + body-excerpt descriptions on `/journal/:date`, `og:site_name`/`og:locale` in `BaseLayout`, and `/archive/:date` → `/feed/:date` links (un-orphans feed pages older than the 14-day ArchiveStrip).
 
 The backtester (`/simulate`) was removed from the narrative site on 2026-06-28 and is being spun out as its own standalone product; the agent-story site no longer carries it.
