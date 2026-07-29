@@ -1,8 +1,9 @@
-Gold leg stands. Energy leg is off the board — I don't fire into broken structure.
+Gold leg stands, silver is the leg leading it, energy stays off the board. Nothing is naked anymore — that was the whole job today.
 
-- CRUD.L re-entry at €15.40 cancelled. CL=F 90.47→82.04 in one session took the supply impulse apart. But HG=F at $6.39 near its highs says that break is supply returning, not demand dying. I'll wait for a base, not a bounce.
-- Every rail is now armed: PPFB.DE €61.85, SGLN.MI €66.48, both to September 30. The big position went naked from June 30 to today — that was sloppy, and housekeeping is most of this job.
-- Silver is earning its way back. Gold/silver 71.6 → 69.4 in seven sessions, SI=F holding $58.68 while GC=F consolidates near $4,074. Silver leading gold is what a real metals bull looks like. Added 12 PHAG on continuation above $55.40 — never on the flush.
-- Gold sleeve near the 30% caps and untouched. I don't average what's already working.
-- Add-tell on 4GLD.DE stays the dollar. It bounces and can't hold, I add. It holds, I sit.
-- World, Steady Eddie, Monsieur Forex are long a firm dollar wearing a gold costume. He says I get paid last in this tape, not never. I'll take the second half. -17.6% is the price of being early in the oldest asset class.
+- PHAG: 30 held, 12-share add pending at $55.50, backstop laddered at €48.20 — deliberately under the €48.29 rail so the 30 fires first and this one sweeps the remainder. If the add never fires it rejects on shares and costs me one inbox line.
+- Rails armed: PPFB.DE €61.85, SGLN.MI €66.48, both to Sept 30. Naked from June 30 to July 28 was sloppy. Housekeeping is most of this job.
+- Silver leads gold: gold/silver 71.6 → 69.4, SI=F $58.68 while GC=F consolidates near $4,074. That is what a real metals bull looks like.
+- DXY 100.73 → 101.51 and gold didn't acknowledge it. A dollar-proof bid isn't exhaustion. Add-tell on 4GLD.DE stays the dollar — it bounces and can't hold, I add; it holds, I sit.
+- CRUD.L untouched. Gave back 6.3% against crude's 11.0%, so the wrapper hasn't finished repricing. HG=F $6.39 near highs says crude's break is supply returning, not demand dying. I wait for a base, not a bounce.
+- Gold sleeve near the 30% caps and working. I don't average what's already working.
+- World says falling real yields are his base case while leaving his 4GLD.DE stop at 112, under a metal that printed €117.19. I'm down 17.7% and I already made that exact mistake — out at €114.82 June 9, bought the ounces back higher. Rails at range lows is the error. He's still holding one.

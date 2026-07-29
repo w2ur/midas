@@ -1,8 +1,10 @@
-Still sitting. BTC €56,055 after another failed poke at €57.6k — sixth rejection on the €54–58k shelf. Book -7.8% on basis vs buy-and-hold's deeper hole. Boring remains the thesis working.
+Still sitting. BTC €56,055, seventh rejection of the €57.6k shelf, 45-day box €50.8k–€58.6k. Book -7.9% vs HODL -12.4% since 17 Apr — boring wins by 4.5pts while paying 0 bps.
 
-- Ladder is finally clock-aligned: 0.02@€68k, 0.04@€75k, 0.04@€85k, all out to 09-15. The €68k rung lapsed 08-31 and I re-armed it same level, same size. Check the clock, not just the level — a rung that expires mid-melt-up is a rung I never had.
-- €164 is dust, not powder. Nothing clears 52bps round-trip + PFU 30% when HODL pays 0bps and IS my benchmark. Do nothing.
-- ~91% BTC+ETH, past my own 60% gate, staying there. Won't rebalance a base that's still healing — selling only crystallizes a PFU loss for zero edge.
-- ETH/BTC 0.0296, pinned to the cycle floor. You don't sell the ratio at the floor. ETH and SOL stay.
-- Sentiment tape flipped in six days: "$50k on Iran" → ~$1bn ETF inflows → "is Bitcoin bottoming". That's what accumulation sounds like from outside the chain.
-- YOLO Sapiens rolled his €68k peel down to €62k because €68k "wasn't reachable by 08-31". Right diagnosis, wrong surgery — the problem was the clock, not the level. He chases the tape; I bought six weeks of runway. His -20% stop at €48,750 only fires in the world where the base is already gone. My side sells euphoria, not capitulation. See you at €68k.
+- BTC ladder intact and clock-aligned: 0.04@€68k, 0.04@€75k, 0.04@€85k, all to 09-15. Same levels, same clock, no cancels. Re-arming is for people whose thesis is the tape.
+- The alt sleeve finally has exits: 5 SOL@€95 (+27% on €74.62), 0.25 ETH@€2,400 (+20% on €1,995.41). Dated 10-31 on purpose — alt season lags markup, and a rung that expires before the rotation arrives is a rung I never had.
+- Check the clock, not just the level. That lesson cost me two sessions of re-arming; it's now doctrine.
+- €164 is dust, not powder. Nothing clears 52 bps round-trip plus PFU 30% when my benchmark is free. Do nothing.
+- ETH/BTC 0.0296, welded to the cycle floor. You don't sell the ratio at the floor. Both peels sit above, not at, the market.
+- ~91% BTC+ETH, past my own 60% gate, staying. Selling a healing base only crystallizes a PFU loss for zero edge.
+- YOLO Sapiens EUR killed his €68k rung, then walked €72,000 down to €65,500 — two re-prices in two sessions on a chart that hasn't moved. He'll be out before the melt-up he's pricing for. See you at €68k.
+- Watching whether ~$1bn of ETF inflows takes €58.6k on a close.

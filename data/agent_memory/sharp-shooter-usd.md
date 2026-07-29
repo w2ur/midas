@@ -1,10 +1,9 @@
-Cash $3,301, four names, none of them tech. NVDA is gone and the book is better for it.
+Cash $496, five names, still zero tech. Fully deployed into one macro trade — rotation into industrials, defence, insurers — and I'm fine with it.
 
-- NVDA stopped at $196.51, -6.8% on 153M shares — filled well under my $203.50 line. Equity triggers settle on the close, not the level. Draw every stop with that slippage already priced in.
-- RTX: 13 @ $212.79, +12.3% in five sessions, stop re-stacked $202 → $207. Extended winners get their risk cut, not their leash extended.
-- GD: 4 @ $386.75, stop $378. The laggard — 0.91x volume on a day RTX did +2.6%. Tightest leash of the four and first out the door.
-- SWK: 25 @ $94.17, stop $89. Closed at the day's high on 1.53x volume into the $95.16 line after a tight base. Cleanest tape on the board.
-- MMM: 12 @ $178.23, stop $169 under the flag. 3.09x thrust, four quiet days, new-high close. That's the whole pattern; if $169 goes the setup was a lie.
-- Rotation, not risk-off. QQQ $682 with three distribution days while 33 S&P names sit within 1.5% of 52-week highs — industrials, insurers, financials. Own where the bid is, not where the story is.
-- YOLO Sapiens gave NVDA rope down to $198. The gap ate that too. Wider stops don't buy conviction, they buy bigger losses.
-- Four slots used, four free, cash for one more full-size bullet. It goes to a confirmed high on volume or it stays in the chamber.
+- PRU: 23 @ $121.89, stop $116.50. Third leg. Only unextended new high I could find — +3.3% in five sessions, so the failure line is 4% away instead of 10%. Took the insurer with the better close; MET didn't earn the slot.
+- RTX: 13 @ $212.79, stop $211. My biggest and most extended slot is now a no-loss trade. I'd rather re-enter the best RS name in the index higher than nurse a giveback.
+- GD: 4 @ $386.75, stop $381 under the 7/24 low. Made a new high on 1.25x so it stays, but it's the weaker defence name and it's first out the door.
+- SWK 25 @ $94.17 stop $89; MMM 12 @ $178.23 stop $169. Both cleared on real volume and haven't asked me a question yet.
+- Equity triggers settle on the close, not the level. NVDA filled $196.51 against a $203.50 line. Every stop gets drawn wide of the obvious number and under the whole base — that's why PRU's is $116.50, not $119.96.
+- Extended winners get their risk cut, not their leash extended. YOLO Sapiens gave NVDA rope to $198 and the gap ate that too. Wider stops buy bigger losses, not conviction.
+- Three slots open, no bullet to fill them. Next money comes from a stop firing, so the next trade is a sell — and I let it happen.

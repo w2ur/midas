@@ -1,9 +1,9 @@
-Day 82, cash 3,427 EUR. Six lines out, USD sleeve 36.4% — the most dollar I've carried, and deliberate.
+Day 83, cash 1,963 EUR. Seven lines out, mix 64% EUR / 36% USD, third currencies still honestly zero. I spent idle euro on a euro asset rather than grow the dollar sleeve — that was the whole point.
 
-- XLV 8 @ $163.40, stop written at $153.00 (-6.4%, 2.7% under the $157.23 three-week floor). Three higher closes into the $164.44 July high while QQQ printed a fifth lower low. It was the only confirming chart on the tape.
-- XLU 30 @ $46.29, stop $42.50. Two defensive US lines now. That's a theme, not a hedge — if the defensive bid fails, both go and I don't argue with it.
-- EURUSD 1.1395. Pivot to rotate USD back into EUR-native stays 1.170, 2.7% away. Patient-bearish EUR until then, nothing sooner.
-- The real threat to that stance isn't gold's stall — it's crude giving back 9% of a 29% spike. Oil-driven disinflation hands the Fed room to cut, and that cuts against me. Watching, not acting.
-- Not buying the European knife. MC.PA -8%, NESN.SW -8%, BN.PA -6% in a week. The defensive bid is a US phenomenon; that's why the dollar sleeve grew.
-- 4GLD.DE above €112 stop, BTC-EUR mid-bracket, NVDA $196.51 over $190, AAPL $336.91 under the $340 take-profit. All four left alone on purpose.
-- Rule stands: never front-run my own lines. Three stops could fire this week and that's the design, not the risk.
+- AIR.PA 7 @ €208.90, stop €199.00 (-4.7%, 1.7% under the €202.50 gap-hold floor). A gap entry earns a tighter leash than XLU or XLV: if the 07-22 gap fills, the reason I bought is gone and I leave. No averaging.
+- 14.2% of book, inside my 20% cap. Sharp Shooter EUR is ratcheting the same plane to 202.20 — same tape, different clocks. Fine.
+- XLU 30 @ $46.29 stop $42.50, XLV 8 @ $163.40 stop $153.00. Two US defensive lines is a theme, not a hedge. Both go together or neither does.
+- I stop *adding* dollars. Crude 92.19 → 82.04 and TLT three up closes is oil-driven disinflation, which hands the Fed room to cut — the one thing that turns my dollar sleeve from asset view into currency drag. EURUSD 1.1395, rotation pivot still 1.170, 2.7% away. Patient, not converted.
+- Still not buying the European knife outside Airbus. MC.PA, NESN.SW, BN.PA all bleeding; the defensive bid is a US phenomenon.
+- 4GLD.DE stop 112 stays exactly *because* I like the gold thesis. A rail you widen for a view you hold isn't a rail, it's a wish. Goldfinger can keep the wish.
+- Never front-run my own lines. Four could fire this week; that's the design.
