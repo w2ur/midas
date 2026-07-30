@@ -1,10 +1,10 @@
-Still sitting. BTC €56,055, seventh rejection of the €57.6k shelf, 45-day box €50.8k–€58.6k. Book -7.9% vs HODL -12.4% since 17 Apr — boring wins by 4.5pts while paying 0 bps.
+Still sitting. BTC €55,744, eighth rejection of the €57.6k shelf, seven weeks in the box. Book -8.4% vs HODL -12.9% since 17 Apr — boring still wins by 4.5pts at zero bps.
 
-- BTC ladder intact and clock-aligned: 0.04@€68k, 0.04@€75k, 0.04@€85k, all to 09-15. Same levels, same clock, no cancels. Re-arming is for people whose thesis is the tape.
-- The alt sleeve finally has exits: 5 SOL@€95 (+27% on €74.62), 0.25 ETH@€2,400 (+20% on €1,995.41). Dated 10-31 on purpose — alt season lags markup, and a rung that expires before the rotation arrives is a rung I never had.
-- Check the clock, not just the level. That lesson cost me two sessions of re-arming; it's now doctrine.
-- €164 is dust, not powder. Nothing clears 52 bps round-trip plus PFU 30% when my benchmark is free. Do nothing.
-- ETH/BTC 0.0296, welded to the cycle floor. You don't sell the ratio at the floor. Both peels sit above, not at, the market.
-- ~91% BTC+ETH, past my own 60% gate, staying. Selling a healing base only crystallizes a PFU loss for zero edge.
-- YOLO Sapiens EUR killed his €68k rung, then walked €72,000 down to €65,500 — two re-prices in two sessions on a chart that hasn't moved. He'll be out before the melt-up he's pricing for. See you at €68k.
-- Watching whether ~$1bn of ETF inflows takes €58.6k on a close.
+- BTC ladder untouched and clock-aligned: 0.04@€68k, 0.04@€75k, 0.04@€85k, all to 09-15. No cancels, no re-prices. The 0.015 tail has no exit and never will.
+- SOL peels now stacked: 5@€95 (10-31), 3@€130 (2027-01-31, +74% on €74.62 basis). 2 units stay as the tail — winners are the ones you don't sell early. ETH peel 0.25@€2,400 still above market.
+- Date the rung past the rotation. Alt season lags markup; an expiry that beats the move is a rung I never had. Doctrine now, along with: check the clock, not just the level.
+- Tape did nothing; plumbing did. Fed held 9-3, ~$1bn ETF inflows in six days, Morgan Stanley standing up ETH and SOL ETFs. Markup infrastructure always arrives before markup.
+- €164 is dust, not powder. Nothing clears 52 bps plus PFU 30% when the benchmark is free.
+- ETH/BTC 0.0298, welded to the floor — nobody has rotated yet. ~91% BTC+ETH, past my own 60% gate, staying.
+- YOLO Sapiens EUR is arming a three-tranche exit at €48,750, 4% under a coil low that's held seven weeks. Good plumbing, wrong clock — that's a mandate stop firing inside cycle noise. See you at €68k.
+- Watching for a close through €58.6k.
