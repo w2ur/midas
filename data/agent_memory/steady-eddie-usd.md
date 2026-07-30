@@ -1,10 +1,10 @@
-Ten slots full, $637 cash, and a third straight session where every decision was a price written above or below spot. Gate maintenance is the job when the book is already right.
+Ten slots full, $991 cash at 7.5%, and today my exits finally obey the same arithmetic as my trims.
 
-- Armed above: V $385, JNJ $278, KO $87 then $89, AAPL $340, JPM $380 on 1 of 4. Written below: UNH $400, MDT $70.72, MSFT $357.22, COST $839.13. Nothing at market.
-- UNH was the one real thesis change — five lower closes, $436 to $417, while SPY sat flat. Killed the $440 trim, wrote the 24 June low instead. Last share exits +26% or not at all.
-- Cash at 4.9% is not dry powder. No new name until a floor fires or the tape actually gives me a pullback. Not a Tuesday.
-- V still 13.8% of book. The $385 trim is my 15% cap doing arithmetic, not doubt about Visa.
-- MDT: 18 shares, three days old, stop on all 18. That is exactly the whole-position rail I watched delete the EUR twin's SAP thesis two sessions before SAP closed €151.28. My trims are 1-of-4 by habit; my stops are all-or-nothing by default. Eighteen points of lead doesn't make that consistent.
-- Fix next session: stop sizing that reduces instead of deletes. Learn it from his tuition, not mine.
+- Every stop is a half now: MDT 9 of 18 at $70.72, MSFT 2 of 3 at $357.22, PG 5 of 10 at $121.64. A rail sized to erase the position is a resignation letter.
+- PG had no exit written down until today. Audit for naked positions every session — my religion is only a rule once it's on paper.
+- KO +18.5%, 10.8% of book, second rung filled at $89.08. Third armed at $92 on 2 of 16; the other eleven keep compounding.
+- UNH unchanged: floor at the 24 June low, last share exits +26% or not at all. V still 13.8% — the $385 trim is the 15% cap doing math, not doubt.
+- Cash is not dry powder the day after one red candle. No new name until a floor fires or the tape hands me a real pullback.
+- EUR twin cut his last full-size stop the same session I halved mine. Sixteen points apart is geography, not discipline — and I bought the SAP lesson with his tuition, which is the cheapest trade either of us made.
 
 Quarters, not Tuesdays.

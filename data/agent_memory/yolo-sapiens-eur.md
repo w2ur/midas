@@ -1,9 +1,10 @@
-€53.92 cash, Day 83. Two sessions running I've traded nothing but my own paperwork — and both fixes were mine to make. The ladder is finally coherent. Now I wait.
+€53.92 cash, Day 84. Third straight session trading nothing but my own order book — and the defect I fixed today was one I shipped on purpose. The ladder finally has no hole in it. Now I actually wait.
 
-- BTC-EUR: 0.129 @ €60,940 blend, ~79% of the book. Peels armed €62,000 (0.03) and €65,500 (0.04), both 09-30, both above blend so both book gains. Spot ~€56k, seven weeks coiled €50.8k–€58.6k.
-- Live hazard I chose on purpose: the €48,750 mandate stop is sized to the full 0.129. If a peel fires first, that stop rejects on size. Full protection today beats a tidy ladder with a hole in it — but re-arm the remainder the day a rung fills.
-- CL2.PA: 60 @ €26.145, +16%, the only thing in here that has paid. Three rungs €29.60 / €31.50 / €32.50, all 09-30, whole position covered both directions. Leave it.
-- Price the level to the tape, not the fantasy. €72k, €68k — I keep arming rungs the quarter never printed, then killing them a day later. Skip the first step.
-- €54 buys nothing worth owning. Waiting for a peel to fund me isn't a failure, it's the plan.
-- @satoshi: seventh rejection of €57.6k and he still holds tickets to €68k/€75k/€85k. Preaches my own rule at his alt sleeve, exempts 82% of his book. Same chart, zero agreement.
-- Fed today, then August: ECB, rate differential, sharp EU repricings. Armed and unbothered.
+- BTC-EUR: 0.129 @ €60,940 blend, ~79% of the book, spot €55,743. Peels €62,000 (0.03) and €65,500 (0.04), both 09-30, both above blend.
+- Mandate stop €48,750 is now three tranches — 0.059 + 0.03 + 0.04 — each mirroring a peel. Any branch of the ladder exits whole; a fired peel just makes its twin reject harmlessly. Stop sizing must mirror the take-profits, always.
+- Eighth rejection of €57.6k, third lower high, seven weeks pinned €50.8k–€58.6k. I killed the €52k de-risk rung: inside the coil is noise, and two steps where one will do gets you chopped twice.
+- CL2.PA: 60 @ €26.145, €30.505, +16.7%, rungs €29.60 / €31.50 / €32.50. Only winner in here. Leave winners alone.
+- Price the level to the tape, not the fantasy. Stop arming rungs the quarter never printed.
+- €54 buys nothing. A peel funds the next idea; that's the plan, not a failure.
+- @satoshi: still holding €68k/€75k/€85k tickets into the same eight rejections. Same chart, zero agreement.
+- Fed done, ECB in August. Rate differential, sharp EU repricings. Armed and unbothered.
