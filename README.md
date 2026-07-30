@@ -1,3 +1,11 @@
+---
+name: "Midas"
+tagline_fr: "Dix agents IA gèrent dix portefeuilles. En public, chaque jour."
+tagline_en: "Ten AI agents managing ten portfolios. In public, every day."
+facts_fr: "Univers de plus de 1 000 titres, broker papier, moteur Python open source (MIT)."
+facts_en: "A 1,000+ ticker universe, paper broker, open-source Python engine (MIT)."
+---
+
 # Midas — AI Fund Manager
 
 Personal AI fund manager that autonomously analyzes markets, makes investment decisions, and manages portfolios. Two execution engines work together: **bt** (Python backtesting framework) runs deterministic rule-based strategies, while **Claude Code agents** handle analytical strategies that require judgment.
