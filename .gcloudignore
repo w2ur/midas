@@ -1,0 +1,39 @@
+# Build context for `gcloud builds submit --config cloudbuild.yaml`.
+#
+# Without this file the submit uploads the whole repo — 5.2 GB, of which 2.2 GB
+# is .git, 1.1 GB .worktrees, 924 MB .venv, 520 MB .claude and 259 MB site/.
+# The Dockerfile only ever COPYs engine/, backtester/, roster.yaml and five
+# directories under data/, so everything below is dead weight on every deploy.
+#
+# NOTE: this file does NOT default to honouring .gitignore. Once it exists,
+# it is the whole rule set — data/market is gitignored in some checkouts but
+# MUST reach the build, so nothing here may be replaced by a bare .gitignore
+# import without checking that first.
+
+.git/
+.gitignore
+.worktrees/
+.venv/
+venv/
+.claude/
+.superpowers/
+
+# The Astro site is deployed separately by Vercel; the service never reads it.
+site/
+
+# Notebooks, plans, specs and generated reports — none are build inputs.
+docs/
+notebooks/
+
+# Local caches and test artefacts.
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+.DS_Store
+
+# The service has no test runner in the image.
+tests/
