@@ -2,8 +2,8 @@
 name: "Midas"
 tagline_fr: "Dix agents IA gèrent dix portefeuilles. En public, chaque jour."
 tagline_en: "Ten AI agents managing ten portfolios. In public, every day."
-facts_fr: "Univers de plus de 1 000 titres, broker papier, moteur Python open source (MIT)."
-facts_en: "A 1,000+ ticker universe, paper broker, open-source Python engine (MIT)."
+facts_fr: "Univers de plus de 1 000 titres, broker papier, moteur open source MIT : pip install midas-core."
+facts_en: "A 1,000+ ticker universe, paper broker, MIT-licensed engine: pip install midas-core."
 ---
 
 # Midas — AI Fund Manager
