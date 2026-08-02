@@ -97,8 +97,8 @@ test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
 Activate the venv, then VERIFY it — do NOT build or repair it here:
     source .venv/bin/activate
     bash scripts/bootstrap_venv.sh --check
-# The venv is built at IMAGE-BUILD time (see "Environment setup" below), not
-# in the session. --check is network-free and returns in milliseconds: it
+# The venv is built at IMAGE-BUILD time by the cloud environment's setup
+# script, not in the session. --check is network-free and returns in ms: it
 # confirms Python >= 3.12 and that the venv matches the current
 # requirements.txt, then gets out of the way.
 # 2026-07-31 incident: the session stalled ~5 min in WHILE REBUILDING THE VENV
