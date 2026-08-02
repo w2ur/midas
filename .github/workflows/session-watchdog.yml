@@ -20,8 +20,17 @@ on:
     - cron: "0 2 * * 2-6"
   workflow_dispatch:
 
+# Alerting: a red X plus a workflow-failure email is not a closed loop. On
+# 2026-08-01 this job correctly caught the missing 07-31 session and the alert
+# went unconsumed for a day — the miss was found by hand, not by the watchdog
+# that had already flagged it. A failed run scrolls out of the Actions tab and
+# the email lands in the same inbox flood as every other notification, so on a
+# miss the job now files a GitHub issue: it persists, it is visible on the repo
+# without going looking, and it stays open until a human resolves it.
+
 permissions:
   contents: read
+  issues: write
 
 jobs:
   watchdog:
@@ -33,6 +42,9 @@ jobs:
           fetch-depth: 50
 
       - name: Check yesterday's weekday session commit on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
 
@@ -45,11 +57,71 @@ jobs:
           fi
 
           pattern="^chore: weekday session $yesterday"
+          title="Missing weekday session $yesterday"
+
+          # An issue for this date may already be open from an earlier run of
+          # this same job (a manual workflow_dispatch, or a re-run).
+          #
+          # Deliberately non-fatal: under `set -euo pipefail` a transient gh
+          # failure (rate limit, API blip) would otherwise abort the job before
+          # it ever checked main, producing a red run with no ::error:: and no
+          # issue — silence dressed up as an alert, the exact failure being
+          # fixed here. On a lookup failure we treat it as "none open" and file;
+          # a duplicate issue is a far cheaper mistake than a missed session.
+          existing=$(gh issue list --state open --search "in:title \"$title\"" \
+                       --json number,title \
+                       --jq ".[] | select(.title == \"$title\") | .number" \
+                     2>/dev/null | head -n1) || existing=""
 
           echo "Looking for weekday session commit for $yesterday..."
           if git log origin/main --since="$yesterday 00:00 UTC" --until="$yesterday 23:59 UTC" --pretty=%s | grep -Eq "$pattern"; then
             echo "Found expected weekday session commit for $yesterday."
+            # The session landed after a previous run flagged it (a backfill, or
+            # a late auto-merge). Retract the alert rather than leaving a
+            # resolved issue open to rot — an issue tracker nobody trusts to be
+            # current is the same dead end as an unread email.
+            if [[ -n "$existing" ]]; then
+              gh issue close "$existing" \
+                --comment "Session commit for $yesterday is now on main. Closed automatically by [session-watchdog]($RUN_URL)."
+              echo "Closed stale issue #$existing."
+            fi
             exit 0
+          fi
+
+          if [[ -n "$existing" ]]; then
+            echo "Issue #$existing already open for $yesterday — not filing a duplicate."
+          else
+            # Body via --body-file, not --body "$(cat <<EOF ...)". Bash cannot
+            # parse an unbalanced apostrophe inside a heredoc nested in a
+            # command substitution inside double quotes — "403'd" below is
+            # enough to make the whole script a syntax error. A top-level
+            # heredoc into a file has no such limitation.
+            #
+            # The heredoc body sits at the block scalar's base indentation on
+            # purpose: YAML strips exactly that much, so the shell sees EOF at
+            # column 0. Dedenting it here to column 0 instead terminates the
+            # `run: |` block and the workflow stops parsing as YAML.
+            body_file="${RUNNER_TEMP:-/tmp}/watchdog-issue.md"
+          cat > "$body_file" <<EOF
+          The \`session-watchdog\` job found no \`chore: weekday session $yesterday\`
+          commit on \`main\`.
+
+          The weekday session fires at 20:00 UTC Mon-Fri and always commits. Its
+          absence means the run never happened, aborted, or never reached \`main\`.
+
+          **Where to look**
+          - Weekday session RemoteTrigger run for $yesterday.
+          - \`session_guard\` abort (stalled sandbox, date rollover, ledger moved
+            on main) — the guard is designed to abandon the run, so an abort here
+            is the system working. The next scheduled session starts clean; do
+            **not** reconcile by hand.
+          - A sandbox push that 403'd, leaving the work on a \`claude/**\` branch
+            that \`auto-merge-session\` never landed.
+
+          Detected by [this run]($RUN_URL).
+          EOF
+            url=$(gh issue create --title "$title" --body-file "$body_file" | tail -n1)
+            echo "Filed $url"
           fi
 
           echo "::error::No weekday session commit for $yesterday on main. Daily pipeline likely failed silently."
