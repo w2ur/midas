@@ -8,7 +8,10 @@ proxy.
 ## Local dev
 
 ```bash
-pip install -r requirements.txt
+pip install -r backtester/requirements.txt   # the service's own closure; the
+                                             # root requirements.txt is the
+                                             # whole monorepo's and is ~264 MB
+                                             # heavier for no benefit here
 uvicorn backtester.app:app --reload --port 8080
 curl http://localhost:8080/health
 ```

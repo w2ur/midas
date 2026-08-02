@@ -7,7 +7,13 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc g++ \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /app/requirements.txt
+# The service's OWN closure, not the monorepo's. The root requirements.txt
+# covers 6 workflows, local dev, the sandbox and the agents; installing it here
+# put pyarrow, ccxt, plotly, streamlit, pydeck, lxml and pytest in an image
+# whose cold start is dominated by pulling itself. Versions are copied verbatim
+# from the root lockfile, so this narrows the package set without ever
+# resolving a different version than CI tests. See backtester/requirements.txt.
+COPY backtester/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY engine /app/engine

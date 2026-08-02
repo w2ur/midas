@@ -1,0 +1,73 @@
+# ---------------------------------------------------------------------------
+# backtester/requirements.txt — the Cloud Run service's own pinned closure.
+#
+# The root requirements.txt is the full monorepo closure (6 workflows, local
+# dev, sandbox, the agents). The backtester service imports only bt, fastapi,
+# uvicorn, pandas, pandas_ta, pydantic, yaml and yfinance — installing the full
+# closure put pyarrow, ccxt, plotly, streamlit, pydeck, lxml and pytest in the
+# image for nothing. That is 399 MB of site-packages (905 -> 506) on a service
+# whose cold start is dominated by pulling its own image.
+#
+# Every version here is copied verbatim from the root requirements.txt, so the
+# image runs exactly the versions CI tests — this file narrows the package set,
+# it never resolves versions independently. Regenerate after a root lock bump:
+#   pip install bt fastapi uvicorn pandas pandas-ta pydantic pyyaml yfinance
+#   pip freeze  ->  intersect names with ../requirements.txt, keep its pins
+# ---------------------------------------------------------------------------
+annotated-doc==0.0.4
+annotated-types==0.7.0
+anyio==4.14.1
+beautifulsoup4==4.15.0
+bt==1.2.0
+certifi==2026.6.17
+cffi==2.0.0
+charset_normalizer==3.4.7
+click==8.4.2
+contourpy==1.3.3
+curl_cffi==0.15.0
+cycler==0.12.1
+decorator==5.3.1
+fastapi==0.138.1
+ffn==1.1.5
+fonttools==4.63.0
+h11==0.16.0
+idna==3.18
+joblib==1.5.3
+kiwisolver==1.5.0
+llvmlite==0.44.0
+matplotlib==3.11.0
+multitasking==0.0.13
+narwhals==2.22.1
+numba==0.61.2
+numpy==2.2.6
+packaging==26.2
+pandas-ta==0.4.71b0
+pandas==3.0.3
+peewee==4.1.1
+pillow==12.2.0
+platformdirs==4.10.0
+protobuf==7.35.1
+pyarrow==24.0.0  # REQUIRED: pandas parquet engine — a /run backtest fails without it
+pycparser==3.0
+pydantic-core==2.46.4
+pydantic==2.13.4
+pyparsing==3.3.2
+pyprind==2.11.3
+python-dateutil==2.9.0.post0
+pytz==2026.2
+pyyaml==6.0.3
+requests==2.34.2
+scikit-learn==1.9.0
+scipy==1.18.0
+six==1.17.0
+soupsieve==2.8.4
+starlette==1.3.1
+tabulate==0.10.0
+threadpoolctl==3.6.0
+tqdm==4.68.3
+typing-extensions==4.15.0
+typing-inspection==0.4.2
+urllib3==2.7.0
+uvicorn==0.49.0
+websockets==16.0
+yfinance==1.5.1
