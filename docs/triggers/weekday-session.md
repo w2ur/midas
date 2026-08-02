@@ -4,7 +4,7 @@
 **Roster:** 10 trading agents + The Oracle.
 **Cadence-invariant pipeline:** identical helpers as the weekend session, only the roster differs.
 
-This doc is the canonical text to paste into the RemoteTrigger configuration in claude.ai. The weekend trigger lives at `weekend-session.md` and shares 95% of this text — only `ROSTER` and the trading-round addendum differ.
+This doc is the canonical text to paste into the RemoteTrigger configuration in claude.ai. It is the only trigger prompt in the repo: the weekend RemoteTrigger was retired on 2026-05-23 and replaced by `refresh-leaderboard.yml`, a valuation-only GitHub Action that runs no agents and needs no prompt.
 
 ## Architecture — DISPATCH, do NOT impersonate
 
@@ -21,6 +21,26 @@ wrapped, model = wrap_persona_prompt(agent_id, task_prompt)
 ```
 
 `model` is `"opus"` for every current persona — pass it through so the dispatch matches the frontmatter intent. If `model` is `None`, omit the parameter and let the harness pick.
+
+---
+
+## Running on Claude Opus 5
+
+The orchestrator runs on **Claude Opus 5** (set in the RemoteTrigger `job_config`, outside this repo). The aliases in `.claude/agents/*.md` frontmatter resolve to current releases, so **the 10 traders and the Manager are on Opus 5 as well**; only the Oracle (`model: sonnet`) is not.
+
+Opus 5 runs this prompt well as written. The deltas below are the behaviours that needed tuning, from Anthropic's [Opus 5 prompting guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5).
+
+**Delegation is the one that actually matters here.** Opus 5 reaches for subagents more readily than Opus 4.8 did, and this session is built almost entirely out of subagent dispatches — so the failure mode isn't hypothetical. The dispatch count is a fixed contract, not a budget to fill: every extra dispatch is a full agent round of cost and latency producing output that nothing downstream consumes.
+
+The self-check used to read *"at least 31 dispatches"*. That is exactly the wrong shape for this model — a floor invites padding — and it was also **wrong on the arithmetic**: it counted 10 trade + 1 oracle + 10 post + 10 journal, omitting the Manager dispatch (Step 4b) and the Oracle's own journal rewrite (Step 8 dispatches 11, not 10). The real total is **33**, and it is now asserted as an exact count.
+
+**Verification scaffolding is deliberately absent.** Opus 5 checks its own work unprompted; instructing it to verify compounds with that and burns a round for no signal. What remains are *contract assertions* — "`git show HEAD --stat` must include X", "the bundle must contain 10 agent keys" — deterministic checks against committed artifacts, not self-review. **Do not delete those, and do not add "verify with a subagent" steps back.** The distinction is the whole point: assertions on artifacts stay, requests to re-think go.
+
+**Scope.** Opus 5 will widen a task it judges under-specified. An unattended trading session must not: a helper it decides to "fix" mid-run mutates the ledger, and the ledger is the product. The prompt now says deliver this pipeline at this scope, raise concerns in a sentence, and keep going.
+
+**Deliverable length needed no change — verified, not assumed.** Opus 5 writes longer files than prior models, and the journals are agent-authored markdown rewritten in full every session, so they were the obvious exposure. `engine/agent_memory.build_memory_update_prompt` already caps them at a hard 250-token ceiling with an explicit "prune ruthlessly, no padding" instruction. Worth keeping that way: `journal_excerpt` keeps the **tail**, so a journal that grew past 4 000 chars would silently drop its oldest beliefs out of every prompt that reads it, with nothing failing.
+
+**Not applicable to this trigger:** the thinking-disabled artifacts (a tool call written as plain text so the call never runs; leaked `<thinking>` tags). Thinking is on by default on Opus 5 and nothing here disables it. If an effort setting is ever added to the routine, note that disabling thinking is rejected above `high` effort — and that lowering effort shortens *thinking*, not visible output.
 
 ---
 
@@ -125,6 +145,45 @@ Persona dispatch pattern (used in every step that targets an agent):
 
 NEVER use subagent_type=<agent_id> directly — project agents are not
 registered in the Task registry. Use "general-purpose" + wrapper.
+
+# Operating rules — read before Step 1
+
+DISPATCH BUDGET IS EXACT: 33 Task calls, no more, no fewer.
+    10  Step 2   trading round (one per roster agent)
+     1  Step 4b  the-manager
+     1  Step 5   the-oracle
+    10  Step 6   post round (one per roster agent)
+    11  Step 8   journal rewrite (10 traders + the-oracle)
+Do NOT spawn a subagent for anything else: not to read a file, not to
+check a number, not to review or verify your own work, not to
+investigate a helper that returned something surprising, not to
+"parallelise" a step this prompt does not already parallelise. Every
+action outside those five dispatch points is a direct helper call you
+make yourself. A 34th dispatch means you invented work — stop and
+report it instead of running it.
+
+DELIVER THIS PIPELINE AT THIS SCOPE. Do not add steps, do not fix
+unrelated things you notice in the repo, do not refactor a helper, do
+not improve an artifact that is merely not to your taste. If a step
+looks wrong or a helper looks buggy, say so in one sentence in your
+final report and keep running the pipeline as written — do NOT quietly
+repair it mid-session. The abort conditions named in the steps below
+are the exception, and they mean STOP, not FIX.
+
+NEVER reconcile state by hand. Portfolios, orders, baselines and the
+leaderboard are written by helpers only. If they disagree with each
+other, that is a finding to report, not a file to edit.
+
+The checks in this prompt are contract assertions on committed
+artifacts, not requests to double-check your reasoning. Run them
+exactly as written, and add none of your own. You already verify your
+work without being told; an extra pass here costs a full agent round
+and tells you nothing new.
+
+Keep your own narration short — a line per step is plenty, and the
+transcript is read only when something breaks. This applies to YOUR
+output only. Persona text comes back from dispatches and is never
+yours to shorten, rewrite, or tidy.
 
 # Step 1 — Market data (store-only, no network)
 python scripts/fetch_market_data.py
@@ -429,10 +488,16 @@ should match to the cent. If a row's return_pct equals
 (snapshots[-1].portfolio_value / snapshots[0].portfolio_value - 1) * 100
 for an agent seeded with non-cash positions, the helper was bypassed —
 abort. (2026-05-15 weekday session bug.)
-Also confirm: this session issued at least 31 Task tool dispatches
-(10 trade + 1 oracle + 10 post + 10 journal), every one with
-subagent_type="general-purpose" and a wrap_persona_prompt-built prompt.
-If fewer, an agent step was inlined instead of dispatched — abort and re-run.
+Also confirm: this session issued EXACTLY 33 Task tool dispatches
+(10 trade + 1 manager + 1 oracle + 10 post + 11 journal), every one
+with subagent_type="general-purpose" and a wrap_persona_prompt-built
+prompt. FEWER means an agent step was inlined instead of dispatched —
+abort and re-run. MORE means a dispatch was spawned that this prompt
+does not authorise: report the count and what the extra ones did, and
+do not treat the run as clean. This is an equality check on purpose —
+it read "at least 31" until 2026-08-02, which both undercounted (it
+omitted the Manager and the Oracle's journal) and licensed unbounded
+extra delegation.
 Also confirm the session commit reached origin/main:
     git fetch origin main
     git rev-parse HEAD == git rev-parse origin/main
@@ -462,17 +527,11 @@ explicitly forbids them:
 - "Network blocked. Let me update today.json with today's BTC close" → MUST call `python scripts/fetch_market_data.py` (already store-only)
 - "Now I'll `git push` the session commit" → MUST call `step_git_commit_push(dry_run=False)`. A bare `git push` publishes the sandbox's throwaway branch (`claude/<slug>`) instead of advancing main — Apr 30 incident. The helper does the right thing: `HEAD:main` first, fallback to `HEAD` (sandbox branch) if the harness 403s the main push (2026-05-08 incident); the auto-merge-session workflow takes the fallback the rest of the way. Don't second-guess the helper.
 
-## Diff vs weekend trigger
+## Weekends
 
-The weekend trigger uses:
-```
-ROSTER = ["satoshi", "yolo-sapiens-eur", "yolo-sapiens-usd"]
-```
-And appends to the TRADING_PROMPT body:
-```
-"Weekend session — restrict orders to crypto pairs in your base currency.
-Equities/forex markets are closed; the broker would reject those orders anyway."
-```
-Every other step is byte-identical (the helpers are roster-agnostic and
-the bundle is cadence-invariant — non-runners get carry-forward summaries
-via `build_portfolio_summaries()`).
+There is no weekend trigger. The weekend RemoteTrigger (a 3-agent crypto
+roster) was retired on 2026-05-23 and its doc deleted on 2026-08-02;
+`refresh-leaderboard.yml` covers Sat/Sun as a valuation-only GitHub Action —
+no agents, no Oracle, no journals, no posts. Crypto agents keep weekend
+exposure through Friday-authored conditional orders that the trigger watcher
+fires. See CLAUDE.md → Session Cadence.

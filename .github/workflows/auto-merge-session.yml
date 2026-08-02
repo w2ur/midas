@@ -31,10 +31,12 @@ jobs:
           msg=$(git log -1 --pretty=%s ${{ github.sha }})
           echo "Commit message: $msg"
 
-          # Trigger prompts use:
-          #   docs/triggers/weekday-session.md → "chore: weekday session {date}"
-          #   docs/triggers/weekend-session.md → "chore: weekend crypto session {date}"
-          # Accept either, plus the legacy "daily session" variant.
+          # docs/triggers/weekday-session.md → "chore: weekday session {date}"
+          # The "weekend( crypto)? session" and "daily session" alternatives are
+          # legacy: the weekend RemoteTrigger was retired 2026-05-23 (replaced by
+          # refresh-leaderboard.yml, which commits "chore: weekend refresh" from a
+          # GitHub Action, not a claude/** sandbox branch — so it never reaches
+          # this workflow at all). Kept so an old sandbox branch still merges.
           if ! echo "$msg" | grep -Eq '^chore: (weekday|weekend|daily)( crypto)? session '; then
             echo "Not a daily-session commit — nothing to do."
             echo "is_session=false" >> "$GITHUB_OUTPUT"
