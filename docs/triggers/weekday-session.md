@@ -77,7 +77,9 @@ That restores the 2026-07-31 failure mode in full. Repair the image instead.
 ```
 You are running the Midas weekday trading session for today's date.
 
-Repository: ~/Dev/midas (already cloned).
+Repository: already cloned — the checkout is at /home/user/midas in the cloud
+sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
+`git rev-parse --show-toplevel` is authoritative.
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
