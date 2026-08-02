@@ -97,17 +97,15 @@ from engine.config import get_config
 # order_id -> human-readable reason. Forward-direction only (filled inbox row,
 # no matching trade) — see module docstring "Removing the known exception".
 _KNOWN_FORWARD_DIVERGENCES: dict[str, str] = {
-    "ord_2026-05-21_sharp-shooter-eur_001": (
-        "SELL 1 ASML.AS @ EUR1249, fired 2026-05-21T21:47:43Z (commit "
-        "6609f1c58). Lost to the commit_and_push() pathspec bug present "
-        "between 418e763bf (2026-05-18, watcher introduced) and 8ff48861e "
-        "(2026-05-23, fix: data/portfolios added to the git-add pathspec). "
-        "The inbox row was staged and pushed; the trades.json mutation was "
-        "not, and was discarded with the ephemeral runner. Reconciling this "
-        "trade into the ledger is an owner decision (see module docstring) "
-        "and is out of scope for this test."
-    ),
+    # Empty since 2026-08-02. The one entry that lived here —
+    # ord_2026-05-21_sharp-shooter-eur_001, SELL 1 ASML.AS @ EUR1249, lost to the
+    # commit_and_push() pathspec bug — was reconciled into trades.json, and the
+    # 2026-06-24 sale it had made possible (ord_2026-06-24_sharp-shooter-eur_001,
+    # which sold a share the book no longer owned) was voided in the inbox with
+    # reason NO_POSITION_TO_SELL. Kept as an explicit empty dict, not deleted, so a
+    # future divergence has an obvious documented home rather than an inline exemption.
 }
+
 
 # No known reverse-direction divergences (trade with no matching filled inbox
 # row) exist in the committed ledger as of this writing. Kept as an explicit,
