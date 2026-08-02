@@ -1,21 +1,46 @@
 name: tests
 
 # Runs the full pytest suite (incl. the import-smoke guard) on every pull
-# request. This is the PRE-MERGE gate: the cron workflows and session-integrity
-# only run on `main`, so without this nothing exercises the suite before a PR
-# lands. Triggered on pull_request only — the daily session pushes to sandbox
-# branches that auto-merge, which never open a PR, so this does not interfere
-# with that flow.
+# request AND on every code-bearing push to `main`. The PR trigger is the
+# pre-merge gate; the push trigger closes the hole behind it — a commit pushed
+# straight to main (as the 2026-07-31 session-guard fix was) opens no PR, so
+# with pull_request alone nothing ever exercised the suite against what main
+# actually holds. The cron workflows and session-integrity do run on main, but
+# neither runs pytest.
+#
+# `paths-ignore`, not `paths`, deliberately: an allowlist silently stops
+# covering any code directory added later, which is the same bypass-by-omission
+# class this trigger exists to close. Everything not listed below runs the
+# suite. The list is kept as short as the coupling allows:
+#   data/**  — the daily session's only footprint, so a session commit never
+#              triggers a run (the sandbox auto-merge path inherits this).
+#              Accepted risk: data/universes/*.json is read by the resolvers,
+#              so a refresh-universes commit is unverified here.
+#   docs/**  — no code or test reads it (verified, not assumed).
+#   *.md     — root-level only. `*` does not cross `/`, so .claude/agents/*.md
+#              stays covered: test_persona_dispatch reads those personas.
+# site/** is deliberately NOT ignored: tests/test_reason_codes.py reads
+# site/src/lib/rails.ts and asserts it matches REJECTION_REASON_CODES, so a
+# site-only edit can fail pytest.
 
 on:
   pull_request:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'data/**'
+      - 'docs/**'
+      - '*.md'
 
 permissions:
   contents: read
 
 concurrency:
   group: tests-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseding a PR run is free — the newer commit is what matters. On main
+  # each commit is already published, so every run must complete: cancelling
+  # one leaves a commit on main with no verdict, the very gap being closed.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pytest:
