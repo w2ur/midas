@@ -50,6 +50,9 @@ LIVE_ONLY_TESTS = {
     "test_manager_session.py",
     # Imports scripts.sync_core, the dev-only tool not in core.
     "test_sync_core.py",
+    # Drives scripts/bootstrap_venv.sh, live sandbox infrastructure. CORE_SCRIPTS
+    # ships .py modules only, so the shell script has no route into core.
+    "test_bootstrap_venv.py",
     # NOTE: the 21 formerly-live-only cast-coupled tests were reclaimed into
     # core in SP5. They ship to core byte-identical; the ones that assert on the
     # live cast carry @pytest.mark.live_cast and skip on the demo desk (see

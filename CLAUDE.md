@@ -52,6 +52,7 @@ streamlit run app/main.py
 - `engine/managers/` — bt Algos for position management (grid, trailing stop, etc.)
 - `engine/universes/` — Universe resolvers (S&P 500, congressional, crypto, etc.). Read from committed `data/universes/*.json` — no network at runtime. Refresh via `scripts/refresh_universes.py` or the weekly `refresh-universes.yml` workflow.
 - `scripts/` — CLI entry points for backtesting and daily sessions
+- `scripts/bootstrap_venv.sh` — builds the Python 3.12 venv (image-build time) or verifies it (`--check`, in-session Step 0). The build is deliberately OUTSIDE the timed session: on 2026-07-31 an in-session venv rebuild stalled the run for 63 hours. Idempotent, stamped with the `requirements.txt` hash so a lockfile bump invalidates it. A failing `--check` must abort the session, never trigger a rebuild — see `docs/triggers/weekday-session.md`.
 - `app/` — Streamlit dashboard pages
 - `data/strategies/` — Strategy spec JSON files
 - `data/portfolios/` — Runtime portfolio state (committed — needed by the sandboxed remote agent)

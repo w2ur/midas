@@ -193,7 +193,7 @@ def test_cast_tests_reclaimed_into_manifest():
     }
     # None of the reclaimed tests remain live-only.
     assert reclaimed & sync_core.LIVE_ONLY_TESTS == set()
-    # The 7 genuinely un-runnable tests stay live-only.
+    # The 8 genuinely un-runnable tests stay live-only.
     assert sync_core.LIVE_ONLY_TESTS == {
         "test_attest_ledger.py",
         "test_backfill_snapshots.py",
@@ -202,6 +202,7 @@ def test_cast_tests_reclaimed_into_manifest():
         "test_fetch_market_data.py",
         "test_manager_session.py",
         "test_sync_core.py",
+        "test_bootstrap_venv.py",
     }
     # All reclaimed tests now ship in the code manifest.
     manifest_names = {p.name for p in sync_core.code_manifest()}

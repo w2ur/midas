@@ -39,8 +39,12 @@ test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
 # missed two intervening commits, produced duplicate sells of positions
 # that no longer existed in current state. Always realign first.
 
-Activate the venv:
+Activate the venv, then VERIFY it — do NOT build or repair it here:
     source .venv/bin/activate
+    bash scripts/bootstrap_venv.sh --check
+# Built at image-build time, never in-session. If --check fails, ABORT and
+# report; a rebuild inside a timed session is what cost 63 hours on 2026-07-31.
+# See weekday-session.md for the full rationale.
 
 ROSTER = ["satoshi", "yolo-sapiens-eur", "yolo-sapiens-usd"]
 

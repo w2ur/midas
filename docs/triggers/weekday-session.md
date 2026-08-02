@@ -24,6 +24,34 @@ wrapped, model = wrap_persona_prompt(agent_id, task_prompt)
 
 ---
 
+## Environment setup — pre-bake the venv (configured OUTSIDE this repo)
+
+The venv must already exist when the session starts. Building it inside the
+session is what cost 63 hours on 2026-07-31: the run stalled ~5 minutes in,
+mid-install, and did not resume until 08-02.
+
+This half of the fix cannot live in git — it belongs to the RemoteTrigger
+environment configuration on claude.ai, which the sandbox applies at image-build
+time, before any session is timed. Set its setup step to:
+
+```bash
+bash scripts/bootstrap_venv.sh
+```
+
+That is the full command. The script is idempotent: on a warm image where the
+venv already matches `requirements.txt` it prints `venv already current` and
+exits immediately, so it is safe to leave in the setup step permanently. It
+rebuilds only when the lockfile hash or the interpreter version changes — which
+is exactly when a rebuild is warranted.
+
+The session side is the matching `--check` in Step 0 below. The two are a pair:
+build out here where nothing is timed, assert in there where everything is.
+
+**Do not "fix" a failing `--check` by adding a build to the trigger prompt.**
+That restores the 2026-07-31 failure mode in full. Repair the image instead.
+
+---
+
 ## Trigger prompt
 
 ```
@@ -44,8 +72,20 @@ test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
 # duplicate sells of positions that no longer existed in current state.
 # Push was rejected by the session-integrity guard. Always realign first.
 
-Activate the venv:
+Activate the venv, then VERIFY it — do NOT build or repair it here:
     source .venv/bin/activate
+    bash scripts/bootstrap_venv.sh --check
+# The venv is built at IMAGE-BUILD time (see "Environment setup" below), not
+# in the session. --check is network-free and returns in milliseconds: it
+# confirms Python >= 3.12 and that the venv matches the current
+# requirements.txt, then gets out of the way.
+# 2026-07-31 incident: the session stalled ~5 min in WHILE REBUILDING THE VENV
+# and resumed 63 hours later. The install of pandas/bt/pandas-ta sat in the
+# timed critical path of every run, and that is precisely where the run died.
+# If --check fails: ABORT the session and report. Do not pip install, do not
+# rebuild, do not "just try once more" — a rebuild here is the failure mode.
+# Aborting is cheap: nothing commits, session-watchdog files an issue the next
+# morning, and the next scheduled session starts clean on a repaired image.
 
 # Step 0c — Anchor the session clock + ledger base (CRITICAL, after realign)
     from datetime import date
