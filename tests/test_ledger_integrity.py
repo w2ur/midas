@@ -247,8 +247,17 @@ def _real_valid_agents() -> set[str]:
     return set(cfg.trading_roster) | set(cfg.allocators)
 
 
+@pytest.mark.live_cast
 class TestRealLedgerIntegrity:
-    """Reconcile the actual committed ledger under data/."""
+    """Reconcile the actual committed ledger under data/.
+
+    Cast-coupled: reads the live desk's committed ledger. midas-core ships only
+    generic data (strategies, universes, ticker maps) — never the order ledger —
+    so on the demo desk these have nothing to reconcile and
+    ``test_allocator_channel_is_included`` correctly fails rather than passing
+    vacuously. The other two classes in this file are hermetic and still run
+    everywhere, which is why the marker is on the class and not the module.
+    """
 
     def test_forward_integrity(self) -> None:
         """Every real filled inbox row (public + allocator channels) has a
