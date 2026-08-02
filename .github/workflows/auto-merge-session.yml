@@ -75,6 +75,47 @@ jobs:
           fi
           [[ $fail -eq 0 ]]
 
+      # A session commit is only valid against the ledger it was built from.
+      # The 2026-07-31 session stalled in the sandbox and resumed ~63h later,
+      # by which time main carried the 08-01 trigger fires and weekend refresh;
+      # merging it would have reverted them. That merge happened to conflict,
+      # which is luck, not a guarantee — a narrower stale session would merge
+      # clean and silently corrupt the ledger. So reject it explicitly.
+      - name: Reject stale sessions
+        if: steps.inspect.outputs.is_session == 'true'
+        run: |
+          set -euo pipefail
+          git fetch origin main
+
+          msg=$(git log -1 --pretty=%s ${{ github.sha }})
+          incoming=$(echo "$msg" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}$' || true)
+          if [[ -z "$incoming" ]]; then
+            echo "::error::Cannot parse a session date from: $msg"
+            exit 1
+          fi
+
+          # Newest session/refresh already on main.
+          existing=$(git log origin/main --pretty=%s \
+            | grep -oE '^chore: (weekday|weekend|daily)( crypto)? session [0-9-]{10}|^chore: weekend refresh [0-9-]{10}' \
+            | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort -r | head -1)
+
+          echo "incoming session date: $incoming"
+          echo "newest on main:        ${existing:-<none>}"
+
+          if [[ -n "$existing" && ! "$incoming" > "$existing" ]]; then
+            echo "::error::Stale session — main already carries $existing, which is at or after this commit's $incoming. Merging would rewrite portfolios/baselines from a superseded snapshot. Refusing."
+            exit 1
+          fi
+
+          # The session must also descend from a base that main still contains.
+          base=$(git merge-base origin/main ${{ github.sha }})
+          drift=$(git diff --name-only "$base"..origin/main \
+            | grep -cE '^data/(portfolios|orders|baselines|leaderboard)/' || true)
+          if [[ "$drift" -gt 0 ]]; then
+            echo "::error::Ledger moved on main in $drift file(s) since this session's base ($base). The session recomputed those files from a stale snapshot. Refusing."
+            exit 1
+          fi
+
       - name: Merge sandbox session into main
         if: steps.inspect.outputs.is_session == 'true'
         run: |

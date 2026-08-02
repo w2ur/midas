@@ -47,6 +47,23 @@ test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
 Activate the venv:
     source .venv/bin/activate
 
+# Step 0c — Anchor the session clock + ledger base (CRITICAL, after realign)
+    from datetime import date
+    from scripts.session_guard import anchor_session
+    anchor_session(today)
+# Pins `today`, origin/main's SHA, and the wall-clock start. step_author_all
+# and step_git_commit_push re-validate all three and abort the run if the
+# sandbox stalled, the date rolled over, or the ledger moved on main.
+# 2026-07-31 incident: the sandbox fired on time, stalled ~5 min in during
+# the venv rebuild, and resumed ~63 HOURS later on 08-02. Step 0 had passed
+# legitimately (main really was at 02949e3 at 20:04 on 07-31), so nothing
+# caught it; the session authored a full set of 07-31 artifacts against a
+# dead snapshot. main meanwhile had the 07-31 OHLCV, the 08-01 trigger fires
+# and the 08-01 weekend refresh. The push was rejected and auto-merge failed
+# on conflicts — merging would have reverted the 08-01 fills.
+# If the guard aborts: do NOT reconcile by hand. Abandon the run and report;
+# the next scheduled session starts clean.
+
 ROSTER = [
     "steady-eddie-eur", "steady-eddie-usd",
     "sharp-shooter-eur", "sharp-shooter-usd",
