@@ -206,3 +206,50 @@ def test_cast_tests_reclaimed_into_manifest():
     # All reclaimed tests now ship in the code manifest.
     manifest_names = {p.name for p in sync_core.code_manifest()}
     assert reclaimed <= manifest_names
+
+
+def test_manifest_is_closed_under_scripts_imports():
+    """Every scripts.* module a shipped file imports must itself ship.
+
+    Origin: 2026-08-02. The session-guard fix added a module-level
+    `from scripts.session_guard import ...` to scripts/daily_session.py.
+    daily_session.py was in CORE_SCRIPTS, session_guard.py was not, so the next
+    `sync_core.py apply` would have published a midas-core whose daily_session
+    raised ImportError on import — in the PUBLIC repo. The manifest recorded
+    closure only as a hand-written comment ("in daily_session's closure"), which
+    no test enforced. This enforces it.
+    """
+    import ast
+
+    manifest = set(sync_core.apply_manifest())
+    shipped_py = sorted(
+        p for p in manifest if p.suffix == ".py" and p.parts[0] in ("scripts", "engine")
+    )
+    assert shipped_py, "expected the manifest to ship python files"
+
+    missing: list[str] = []
+    for rel in shipped_py:
+        tree = ast.parse((sync_core.LIVE_ROOT / rel).read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            targets: list[str] = []
+            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith(
+                "scripts"
+            ):
+                parts = node.module.split(".")
+                if len(parts) > 1:
+                    targets.append(parts[1])
+                else:
+                    # `from scripts import x` — each alias is a module.
+                    targets.extend(a.name for a in node.names)
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    parts = alias.name.split(".")
+                    if parts[0] == "scripts" and len(parts) > 1:
+                        targets.append(parts[1])
+            for mod in targets:
+                if REL(f"scripts/{mod}.py") not in manifest:
+                    missing.append(f"{rel} imports scripts.{mod}, which is not shipped")
+
+    assert not missing, "manifest not closed under imports:\n  " + "\n  ".join(
+        sorted(set(missing))
+    )

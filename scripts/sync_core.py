@@ -27,6 +27,10 @@ CORE_SCRIPTS = [
     # populates data/market/ohlcv from yfinance. Shipping it also un-breaks the
     # `midas fetch-ohlcv` subcommand, which maps to scripts.fetch_ohlcv.
     "fetch_ohlcv.py",
+    # Required by daily_session's module-level import, so it ships whether or
+    # not a fork wants it — omitting it makes core's daily_session unimportable.
+    # The staleness logic it enforces is cadence-generic, not live-cast-coupled.
+    "session_guard.py",
     "resolve_manager_outcomes.py",
     "backfill_baselines.py",
     "build_tax_shadow.py",
