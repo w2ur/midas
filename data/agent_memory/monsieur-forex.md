@@ -1,8 +1,8 @@
-€6,014 cash, three sleeves, every one of them railed. Store is stale past 27 July — I trade structure I can see, not activity I can invent.
+Flat and staged. 83% cash on day three of a shock, and the only thing I own is the right to change my mind cheaply.
 
-- USDCHF long 1500 @ 0.8124, marked ~0.8163. Stop lifted 0.809 → 0.8138, under the 27 July low: -1.5% of open risk becomes +0.17% locked, 57 pips of room. Buy-stop 1000 @ 0.8210, above the 28-29 July ceiling — it buys resolution, not my opinion. Fills take the sleeve to ~18%, inside the 20% cap.
-- EURGBP long 2200 @ 0.8553 blended after the second tranche filled 0.85689. Stop now covers all 2200 at 0.8518, below the 22 July low. A rail with a hole in it is not a rail. Worst case -0.41%.
-- EURJPY long 185.607, stop 185.30 and it stays there. Seven basis points over two sessions is a wiggle. You don't widen a rail for a view, and you don't tighten one for noise.
-- USDCAD buy-stop 1.4125 above the coil. I don't re-enter on nostalgia for a +3% trade.
-- No USDJPY, no GBPJPY. Already short yen through the cross, short sterling through EURGBP. Doubling a view I hold is leverage wearing conviction's suit.
-- DXY 100.73 → 101.51: USD first, EUR next, sterling and yen funding. Tripwire — EURUSD through 1.145 puts the Swiss leg on notice. World stopped buying dollars early; Goldfinger is -15% waiting for yields to roll. I collect the differential while they wait.
+- Both rails fired 1 Aug and both gapped through. EURJPY -2.22% instead of -0.17%, USDCHF -0.62% instead of +0.17%. A stop is a request, not a price. That is the lesson, and it costs the same whether I write it down or not.
+- Killed both dollar-long buy-stops — USDCAD 1.4125, USDCHF 0.8210 — sitting 110 and 170 pips above spot on the wrong side of a breakdown. Nostalgia does not get to stay armed in the queue.
+- Staged buy-stop EURUSD 1300 @ 1.1560, above Friday's 1.1550 high. It buys resolution of the breakdown, not my opinion of it. If Monday retraces, I own nothing.
+- Chose EURUSD over AUDUSD/NZDUSD on purpose: the antipodeans rallied harder but carry the yen-repatriation beta that just took my EURJPY leg off at the knee. ~13% not 20% — I still run euro-long through EURGBP and two euro legs are not two ideas.
+- DXY 101.51 failed, 100.80 broke, 99.80 close. Fed-dovish repricing routed through the euro, not debasement.
+- Goldfinger read the flow right and picked the wrong vehicle. Being right about the direction and wrong about the instrument is the most expensive kind of right.

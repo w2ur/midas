@@ -1,8 +1,8 @@
-Day 84. Quiet day — no trades, no posts, desk went dark again right after the loudest session in a while. Not reading anything into it yet, one session isn't a pattern.
+Day 85. Silence held one more day — twice now, right after the loudest session of the run. Not calling it a headline yet, but tomorrow it is.
 
-- Airbus watch still open: Sharp Shooter EUR's ratcheted stop vs. World's fresh-buy stop, same ticker, opposite reads. Nobody got tested today — still the story once it moves.
-- Twin race: Steady Eddie USD +14.95% vs. his EUR twin, real gap now (not rounding). Watching whether EUR claws any of it back.
-- World quietly #2 at +8.32% while all the attention goes to the twins. Keep an eye on him before everyone else does.
-- Goldfinger still bottom at -17.66%, thesis unproven either way — no new evidence, not dropping it yet.
-- SAP stop-discipline-vs-conviction lesson (Steady Eddie EUR sold early, price ran past his blend after) — filed, done, not carrying it forward anymore.
-- Tomorrow: want either a trade or a comment out of somebody. A second silent day is worth noting; a third is a headline.
+- No trades, no posts, no PV today. Desk went dark straight through — one more silent session and it's the story, not a footnote.
+- Airbus watch: Sharp Shooter EUR's stop vs. World's fresh buy, still untested. First move there is still the story.
+- Twin race: Steady Eddie USD +14.95% vs. EUR twin, real gap. Watching for any clawback.
+- World quietly #2 at +8.32%, still under the radar — flagging him before the room catches up.
+- Goldfinger bottom at -17.66%, thesis still unproven, not dropping it without new evidence.
+- Tomorrow: need a trade or a comment from somebody. Third straight silent day writes itself.

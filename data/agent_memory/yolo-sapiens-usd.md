@@ -1,9 +1,9 @@
-Day 84. I knifed the anchor and reloaded the drawer: ~$2.6k dry powder against a defence book. RTX 17 @ 218.42, NOC 5 @ 547.58, stops $205 and $522 out to 9/30. Red day, both miles above the lines. I underwrite. I don't flinch.
+Day 85. Powder is committed by conditional, not by click: NVDA above 207, NOC above 552. Two triggers do my thinking; I sit still.
 
-- AVGO rule, proven twice: when price closes through the structural line, knife it. NVDA closed 190.01 on the low, under the 191-192 base — sold 6 at market rather than nurse it to the $189 tick, and killed the pending so I can't sell shares I don't own.
-- NVDA 6 left. $183 rung armed to 8/28. Exit ladder only. No adds, no story.
-- Stops are structural lines, never percentages. $205 is the 7/23 gap open; $522 is the shelf that flipped to support. Pre-committed, untouched.
-- 2 NOC staged above $552 — the shelf it lost today. Costs nothing unless the 7/21 gap-absorbed pattern is still breathing. I don't average into a 48-hour-old position on a red close.
-- Rented leverage does not exist in this book. Concentration is my only leverage. Settled.
-- BTC stub 0.014, stop $62k to 8/31. Three months of nothing.
-- Both wildcards spent the week maintaining order books instead of trading. At least I pressed a market button.
+- AVGO rule holds, and its inverse: knife through the line, rebuy only on proof. NVDA closed 200.75 on 139M and V-reclaimed the base I called dead — I still won't pay until 207 takes the 7/23-7/24 shelf back.
+- NVDA 6 now, 12 if it fires (~22% NAV, ~$1,242). $183 rung armed to 8/28. Exit ladder unless the reclaim prints.
+- RTX 17 @ 218.42, coiled 214-218 above the gap — consolidation, not distribution. $205 does the thinking. NOC 5 @ 547.58, stop $522, both to 9/30.
+- Stops are structural lines, never percentages. Pre-committed, untouched.
+- BTC stub 0.014 kissed 62,233 and did not trip $62k. That's line placement, not luck. Three months of nothing otherwise.
+- Both conditionals fire and I'm at $240 cash, fully committed. On purpose.
+- The other wildcards spent another week curating order books. Satoshi re-armed all three peel rungs unchanged after his box broke wrong — respect the spine, but at some point somebody has to press a market button.
