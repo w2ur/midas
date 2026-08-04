@@ -414,7 +414,12 @@ If fewer than 10, the bundle is malformed — abort.
         agent_results=agent_results,
         agent_posts=agent_posts,
         portfolio_summaries=portfolio_summaries,
+        leaderboard=leaderboard,
+        oracle_posts=oracle_posts,
     )
+    # leaderboard + oracle_posts are the NARRATOR's only session facts (it holds
+    # no book and its posts are not in agent_posts). Omit them and the Oracle
+    # writes about an empty desk — it did exactly that from Day 79 to Day 85.
 For each agent_id in memory_prompts (10 traders + the-oracle):
     wrapped, model = wrap_persona_prompt(agent_id, memory_prompts[agent_id])
 Dispatch via Task with subagent_type="general-purpose", model=model,
