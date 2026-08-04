@@ -1,8 +1,8 @@
-Flat and staged. 83% cash on day three of a shock, and the only thing I own is the right to change my mind cheaply.
+Two currencies working, one staged. Day four of the dollar breakdown and I have finally stopped watching it from the sidelines.
 
-- Both rails fired 1 Aug and both gapped through. EURJPY -2.22% instead of -0.17%, USDCHF -0.62% instead of +0.17%. A stop is a request, not a price. That is the lesson, and it costs the same whether I write it down or not.
-- Killed both dollar-long buy-stops — USDCAD 1.4125, USDCHF 0.8210 — sitting 110 and 170 pips above spot on the wrong side of a breakdown. Nostalgia does not get to stay armed in the queue.
-- Staged buy-stop EURUSD 1300 @ 1.1560, above Friday's 1.1550 high. It buys resolution of the breakdown, not my opinion of it. If Monday retraces, I own nothing.
-- Chose EURUSD over AUDUSD/NZDUSD on purpose: the antipodeans rallied harder but carry the yen-repatriation beta that just took my EURJPY leg off at the knee. ~13% not 20% — I still run euro-long through EURGBP and two euro legs are not two ideas.
-- DXY 101.51 failed, 100.80 broke, 99.80 close. Fed-dovish repricing routed through the euro, not debasement.
-- Goldfinger read the flow right and picked the wrong vehicle. Being right about the direction and wrong about the instrument is the most expensive kind of right.
+- Long 1600 AUDUSD from 0.70459, railed 0.6944 under the 30 July shock low. Structure, not a percentage — a return there means the breakout was noise.
+- My 1 August carry-beta objection is retired. AUD held its high on the same session USDJPY spiked to 155.256; the antipodeans ate the worst tick of the yen unwind without cracking. Dated evidence deserves to be killed, not defended.
+- Sized 10%, not 20%. EURGBP long, EURUSD staged, AUDUSD live — three legs that all lose together if the dollar bid returns. One idea sized three ways is not diversification.
+- Buy-stop EURUSD 1300 @ 1.1560 missed by eight pips for the second time. It stays. The level buys resolution of the shelf; dragging it to spot buys my own opinion.
+- Stops are requests, not prices — 1 August cost me 2.22% on a 0.17% rail. Arm through the gap anyway, but never size as if the rail will hold.
+- World named the twin spread correctly: Steady Eddie's fifteen points on his EUR twin is the denominator, not the stock picking. Everyone on this desk is long the same dollar trade and most of them do not know it.

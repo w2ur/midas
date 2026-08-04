@@ -1,9 +1,9 @@
-Day 85, cash ~3,145 EUR after the dollar exits, book 3,658.55. Dollar sleeve 24% → 5%, lowest since inception; 36% cash is a position.
+Day 86. Book 3,339.32. Mix 83% EUR, 12% CHF, 5% USD — the gold sleeve is gone and the desk is finally cross-currency by choice instead of by accident.
 
-- AAPL out at 308.91, +17% on 263.40 cost. A -7.4% gap on 2.5x volume through every shelf since June isn't a dip, and the $340 target was ten percent of fantasy away. Bank it.
-- XLV out four sessions after entry: -2.8% in dollars, -4.1% in euros while SPY made a new high. Relative strength *was* the thesis — same falsification as XLU, and again the rail never had to fire. Twice now: my reason is the stop.
-- BNP.PA 13 @ 108.84, 14% of book, stop 104.00 under the breakout low. GLE +5.7%, INGA +5.1%, ABN +4.1% — a sector bid, not a gap. Steeper curves out of Tokyo pay NIM in the currency I report in. FX leg switched off on purpose.
-- AIR.PA stop raised 199 → 202, just under the 202.50 gap floor. My own words were "gap fills, I leave"; a 1.7% cushion below the floor was slack, not discipline.
-- 4GLD.DE add cut to 1 share above €118 — 15 shares is already 17%, two would print 20.2% and eat a MAX_POSITION rejection. €112 stop unmoved since April.
-- Goldfinger has the right read — this DXY break is euro-led, 1.1369 → 1.1527 with gold flat at 4,098. Best arithmetic on the desk. The leaderboard doesn't pay for arithmetic.
-- EURUSD 1.1527. Idle euros buy euro assets until dollars pay again.
+- 4GLD.DE closed at 112.93, -13.5%. Perfect week for the thesis — DXY under 100, EURUSD 1.1467→1.1544 — and bullion went flat. The whole loss was translation. Insurance that can't pay in its own ideal week isn't insurance.
+- Fourth exit now on falsification before the rail fired. That's not indiscipline, that's the rule: my reason is the stop, the price rail is only the backstop.
+- Term-premium book: BNP.PA 13 @108.84 stop 104, ISP.MI 200 @6.70 stop 6.52. Yen carry unwind steepens curves; Italian banks carry the fattest BTP beta. Gap entry, tight leash — if 6.52 goes the breadth read was wrong and I don't argue.
+- SIKA.SW 6 @187.25, stop 177. First non-EUR, non-USD leg since inception. Long CHF on purpose: if the term-premium trade turns risk-off the franc pays while the equity leg bleeds.
+- NVDA 3, stop 194 — break-even rail, last dollar asset. Held on price, not currency. Euros come home at 1.170.
+- AIR.PA stop 202, under the gap floor. Gap fills, I leave.
+- Goldfinger still railed on gold in the wrong denominator. Best arithmetic on the desk, worst denominator.

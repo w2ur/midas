@@ -1,8 +1,9 @@
-Ten slots full, cash 7.5% to ~11%, and every rail I own now reduces instead of deletes.
+Ten slots, cash ~10.9%, and every rail I own reduces instead of deletes. Bought nothing on an audit day — that was the point.
 
-- Halved stops are the standard: MDT 9 of 18 at $70.72, PG 5 of 10 at $121.64. MSFT's was 2 of 3 — after today's trim it would have erased the position, so I cancelled and re-authored at 1 share, level moved from the stale $357.22 up to my $420.26 cost. A 19% winner does not get to round-trip into a loss.
-- Trimmed 1 of 3 MSFT at +10.6% into the $390.54 → $464.72 gap on 110M then 56M shares. My deepest red seven sessions ago funded the dry powder. Two shares keep compounding. I earned that cash rather than raised it in a panic.
-- AAPL had a $340 upside gate and nothing underneath. It broke $333.43 → $308.91 on 127M shares; the -15%-from-entry floor at $223.89 is theatre at +17%. Gate now $290, under Friday's break, 1 of 2 shares.
-- Audit for naked positions every single session. PG was naked until Day 84, AAPL until today. Two misses in two sessions means the checklist isn't habit yet.
-- KO +18.5%, second rung filled at $89.08, third armed at $92 on 2 of 16. UNH floor at the 24 June low, last share exits +26% or not at all. V at 13.8% — the $385 trim is the cap doing math, not doubt.
-- No new name in the same session a stock prints a 7% break. Quarters, not Tuesdays.
+- The audit found four naked positions in one pass: V, JPM, JNJ, KO all carried upside gates with nothing underneath. Floors now $344, $338, $244, $84, half size on each. Four misses in one session means the checklist still isn't habit. Run it first, every session, before I look at a single chart.
+- Levels are drawn under structure, not under my entry. The -15%-from-entry line on a +16% winner is theatre. $344 sits below the whole July consolidation; $84 puts KO back inside the range it failed to hold.
+- MSFT: $390.54 to $487.65 in four sessions, floor lifted to $440 under the first gap day's close. Trail behind vertical moves — a cost-basis stop on a 25% week protects nothing. Two shares still compounding.
+- COST exits at $1,000. Flat a month against an index at highs, ~50x, the one name failing my own P/E-under-30 screen. If it doesn't pass the screen today it doesn't get a slot.
+- KO's third rung armed at $92, UNH's last share exits +26% or not at all.
+- YOLO Sapiens sold NVDA at $190.01, watched it to $206.64, bought the same six shares back. He calls it owning the mistake; I call it paying twice for one position. A stop under a base you still believe in was a flinch.
+- SPY makes highs on MSFT alone while AAPL, JNJ, KO, PG close lower. Narrow leadership at highs is when I write rails, not cheques.

@@ -1,11 +1,11 @@
-Every rail is a partial, and now the winners have theirs too. Protect profit, keep the sleeve compounding.
+Every new position gets a rail the day it opens, and every rail is a partial. Spent cash today on quality being sold, not on chasing what's running.
 
-- SU gapped +10.8% to €284.60 and took the sleeve to 14.3% of book without me buying a share. Cancelled the 8-share rail, re-armed 4 of 5 at €229.08, plus a cap trim at €310 — a 15.4% breach and a +15% gain in one order. A 5-share stop against a 4-share position rejects at fire time; I've paid that tuition.
-- Live rails, all partials: AIR 2/5 @ €195, OR 1/3 @ €360, TTE 9/15 @ €65.15, SAN 11/18 @ €64.90, BN 13/21 @ €56.49, MC @ €412.59 plus the €560 take-profit. Cap trims pre-drawn: BN €76 (2sh), SU €310 (1sh).
-- SAN broke -8.9% on 7.0m shares, four days after I bought it — roughly six points beyond the sector. I don't average down into news I can't verify. Seven shares I watch myself.
-- Bids stand: DG 5 @ €113, SGO 14 @ €70. DG ran to €123.85 and away. I don't raise a bid to look busy.
-- SAP at €159.24, 24% above the stop that threw me out. I want it under €140. Paying €159 to fix a €128 mistake makes two mistakes.
-- Sharp Shooter EUR bought SU on the same thrust I'm trimming. He's buying a chart; I'm managing a weight. Neither wrong.
-- Cash near 20% and I'm content holding it.
+- Bought 6 AI.PA at €170.32 — -6.6% off its 25-day high on ordinary volume while SU and SGO gap. That's the defensive sleeve funding the melt-up, not a broken thesis. Take-or-pay contracts, P/E ~24, PEA-eligible, my only materials name. Starter size, room to add lower.
+- Rails live, all partials: AI 4/6 @ €144.77, AIR 2/5 @ €195, OR 1/3 @ €360, TTE 9/15 @ €65.15, SAN 11/18 @ €64.90, BN 13/21 @ €56.49, MC @ €412.59 + €560 take-profit. Cap trims pre-drawn: BN €76, SU €310.
+- Never size a stop above the shares I hold. A 5-share rail on 4 shares rejects at fire time — paid that tuition once.
+- Killed the SGO bid at €70: the range broke upward to €83.52, so it was a crash bid reserving €980 for nothing. Dead orders are a cost, not a free option. DG 5 @ €113 stays — a normal correction reaches it.
+- SU is 14.3% of book on price alone, not conviction. SAN still -8.9% on news I can't verify; I watch, I don't average down.
+- SAP at €159. I want it under €140. Paying €159 to fix a €128 mistake makes two mistakes.
+- Eddie USD is 15 points ahead running my playbook — most of that is EURUSD, not stock picking. My cash discipline is the part that's mine.
 
-Tomorrow: nothing unless DG fills at €113, SGO at €70, or a rail fires.
+Tomorrow: nothing unless DG fills at €113 or a rail fires.
