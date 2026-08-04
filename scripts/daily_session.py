@@ -1270,10 +1270,15 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
         return []
 
     manager = PortfolioManager(base_dir=portfolios_dir)
+    # Rows are keyed on the market date (the axis the baselines live on), but
+    # stamped with the session that observed them so a session whose OHLCV
+    # store has not advanced cannot rewrite a previous session's published row.
     snapshot_date = date.fromisoformat(market_payload["date"])
+    session_date = date.today()
     benchmarks = market_payload["benchmarks"]
 
     snapshotted: list[str] = []
+    refused: list[str] = []
 
     for portfolio_dir in sorted(portfolios_dir.iterdir()):
         if not portfolio_dir.is_dir():
@@ -1293,20 +1298,35 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
         positions_value = _compute_positions_value(portfolio, snapshot_date)
         portfolio_value = portfolio.cash + positions_value
 
-        manager.add_snapshot(
+        written = manager.add_snapshot(
             strategy_id=strategy_id,
             snapshot_date=snapshot_date,
             portfolio_value=portfolio_value,
             cash=portfolio.cash,
             positions_value=positions_value,
             benchmarks=benchmarks,
+            session_date=session_date,
         )
+
+        if not written:
+            refused.append(strategy_id)
+            print(
+                f"  [WARN] {strategy_id}: {snapshot_date} already snapshotted by an "
+                f"earlier session — not overwriting. This valuation lands on the "
+                f"next market date."
+            )
+            continue
 
         print(
             f"  Snapshotted {strategy_id}: value={portfolio_value:.2f}, cash={portfolio.cash:.2f}"
         )
         snapshotted.append(strategy_id)
 
+    if refused:
+        print(
+            f"  [WARN] {len(refused)} portfolio(s) refused: the OHLCV store has not "
+            f"advanced past {snapshot_date} since it was last snapshotted."
+        )
     if not snapshotted:
         print("  No active portfolios found.")
 
