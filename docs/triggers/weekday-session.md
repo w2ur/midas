@@ -316,11 +316,16 @@ After all 10 results arrive:
 
 # Step 4b — LLM Manager (DISPATCH — one Task call to the-manager, opus)
     manager_prompt = step_build_manager_prompt(agent_results, today)
-    wrapped, model = wrap_persona_prompt("the-manager", manager_prompt)
+    # NOTE: unlike every other dispatch below, step_build_manager_prompt ALREADY
+    # returns a persona-wrapped prompt. Do NOT call wrap_persona_prompt on it —
+    # that duplicates the whole allocator persona inside the prompt. Resolve the
+    # model on its own instead.
+    from engine.persona_dispatch import load_persona
+    _, model = load_persona("the-manager")
     # ^ model resolves to "opus" (the-manager.md frontmatter) — the only
     #   real-money-bound author; stakes justify the tier. Pass it through.
 Dispatch via Task with subagent_type="general-purpose", model=model,
-prompt=wrapped. Capture the dispatch result into `response_text`. The
+prompt=manager_prompt. Capture the dispatch result into `response_text`. The
 response is a single JSON object (ManagerDecision).
     # 4b-apply — Parse (conviction gate enforced in code), write the
     #            manager-review audit artifact (EVERY day, even a HOLD),
