@@ -32,6 +32,42 @@ docker run --rm -p 8080:8080 midas-backtester:dev
 If Docker is not installed locally, this step can be skipped — Cloud Build
 produces the image remotely during deploy.
 
+The build context is the repo root and is filtered by `/.dockerignore`
+(local `docker build`) and `/.gcloudignore` (`gcloud builds submit`). Neither
+may exclude anything the Dockerfile `COPY`s — `data/market/ohlcv` in
+particular, which is gitignored in some checkouts but must reach the build.
+There used to be a `backtester/.dockerignore`; Docker never read it (it only
+reads the file at the *context root*), and it shipped inside the published
+image as a regular file. It is gone.
+
+## Cold start — what the image is made of
+
+The service's cold start is dominated by pulling its own image, so the
+Dockerfile is written around that. Measured on the last single-stage revision
+(`midas-backtester-00007-hhv`, digest `b6303a303bde`): **455.7 MB compressed /
+~1.53 GB uncompressed**, of which
+
+| layer | uncompressed | compressed |
+|---|---|---|
+| `pip install` | 850.4 MB | 266.7 MB |
+| `apt install gcc g++` | 258.9 MB | 93.7 MB |
+| `COPY data/market` | 298.2 MB | 51.9 MB |
+| Debian + CPython base | 123.3 MB | 43.2 MB |
+
+Uvicorn's own startup, by contrast, is **2 ms**. None of the 130–230 s is
+application code.
+
+Three rules follow, and each has already been violated once:
+
+1. **Build tooling never ships.** `gcc`/`g++` live in the builder stage only.
+2. **Nothing is installed for a code path that is turned off.** `pyarrow` was
+   150 MB of the image, and existed solely for `engine.market_data`'s parquet
+   query cache — which this service no longer enables (see the note in
+   `runner.py`).
+3. **`__pycache__` stays.** It is 143 MB and it is the one big directory that
+   must *not* be pruned: dropping it makes every cold start re-compile pandas,
+   scipy, numba and sklearn onto a tmpfs.
+
 ## Deploy to Cloud Run
 
 One-time setup:
@@ -41,8 +77,28 @@ gcloud auth login
 gcloud projects create midas-backtester-<unique-suffix>
 gcloud config set project midas-backtester-<unique-suffix>
 # Link a billing account in the GCP console first; required even on free tier.
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com containerregistry.googleapis.com secretmanager.googleapis.com
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com
 gcloud config set run/region europe-west1
+```
+
+**One-time, and required before the next deploy** — `cloudbuild.yaml` now
+pushes to a `europe-west1` Artifact Registry repository instead of `gcr.io`.
+The `gcr.io` host resolves to an auto-migrated repository whose location is
+`us`, so every cold start was pulling the image from the United States into a
+service running in Belgium. Create the same-region repository first, or the
+push step will fail:
+
+```bash
+gcloud artifacts repositories create backtester \
+  --repository-format=docker --location=europe-west1 \
+  --description="Midas backtester runtime images"
+```
+
+Once a `europe-west1` revision is serving, the old US repository (2.7 GB of
+superseded revisions) can be deleted:
+
+```bash
+gcloud artifacts repositories delete gcr.io --location=us   # AFTER the cutover
 ```
 
 One-time secret setup — the pipeline injects `BACKTESTER_SECRET` from Secret
@@ -65,8 +121,9 @@ gcloud builds submit --config cloudbuild.yaml
 The pipeline (defined in `/cloudbuild.yaml`):
 
 1. Builds `backtester/Dockerfile` with the repo root as build context (so
-   `COPY engine`, `COPY data/market`, etc. resolve).
-2. Pushes the image to `gcr.io/$PROJECT_ID/midas-backtester`.
+   `COPY engine`, `COPY data/market/ohlcv`, etc. resolve).
+2. Pushes the image to
+   `europe-west1-docker.pkg.dev/$PROJECT_ID/backtester/midas-backtester`.
 3. Deploys it to Cloud Run reachable over IAM (`--allow-unauthenticated`) —
    required so the Netlify proxy, which is not a GCP principal, can reach it
    without a long-lived service-account key — with `BACKTESTER_SECRET`

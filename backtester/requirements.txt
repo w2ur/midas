@@ -4,15 +4,21 @@
 # The root requirements.txt is the full monorepo closure (6 workflows, local
 # dev, sandbox, the agents). The backtester service imports only bt, fastapi,
 # uvicorn, pandas, pandas_ta, pydantic, yaml and yfinance — installing the full
-# closure put pyarrow, ccxt, plotly, streamlit, pydeck, lxml and pytest in the
-# image for nothing. That is 399 MB of site-packages (905 -> 506) on a service
-# whose cold start is dominated by pulling its own image.
+# closure put ccxt, plotly, streamlit, pydeck, lxml and pytest in the image for
+# nothing, on a service whose cold start is dominated by pulling its own image.
 #
 # Every version here is copied verbatim from the root requirements.txt, so the
 # image runs exactly the versions CI tests — this file narrows the package set,
 # it never resolves versions independently. Regenerate after a root lock bump:
 #   pip install bt fastapi uvicorn pandas pandas-ta pydantic pyyaml yfinance
 #   pip freeze  ->  intersect names with ../requirements.txt, keep its pins
+#
+# THIS LIST MUST BE THE COMPLETE CLOSURE, not just the direct dependencies.
+# Until 2026-08-05 it was not: markdown-it-py, mdurl, pygments and rich were
+# pulled in transitively (rich <- curl_cffi and scikit-learn) and therefore
+# installed UNPINNED, which is precisely the reproducibility hole the root
+# lockfile exists to close. They are pinned below, at the root lockfile's
+# versions, which is what the image was already getting by luck.
 # ---------------------------------------------------------------------------
 annotated-doc==0.0.4
 annotated-types==0.7.0
@@ -35,7 +41,9 @@ idna==3.18
 joblib==1.5.3
 kiwisolver==1.5.0
 llvmlite==0.44.0
+markdown-it-py==4.2.0
 matplotlib==3.11.0
+mdurl==0.1.2
 multitasking==0.0.13
 narwhals==2.22.1
 numba==0.61.2
@@ -47,16 +55,26 @@ peewee==4.1.1
 pillow==12.2.0
 platformdirs==4.10.0
 protobuf==7.35.1
-pyarrow==24.0.0  # REQUIRED: pandas parquet engine — a /run backtest fails without it
+# pyarrow is deliberately ABSENT. It was here as pandas' parquet engine, and
+# the only parquet in this service was engine.market_data's query cache, which
+# backtester/runner.py and backtester/allocation.py no longer enable (see the
+# comment at their MarketDataFetcher() call sites). It cost 157.6 MB of
+# site-packages — libarrow.so 55.3 MB, libarrow_flight.so 26.9 MB,
+# libarrow_compute.so 19.0 MB, libparquet.so 12.8 MB — the largest single
+# package in the image after llvmlite. Verified: with pyarrow blocked at the
+# import hook, `import backtester.app` succeeds and pandas 3.0.3 is fully
+# functional; pandas only ever imported it opportunistically.
 pycparser==3.0
 pydantic-core==2.46.4
 pydantic==2.13.4
+pygments==2.20.0
 pyparsing==3.3.2
 pyprind==2.11.3
 python-dateutil==2.9.0.post0
 pytz==2026.2
 pyyaml==6.0.3
 requests==2.34.2
+rich==15.0.0
 scikit-learn==1.9.0
 scipy==1.18.0
 six==1.17.0

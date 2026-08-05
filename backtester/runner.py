@@ -18,7 +18,23 @@ from engine.universes import resolve_universe as _engine_resolve_universe  # noq
 
 from backtester.schemas import SignalConfig  # noqa: E402
 
-_CACHE_DIR = _PROJECT_ROOT / "data" / "cache"
+# NO parquet query cache here — MarketDataFetcher() is constructed without a
+# cache_dir on purpose, and the reasoning is Cloud-Run-specific:
+#
+#   * the container filesystem is in-memory, so every cached frame is charged
+#     against the service's 1 GiB memory limit, competing with the backtest
+#     that is running;
+#   * min-instances=0, so an instance that warms a cache is usually torn down
+#     before a second request with an identical query ever arrives — the hit
+#     rate is near zero by construction;
+#   * it was the only parquet in the service, and therefore the only reason
+#     pyarrow (157.6 MB of site-packages) was in the image at all.
+#
+# engine.market_data still serves from the committed OHLCV store first and only
+# falls back to yfinance for symbols the store does not cover, which is the
+# layer that actually matters for latency. `_load_cache`/`_save_cache` both
+# no-op when `_cache_dir is None`, so this is a supported configuration of
+# MarketDataFetcher rather than a behaviour we are working around.
 
 
 class UnknownUniverseError(ValueError):
@@ -70,7 +86,7 @@ def run_signal_backtest(
     engine.backtest.run_backtest.
     """
     tickers = resolve_universe(config.universe)
-    fetcher = MarketDataFetcher(cache_dir=_CACHE_DIR)
+    fetcher = MarketDataFetcher()  # no parquet cache — see the note above
     price_data = fetcher.fetch_prices(tickers, start, end)
     # Multi-market universes mix exchanges with different holiday calendars
     # (e.g. CON.DE has no row on 2018-05-01 / German Labour Day, but US

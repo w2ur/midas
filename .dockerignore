@@ -1,0 +1,56 @@
+# Build context for `docker build -f backtester/Dockerfile .` (the local path
+# documented in backtester/README.md).
+#
+# This file lives at the REPO ROOT because that is the only place Docker reads
+# it from. It used to live at backtester/.dockerignore, where Docker never read
+# it — the proof is that it shipped as a regular file inside the published
+# image, at /app/backtester/.dockerignore. Its patterns were already written
+# relative to the repo root (`backtester/tests`, `data/cache`), i.e. authored
+# for this location; only the filename's directory was wrong. BuildKit does
+# honour a sibling `<dockerfile>.dockerignore`, but that name would have to be
+# `backtester/Dockerfile.dockerignore`, and Cloud Build's docker builder is the
+# classic one, which has no such lookup at all.
+#
+# Deploys go through `gcloud builds submit`, which filters the upload with
+# /.gcloudignore first; the two files must stay compatible. Neither may ever
+# exclude something the Dockerfile COPYs — in particular data/market/ohlcv,
+# which is gitignored in some checkouts but MUST reach the build.
+
+.git
+.gitignore
+.worktrees
+.venv
+venv
+.claude
+.superpowers
+
+# The Astro site is deployed separately by Vercel; the service never reads it.
+site
+
+# Notebooks, plans, specs and generated reports — none are build inputs.
+docs
+notebooks
+
+# The service has no test runner in the image.
+**/tests
+**/conftest.py
+
+# Local caches and test artefacts.
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.hypothesis
+htmlcov
+.coverage
+.DS_Store
+**/.env*
+
+# Data trees the Dockerfile does not COPY, listed so a future `COPY data`
+# typo cannot silently pull them in.
+data/cache
+data/agent_memory
+data/output
+data/blog
+data/posts

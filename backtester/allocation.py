@@ -24,7 +24,9 @@ from engine.market_data import MarketDataFetcher  # noqa: E402
 
 from backtester.schemas import AllocationConfig
 
-_CACHE_DIR = _PROJECT_ROOT / "data" / "cache"
+# No parquet query cache — see the note at the top of backtester/runner.py for
+# why (in-memory container FS, min-instances=0, and it was the sole reason
+# pyarrow shipped in the image).
 
 _CADENCE_ALGOS = {
     "daily": bt.algos.RunDaily,
@@ -55,7 +57,7 @@ def run_allocation_backtest(
         )
 
     tickers = [w.ticker for w in config.weights]
-    fetcher = MarketDataFetcher(cache_dir=_CACHE_DIR)
+    fetcher = MarketDataFetcher()  # no parquet cache — see runner.py
     price_data = fetcher.fetch_prices(tickers, start, end)
 
     if not price_data.empty:
