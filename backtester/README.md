@@ -67,6 +67,12 @@ Three rules follow, and each has already been violated once:
 3. **`__pycache__` stays.** It is 143 MB and it is the one big directory that
    must *not* be pruned: dropping it makes every cold start re-compile pandas,
    scipy, numba and sklearn onto a tmpfs.
+4. **Vendored test suites stay too, and that one was learned the hard way.**
+   Deleting every `*/tests` directory under `site-packages` saves ~110 MB and
+   breaks the service: revision `00008-m7v` failed to start with
+   `ModuleNotFoundError: No module named 'numpy._core.tests'`. "Nothing imports
+   a package's tests at runtime" sounds obvious and is false for numpy. A
+   passing `pytest` run does not catch it — only a started container does.
 
 ## Deploy to Cloud Run
 

@@ -37,20 +37,30 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY backtester/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Vendored test suites: 109.8 MB across pandas (32.6), scipy (30.2), numpy
-# (13.8), sklearn (13.1), numba (12.2) and matplotlib (5.3). Nothing imports
-# them at runtime — the service's own tests live in backtester/tests/ and are
-# excluded from the build context by /.gcloudignore.
+# DO NOT prune vendored test suites here. It was tried, and it broke the
+# service: deleting every */tests directory under site-packages saves ~110 MB
+# (pandas 32.6, scipy 30.2, numpy 13.8, sklearn 13.1, numba 12.2, matplotlib
+# 5.3) and makes the container fail to start with
 #
-# NOTE the deliberate omission: __pycache__ is 143.4 MB and is NOT pruned.
-# Stripping .pyc is the obvious next line and it is the wrong trade for a
-# cold-start problem — the interpreter would re-compile pandas, scipy, numba
-# and sklearn on every single cold start, onto a tmpfs, burning the exact
-# seconds this file exists to save.
-RUN find /opt/venv -type d -name tests -prune -exec rm -rf {} + \
-    && find /opt/venv -type d -name test -prune -exec rm -rf {} + \
-    && rm -rf /opt/venv/lib/python3.12/site-packages/pip \
-              /opt/venv/lib/python3.12/site-packages/pip-*.dist-info
+#   ModuleNotFoundError: No module named 'numpy._core.tests'
+#
+# raised while importing backtester.allocation. "Nothing imports a package's
+# tests at runtime" is a reasonable-sounding rule and it is false for numpy,
+# which resolves that module on its own import path. Revision 00008-m7v is the
+# evidence; it never listened on 8080 and never took traffic.
+#
+# The honest reading is that this prune is not verifiable without building and
+# starting the image, and it buys the least of the three savings here — the
+# registry region and pyarrow are where the cold start actually goes. If it is
+# ever revisited, it must be per-package and each package must be proved to
+# still import in a started container, not merely in a passing test suite.
+#
+# NOTE the same reasoning applied in advance to __pycache__ (143.4 MB), which
+# is likewise NOT pruned: the interpreter would re-compile pandas, scipy, numba
+# and sklearn on every cold start, onto a tmpfs, burning the exact seconds this
+# file exists to save.
+RUN rm -rf /opt/venv/lib/python3.12/site-packages/pip \
+           /opt/venv/lib/python3.12/site-packages/pip-*.dist-info
 
 # ---------------------------------------------------------------------------
 # Stage 2 — runtime. No apt layer, no compiler, no pip.
