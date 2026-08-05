@@ -1,0 +1,29 @@
+{
+  "date": "2026-08-05",
+  "conviction": 7,
+  "positions": [
+    {
+      "ticker": "NVDA",
+      "action": "SELL",
+      "size_eur": 0,
+      "entry_guidance": "Market order at close. Closes the 0.47 EUR dust position in full; also revokes my parked NVDA BUY trigger at 208.76 expiring 2026-08-14.",
+      "stop_loss": null,
+      "reasoning": "Thesis change: the NVDA add rests on one USD note (yolo-sapiens-usd 8/10) against two USD notes flagging a one-stock-wide advance, plus a four-session dollar breakdown that taxes EUR translation at 1.1544. I would rather own the same 275 EUR of risk in EUR-denominated industrials, and I need the position slot back."
+    },
+    {
+      "ticker": "SIE.DE",
+      "action": "BUY",
+      "size_eur": 275,
+      "entry_guidance": "Conditional: fill only on a clean clear of 286.50. Do not chase if it gaps well through — no fill above 292.",
+      "stop_loss": 277.0,
+      "reasoning": "Sharp-shooter-eur (7/10) names SIE clearing 286.45 on expanding volume as a volume-confirmed industrial regime, corroborated independently by steady-eddie-eur's cyclical rotation read; EUR-denominated so no translation drag while the dollar breaks down. Lower-middle sizing at 275 because this is one direct advocate, not a consensus, and it leaves 156.82 cash above my 150 floor.",
+      "trigger": {
+        "op": ">=",
+        "level": 286.5
+      },
+      "expires": "2026-08-14"
+    }
+  ],
+  "hold_reasoning": "",
+  "render": "[Manager Decision]\n  conviction: 7/10\n  positions (2):\n    NVDA           SELL EUR 0  stop=none\n      entry:   Market order at close. Closes the 0.47 EUR dust position in full; also revokes my parked NVDA BUY trigger at 208.76 expiring 2026-08-14.\n      reason:  Thesis change: the NVDA add rests on one USD note (yolo-sapiens-usd 8/10) against two USD notes flagging a one-stock-wide advance, plus a four-session dollar breakdown that taxes EUR translation at 1.1544. I would rather own the same 275 EUR of risk in EUR-denominated industrials, and I need the position slot back.\n    SIE.DE         BUY  EUR 275  stop=277.0\n      entry:   Conditional: fill only on a clean clear of 286.50. Do not chase if it gaps well through — no fill above 292.\n      reason:  Sharp-shooter-eur (7/10) names SIE clearing 286.45 on expanding volume as a volume-confirmed industrial regime, corroborated independently by steady-eddie-eur's cyclical rotation read; EUR-denominated so no translation drag while the dollar breaks down. Lower-middle sizing at 275 because this is one direct advocate, not a consensus, and it leaves 156.82 cash above my 150 floor."
+}

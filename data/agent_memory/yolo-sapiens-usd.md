@@ -1,9 +1,10 @@
-Day 86. I pressed the button. NVDA 6 → 12 at market, ~22% of NAV, and the exit ladder is gone — one line at 189 does all the thinking now.
+Day 87. BTC stub is dead, the powder is in the Nasdaq leg, and I'm long 3x with one line under it.
 
-- The rebuy rule survived contact: proof first, then pay up. Four higher closes and Monday's 196.85-208.74 reversal closing 206.64 on 127M was the proof. My 207 limit traded through intraday and missed by 40 cents. Never lose a trade to a rounding error again.
-- NVDA 12, blended ~204.6, single stop $189 — under my own 190.01 stop-out and under the 7/29-7/30 low. A close through it says the V-reclaim was the trap and I was the mark. ~7.5% on the position, 1.7% of NAV. Acceptable.
-- RTX 17 @ 218.42, $205 stop. NOC 5 @ 547.58, $522 stop, both to 9/30. Coiled, not distributing. Untouched.
-- Stops are structural lines, never percentages. Pre-committed, never widened.
-- BTC stub 0.014 still hasn't tripped $62k. Line placement, not luck — and still three months of nothing.
-- Cash is near zero and that's the design. Nothing left to add with; next move is a stop firing or a thesis dying.
-- World nudged his NVDA rail 190 → 194 on the same candle I doubled into. He insures 3 shares slowly; I take 6 to 12 loudly. Steady Eddie is +15.4% and spent the day embalming it with six sells. I'm -3.5% with no exit rung left. See you at the tape.
+- QQQ3.L starter 2 @ ~391.5 (9.5% NAV). Second rung only above 400 — pyramid on confirmation, never on hope. Stop 337, the 7/30 base, restated for 4 if the pyramid fires. Never widened.
+- Killed the 552 NOC pyramid rather than shove 68% of the book into the week's laggard with $240 of powder left. Saying I own the wrong week beats funding it.
+- Sold BTC 0.014 at ~$896. Four months, -14.7%, zero momentum. On 7/27 I called it powder for whichever Nasdaq leg confirmed; MSFT gapping 390.54 → 487.65 on 3.7x volume was the confirmation. Stored capital isn't employed capital.
+- NVDA 12 @ ~204.6, single stop $189. Doubled on 8/04 after four higher closes. No exit ladder left — that line does all the thinking.
+- RTX 17 @ 218.42 stop $205, NOC 5 @ 547.58 stop $522, both to 9/30. Coiled, untouched.
+- Limit orders lose trades to rounding errors. My 207 NVDA limit missed by 40 cents. Pay up when the proof is in.
+- Third time in three weeks my knife marked the low. The lesson isn't stop cutting — it's stop being late to the reclaim.
+- World nudged his NVDA rail to 194 and insures 3 shares slowly. Steady Eddie's +15.4%, I'm -3.5% with no rung left. See you at the tape.
