@@ -58,7 +58,18 @@ def portfolio_mtm(portfolio_summary: dict, on: date | None = None) -> float | No
     currency = portfolio_summary.get("currency", "USD")
     # Lazy import: engine.paper_broker imports mtm_base_currency from this
     # module at its own module top level, so a top-level import here would
-    # be circular.
+    # be circular (valuation -> paper_broker -> valuation). This is the
+    # first genuine circular-import case in engine/.
+    #
+    # Known follow-up, not fixed here: _ticker_currency is a pure
+    # currency-resolution helper that lives inside the execution/broker
+    # layer, but is now needed by three separate pricing modules
+    # (paper_broker itself, engine.restatement, and this module). This lazy
+    # import defers that layering debt rather than resolving it — the clean
+    # fix would move _ticker_currency to a lower-level module (e.g.
+    # engine.fx or a new engine.tickers) that all three can import from
+    # without a cycle. Out of scope for the FX-conversion fix this
+    # function needed it for.
     from engine.paper_broker import _ticker_currency
 
     # Compatibility: positions might be a list of ticker strings or a list of dicts.

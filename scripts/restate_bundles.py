@@ -182,6 +182,16 @@ def restate_bundle_leaderboard(
     EUR-value key). Only ``return_pct``, the legacy value key if present,
     and every row's ``rank`` (a derived property of the whole array's sort
     order) can change.
+
+    Having an eligible summary is necessary but not sufficient for a row to
+    actually be recomputed: ``build_leaderboard_rows`` itself drops any
+    agent whose EUR-MTM comes back ``None`` — e.g. a held position needed
+    FX-converting into the book's currency and the rate is unavailable on
+    this exact ``bundle_date`` (``engine.valuation.portfolio_mtm`` returns
+    ``None`` in that case; see Task 12). A summary-eligible agent that
+    ``build_leaderboard_rows`` drops falls back to frozen here too — at its
+    originally published value — rather than silently vanishing from the
+    array, which would violate the "never adds/drops a row" invariant above.
     """
     old_leaderboard = bundle["leaderboard"]
     result = BundleResult(bundle_date=bundle_date)
@@ -189,6 +199,7 @@ def restate_bundle_leaderboard(
     touched_summaries: dict[str, dict] = {}
     legacy_key_by_agent: dict[str, str] = {}
     frozen_rows: list[dict] = []
+    old_by_agent = {row["agent"]: row for row in old_leaderboard}
 
     for row in old_leaderboard:
         agent_id = row["agent"]
@@ -199,7 +210,6 @@ def restate_bundle_leaderboard(
             result.frozen_agents.append(agent_id)
             continue
         touched_summaries[agent_id] = summary
-        result.touched_agents.append(agent_id)
         for key in _LEGACY_EUR_VALUE_KEYS:
             if key in row:
                 legacy_key_by_agent[agent_id] = key
@@ -210,11 +220,20 @@ def restate_bundle_leaderboard(
         fresh_rows = build_leaderboard_rows(
             touched_summaries, on=date.fromisoformat(bundle_date)
         )
-        old_by_agent = {row["agent"]: row for row in old_leaderboard}
-        for fresh_row in fresh_rows:
-            agent_id = fresh_row["agent"]
-            new_return_pct = fresh_row["return_pct"]
+        fresh_by_agent = {fresh_row["agent"]: fresh_row for fresh_row in fresh_rows}
+        for agent_id in touched_summaries:
             old_row = old_by_agent[agent_id]
+            fresh_row = fresh_by_agent.get(agent_id)
+            if fresh_row is None:
+                # Summary-eligible but build_leaderboard_rows still dropped
+                # it (unpriceable on this date) — freeze rather than drop
+                # the row. See docstring above.
+                frozen_rows.append(dict(old_row))
+                result.frozen_agents.append(agent_id)
+                continue
+
+            result.touched_agents.append(agent_id)
+            new_return_pct = fresh_row["return_pct"]
             # Start from a copy of the row as originally published, not from
             # build_leaderboard_rows's own dict shape: preserves this row's
             # exact key order (early bundles had `rank` before `agent`,

@@ -140,6 +140,34 @@ def test_legacy_eur_value_key_stays_consistent_with_new_return_pct(
     assert set(row.keys()) == {"agent", "return_pct", legacy_key, "rank"}
 
 
+def test_summary_eligible_agent_dropped_by_build_leaderboard_rows_falls_back_to_frozen(
+    monkeypatch,
+):
+    # Regression: "a" has an eligible summary (touched), but
+    # build_leaderboard_rows itself drops it — the real path is a held
+    # position needing FX conversion with no rate available on this exact
+    # bundle_date (engine.valuation.portfolio_mtm returns None; Task 12).
+    # Before the fix, a summary-eligible agent that build_leaderboard_rows
+    # then dropped ended up in neither computed_rows nor frozen_rows and
+    # vanished from bundle["leaderboard"] entirely — violating this
+    # function's own "never adds/drops a row" invariant.
+    monkeypatch.setattr(
+        rb,
+        "_agent_summary_for_date",
+        lambda state, bundle_date: {"cash": 0.0, "positions": [], "currency": "EUR"},
+    )
+    monkeypatch.setattr(rb, "build_leaderboard_rows", lambda summaries, on: [])
+    original_row = {"agent": "a", "return_pct": 1.23, "rank": 1}
+    bundle = {"leaderboard": [dict(original_row)]}
+
+    result = restate_bundle_leaderboard(bundle, "2026-08-04", {"a": _state()})
+
+    assert bundle["leaderboard"] == [original_row]
+    assert result.frozen_agents == ["a"]
+    assert result.touched_agents == []
+    assert result.changes == []
+
+
 def test_agent_summary_for_date_returns_none_without_a_snapshot_row():
     state = _state()
     assert rb._agent_summary_for_date(state, "2026-08-04") is None
