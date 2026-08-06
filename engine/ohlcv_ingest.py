@@ -158,3 +158,68 @@ def append_new_rows(path: Path, df: pd.DataFrame) -> int:
             for _, line in rows_to_append:
                 f.write(line + "\n")
     return len(rows_to_append)
+
+
+def merge_rows(
+    path: Path, df: pd.DataFrame, revise_from: str | None = None
+) -> tuple[int, int]:
+    """Merge ``df`` into the store at ``path``. Returns ``(appended, revised)``.
+
+    With ``revise_from=None`` this is exactly ``append_new_rows`` — unseen dates
+    are appended, stored dates are never touched.
+
+    With ``revise_from`` set to an ISO date, an already-stored row on or after
+    that date is *replaced* when the fetched value differs. This exists for 24/7
+    markets: a crypto bar written before the UTC day closed is a partial bar, and
+    the store had no way to accept its final value.
+
+    Revision rewrites the whole file in date order, so a store containing a line
+    with no parseable date is left alone and degrades to append-only — reordering
+    it would silently drop that line.
+    """
+    existing = existing_dates(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if revise_from is None:
+        return append_new_rows(path, df), 0
+
+    stored: dict[str, str] = {}
+    unparseable = 0
+    if path.exists():
+        with path.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line).get("date")
+                except json.JSONDecodeError:
+                    unparseable += 1
+                    continue
+                if d:
+                    stored[d] = line
+                else:
+                    unparseable += 1
+    if unparseable:
+        return append_new_rows(path, df), 0
+
+    appended = revised = 0
+    for ts, row in df.iterrows():
+        d = ts.date().isoformat() if hasattr(ts, "date") else str(ts)
+        record = row_to_record(d, row)
+        if record["close"] is None:
+            continue
+        line = json.dumps(record)
+        if d not in existing:
+            stored[d] = line
+            appended += 1
+        elif d >= revise_from and stored.get(d) != line:
+            stored[d] = line
+            revised += 1
+
+    if appended or revised:
+        tmp = path.with_name(path.name + ".tmp")
+        with tmp.open("w", encoding="utf-8") as f:
+            for d in sorted(stored):
+                f.write(stored[d] + "\n")
+        tmp.replace(path)
+    return appended, revised
