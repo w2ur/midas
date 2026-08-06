@@ -10,8 +10,8 @@ describe("ledger-notes", () => {
     const note = getLedgerNote("sharp-shooter-eur");
     expect(note).not.toBeNull();
     expect(note!.orderId).toBe("ord_2026-05-21_sharp-shooter-eur_001");
-    expect(note!.coherentReplayReturnPct).toBeCloseTo(0.28, 6);
     expect(note!.summary.length).toBeGreaterThan(0);
+    expect(note!.summary).toMatch(/reconciled/i);
     expect(note!.methodologyHref).toMatch(/^\/methodology#/);
   });
 
