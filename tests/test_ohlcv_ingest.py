@@ -453,6 +453,33 @@ def test_merge_rows_preserves_byte_layout_and_key_order(tmp_path: Path) -> None:
     assert path.read_text().endswith("\n")
 
 
+def test_merge_rows_keeps_an_untouched_row_byte_identical_during_a_mixed_rewrite(
+    tmp_path: Path,
+) -> None:
+    """A rewrite triggered by one row revising must not reformat a row it did not
+    touch — even a lossless-looking re-serialize through json.dumps would violate
+    the load-bearing on-disk byte layout. The untouched line is deliberately
+    written with non-default JSON spacing (no space after ':' or ',') so a
+    re-serializing implementation is caught: json.dumps' default separators
+    would normalize it back to spaced form, producing a detectable diff."""
+    path = tmp_path / "BTC-EUR.jsonl"
+    untouched_line = (
+        '{"date":"2026-08-03","open":55149.36,"high":55149.36,"low":55149.36,'
+        '"close":55149.36,"adj_close":55149.36,"volume":100}'
+    )
+    path.write_text(
+        untouched_line + "\n" + json.dumps(_rec("2026-08-04", 55649.74)) + "\n",
+        encoding="utf-8",
+    )
+    df = _yf_frame({"2026-08-04": [1, 2, 0.5, 55545.09, 55545.09, 100]})
+
+    appended, revised = merge_rows(path, df, revise_from="2026-08-04")
+
+    assert (appended, revised) == (0, 1)
+    lines = path.read_text().splitlines()
+    assert lines[0] == untouched_line
+
+
 def test_merge_rows_refuses_to_rewrite_a_store_with_unparseable_lines(
     tmp_path: Path,
 ) -> None:
