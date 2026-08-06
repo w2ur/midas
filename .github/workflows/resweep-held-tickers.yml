@@ -12,6 +12,15 @@ name: resweep-held-tickers
 # ratios). 90 days is ample — real splits leave hundreds of drifted rows —
 # and cheap at this symbol count.
 #
+# DO NOT WIDEN THIS WINDOW without re-running the detection fixtures. It is
+# an upper bound, not just a lower one. detect_split refuses a window holding
+# a second drifted body older than the split, because a stacked history has
+# no single correct adjustment factor — the right one depends on when each
+# position was opened. WLN.PA (a real 40:1 reverse on 2026-06-15) sits behind
+# exactly such a body: measured, it detects at 90 days (0.025) and returns
+# None at 180, 365 and full history. Widening this therefore silently turns a
+# real detection into a miss.
+#
 # Why a scheduled trigger exists at all: the nightly fetch-ohlcv.yml run
 # only ever re-requests a 1-day trailing revision window, which structurally
 # cannot clear detect_split's "at least a handful of overlapping rows"
