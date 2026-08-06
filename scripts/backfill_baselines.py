@@ -1,4 +1,4 @@
-"""Rebuild data/baselines/ for Day 1 → today.
+"""Refresh data/baselines/ for Day 1 → today.
 
 Append-or-refuse (engine.baselines.merge_baseline_series): an already-
 published date is kept as-is, new dates are appended. Pass restate=True to

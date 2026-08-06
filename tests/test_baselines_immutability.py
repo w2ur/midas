@@ -139,7 +139,7 @@ def test_merge_baseline_series_creates_file_when_none_exists(tmp_path):
     assert json.loads(path.read_text()) == computed
 
 
-def test_merge_baseline_series_identical_replay_is_not_a_refusal(tmp_path):
+def test_merge_baseline_series_identical_replay_is_not_a_refusal(tmp_path, capsys):
     """Re-running the same session with unchanged prices must not warn."""
     path = tmp_path / "benchmark.json"
     rows = [
@@ -154,3 +154,118 @@ def test_merge_baseline_series_identical_replay_is_not_a_refusal(tmp_path):
     _write(path, rows)
 
     assert merge_baseline_series(path, rows) == (0, 0)
+    assert "[WARN]" not in capsys.readouterr().out
+
+
+def test_merge_baseline_series_warns_on_total_fetch_failure_against_history(
+    tmp_path, capsys
+):
+    """An empty computed series against an established baseline is a whole
+    missing ticker file (within-range gaps are already forward-filled), not
+    a transient blip — it must be loud, not a silent freeze."""
+    path = tmp_path / "benchmark.json"
+    _write(
+        path,
+        [
+            {
+                "date": "2026-08-04",
+                "portfolio_value": 100.0,
+                "cash": 0.0,
+                "positions_value": 100.0,
+                "currency": "EUR",
+            }
+        ],
+    )
+
+    result = merge_baseline_series(path, [])
+
+    assert result == (0, 0)
+    out = capsys.readouterr().out
+    assert "[WARN]" in out
+    assert "benchmark.json" in out
+    # The published file must survive completely untouched.
+    on_disk = json.loads(path.read_text())
+    assert on_disk == [
+        {
+            "date": "2026-08-04",
+            "portfolio_value": 100.0,
+            "cash": 0.0,
+            "positions_value": 100.0,
+            "currency": "EUR",
+        }
+    ]
+
+
+def test_merge_baseline_series_silent_for_brand_new_agent_with_no_data(
+    tmp_path, capsys
+):
+    """A brand-new agent with no prior file and no OHLCV data yet is the
+    ordinary 'no line to draw' case — it must stay silent, not warn."""
+    path = tmp_path / "benchmark.json"
+
+    result = merge_baseline_series(path, [])
+
+    assert result == (0, 0)
+    assert "[WARN]" not in capsys.readouterr().out
+    assert json.loads(path.read_text()) == []
+
+
+def test_build_all_baselines_prints_one_aggregate_summary_on_refusal(
+    midas_data_root, capsys
+):
+    """A revised price across many baseline files must surface as one
+    aggregated line, not one scattered [WARN] per file."""
+    from datetime import date as _date
+
+    from engine.baselines import build_all_baselines
+    from engine.config import get_config
+
+    cfg = get_config()
+    ohlcv = cfg.ohlcv_dir
+    ohlcv.mkdir(parents=True, exist_ok=True)
+
+    def _seed(ticker: str, rows: list[tuple[str, float]]) -> None:
+        lines = [f'{{"date":"{d}","close":{c}}}' for d, c in rows]
+        (ohlcv / f"{ticker}.jsonl").write_text("\n".join(lines) + "\n")
+
+    agents_with_bench = {
+        aid: cfg.roster[aid].benchmark
+        for aid in cfg.trading_roster
+        if cfg.roster[aid].benchmark is not None
+    }
+    for bench in agents_with_bench.values():
+        if bench.ticker == "EUR_CASH_FLAT":
+            continue
+        _seed(bench.ticker, [("2026-04-17", 100.0), ("2026-04-18", 105.0)])
+
+    global_ref = cfg.global_reference
+    assert global_ref.ticker != "EUR_CASH_FLAT", (
+        "test needs a price-driven global reference to force a refusal"
+    )
+    _seed(global_ref.ticker, [("2026-04-17", 100.0), ("2026-04-18", 105.0)])
+
+    universes_by_agent = {aid: ["FAKE-A", "FAKE-B"] for aid in agents_with_bench}
+    _seed("FAKE-A", [("2026-04-17", 10.0), ("2026-04-18", 12.0)])
+    _seed("FAKE-B", [("2026-04-17", 20.0), ("2026-04-18", 19.0)])
+
+    build_all_baselines(
+        universes_by_agent=universes_by_agent,
+        from_date=_date(2026, 4, 17),
+        to_date=_date(2026, 4, 18),
+    )
+    capsys.readouterr()  # discard the first (all-append) build's output
+
+    # A price revision on an already-published date: same date, new close.
+    _seed(global_ref.ticker, [("2026-04-17", 100.0), ("2026-04-18", 999.0)])
+
+    build_all_baselines(
+        universes_by_agent=universes_by_agent,
+        from_date=_date(2026, 4, 17),
+        to_date=_date(2026, 4, 18),
+    )
+
+    out = capsys.readouterr().out
+    # One aggregate line, even though the world agent's own benchmark.json
+    # and the global msci_world.json share the URTH ticker and both refuse.
+    assert out.count("[WARN] baselines:") == 1
+    assert "2 published point(s) refused" in out
