@@ -15,6 +15,16 @@ name: fetch-ohlcv
 #     Friday's stale data. Crypto trades 24/7; everything else is closed and
 #     would return no new rows anyway. That intraday bar is a PARTIAL bar —
 #     the next run re-requests it and replaces it with the final close.
+#
+# Partial bars: EVERY symbol runs with a 1-day revision window, not just
+# crypto. Only cash equities and ETFs are genuinely final at 22:30 UTC
+# (measured: SPY and AAPL, 0 of 23 trailing bars drifted). Commodity futures
+# (`=F`) are mid-Globex — the next session has already opened, and GC=F/PL=F/
+# CL=F each drifted on more than half of their last 23 bars, up to +3.4%.
+# FX (`=X`) rolls at 17:00 ET
+# and drifts mildly, worst on Fridays. Expect a same-day row to change value on
+# the following run — that is the mechanism working. A bar that WAS final
+# re-fetches identical, so nothing is rewritten and no spurious commit fires.
 # Also exposes manual workflow_dispatch for ad-hoc refresh.
 
 on:
