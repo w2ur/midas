@@ -274,6 +274,16 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--resweep",
+        action="store_true",
+        help=(
+            "Re-fetch the full --history-days window AND allow every row in it to "
+            "be revised. Corrects partial bars frozen anywhere in history, unlike "
+            "--backfill which re-fetches but writes append-only. Requires an "
+            "explicit --symbols list: it rewrites committed history."
+        ),
+    )
+    parser.add_argument(
         "--names-only",
         action="store_true",
         help=(
@@ -283,6 +293,11 @@ def main() -> int:
         ),
     )
     args = parser.parse_args()
+
+    if args.resweep and not args.symbols:
+        parser.error("--resweep requires an explicit --symbols list")
+    if args.resweep and args.backfill:
+        parser.error("--resweep and --backfill are mutually exclusive")
 
     if args.symbols:
         symbols = sorted({s.strip() for s in args.symbols.split(",") if s.strip()})
@@ -322,7 +337,10 @@ def main() -> int:
             path = get_config().ohlcv_dir / f"{symbol}.jsonl"
             revise_from: str | None = None
 
-            if args.backfill:
+            if args.resweep:
+                start = end - timedelta(days=args.history_days)
+                revise_from = start.isoformat()
+            elif args.backfill:
                 start = end - timedelta(days=args.history_days)
             else:
                 existing = _existing_dates(path) if path.exists() else set()

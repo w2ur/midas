@@ -304,3 +304,64 @@ def test_backfill_refetches_full_window_and_keeps_pre_existing_row(
     ]
     assert old.isoformat() in dates  # append-only: pre-existing row survives
     assert today.isoformat() in dates
+
+
+# --- resweep (rewrites committed history — full-window revision) -----------
+
+
+def test_resweep_revises_a_wrong_row_deep_in_history(
+    midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: e98ea8cf5 — partial bars written on the day they formed were
+    frozen throughout the store's history. --backfill re-fetched the window but
+    wrote append-only, so it could not correct them; only the trailing day was
+    revisable."""
+    path = get_config().ohlcv_dir / "GC=F.jsonl"
+    bar = lambda c: [c, c, c, c, c, 1]  # noqa: E731
+    _write_raw(
+        path,
+        [
+            _canonical_line("2026-06-10", bar(3300.0)),
+            _canonical_line(
+                "2026-06-11", bar(9999.9)
+            ),  # frozen partial, deep in history
+            _canonical_line("2026-06-12", bar(3350.0)),
+        ],
+    )
+
+    frames = {
+        "GC=F": {
+            "2026-06-10": bar(3300.0),
+            "2026-06-11": bar(3311.1),
+            "2026-06-12": bar(3350.0),
+        }
+    }
+    monkeypatch.setattr(fo, "_fetch_symbol", _make_fake_fetch_symbol(frames))
+    monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+
+    rc = _run_main(monkeypatch, ["--symbols", "GC=F", "--resweep"])
+    assert rc == 0
+
+    closes = [
+        json.loads(line)["close"]
+        for line in path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert closes == [3300.0, 3311.1, 3350.0]
+
+
+def test_resweep_requires_an_explicit_symbol_list(
+    monkeypatch: pytest.MonkeyPatch, midas_data_root: Path
+) -> None:
+    """--resweep rewrites committed history; it must never run on the whole
+    universe by accident."""
+    with pytest.raises(SystemExit):
+        _run_main(monkeypatch, ["--resweep"])
+
+
+def test_resweep_and_backfill_are_mutually_exclusive(
+    monkeypatch: pytest.MonkeyPatch, midas_data_root: Path
+) -> None:
+    """--resweep and --backfill both force a full-window fetch; combining them
+    is nonsensical and must be rejected rather than silently picking one."""
+    with pytest.raises(SystemExit):
+        _run_main(monkeypatch, ["--resweep", "--backfill", "--symbols", "GC=F"])
