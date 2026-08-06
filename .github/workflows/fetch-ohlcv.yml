@@ -24,7 +24,11 @@ name: fetch-ohlcv
 # FX (`=X`) rolls at 17:00 ET
 # and drifts mildly, worst on Fridays. Expect a same-day row to change value on
 # the following run — that is the mechanism working. A bar that WAS final
-# re-fetches identical, so nothing is rewritten and no spurious commit fires.
+# re-fetches identical, so no already-stored row changes value and the diff for
+# that symbol stays the single appended line. merge_rows preserves the store's
+# existing line order and never re-sorts it: 529 of the 1,046 files are not in
+# date order, and re-sorting them from a cron would emit a ~230 MB reorder
+# commit. Canonicalising the store is a separate, deliberate decision.
 # Also exposes manual workflow_dispatch for ad-hoc refresh.
 
 on:
