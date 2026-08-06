@@ -420,7 +420,7 @@ def test_resweep_detects_a_split_and_adjusts_the_holding_agents_position(
     engine.corporate_actions). A holder's position must come out adjusted;
     an unrelated agent's book must be untouched."""
     start = date(2026, 6, 1)
-    dates = [(start + timedelta(days=i)).isoformat() for i in range(15)]
+    dates = [(start + timedelta(days=i)).isoformat() for i in range(20)]
 
     def bar(c: float) -> list:
         return [c, c, c, c, c, 1]
@@ -428,10 +428,14 @@ def test_resweep_detects_a_split_and_adjusts_the_holding_agents_position(
     path = get_config().ohlcv_dir / "CRWD.jsonl"
     # Pre-split store: raw close is 4x what a fresh fetch now returns — Yahoo
     # retroactively rewrites raw close (not just adj_close) after a split.
-    stale_closes = [400.0 + i for i in range(15)]
+    # The last 5 rows are post-split: the nightly cron appended them at
+    # correct prices after the split, so the store already agrees there.
+    # detect_split requires that transition to exist (a wholly-drifted
+    # overlap fails closed — it is also what a units mismatch looks like).
+    fresh_closes = [100.0 + i for i in range(20)]
+    stale_closes = [c * 4.0 for c in fresh_closes[:15]] + fresh_closes[15:]
     _write_raw(path, [_canonical_line(d, bar(c)) for d, c in zip(dates, stale_closes)])
 
-    fresh_closes = [c / 4.0 for c in stale_closes]
     frames = {"CRWD": {d: bar(c) for d, c in zip(dates, fresh_closes)}}
     monkeypatch.setattr(fo, "_fetch_symbol", _make_fake_fetch_symbol(frames))
     monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
@@ -496,16 +500,20 @@ def test_resweep_does_not_adjust_ordinary_scattered_drift(
 ) -> None:
     """Class-D drift (ALV.DE/BMW.DE's real signature: many rows, each at its
     own distinct ratio) must never trigger a position adjustment — a false
-    positive here would silently multiply a real position by a bogus ratio."""
+    positive here would silently multiply a real position by a bogus ratio.
+
+    The drift is followed by rows the store already agrees on, so the run
+    reaches the detector's real gates rather than being turned away early by
+    the "no transition" fail-closed rule."""
     start = date(2026, 6, 1)
-    dates = [(start + timedelta(days=i)).isoformat() for i in range(15)]
+    dates = [(start + timedelta(days=i)).isoformat() for i in range(20)]
 
     def bar(c: float) -> list:
         return [c, c, c, c, c, 1]
 
     path = get_config().ohlcv_dir / "ALV.DE.jsonl"
-    fresh_closes = [100.0] * 15
-    ratios = [0.960 + 0.002 * i for i in range(15)]  # 15 distinct ratios
+    fresh_closes = [100.0] * 20
+    ratios = [0.960 + 0.002 * i for i in range(15)] + [1.0] * 5
     stale_closes = [c * r for c, r in zip(fresh_closes, ratios)]
     _write_raw(path, [_canonical_line(d, bar(c)) for d, c in zip(dates, stale_closes)])
 
@@ -630,16 +638,18 @@ def test_resweep_held_detects_a_split_within_a_90_day_window(
     end to end, including the agent's position actually being adjusted."""
     today = date.today()
     start_date = today - timedelta(days=30)
-    dates = [(start_date + timedelta(days=i)).isoformat() for i in range(15)]
+    dates = [(start_date + timedelta(days=i)).isoformat() for i in range(20)]
 
     def bar(c: float) -> list:
         return [c, c, c, c, c, 1]
 
     path = get_config().ohlcv_dir / "CRWD.jsonl"
-    stale_closes = [400.0 + i for i in range(15)]
+    # 15 stale pre-split rows, then 5 the nightly cron already appended at
+    # post-split prices — the transition detect_split requires.
+    fresh_closes = [100.0 + i for i in range(20)]
+    stale_closes = [c * 4.0 for c in fresh_closes[:15]] + fresh_closes[15:]
     _write_raw(path, [_canonical_line(d, bar(c)) for d, c in zip(dates, stale_closes)])
 
-    fresh_closes = [c / 4.0 for c in stale_closes]
     frames = {"CRWD": {d: bar(c) for d, c in zip(dates, fresh_closes)}}
     monkeypatch.setattr(fo, "_fetch_symbol", _make_fake_fetch_symbol(frames))
     monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)

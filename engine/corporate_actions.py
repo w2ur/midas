@@ -11,29 +11,41 @@ don't cancel — they multiply in the same direction).
 Two pure primitives, no I/O, matching ``engine.restatement``'s style:
 
 - ``detect_split`` compares a symbol's already-stored history against a
-  freshly fetched series over their overlapping dates and returns the
-  split ratio if — and only if — every drifted row shares one ratio within
-  a tight tolerance AND the drifted rows form a single contiguous prefix
-  in time, ending at one transition date with zero drift after it. Both
-  conditions are required: the ratio-cluster check alone is a statistic
-  over the *distribution* of ratios and, in principle, a tight cluster of
-  scattered-in-time drift could satisfy it (found during review — see the
-  ``test_detect_split_refuses_a_tight_but_temporally_scattered_cluster``
-  regression test for the exact shape that would slip past cluster-tightness
-  alone). The temporal check is the structural signature a real split
-  actually has — every date before the split shows one ratio, every date
-  after shows none — and it is what a scattered-drift symbol (real or
-  synthetic) cannot mimic without the drift being contiguous, which by
-  definition it is not. Getting this wrong in the false-positive direction
-  is worse than the bug it fixes: a spurious detection would silently
-  multiply a real position by a bogus ratio.
+  freshly fetched series over their overlapping dates and returns the split
+  ratio if — and only if — the disagreement has a real split's *structure*:
+  a transition date exists (rows after it already agree), the drifted rows
+  sit before it, and the drifted rows nearest that transition all share one
+  ratio within a tight tolerance. Getting this wrong in the false-positive
+  direction is worse than the bug it fixes: a spurious detection would
+  silently multiply a real position by a bogus ratio, unattended (the
+  weekly ``--resweep-held`` workflow runs with no human in the loop).
 
 - ``apply_split`` scales a held position's ``shares``/``avg_cost`` by the
   detected ratio, preserving cost basis (``shares × avg_cost``) exactly.
 
-Thresholds (see the docstring of ``detect_split`` for the numbers and the
-real 11-symbol dataset they were measured against — commit range
-``4b6b8556^..4b6b8556`` plus live ``ALV.DE``/``BMW.DE`` fetches).
+Calibration is against **all 11 real splits** the store carries (the
+tickers corrected by commit ``4b6b8556``, replayed as the pre-sweep series
+from ``314035e34`` against today's values) plus the three real Class-D
+drift symbols (``SIE.DE``, ``ALV.DE``, ``BMW.DE``) that must never fire.
+Every threshold below cites the real measurement that set it, and
+``tests/test_corporate_actions.py`` pins all 14 as embedded fixtures.
+
+Two ways a *real* split departs from a textbook single-constant-ratio
+signature, both measured, both of which the first version of this module
+mistook for "not a split":
+
+- an isolated **bad tick** inside the drifted run (``FCIT.L`` carries one:
+  ``2026-05-08`` stored at 5275.02 against a ~330 range, a ratio of 16.0
+  where every one of its 2 531 other drifted rows is exactly 4.0);
+- an **older, unrelated cluster** deeper in the same history (``WLN.PA``
+  has 2 524 rows at ratio 0.0968 sitting before the 67 rows at 0.025 that
+  are its actual 40-for-1 reverse split).
+
+Both defeat any statistic taken over *all* drifted rows at once — a
+max-minus-min spread reads 300% for ``FCIT.L`` and 75% for ``WLN.PA`` — so
+the cluster is instead anchored on the drifted rows **nearest the
+transition**, which is also the only ratio that can matter to a currently
+held position. See ``detect_split``'s docstring for the full rule.
 """
 
 from __future__ import annotations
@@ -61,25 +73,56 @@ _MIN_DRIFTED_ROWS = 10
 # `fetched` before concluding anything — "a handful", per the design brief.
 _MIN_OVERLAP_ROWS = 10
 
-# Max relative spread — (max - min) / median — allowed within the drifted
-# ratio cluster for it to count as "a single constant ratio". Measured
-# against the 11 real splits swept in 4b6b8556: the tightest clusters are
-# exact (0.0% spread — CRWD, DD, HON, SPGI, KLAC, CVNA, FDX); the loosest is
-# WLN.PA at 2.23% (rounding noise on a very low post-split price, ~EUR
-# 0.50). Measured against real ordinary drift by fetching live data for
-# ALV.DE (4.20% spread across 24 drifted rows) and BMW.DE (6.08% across 32):
-# both comfortably clear this bar. 3% leaves ~0.8 percentage points of
-# margin below the tightest real drift and ~0.8 above the loosest real
-# split — WLN.PA is the closest real split ever measured to this boundary.
+# Max relative distance from the cluster's anchor ratio for a drifted row to
+# count as part of that cluster — i.e. how far apart "the same ratio" may
+# be. Measured against the 11 real splits: nine clusters are exact (0.0%
+# internal spread — CRWD, DD, HON, SPGI, KLAC, CVNA, FDX, and AI.PA/TIT.MI
+# at 0.26%/0.51%); the loosest is WLN.PA at 2.23% (2-decimal store rounding
+# on a very low post-split price, ~EUR 0.50). Measured against real ordinary
+# drift by fetching live data for ALV.DE (4.20% spread across 24 drifted
+# rows) and BMW.DE (6.08% across 32): both comfortably clear this bar. 3%
+# leaves ~0.8 percentage points of margin below the tightest real drift and
+# ~0.8 above the loosest real split — WLN.PA is the closest real split ever
+# measured to this boundary.
 _CLUSTER_TOLERANCE = 0.03
 
-# The cluster's median ratio must differ from 1.0 by at least this much to
+# The cluster's anchor ratio must differ from 1.0 by at least this much to
 # be worth calling a split, rather than some benign near-1 systematic
 # shift. HON (0.9535, 4.65% from 1.0) is the closest real split to this
 # floor — ~1.65 percentage points of margin. A threshold tuned around a
 # "round" ratio like 2:1 or 4:1 would miss both HON (0.9535) and SPGI
 # (1.057); this floor is set by the closest real case, not a round number.
+# Real Class-D drift sits on the other side of it by a wide margin: SIE.DE
+# 0.9930, ALV.DE 0.9940, BMW.DE 0.9926 — all inside 0.8% of 1.0.
 _MATERIALITY_FLOOR = 0.03
+
+# How many of the most recent drifted rows are used to anchor the cluster.
+# The anchor is their MEDIAN, so it survives up to (n-1)//2 bad ticks among
+# them: FCIT.L's real 16.0 tick is the newest drifted row of its ten and
+# does not move the anchor off 4.0. Held at _MIN_DRIFTED_ROWS — a cluster
+# has to be at least this big to be believed anyway, so anchoring on fewer
+# rows than that would be anchoring on evidence too thin to act on.
+_ANCHOR_ROWS = 10
+
+# Non-conforming drifted rows tolerated *inside* the cluster before the walk
+# concludes it has reached a genuinely different cluster. Set from the one
+# real bad-tick class the store carries: FCIT.L has exactly 1 such row in
+# 2 533 drifted rows. WLN.PA's older 0.0968 block — 2 524 consecutive
+# non-conforming rows — ends the walk immediately, which is the whole point:
+# the walk must stop at the boundary of the split's own cluster rather than
+# average across two.
+_MAX_CLUSTER_STRAYS = 2
+
+# Drifted rows tolerated *after* the transition date. Measured requirement
+# across all 11 real splits: zero — every one of them has a perfectly clean
+# post-transition suffix (24 to 62 rows). The allowance exists because the
+# production window is short (`--resweep-held --history-days 90`) and a bad
+# tick of the FCIT.L class can land on the post-split side of the
+# transition, where demanding zero exceptions would veto a real split on one
+# stray row. 2 sits an order of magnitude below the smallest real negative
+# (ALV.DE puts 24 drifted rows after its first undrifted one; SIE.DE 28,
+# BMW.DE 32), so it cannot open the door to Class-D drift.
+_MAX_POST_TRANSITION_STRAYS = 2
 
 
 def _date_key(ts: object) -> str:
@@ -100,26 +143,52 @@ def detect_split(stored: list[dict], fetched: pd.DataFrame) -> float | None:
     identical to a split under a naive comparison — see the pre-flight
     finding in this plan's ledger.
 
-    A split's signature, established empirically against the 11 tickers
-    corrected in commit 4b6b8556 (CRWD, DD, TIT.MI, WLN.PA, and 7 others):
-    every date on or before the split shows the SAME ratio
-    (``stored_close / fetched_close``), and every date after it is
-    unchanged (ratio 1.0) — a single contiguous drifted PREFIX in time,
-    with a clean transition and zero drift after it. Ordinary drift (e.g.
-    real ``SIE.DE``/``ALV.DE``/``BMW.DE``) looks nothing like this: a
-    handful of rows scattered THROUGHOUT the history, interleaved with
-    unchanged rows on both sides, at ratios spread wider than any real
-    split's cluster (measured 4.2-6.1% relative spread vs. the tightest
-    real split's 2.23%). Two independent checks enforce this: the ratio
-    cluster must be tight (``_CLUSTER_TOLERANCE``) AND the drifted rows
-    must be temporally contiguous (no drifted row after the first
-    undrifted one, in date order). Either check alone is a statistic that
-    a sufficiently unlucky (or adversarial) scattered-drift shape could in
-    principle satisfy; both together require the actual split signature,
-    not just its statistical shadow. Returns ``None`` on anything that
-    doesn't match, including genuine ambiguity (e.g. two competing ratio
-    clusters) — a missed detection leaves the pre-existing valuation bug in
-    place; a false one would silently multiply a real position.
+    A split's signature, established empirically against all 11 tickers
+    corrected in commit 4b6b8556: every date on or before the split shows
+    the SAME ratio (``stored_close / fetched_close``), and every date after
+    it is unchanged (ratio 1.0) — a drifted PREFIX ending at one transition
+    date. Ordinary drift (real ``SIE.DE``/``ALV.DE``/``BMW.DE``) looks
+    nothing like this: a couple of dozen rows scattered THROUGHOUT the
+    history, interleaved with unchanged rows on both sides, at ratios both
+    spread wider than any real split's cluster (4.2-6.1% vs. the loosest
+    real split's 2.23%) and far nearer 1.0 than any real split (within
+    0.8%).
+
+    Four conditions, in order, all required:
+
+    1. **A transition exists.** At least one overlapping row must already
+       agree. This fails closed on a wholly-drifted overlap, where there is
+       no observable transition at all — and that case is what a units
+       mismatch looks like (a London ticker stored in GBp against a fetch
+       in GBP is a clean, tight, material 100.0 across every row), which no
+       statistic over the ratios can tell apart from a split. It costs
+       nothing on real data: the store is appended to nightly, so any
+       window reaching back past a split date necessarily also contains the
+       post-split rows the cron has since appended at correct prices — all
+       11 real splits carry 24 to 62 such rows. The one shape it refuses is
+       a resweep run on the split date itself, before any post-split row
+       exists; that is deliberately traded away, since the next weekly run
+       catches it and a corrupted position cannot be un-corrupted.
+    2. **The drift sits before the transition** — at most
+       ``_MAX_POST_TRANSITION_STRAYS`` drifted rows after it, for isolated
+       bad ticks. This is the check real scattered drift cannot survive.
+    3. **The cluster is anchored on the transition.** The anchor ratio is
+       the median of the last ``_ANCHOR_ROWS`` drifted rows, and must clear
+       ``_MATERIALITY_FLOOR``. Anchoring at the transition rather than
+       taking a statistic over every drifted row is what makes ``WLN.PA``
+       resolve to its real 0.025 instead of the 2 524-row block of 0.0968
+       that an earlier, unrelated artifact left deeper in the same history
+       — and the recent ratio is in any case the only one that can apply to
+       a position held today.
+    4. **The cluster is tight and big enough.** Walking back from the
+       newest drifted row, rows within ``_CLUSTER_TOLERANCE`` of the anchor
+       join the cluster; more than ``_MAX_CLUSTER_STRAYS`` non-conforming
+       rows end the walk. The cluster must still reach
+       ``_MIN_DRIFTED_ROWS``.
+
+    Returns ``None`` on anything that doesn't match. A missed detection
+    leaves the pre-existing valuation bug in place; a false one would
+    silently multiply a real position, unattended.
 
     Parameters
     ----------
@@ -163,33 +232,57 @@ def detect_split(stored: list[dict], fetched: pd.DataFrame) -> float | None:
     if len(dated_ratios) < _MIN_OVERLAP_ROWS:
         return None
 
-    drifted = [r for _, r in dated_ratios if abs(r - 1.0) > _DRIFT_TOLERANCE]
-    if len(drifted) < _MIN_DRIFTED_ROWS:
-        return None
-
-    median_ratio = statistics.median(drifted)
-    if median_ratio <= 0 or abs(median_ratio - 1.0) < _MATERIALITY_FLOOR:
-        return None
-
-    spread = (max(drifted) - min(drifted)) / median_ratio
-    if spread > _CLUSTER_TOLERANCE:
-        return None  # scattered drift, not a single-ratio split — refuse
-
-    # Temporal contiguity: a real split's drifted rows form a single
-    # PREFIX in chronological order — every date up to the transition is
-    # drifted, every date after it is not. Once the first undrifted date is
-    # seen (in date order), no later date may be drifted. This is what a
-    # ratio cluster tight enough to clear _CLUSTER_TOLERANCE cannot, on its
-    # own, guarantee — a handful of scattered-in-time drifted rows that
-    # happen to sit close in value would still pass the cluster check but
-    # fail this one, because real scattered drift is interleaved with
-    # unchanged rows on both sides, not confined to one clean run.
     is_drifted = [abs(r - 1.0) > _DRIFT_TOLERANCE for _, r in dated_ratios]
-    first_undrifted = next((i for i, d in enumerate(is_drifted) if not d), None)
-    if first_undrifted is not None and any(is_drifted[first_undrifted:]):
-        return None  # a drifted row reappears after an undrifted one — not a split
+    drifted_positions = [i for i, d in enumerate(is_drifted) if d]
+    if len(drifted_positions) < _MIN_DRIFTED_ROWS:
+        return None
 
-    return median_ratio
+    # (1) A transition must exist. No undrifted row anywhere in the overlap
+    # means no observable "and then it agreed again" — the shape a units
+    # mismatch (GBp vs GBP, a clean 100.0 on every row) also has. Fail
+    # closed: see condition 1 in the docstring for why this costs nothing
+    # against the 11 real splits.
+    first_undrifted = next((i for i, d in enumerate(is_drifted) if not d), None)
+    if first_undrifted is None:
+        return None
+
+    # (2) The drift must sit before that transition. A calibrated allowance
+    # rather than zero exceptions: one bad tick on the post-split side must
+    # not veto a real split, but real scattered drift puts 24-32 rows here.
+    strays_after = sum(1 for i in drifted_positions if i >= first_undrifted)
+    if strays_after > _MAX_POST_TRANSITION_STRAYS:
+        return None
+
+    # (3) Anchor the cluster on the drifted rows NEAREST the transition —
+    # the only ratio that can apply to a position held today, and the one
+    # an older unrelated cluster deeper in the same history (WLN.PA) must
+    # not be allowed to outvote. Median, so isolated bad ticks among the
+    # anchor rows (FCIT.L) do not move it.
+    anchor = statistics.median(
+        dated_ratios[i][1] for i in drifted_positions[-_ANCHOR_ROWS:]
+    )
+    if anchor <= 0 or abs(anchor - 1.0) < _MATERIALITY_FLOOR:
+        return None
+
+    # (4) Walk back from the newest drifted row collecting rows that share
+    # the anchor ratio. Isolated non-conforming rows are bad ticks and are
+    # stepped over; more than _MAX_CLUSTER_STRAYS of them means the walk has
+    # left this split's cluster and entered a different one, so it stops
+    # there rather than averaging the two together.
+    cluster: list[float] = []
+    strays_inside = 0
+    for i in reversed(drifted_positions):
+        ratio = dated_ratios[i][1]
+        if abs(ratio - anchor) / anchor <= _CLUSTER_TOLERANCE:
+            cluster.append(ratio)
+            continue
+        strays_inside += 1
+        if strays_inside > _MAX_CLUSTER_STRAYS:
+            break
+    if len(cluster) < _MIN_DRIFTED_ROWS:
+        return None
+
+    return statistics.median(cluster)
 
 
 def apply_split(positions: list[dict], ticker: str, ratio: float) -> list[dict]:
