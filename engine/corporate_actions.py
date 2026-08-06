@@ -37,7 +37,7 @@ mistook for "not a split":
 - an isolated **bad tick** inside the drifted run (``FCIT.L`` carries one:
   ``2026-05-08`` stored at 5275.02 against a ~330 range, a ratio of 16.0
   where every one of its 2 531 other drifted rows is exactly 4.0);
-- an **older, unrelated cluster** deeper in the same history (``WLN.PA``
+- an **older, second body of drift** deeper in the same history (``WLN.PA``
   has 2 524 rows at ratio 0.0968 sitting before the 67 rows at 0.025 that
   are its actual 40-for-1 reverse split).
 
@@ -45,7 +45,23 @@ Both defeat any statistic taken over *all* drifted rows at once — a
 max-minus-min spread reads 300% for ``FCIT.L`` and 75% for ``WLN.PA`` — so
 the cluster is instead anchored on the drifted rows **nearest the
 transition**, which is also the only ratio that can matter to a currently
-held position. See ``detect_split``'s docstring for the full rule.
+held position.
+
+The two are then treated differently, and the asymmetry is the point. A
+lone bad tick is stepped over. A *second body* of drift is refused
+outright, because it is bit-for-bit the shape of a **stacked split** (rows
+before split1 at ``split1 × split2``, rows between the two at ``split2``,
+then a clean tail) and no single ratio can correct it — ``apply_split``
+multiplies every share of the ticker by one factor, while the right factor
+depends on when each position was opened. ``WLN.PA``'s older body is, per
+Yahoo's own calendar, *not* a second split; it is nonetheless
+indistinguishable from one in the data this module receives, so ``WLN.PA``
+is a **documented known miss** on a full-history overlap (it is still
+detected under the 90-day window the weekly job actually uses, where the
+older body falls outside the range). 10 of 11 detected, with the eleventh
+refused for a stated reason, beats 11 of 11 with a silent wrong-ratio path.
+See ``detect_split``'s docstring for the full rule and
+``tests/test_corporate_actions.py`` for the measurement behind the miss.
 """
 
 from __future__ import annotations
@@ -175,16 +191,19 @@ def detect_split(stored: list[dict], fetched: pd.DataFrame) -> float | None:
     3. **The cluster is anchored on the transition.** The anchor ratio is
        the median of the last ``_ANCHOR_ROWS`` drifted rows, and must clear
        ``_MATERIALITY_FLOOR``. Anchoring at the transition rather than
-       taking a statistic over every drifted row is what makes ``WLN.PA``
-       resolve to its real 0.025 instead of the 2 524-row block of 0.0968
-       that an earlier, unrelated artifact left deeper in the same history
-       — and the recent ratio is in any case the only one that can apply to
-       a position held today.
+       taking a statistic over every drifted row is what survives an
+       isolated bad tick (``FCIT.L``); the recent ratio is in any case the
+       only one that can apply to a position held today.
     4. **The cluster is tight and big enough.** Walking back from the
        newest drifted row, rows within ``_CLUSTER_TOLERANCE`` of the anchor
        join the cluster; more than ``_MAX_CLUSTER_STRAYS`` non-conforming
        rows end the walk. The cluster must still reach
        ``_MIN_DRIFTED_ROWS``.
+    5. **Nothing of substance is left behind the cluster.** Fewer than
+       ``_MIN_DRIFTED_ROWS`` drifted rows may sit older than the cluster.
+       A second body there is the signature of a stacked split, which no
+       single ratio can correct; refusing costs ``WLN.PA`` on a
+       full-history overlap and is why it is a documented known miss.
 
     Returns ``None`` on anything that doesn't match. A missed detection
     leaves the pre-existing valuation bug in place; a false one would
@@ -254,10 +273,8 @@ def detect_split(stored: list[dict], fetched: pd.DataFrame) -> float | None:
         return None
 
     # (3) Anchor the cluster on the drifted rows NEAREST the transition —
-    # the only ratio that can apply to a position held today, and the one
-    # an older unrelated cluster deeper in the same history (WLN.PA) must
-    # not be allowed to outvote. Median, so isolated bad ticks among the
-    # anchor rows (FCIT.L) do not move it.
+    # the only ratio that can apply to a position held today. Median, so
+    # isolated bad ticks among the anchor rows (FCIT.L) do not move it.
     anchor = statistics.median(
         dated_ratios[i][1] for i in drifted_positions[-_ANCHOR_ROWS:]
     )
@@ -269,17 +286,47 @@ def detect_split(stored: list[dict], fetched: pd.DataFrame) -> float | None:
     # stepped over; more than _MAX_CLUSTER_STRAYS of them means the walk has
     # left this split's cluster and entered a different one, so it stops
     # there rather than averaging the two together.
+    #
+    # `strays_inside` deliberately shares no budget with
+    # _MAX_POST_TRANSITION_STRAYS but the two ARE consumed by the same rows
+    # when a post-transition stray also fails to conform: such a row is
+    # counted once in (2) and again here. That double-count can only end the
+    # walk earlier, i.e. shrink the cluster and push toward None — it can
+    # never widen a cluster or move the returned ratio. Left as-is.
     cluster: list[float] = []
+    oldest_in_cluster = drifted_positions[-1]
     strays_inside = 0
     for i in reversed(drifted_positions):
         ratio = dated_ratios[i][1]
         if abs(ratio - anchor) / anchor <= _CLUSTER_TOLERANCE:
             cluster.append(ratio)
+            oldest_in_cluster = i
             continue
         strays_inside += 1
         if strays_inside > _MAX_CLUSTER_STRAYS:
             break
     if len(cluster) < _MIN_DRIFTED_ROWS:
+        return None
+
+    # (5) Nothing of substance may be left behind the cluster. A second body
+    # of drift older than the cluster is the signature of a STACKED split —
+    # rows before split1 at ratio split1*split2, rows between the two at
+    # split2, then the undrifted tail. Returning the cluster's ratio there
+    # would be a confident, clean-looking detection that silently
+    # under-corrects every position opened before split1 by exactly split1.
+    #
+    # Refusing is right even when the older body is NOT a second split,
+    # because a single ratio cannot express the correction either way:
+    # `apply_split` multiplies every share count of the ticker by one
+    # factor, while in a stacked history the correct factor depends on when
+    # each position was opened. Measured cost: WLN.PA, whose older 2 524-row
+    # cluster at 0.0968 is (per Yahoo's own calendar) NOT a split — but is
+    # indistinguishable from one in the data this function receives. See
+    # tests/test_corporate_actions.py::
+    # test_detect_split_refuses_wln_pa_because_it_cannot_be_told_from_a_stacked_split
+    # for the measurement and for what would have to change to detect it.
+    older_drift = sum(1 for i in drifted_positions if i < oldest_in_cluster)
+    if older_drift >= _MIN_DRIFTED_ROWS:
         return None
 
     return statistics.median(cluster)

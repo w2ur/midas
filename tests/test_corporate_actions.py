@@ -839,10 +839,11 @@ def _ratios(rows: list[tuple[str, float, float]]) -> list[float]:
     return [s / f for _, s, f in rows]
 
 
-# Every split the store actually carried, with the ratio each must resolve
-# to. Nine of these were already found before the fixtures were pinned;
-# FCIT.L and WLN.PA were false negatives under a detector calibrated on one
-# ticker, which is why all eleven are here now.
+# The splits the store carried that must be detected, with the ratio each
+# must resolve to. Nine of these were already found before the fixtures were
+# pinned; FCIT.L was a false negative under a detector calibrated on one
+# ticker. WLN.PA is the eleventh and is deliberately NOT here — see
+# _KNOWN_MISSES.
 _REAL_SPLITS = [
     ("AI.PA", _AI_PA, 1.1),
     ("CRWD", _CRWD, 4.0),
@@ -854,8 +855,12 @@ _REAL_SPLITS = [
     ("SPGI", _SPGI, 1.057),
     ("TIT.MI", _TIT_MI, 0.1),
     ("FCIT.L", _FCIT_L, 4.0),
-    ("WLN.PA", _WLN_PA, 0.025),
 ]
+
+# Real splits this detector deliberately refuses, and why. A known miss with
+# a stated reason beats a silent wrong-ratio path: see
+# test_detect_split_refuses_wln_pa_because_it_cannot_be_told_from_a_stacked_split.
+_KNOWN_MISSES = [("WLN.PA", _WLN_PA, 0.025)]
 
 
 @pytest.mark.parametrize("name,rows,expected", _REAL_SPLITS)
@@ -863,17 +868,20 @@ def test_detect_split_finds_every_real_split(name, rows, expected):
     """Regression: 1c0703e70 — a zero-tolerance temporal-contiguity rule and
     a max-minus-min spread taken over EVERY drifted row together detected
     only 9 of the 11 real splits the store carries. FCIT.L (one bad tick at
-    ratio 16.0 among 2 531 rows at 4.0) and WLN.PA (an older 0.0968 cluster
-    sitting before its real 0.025 one) both read as "scattered", because the
+    ratio 16.0 among 2 531 rows at 4.0) read as "scattered", because the
     calibration set had only ever contained CRWD."""
     assert _detect_from_triples(rows) == pytest.approx(expected, rel=0.01)
 
 
-def test_all_eleven_real_splits_are_covered():
-    """The calibration set is eleven, not one. If a future edit drops a
-    fixture, this fails rather than quietly shrinking the evidence."""
-    assert len(_REAL_SPLITS) == 11
-    assert {name for name, _, _ in _REAL_SPLITS} == {
+def test_all_eleven_real_splits_are_accounted_for():
+    """The calibration set is eleven, not one — ten detected plus one
+    documented miss. If a future edit drops a fixture, or quietly moves a
+    ticker from the detected set to the miss set, this fails rather than
+    letting the evidence shrink unnoticed."""
+    assert len(_REAL_SPLITS) == 10
+    assert len(_KNOWN_MISSES) == 1
+    covered = {name for name, _, _ in _REAL_SPLITS + _KNOWN_MISSES}
+    assert covered == {
         "AI.PA",
         "CRWD",
         "CVNA",
@@ -920,23 +928,78 @@ def test_detect_split_survives_an_isolated_bad_tick_inside_the_cluster():
     assert _detect_from_triples(_FCIT_L) == pytest.approx(4.0)
 
 
-def test_detect_split_picks_the_transition_adjacent_cluster_not_the_older_one():
-    """WLN.PA's real shape: two genuine clusters in one history. The OLDER
-    one is by far the larger in the full series (2 524 rows at 0.0968 against
-    67 at 0.025), so any rule that picks the dominant cluster — or takes a
-    trimmed statistic over all drifted rows — returns 0.0968 and would
-    multiply a held position by the wrong factor. Only the cluster adjacent
-    to the transition can apply to a position held today."""
+def test_detect_split_refuses_wln_pa_because_it_cannot_be_told_from_a_stacked_split():
+    """WLN.PA is a real 40-for-1 reverse split (Yahoo: 2026-06-15, 0.025)
+    that this detector deliberately does NOT detect on a full-history
+    overlap. The reason, measured rather than asserted:
+
+    Its history carries two drifted bodies — 2 524 rows at 0.0968 (2016-04-28
+    to 2026-03-04) and 67 rows at 0.025 (2026-03-05 to 2026-06-10) — then an
+    undrifted tail. That is bit-for-bit the shape of a STACKED split: oldest
+    rows at split1*split2, middle rows at split2, tail clean. The implied
+    split1 is 0.0968 / 0.025 = 3.871105.
+
+    Three things were checked to see whether it is distinguishable:
+
+    1. Yahoo's own split calendar for WLN.PA lists exactly ONE split, so the
+       older body is not a second split. But detect_split is a pure function
+       of (stored, fetched); it never sees a split calendar, and giving it
+       one would put a network call in the engine's pure layer.
+    2. Is the implied split1 implausible as a ratio? No. Yahoo's own real
+       ratios for these very tickers include 3.30087 (TIT.MI), 1.487 and
+       0.4725 (DD), 1.0053282396702523 (HON), 1.241 (FDX), 1.057 (SPGI).
+       Roundness is not a discriminator.
+    3. Is the STORED series continuous across the boundary, unlike a real
+       split? No — it jumps 1.4845 -> 0.3703 on 2026-03-04/05, a factor of
+       3.871, exactly as a genuine split1 would make it jump. The live
+       series is smooth there (Yahoo has retro-adjusted it).
+
+    So: not distinguishable from the data this function receives. The
+    module's own principle then decides it — a wrong ratio is worse than a
+    missed detection, and here the wrong ratio would be a confident,
+    clean-looking 0.025 that under-corrects every position opened before
+    split1 by exactly split1, with a [SPLIT ADJUSTED] line implying full
+    correction.
+
+    The refusal is right even if the older body is definitely not a split,
+    because `apply_split` takes ONE ratio and applies it to every share of
+    the ticker, while in a stacked history the correct factor depends on
+    when each position was opened. The correction is not expressible.
+
+    What would have to be true to detect it: detect_split would need the
+    ticker's split calendar as an INPUT (yfinance returns it alongside the
+    price frame when actions are requested), so it could confirm exactly one
+    split inside the window. That is a signature change and a new fetch-path
+    dependency — a deliberate follow-up, not a threshold tweak."""
     ratios = _ratios(_WLN_PA)
     older = [r for r in ratios if 0.09 < r < 0.11]
     recent = [r for r in ratios if 0.02 < r < 0.03]
-    assert len(older) >= 10 and len(recent) >= 10  # both clusters really present
+    assert len(older) >= 10 and len(recent) >= 10  # both bodies really present
     assert older[0] == pytest.approx(0.0968, rel=0.01)
+    assert statistics.median(older) / statistics.median(recent) == pytest.approx(
+        3.871, rel=0.01
+    )  # the implied split1 of the stacked reading
 
-    assert _detect_from_triples(_WLN_PA) == pytest.approx(0.025, rel=0.01)
+    assert _detect_from_triples(_WLN_PA) is None
 
 
-@pytest.mark.parametrize("name,rows,expected", _REAL_SPLITS)
+def test_detect_split_finds_wln_pa_once_the_older_body_is_out_of_window():
+    """The other half of the WLN.PA story, and the reason the miss is worth
+    stating precisely rather than as "WLN.PA is undetectable": the refusal is
+    about the older body, not about WLN.PA's own cluster. The weekly job
+    fetches `--history-days 90`, a window in which the 0.0968 body (which
+    ends 2026-03-04) does not appear at all — so in production WLN.PA IS
+    detected, at the correct 0.025. Verified against the real full series at
+    three window widths: 90 days -> 0.025, 180 days -> None, 365 -> None.
+
+    The known miss is therefore a full-history-replay property, and widening
+    the resweep window past ~100 days is what would reintroduce it."""
+    recent_window = [row for row in _WLN_PA if row[0] >= "2026-03-05"]
+    assert len(recent_window) >= 20  # the fixture really does slice this way
+    assert _detect_from_triples(recent_window) == pytest.approx(0.025, rel=0.01)
+
+
+@pytest.mark.parametrize("name,rows,expected", _REAL_SPLITS + _KNOWN_MISSES)
 def test_detect_split_finds_nothing_once_the_store_agrees(name, rows, expected):
     """The control every one of the eleven must also pass: after the sweep
     corrected the store, re-running the same comparison must return None.
@@ -1053,6 +1116,41 @@ def test_detect_split_refuses_a_second_cluster_too_small_to_believe():
     assert detect_split(stored, fetched) is None
 
 
+def test_detect_split_refuses_a_stacked_split_rather_than_returning_a_partial():
+    """Two splits since the last successful resweep: oldest rows at
+    split1 * split2 (0.5 * 0.25 = 0.125), middle rows at split2 alone
+    (0.25), then an undrifted tail.
+
+    Every earlier gate waves this through — one clean transition, zero
+    post-transition strays, a tight and material anchor over the middle
+    body — and the walk-back assembles the middle body into a perfectly
+    respectable cluster. Returning 0.25 there would be a confident detection
+    that omits split1 entirely and under-corrects, by exactly split1, every
+    position opened before it. Nor is the product (0.125) a safe answer: it
+    over-corrects every position opened BETWEEN the two splits. `apply_split`
+    takes one ratio for all shares of the ticker, so no single number is
+    right — the shape must be refused.
+
+    This is a REGRESSION GUARD against the redesign, not against the
+    original bug: the pre-redesign whole-history spread check happened to
+    reject this shape (two bodies blow past _CLUSTER_TOLERANCE), so the
+    transition-anchored cluster would have traded a safe over-conservative
+    None for a wrong ratio."""
+    fetched_closes = [100.0 + i for i in range(40)]
+    ratios = [0.125] * 20 + [0.25] * 20
+    stored_closes = [f * r for f, r in zip(fetched_closes, ratios)]
+    stored, fetched = _with_clean_tail(stored_closes, fetched_closes)
+
+    # The middle body on its own is a textbook detection — this is what the
+    # detector would have latched onto.
+    solo_stored, solo_fetched = _with_clean_tail(
+        stored_closes[20:], fetched_closes[20:]
+    )
+    assert detect_split(solo_stored, solo_fetched) == pytest.approx(0.25)
+
+    assert detect_split(stored, fetched) is None
+
+
 def test_detect_split_fails_closed_when_the_whole_overlap_is_drifted():
     """No undrifted row anywhere means no observable transition — and that
     is exactly what a units mismatch looks like: a London ticker stored in
@@ -1136,8 +1234,8 @@ def test_detect_split_refuses_a_tight_but_temporally_scattered_cluster():
     (4.2-6.1% spread) AND already fails on temporal grounds, but a future
     threshold retune could someday narrow that first margin.
 
-    128 rows spanning ~2.5 years (32 drifted rows, each preceded by 3
-    unchanged ones, at 7-day steps = 896 days)."""
+    128 rows spanning ~2.4 years (32 drifted rows, each preceded by 3
+    unchanged ones, at 7-day steps: 889 days first date to last)."""
     base = date(2021, 1, 4)
     # ~0.2% internal wobble around a ~5% ratio — tight enough to have
     # cleared _CLUSTER_TOLERANCE (3%) on its own before this fix.
