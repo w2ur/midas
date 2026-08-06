@@ -10,6 +10,10 @@ data/cache/
 # (so sandboxed agents can read it); transient snapshots like today.json
 # are ignored below.
 data/market/today.json
+# merge_rows writes {SYMBOL}.jsonl.tmp then renames it. A crashed run leaves the
+# orphan behind, and fetch-ohlcv.yml does a blanket `git add data/market/ohlcv/`
+# — so without this it would be committed into the store permanently.
+data/market/ohlcv/*.tmp
 # Locally-generated backtest grid for the dashboard /backtest + /leaderboard
 # pages; regenerated on demand via scripts/run_all_combos.py.
 data/factor-research.json
