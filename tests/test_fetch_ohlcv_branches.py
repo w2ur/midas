@@ -317,7 +317,10 @@ def test_resweep_revises_a_wrong_row_deep_in_history(
     wrote append-only, so it could not correct them; only the trailing day was
     revisable."""
     path = get_config().ohlcv_dir / "GC=F.jsonl"
-    bar = lambda c: [c, c, c, c, c, 1]  # noqa: E731
+
+    def bar(c: float) -> list:
+        return [c, c, c, c, c, 1]
+
     _write_raw(
         path,
         [
@@ -350,18 +353,49 @@ def test_resweep_revises_a_wrong_row_deep_in_history(
 
 
 def test_resweep_requires_an_explicit_symbol_list(
-    monkeypatch: pytest.MonkeyPatch, midas_data_root: Path
+    monkeypatch: pytest.MonkeyPatch,
+    midas_data_root: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """--resweep rewrites committed history; it must never run on the whole
-    universe by accident."""
-    with pytest.raises(SystemExit):
+    universe by accident.
+
+    Pins the guard's own message (not just "some SystemExit fired") so this
+    test cannot pass if the two --resweep guards' messages were swapped."""
+    with pytest.raises(SystemExit) as excinfo:
         _run_main(monkeypatch, ["--resweep"])
+    assert excinfo.value.code == 2
+    assert "--resweep requires an explicit --symbols list" in capsys.readouterr().err
 
 
 def test_resweep_and_backfill_are_mutually_exclusive(
-    monkeypatch: pytest.MonkeyPatch, midas_data_root: Path
+    monkeypatch: pytest.MonkeyPatch,
+    midas_data_root: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """--resweep and --backfill both force a full-window fetch; combining them
-    is nonsensical and must be rejected rather than silently picking one."""
-    with pytest.raises(SystemExit):
+    is nonsensical and must be rejected rather than silently picking one.
+
+    Pins the guard's own message so this test cannot pass if the two
+    --resweep guards' messages were swapped."""
+    with pytest.raises(SystemExit) as excinfo:
         _run_main(monkeypatch, ["--resweep", "--backfill", "--symbols", "GC=F"])
+    assert excinfo.value.code == 2
+    assert "--resweep and --backfill are mutually exclusive" in capsys.readouterr().err
+
+
+def test_neither_resweep_nor_symbols_proceeds_normally(
+    monkeypatch: pytest.MonkeyPatch, midas_data_root: Path
+) -> None:
+    """Companion to the two guard tests above: with neither --resweep nor
+    --symbols set, main() must proceed rather than exit. Nothing else in the
+    suite calls main() without --symbols, so without this test a guard
+    mis-scoped from `if args.resweep and not args.symbols:` down to
+    `if not args.symbols:` (firing unconditionally) would pass both guard
+    tests above and go undetected.
+
+    `_all_symbols` is monkeypatched to a fixed list and `--dry-run` used so
+    this stays hermetic — no universe-resolver network fallback, no fetch."""
+    monkeypatch.setattr(fo, "_all_symbols", lambda: ["AAPL"])
+    rc = _run_main(monkeypatch, ["--dry-run"])
+    assert rc == 0
