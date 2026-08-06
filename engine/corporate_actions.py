@@ -13,12 +13,20 @@ Two pure primitives, no I/O, matching ``engine.restatement``'s style:
 - ``detect_split`` compares a symbol's already-stored history against a
   freshly fetched series over their overlapping dates and returns the
   split ratio if — and only if — every drifted row shares one ratio within
-  a tight tolerance. That single-constant-ratio signature is what
-  distinguishes a real split from ordinary data drift (dozens of distinct
-  ratios scattered across a percent or two), which the store also carries
-  and must never be corrected as if it were a split. Getting this wrong in
-  the false-positive direction is worse than the bug it fixes: a spurious
-  detection would silently multiply a real position by a bogus ratio.
+  a tight tolerance AND the drifted rows form a single contiguous prefix
+  in time, ending at one transition date with zero drift after it. Both
+  conditions are required: the ratio-cluster check alone is a statistic
+  over the *distribution* of ratios and, in principle, a tight cluster of
+  scattered-in-time drift could satisfy it (found during review — see the
+  ``test_detect_split_refuses_a_tight_but_temporally_scattered_cluster``
+  regression test for the exact shape that would slip past cluster-tightness
+  alone). The temporal check is the structural signature a real split
+  actually has — every date before the split shows one ratio, every date
+  after shows none — and it is what a scattered-drift symbol (real or
+  synthetic) cannot mimic without the drift being contiguous, which by
+  definition it is not. Getting this wrong in the false-positive direction
+  is worse than the bug it fixes: a spurious detection would silently
+  multiply a real position by a bogus ratio.
 
 - ``apply_split`` scales a held position's ``shares``/``avg_cost`` by the
   detected ratio, preserving cost basis (``shares × avg_cost``) exactly.
@@ -96,13 +104,22 @@ def detect_split(stored: list[dict], fetched: pd.DataFrame) -> float | None:
     corrected in commit 4b6b8556 (CRWD, DD, TIT.MI, WLN.PA, and 7 others):
     every date on or before the split shows the SAME ratio
     (``stored_close / fetched_close``), and every date after it is
-    unchanged (ratio 1.0). Ordinary drift (e.g. real ``ALV.DE``, ``BMW.DE``)
-    looks nothing like this — a handful of rows, each at its own distinct
-    ratio, scattered across a percent or two. Returns ``None`` on anything
-    that doesn't match the split signature tightly, including genuine
-    ambiguity (e.g. two competing ratio clusters) — a missed detection
-    leaves the pre-existing valuation bug in place; a false one would
-    silently multiply a real position.
+    unchanged (ratio 1.0) — a single contiguous drifted PREFIX in time,
+    with a clean transition and zero drift after it. Ordinary drift (e.g.
+    real ``SIE.DE``/``ALV.DE``/``BMW.DE``) looks nothing like this: a
+    handful of rows scattered THROUGHOUT the history, interleaved with
+    unchanged rows on both sides, at ratios spread wider than any real
+    split's cluster (measured 4.2-6.1% relative spread vs. the tightest
+    real split's 2.23%). Two independent checks enforce this: the ratio
+    cluster must be tight (``_CLUSTER_TOLERANCE``) AND the drifted rows
+    must be temporally contiguous (no drifted row after the first
+    undrifted one, in date order). Either check alone is a statistic that
+    a sufficiently unlucky (or adversarial) scattered-drift shape could in
+    principle satisfy; both together require the actual split signature,
+    not just its statistical shadow. Returns ``None`` on anything that
+    doesn't match, including genuine ambiguity (e.g. two competing ratio
+    clusters) — a missed detection leaves the pre-existing valuation bug in
+    place; a false one would silently multiply a real position.
 
     Parameters
     ----------
@@ -124,9 +141,10 @@ def detect_split(stored: list[dict], fetched: pd.DataFrame) -> float | None:
         r["date"]: r["close"] for r in stored if r.get("close") is not None
     }
 
-    ratios: list[float] = []
+    dated_ratios: list[tuple[str, float]] = []
     for ts, row in fetched.iterrows():
-        old = stored_close.get(_date_key(ts))
+        d = _date_key(ts)
+        old = stored_close.get(d)
         if old is None or old == 0:
             continue
         new = row["Close"]
@@ -138,12 +156,14 @@ def detect_split(stored: list[dict], fetched: pd.DataFrame) -> float | None:
             continue
         if new == 0 or math.isnan(new):
             continue
-        ratios.append(old / new)
+        dated_ratios.append((d, old / new))
 
-    if len(ratios) < _MIN_OVERLAP_ROWS:
+    dated_ratios.sort(key=lambda pair: pair[0])  # chronological — required below
+
+    if len(dated_ratios) < _MIN_OVERLAP_ROWS:
         return None
 
-    drifted = [r for r in ratios if abs(r - 1.0) > _DRIFT_TOLERANCE]
+    drifted = [r for _, r in dated_ratios if abs(r - 1.0) > _DRIFT_TOLERANCE]
     if len(drifted) < _MIN_DRIFTED_ROWS:
         return None
 
@@ -154,6 +174,20 @@ def detect_split(stored: list[dict], fetched: pd.DataFrame) -> float | None:
     spread = (max(drifted) - min(drifted)) / median_ratio
     if spread > _CLUSTER_TOLERANCE:
         return None  # scattered drift, not a single-ratio split — refuse
+
+    # Temporal contiguity: a real split's drifted rows form a single
+    # PREFIX in chronological order — every date up to the transition is
+    # drifted, every date after it is not. Once the first undrifted date is
+    # seen (in date order), no later date may be drifted. This is what a
+    # ratio cluster tight enough to clear _CLUSTER_TOLERANCE cannot, on its
+    # own, guarantee — a handful of scattered-in-time drifted rows that
+    # happen to sit close in value would still pass the cluster check but
+    # fail this one, because real scattered drift is interleaved with
+    # unchanged rows on both sides, not confined to one clean run.
+    is_drifted = [abs(r - 1.0) > _DRIFT_TOLERANCE for _, r in dated_ratios]
+    first_undrifted = next((i for i, d in enumerate(is_drifted) if not d), None)
+    if first_undrifted is not None and any(is_drifted[first_undrifted:]):
+        return None  # a drifted row reappears after an undrifted one — not a split
 
     return median_ratio
 
