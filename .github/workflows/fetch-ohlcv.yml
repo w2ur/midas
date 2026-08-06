@@ -5,12 +5,16 @@ name: fetch-ohlcv
 # so this workflow is what keeps it running autonomously.
 #
 # Schedules:
-#   - Mon-Fri 22:30 UTC — full universe (~600 tickers, equities + ETFs
-#     + forex + crypto), ≈30 min after US market close at 21:00 UTC (DST).
-#   - Sat-Sun 19:30 UTC — crypto-only subset (~30 tickers). Runs BEFORE
-#     the 20:00 UTC weekend trading session so agents read fresh intraday
-#     crypto closes rather than Friday's stale data. Crypto trades 24/7;
-#     everything else is closed and would return no new rows anyway.
+#   - Mon-Fri 22:30 UTC — full universe (equities + ETFs + forex + crypto),
+#     comfortably after the US close (20:00 UTC in EDT, 21:00 UTC in EST).
+#     Running after the close is the point: the fetch captures the SAME day's
+#     bar. `python scripts/fetch_ohlcv.py --dry-run` prints the symbol count —
+#     it moves with index composition, so it is not restated here.
+#   - Sat-Sun 19:30 UTC — crypto-only subset. Runs BEFORE the 20:00 UTC
+#     weekend session so agents read fresh intraday crypto closes rather than
+#     Friday's stale data. Crypto trades 24/7; everything else is closed and
+#     would return no new rows anyway. That intraday bar is a PARTIAL bar —
+#     the next run re-requests it and replaces it with the final close.
 # Also exposes manual workflow_dispatch for ad-hoc refresh.
 
 on:
