@@ -10,6 +10,7 @@ tests assert the exact on-disk JSON, not just row counts.
 from __future__ import annotations
 
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +23,7 @@ from engine.ohlcv_ingest import (
     append_new_rows,
     build_new_rows,
     existing_dates,
+    fetch_window_start,
     flatten_columns,
     row_to_record,
     safe_float,
@@ -265,6 +267,47 @@ def test_append_all_null_close_frame_writes_nothing(tmp_path: Path) -> None:
     df = flatten_columns(_yf_frame({"2026-04-15": [1, 1, 1, np.nan, np.nan, 10]}))
     assert append_new_rows(path, df) == 0
     assert not path.exists()
+
+
+# --- fetch window ---------------------------------------------------------
+
+
+def test_fetch_window_start_includes_today_after_close() -> None:
+    """Regression: e98ea8cf5 — the cron runs 22:30 UTC, after the US close,
+    so a store holding yesterday must still fetch TODAY's available bar. The
+    old `last >= end - 1 day` skip dropped it, leaving every other daily
+    session on a two-market-day-old equity price."""
+    assert fetch_window_start(date(2026, 8, 3), date(2026, 8, 4), 730) == date(
+        2026, 8, 4
+    )
+
+
+def test_fetch_window_start_skips_when_today_already_stored() -> None:
+    assert fetch_window_start(date(2026, 8, 4), date(2026, 8, 4), 730) is None
+
+
+def test_fetch_window_start_skips_when_store_runs_ahead() -> None:
+    assert fetch_window_start(date(2026, 8, 6), date(2026, 8, 4), 730) is None
+
+
+def test_fetch_window_start_empty_store_uses_history_window() -> None:
+    assert fetch_window_start(None, date(2026, 8, 4), 730) == date(
+        2026, 8, 4
+    ) - timedelta(days=730)
+
+
+def test_fetch_window_start_revise_days_refetches_trailing_rows() -> None:
+    """revise_days=1 re-requests the last stored day so a partial 24/7 bar can
+    be corrected by its final value."""
+    assert fetch_window_start(
+        date(2026, 8, 4), date(2026, 8, 6), 730, revise_days=1
+    ) == date(2026, 8, 4)
+
+
+def test_fetch_window_start_revise_days_ignored_on_empty_store() -> None:
+    assert fetch_window_start(None, date(2026, 8, 4), 730, revise_days=1) == date(
+        2026, 8, 4
+    ) - timedelta(days=730)
 
 
 # --- property: idempotence of the merge -----------------------------------

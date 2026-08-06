@@ -13,6 +13,7 @@ sandboxed agent — preserving it exactly is a hard requirement.
 from __future__ import annotations
 
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -78,6 +79,32 @@ def existing_dates(path: Path) -> set[str]:
             if d:
                 dates.add(d)
     return dates
+
+
+def fetch_window_start(
+    last: date | None,
+    end: date,
+    history_days: int,
+    *,
+    revise_days: int = 0,
+) -> date | None:
+    """Return the inclusive start date for the next fetch, or None to skip.
+
+    ``end`` is the last day we want (normally today). The OHLCV cron runs at
+    22:30 UTC — after the US close — so a store holding ``end - 1`` must still
+    fetch ``end``: the bar exists. Only a store that already holds ``end`` is
+    skipped.
+
+    ``revise_days`` re-requests that many already-stored trailing days so a bar
+    that was still forming when it was first written (24/7 crypto) can be
+    corrected by its final value. It has no effect on an empty store, which
+    fetches the full ``history_days`` window regardless.
+    """
+    if last is None:
+        return end - timedelta(days=history_days)
+    if last >= end:
+        return None
+    return last + timedelta(days=1 - revise_days)
 
 
 def row_to_record(row_date: str, row: object) -> dict:
