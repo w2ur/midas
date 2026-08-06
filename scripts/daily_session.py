@@ -1398,8 +1398,10 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
 def step_build_baselines() -> None:
     """Step 9a — Baselines.
 
-    Recomputes data/baselines/ for Day 1 → today, full-rewrite and idempotent.
-    Runs AFTER portfolio mutations so the benchmark window matches the
+    Recomputes data/baselines/ for Day 1 → today, append-or-refuse per date
+    (engine.baselines.merge_baseline_series) — the same mutability contract
+    as PortfolioManager.add_snapshot on the agent curve it shares a chart
+    with. Runs AFTER portfolio mutations so the benchmark window matches the
     freshly-appended agent snapshots. Uses backfill_baselines constants as
     the single source of truth for universes + max_positions.
     """
