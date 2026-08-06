@@ -1,0 +1,87 @@
+name: resweep-held-tickers
+
+# Weekly corporate-action (stock split) detection, scoped to the tickers
+# some agent actually holds — the only set where a split changes a real
+# number. Runs `scripts/fetch_ohlcv.py --resweep-held`, which resolves its
+# own symbol list from `_collect_holdings()` (union of every open position
+# across all 12 books, typically ~30 tickers) and re-fetches a 90-day
+# window against the already-committed store, with every row in it
+# revisable — the same full-history-overlap comparison `--resweep` uses,
+# which `engine.corporate_actions.detect_split` needs to tell a real split
+# (every drifted row at the SAME ratio) from ordinary drift (scattered
+# ratios). 90 days is ample — real splits leave hundreds of drifted rows —
+# and cheap at this symbol count.
+#
+# Why a scheduled trigger exists at all: the nightly fetch-ohlcv.yml run
+# only ever re-requests a 1-day trailing revision window, which structurally
+# cannot clear detect_split's "at least a handful of overlapping rows"
+# minimum. Without a periodic full-window resweep of the held set, a real
+# split would silently re-adjust all of Yahoo's history, the nightly run
+# would write one revised row, and nothing would ever notice — 11 tickers
+# split in under four months during this experiment's first four months.
+#
+# Cadence: weekly is enough — a split's ex-date rarely lands more than a
+# few trading days before a name is discovered by this job, and the failure
+# mode it guards against (a stale share count silently mis-valuing a book)
+# degrades slowly, not catastrophically, between runs.
+#
+# Scheduled well clear of every other cron this repo runs: the 19:55-20:30
+# UTC blackout the trigger watcher (check-triggers.yml) observes around the
+# daily session, the 22:30 UTC (weekdays) / 19:30 UTC (weekends) full
+# fetch-ohlcv.yml runs, and refresh-universes.yml's Monday 03:15 UTC slot.
+
+on:
+  schedule:
+    - cron: "10 05 * * 1"  # Monday 05:10 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write  # needed to commit OHLCV/portfolio updates back to main
+
+concurrency:
+  group: resweep-held-tickers
+  cancel-in-progress: false
+
+jobs:
+  resweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Resweep held tickers (split detection)
+        run: python scripts/fetch_ohlcv.py --resweep-held --history-days 90
+
+      - name: Commit and push updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Touches two directories: data/market/ohlcv/ (the resweep itself)
+          # and data/portfolios/ (only when a split was actually detected and
+          # a held position adjusted — most weeks this is empty).
+          if [[ -z "$(git status --porcelain data/market/ohlcv/ data/portfolios/)" ]]; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git add data/market/ohlcv/ data/portfolios/
+          DATE=$(date -u +%F)
+          git commit -m "[data] ${DATE} held-ticker resweep"
+          git push
