@@ -34,6 +34,15 @@ CORE_SCRIPTS = [
     "resolve_manager_outcomes.py",
     "backfill_baselines.py",
     "build_tax_shadow.py",
+    # Restatement tooling: reusable by any fork that later corrects a price-
+    # store defect and needs to re-derive published valuations from it. Both
+    # are config-driven (engine.config.get_config()) with no live-cast
+    # coupling. restate_bundles.py imports restate_valuations.py directly, so
+    # the two ship together; tests/test_restate_bundles.py already syncs
+    # unconditionally (the tests glob is independent of CORE_SCRIPTS) and
+    # would otherwise fail to import on the mirror.
+    "restate_valuations.py",
+    "restate_bundles.py",
     "run_backtest.py",
     "run_all_combos.py",
     "refresh_universes.py",

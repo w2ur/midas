@@ -16,6 +16,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from engine.baselines import merge_baseline_series
 
 
@@ -210,11 +212,19 @@ def test_merge_baseline_series_silent_for_brand_new_agent_with_no_data(
     assert json.loads(path.read_text()) == []
 
 
+@pytest.mark.live_cast
 def test_build_all_baselines_prints_one_aggregate_summary_on_refusal(
     midas_data_root, capsys
 ):
     """A revised price across many baseline files must surface as one
-    aggregated line, not one scattered [WARN] per file."""
+    aggregated line, not one scattered [WARN] per file.
+
+    The "2 published point(s) refused" figure is a live-roster-specific
+    fact (the ``world`` agent's own benchmark shares the URTH ticker with
+    the global reference, so one revision refuses two files) — the demo
+    desk has no such agent and would refuse exactly one. Hence
+    ``live_cast``, matching the convention in ``tests/conftest.py``.
+    """
     from datetime import date as _date
 
     from engine.baselines import build_all_baselines
