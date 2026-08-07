@@ -87,6 +87,9 @@ LIVE_ONLY_TESTS = {
     # Drives scripts/check_append_only.py, live-repo CI infrastructure that is
     # not in CORE_SCRIPTS.
     "test_append_only_gate.py",
+    # Imports app/, the Streamlit dashboard. Core ships the engine and the
+    # orchestration, not this desk's local UI.
+    "test_app_formatting.py",
     # NOTE: the 21 formerly-live-only cast-coupled tests were reclaimed into
     # core in SP5. They ship to core byte-identical; the ones that assert on the
     # live cast carry @pytest.mark.live_cast and skip on the demo desk (see

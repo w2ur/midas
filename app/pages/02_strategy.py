@@ -17,6 +17,9 @@ _ROOT = Path(__file__).resolve().parents[2]
 _PORTFOLIOS_DIR = _ROOT / "data" / "portfolios"
 _STRATEGIES_DIR = _ROOT / "data" / "strategies"
 
+from app.formatting import format_money as _money
+
+
 # ---------------------------------------------------------------------------
 # Page config
 # ---------------------------------------------------------------------------
@@ -86,7 +89,11 @@ if snapshots_raw:
 
     if "portfolio_value" in df_snap.columns and not df_snap.empty:
         base = df_snap["portfolio_value"].iloc[0]
-        pct = (df_snap["portfolio_value"] / base - 1) * 100 if base else df_snap["portfolio_value"]
+        pct = (
+            (df_snap["portfolio_value"] / base - 1) * 100
+            if base
+            else df_snap["portfolio_value"]
+        )
 
         fig = go.Figure()
         fig.add_trace(
@@ -121,8 +128,26 @@ st.subheader("Current positions")
 
 if portfolio_raw and portfolio_raw.get("positions"):
     positions_df = pd.DataFrame(portfolio_raw["positions"])
+    # `avg_cost` is denominated in the TICKER's currency, not the book's, and a
+    # book can hold both (`world` is EUR and holds SIKA.SW in CHF). Rendering
+    # the column bare put two currencies in one column of numbers with nothing
+    # saying so — the same class as the site's mixed-currency weight column and
+    # the Manager's unlabelled prompt values. Resolved through the engine's own
+    # resolver so this cannot drift from how the desk prices.
+    if "ticker" in positions_df.columns:
+        from engine.quotes import ticker_currency
+
+        positions_df.insert(
+            positions_df.columns.get_loc("avg_cost") + 1
+            if "avg_cost" in positions_df.columns
+            else len(positions_df.columns),
+            "avg_cost_currency",
+            [ticker_currency(t) or "UNRESOLVED" for t in positions_df["ticker"]],
+        )
     st.dataframe(positions_df, use_container_width=True)
-    st.caption(f"Cash: **${portfolio_raw.get('cash', 0):,.2f}**")
+    st.caption(
+        f"Cash: **{_money(portfolio_raw.get('cash', 0), portfolio_raw.get('currency'))}**"
+    )
 else:
     st.info("No open positions.")
 
@@ -138,7 +163,15 @@ if trades_raw:
     df_trades = pd.DataFrame(trades_raw)
     if not df_trades.empty:
         # Ensure consistent column order with reasoning last.
-        priority_cols = ["timestamp", "action", "ticker", "shares", "price", "total", "reasoning"]
+        priority_cols = [
+            "timestamp",
+            "action",
+            "ticker",
+            "shares",
+            "price",
+            "total",
+            "reasoning",
+        ]
         other_cols = [c for c in df_trades.columns if c not in priority_cols]
         ordered_cols = [c for c in priority_cols if c in df_trades.columns] + other_cols
         df_trades = df_trades[ordered_cols]
@@ -148,8 +181,16 @@ if trades_raw:
         # Key metrics
         st.subheader("Metrics")
         total = len(df_trades)
-        buys = len(df_trades[df_trades["action"] == "BUY"]) if "action" in df_trades.columns else 0
-        sells = len(df_trades[df_trades["action"] == "SELL"]) if "action" in df_trades.columns else 0
+        buys = (
+            len(df_trades[df_trades["action"] == "BUY"])
+            if "action" in df_trades.columns
+            else 0
+        )
+        sells = (
+            len(df_trades[df_trades["action"] == "SELL"])
+            if "action" in df_trades.columns
+            else 0
+        )
 
         m1, m2, m3 = st.columns(3)
         m1.metric("Total trades", total)

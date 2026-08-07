@@ -200,8 +200,12 @@ def test_cast_tests_reclaimed_into_manifest():
     }
     # None of the reclaimed tests remain live-only.
     assert reclaimed & sync_core.LIVE_ONLY_TESTS == set()
-    # The 12 genuinely un-runnable tests stay live-only.
+    # The genuinely un-runnable tests stay live-only. (This comment said "12"
+    # against a 13-entry set; the count is asserted by the literal below, so
+    # restating it in prose only ever adds something else to keep in step.)
     assert sync_core.LIVE_ONLY_TESTS == {
+        # Imports app/, the Streamlit dashboard, which core does not ship.
+        "test_app_formatting.py",
         "test_attest_ledger.py",
         "test_attest_verify.py",
         "test_backfill_snapshots.py",
