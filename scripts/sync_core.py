@@ -62,6 +62,7 @@ CORE_SCRIPTS = [
 LIVE_ONLY_TESTS = {
     # Import a live-only script that core does not ship.
     "test_attest_ledger.py",
+    "test_attest_verify.py",
     "test_backfill_snapshots.py",
     "test_fetch_sentiment.py",
     "test_refresh_leaderboard.py",
@@ -79,6 +80,9 @@ LIVE_ONLY_TESTS = {
     # Reads the committed portfolios, pending orders, inbox ledger and
     # universes — live desk state, none of which core ships.
     "test_rails_live_coverage.py",
+    # Drives scripts/check_append_only.py, live-repo CI infrastructure that is
+    # not in CORE_SCRIPTS.
+    "test_append_only_gate.py",
     # NOTE: the 21 formerly-live-only cast-coupled tests were reclaimed into
     # core in SP5. They ship to core byte-identical; the ones that assert on the
     # live cast carry @pytest.mark.live_cast and skip on the demo desk (see

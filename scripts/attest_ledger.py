@@ -53,6 +53,9 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import re
+import subprocess
+import tempfile
 import json
 import sys
 from datetime import datetime, timezone
@@ -243,6 +246,23 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Repository root (default: project root derived from this script's location).",
     )
     parser.add_argument(
+        "--verify",
+        action="store_true",
+        help=(
+            "Re-derive the most recent attest/* tag's digest from that tag's own "
+            "tree and compare it to the digest recorded in the tag message at the "
+            "time. Exit 1 on divergence — history was rewritten under a published "
+            "attestation. Without this the workflow computed a digest and asserted "
+            "nothing about it: a tampered ledger produced a different hash and a "
+            "green run."
+        ),
+    )
+    parser.add_argument(
+        "--verify-tag",
+        metavar="TAG",
+        help="Verify this tag instead of the most recent attest/* tag.",
+    )
+    parser.add_argument(
         "--render-from",
         metavar="FILE",
         dest="render_from",
@@ -255,9 +275,96 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+
+# ---------------------------------------------------------------------------
+# Verification — what makes the daily attestation an assertion
+# ---------------------------------------------------------------------------
+
+#: The rendered block writes `digest_root:  <hex>`; that line is the whole
+#: commitment, so it is what gets parsed back out.
+_RECORDED_DIGEST = re.compile(r"^digest_root:\s+([0-9a-f]{64})\s*$", re.M)
+
+
+def _git(root: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", *args], cwd=root, capture_output=True, text=True, check=True
+    ).stdout
+
+
+def latest_attest_tag(root: Path) -> str | None:
+    """The most recent `attest/*` tag by tag date, or None if there are none."""
+    out = _git(root, "tag", "--list", "attest/*", "--sort=-creatordate")
+    tags = [line.strip() for line in out.splitlines() if line.strip()]
+    return tags[0] if tags else None
+
+
+def recorded_digest(root: Path, tag: str) -> str | None:
+    """The digest_root written into the tag's message when it was created."""
+    message = _git(root, "tag", "-l", "--format=%(contents)", tag)
+    match = _RECORDED_DIGEST.search(message)
+    return match.group(1) if match else None
+
+
+def digest_at_tag(root: Path, tag: str) -> str:
+    """Recompute the digest from the tag's own tree.
+
+    Uses a detached worktree rather than reading blobs one by one: the digest
+    is defined over "the ledger files present at this revision", and a
+    worktree is the only cheap way to reproduce that set exactly — including
+    files that have since been deleted, which a walk of today's tree would
+    silently omit.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        checkout = Path(tmp) / "tree"
+        _git(root, "worktree", "add", "--detach", "--quiet", str(checkout), tag)
+        try:
+            return compute_ledger_digest(checkout)["digest_root"]
+        finally:
+            _git(root, "worktree", "remove", "--force", str(checkout))
+
+
+def verify_tag(root: Path, tag: str | None = None) -> int:
+    """Compare a published attestation against the tree it attested to.
+
+    Returns a process exit code. A repository with no attest tag yet, or a tag
+    whose message predates the `digest_root:` line, is reported and passes —
+    there is nothing to compare, and failing would make the first run of this
+    check red for a reason nobody can fix.
+    """
+    tag = tag or latest_attest_tag(root)
+    if tag is None:
+        print("attest --verify: no attest/* tag exists yet — nothing to verify.")
+        return 0
+
+    published = recorded_digest(root, tag)
+    if published is None:
+        print(f"attest --verify: {tag} records no digest_root — nothing to verify.")
+        return 0
+
+    rederived = digest_at_tag(root, tag)
+    if rederived == published:
+        print(f"attest --verify: {tag} re-derives to its published digest.")
+        print(f"  digest_root: {published}")
+        return 0
+
+    print(f"::error::{tag} does NOT re-derive to its published digest.")
+    print(f"  published at tag time: {published}")
+    print(f"  re-derived now:        {rederived}")
+    print(
+        "\nThe committed ledger at that revision is not what was attested to. "
+        "Either history was rewritten under a published attestation, or the "
+        "digest definition changed — both need explaining before the next "
+        "attestation is meaningful."
+    )
+    return 1
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = _build_parser()
     args = parser.parse_args(argv)
+
+    if args.verify:
+        raise SystemExit(verify_tag(args.root.resolve(), args.verify_tag))
 
     if args.render_from:
         with open(args.render_from, encoding="utf-8") as f:

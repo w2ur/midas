@@ -193,9 +193,10 @@ def test_cast_tests_reclaimed_into_manifest():
     }
     # None of the reclaimed tests remain live-only.
     assert reclaimed & sync_core.LIVE_ONLY_TESTS == set()
-    # The 10 genuinely un-runnable tests stay live-only.
+    # The 12 genuinely un-runnable tests stay live-only.
     assert sync_core.LIVE_ONLY_TESTS == {
         "test_attest_ledger.py",
+        "test_attest_verify.py",
         "test_backfill_snapshots.py",
         "test_fetch_sentiment.py",
         "test_refresh_leaderboard.py",
@@ -209,6 +210,8 @@ def test_cast_tests_reclaimed_into_manifest():
         # Asserts on the live desk's committed holdings, pending orders and
         # inbox ledger — core ships none of that state.
         "test_rails_live_coverage.py",
+        # Drives scripts/check_append_only.py, a live-repo CI tool.
+        "test_append_only_gate.py",
     }
     # All reclaimed tests now ship in the code manifest.
     manifest_names = {p.name for p in sync_core.code_manifest()}
