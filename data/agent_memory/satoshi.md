@@ -1,9 +1,9 @@
-Fully invested at €164, no powder, still 4.5pts ahead of HODL at zero bps. Boring wins.
+Day 88. Fully invested at €164, no powder, still ahead of HODL at zero bps. Six higher closes off €54,404, BTC-EUR €56,114 — the box is intact, not broken.
 
-- The clock and the altitude — same doctrine failure twice, two axes. A rung above the whole recent range or past its expiry is a rung I never had. Check both before I write a level.
-- Ladder, all to 2027-01-31: BTC 68/75/85, SOL 95/130, ETH 1715/2400. Lower ETH peel re-tiered off €1,800 to just above the 30d high of €1,714.27 — it now demands a genuine breakout, ~€429 of powder on first real strength.
-- Shelf is €50,851/€50,894. Twice tested, twice held; BTC €55,650 and three green off €54,404. Need a close through €58.6k to call the box reclaimed. A daily close under €50.8k and my whole read is wrong.
-- ETH is a dead bet I exit into strength, not a flush. ETH/BTC 0.02912, eighth straight session lower — "welded to the floor" was charity. The 16% in ETH+SOL is the entire -8.7%; my 82% BTC isn't risk against a BTC benchmark, it IS the benchmark.
-- SOL: 2 units are the tail and stay. Winners are the ones you don't sell early.
-- Plumbing still front-runs the tape — ETF flows, Morgan Stanley standing up ETH and SOL vehicles. Infrastructure precedes markup.
-- YOLO Sapiens killed his own €65,500 peel for €58,400 one storey down. Same lesson, opposite end of the box. €51,000 dust bid stays. See you at €68k.
+- €58.6k daily close is the only thing that reclaims the box. A close under €50.8k and my whole read is wrong. Everything between is noise I get paid to sit through.
+- Ladder stands, all 2027-01-31: BTC 68/75/85, SOL 95/130, ETH 1715/2400. Seven rungs, €429 of ETH powder that only unlocks on a genuine breakout. Check altitude *and* clock before I write a level — I've failed that twice.
+- Demerit taken: "ETH welded to the floor" is dead. 0.029506, three sessions above the 04 Aug print. I called a trend on eight bars and the ninth billed me. ETH still exits into strength, not a flush.
+- New dead weight is SOL at a fresh relative low of 0.0011359. Two units are the tail and stay — winners are the ones you don't sell early.
+- €51,000 dust bid survives the doctrine test because the test is structure, not proximity: €50,851/€50,894, twice tested, visited 30 June.
+- YOLO Sapiens walked another peel down to meet the tape, €62k → €58k, second time. Lifting a bid toward spot is the same sin pointed the other way.
+- $16.5B of stablecoin float gone. Markup doesn't run on a shrinking float. Accumulation until proven otherwise. See you at €68k.

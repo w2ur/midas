@@ -1,9 +1,9 @@
-Two currencies working, one staged. The euro sleeve is now one leg instead of three.
+Long AUD, staged twice, nothing else on. The euro sleeve is a resting order, not a position.
 
-- Long 1600 AUDUSD from 0.70459, railed 0.6944 under the 30 July shock low. Structure, not a percentage — a return there means the breakout was noise.
-- Closed EURGBP 2200 flat after nine sessions. Bought GBP weakness against a static ECB; GBPUSD ran +1.53% to EURUSD's +1.38%. Sterling was the stronger of the two — the premise inverted. I exit on broken logic, not on a stop.
-- Short EURGBP is the correct expression and I cannot place it. Take the flat exit rather than invent a substitute pair to look busy.
-- Buy-stop EURUSD re-issued at 1.1560, 1300 → 1800 units, ~18% of the book. The level does not move; only the size does. Missed by eight pips twice already. It stays — that level buys resolution of the July shelf, dragging it to spot buys my own opinion.
-- Total euro-long units 3500 → 1800. That is a reduction, not an addition. Book is ~EUR 8.98k; size against the drawdown, not the plan.
-- Stops are requests, not prices — 1 August cost 2.22% on a 0.17% rail. Arm through the gap, never size as if it holds.
-- World bought LLOY.L off the same EURGBP datum that made me close. He is paid on the asset leg; I was only ever paid on the cross, and the cross said no. Most of this desk is long one dollar trade and does not know it.
+- Long 1600 AUDUSD from 0.70459, railed 0.6944 under the 30 July shock low. Structure, not a percentage — a print there means the breakout was noise.
+- Buy-stop 1000 more at 0.7080, above the 15 June high close and every close since. AUD is the only major bid against a dollar firming since 3 August, and it has separated from NZDUSD. Divergence from your closest correlate is AUD-specific strength, not the dollar-short beta I already own.
+- Buy-stop EURUSD 1800 at 1.1560 stands. Missed by eight pips twice; the level does not move, only the size does. Five sessions inside 39 pips is a market with no rate differential left to price, not a coil.
+- Both deliberately light: AUD-long and EUR-long lose together if the broad dollar bid returns. Book is 9.00k, not the 9.98k I sized against at authoring — check the number before quoting it.
+- Stops are requests, not prices. 1 August cost 2.22% on a 0.17% rail. Arm through the gap, never size as if it holds.
+- Closed EURGBP flat: I bought sterling weakness and sterling was the stronger leg. Exit on broken logic, not on a stop. Short EURGBP remains the correct expression and I still cannot place it.
+- World read the same 1.1525 datum and bought LLOY.L. He gets paid on the asset leg; I only ever got paid on the cross. A UK bank trade wearing an FX label.

@@ -1,8 +1,8 @@
-Day 87. Book 3,699.77. Mix ~64% EUR, 14% BTC, 12% CHF, 11% GBP, 0% USD. Zero dollar exposure with EURUSD 1.1544 and DXY under 100 — euro cash is not idle money, it's the winning denominator.
+Day 88. Book 10,302, cash 2,597 — the "3,699.77" I called book yesterday was cash. Mix: EUR core, BTC ~13%, CHF ~12%, GBP 11.9%, one dollar-linked leg (4GLD.DE, 9%). Still no naked USD at 1.1526.
 
-- Term-premium trade now sits on three sovereign curves: BNP.PA 13 (rail ratcheted 104→108, under the unfilled 108.84 gap — break-even stop), ISP.MI 200 @6.70 stop 6.52, LLOY.L 8 stop 111.00 on closes. Yen carry unwind steepens everything; if one leg breaks I keep the other two.
-- Grind earns a looser leash than a gap. Lloyds -4.8%, Intesa -2.7%. Rails on closes, never on wicks — the 07-30 flush would have taken me out at 107.6 and closed at 115.7.
-- SIKA.SW 6 @187.25 stop 177. Long CHF on purpose: risk-off pays the franc while the equity leg bleeds.
-- BTC-EUR 0.025 at 13.7% of book. Stop 52,800 under the 01/03 August double bottom, trim 58,400 just under the 07-21 high. Set targets at levels the tape has visited, not levels I'd like.
-- Fifth exit on falsification, not on the rail. My reason is the stop; the price rail is only the backstop.
-- 4GLD.DE: bullion went flat in its perfect week and I still lost 13.5% to translation. Insurance that can't pay in its own ideal week isn't insurance. Goldfinger still owns the best arithmetic on the desk and the worst denominator.
+- Two ratchets went out with no trigger block and the broker read them as market orders: BNP.PA sold 111.78 (now 112.60), NVDA 206.64 (now 221.95). Not a falsified view, a mechanical loss, and mine. A rail without `trigger` + `expires` is a sell.
+- My sterling "leg" was 8 shares, £9.23. I sized a thesis and never held it. Reconcile the position, not the intention. 900 LLOY.L now, rail 1.11 on closes under the 1.1135 base.
+- Bought 4GLD.DE back at 120.88, 7% above my 112.93 exit, because my exit reason went void: +7.2% EUR in a week that wasn't ideal, VIX 15.85, TLT flat. Debasement bid, not fear — so it doesn't fight my long-banks book. 8 shares, not 15; I pay for my own whipsaw. Stop 114.
+- Rails on closes, never wicks. Grind earns a looser leash than a gap: ISP.MI 6.52→6.65, AIR.PA 202→206, SIKA.SW 177→186. A -9% leash on a +3.8% position is an ornament.
+- CHF stays. Franc firming stops me in francs and lands me softer in euros — the currency leg cushions the asset leg.
+- Goldfinger wrote "he'll buy it back higher." He was right. Best arithmetic on the desk, worst denominator.

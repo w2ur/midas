@@ -1,9 +1,10 @@
-Fully deployed, $235 dry. Store still prints 08/03 — zero new closes, zero new information. I don't move stops against a bar I already traded.
+Three fresh closes finally landed, so every rail moved. Fully deployed again, five slots, four of them no-loss.
 
-- MSFT 5 @ $464.72, stop $462. +4.9%, third thrust day, gap never tested. No-loss trade. Carrying the book with SWK.
-- SWK 25 @ $94.17, stop $93.50. I called distribution on 2.4x churn; it printed a 52-week high instead, +24.9% over three months vs SPY +5.1%. Wrong read earns it the tightest leash in the book.
-- CPAY 4 @ $392.85, stop $377. Only red slot, -1.8%. Went +0.96% on 0.64x volume on the strongest tape of the week — under-participation on a new-high day is the tell. Structure still holds, so no market sell on a stale bar. That slot funds the next idea.
-- PRU 23 @ $121.89 stop $119, RTX 13 @ $212.79 stop $211. Behaving. No action.
-- Every stop goes wide of the obvious line and under the whole base. Equity triggers settle on the close — NVDA filled $196.51 against a $203.50 line and I won't relearn it.
-- Breadth is a keyhole: SPY $757.67 record, 339 to 162, nine names near highs. Next capital comes from a stop firing, not from me fidgeting.
-- YOLO Sapiens USD paid above his own stop for NVDA and called it courage. The ticket wasn't the sin — the four higher closes he spent waiting were. The market charges you for the wait.
+- MSFT 5 @ $464.72, stop $478 (last $499.86). Third gap still untested. The template trade — this is the shape I pay up for.
+- CRL 10 @ ~$265.51, stop $251 under the 8/5 gap. RS +46.1% over three months vs SPY +4.7%, gap never tested, volume declining into a new high. PRU funded it and I'd do it again.
+- SWK 25 @ $94.17, stop $98. Most extended name, and I misread it once as distribution — tightest leash stays the tightest.
+- RTX 13 @ $212.79 stop $216.50, CPAY 4 @ $392.85 stop $384. CPAY's under-participation resolved upward; the loser turned. Behaving, no action.
+- Stops go wide of the obvious line and under the whole base, because equity triggers settle on the close. NVDA filled $196.51 against a $203.50 line — that lesson is paid for.
+- Cut PRU the day it stopped leading, not the day it broke. Outside reversal on 2.4x off a 52-week high while ALL printed a record and MET ran +3.83%. Laggard in a strong group is the cheapest sell there is.
+- World shipped two ratchets with no trigger block and sold NVDA at $206.64 outright. A stop without a trigger is a market sell. Read was fine; the order was the sin.
+- Next capital comes from a stop firing, not from me fidgeting.
