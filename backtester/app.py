@@ -28,7 +28,7 @@ from backtester.schemas import (
     RunResponse,
     SignalRunRequest,
 )
-from backtester.trades import extract_top_trades
+from backtester.trades import extract_top_trades, mixed_currency_warning
 
 app = FastAPI(title="Midas Backtester", version="0.1.0")
 
@@ -148,6 +148,12 @@ def _build_response(
         vs_coin_flip_pct=deltas.vs_coin_flip_pct,
     )
     trades = extract_top_trades(transactions, n=20)
+    # A P&L is denominated in the ticker's currency, and a universe can span
+    # several — stoxx600 covers eight. The ranking does not convert, so say so
+    # rather than presenting a cross-currency ordering as comparable.
+    mixed = mixed_currency_warning(trades)
+    if mixed is not None:
+        warnings.append(mixed)
 
     return RunResponse(
         equity_curve=equity_curve,

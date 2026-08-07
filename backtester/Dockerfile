@@ -100,6 +100,22 @@ COPY data/portfolios /app/data/portfolios
 COPY data/strategies /app/data/strategies
 COPY data/universes /app/data/universes
 
+# Currency-resolution layers 1 and 2 (engine.quotes). These were MISSING until
+# 2026-08-07, and their absence was not inert: `engine.quotes` degrades to the
+# suffix heuristic, which reads every `.L` ticker as pence-quoted sterling. So
+# the image resolved `PHAG.L` as GBP with a 0.01 vendor scale when it actually
+# quotes in USD — a 100x unit error on exactly the yfinance-fallback path that
+# W7.1 built `_normalise_vendor_frame` to protect. Latent only because the
+# image also ships the store, so the fallback fires just for tickers the store
+# cannot cover, which is precisely what the fallback is for.
+#
+# tickers.json is the load-bearing one: the override map holds three
+# hand-written entries and no `.L` ticker at all, while the registry carries a
+# currency for 1,019 symbols. Both ship because they are layers of one lookup.
+# `tests/test_ci_guards.TestBacktesterImageShipsCurrencyLayers` pins both.
+COPY data/ticker_currencies.json /app/data/ticker_currencies.json
+COPY data/tickers.json /app/data/tickers.json
+
 # data/baselines is NOT copied. The only occurrences of the word in this
 # service are three comments and a test name; engine.baselines is never on the
 # import graph of backtester.app.

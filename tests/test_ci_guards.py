@@ -530,3 +530,103 @@ class TestBacktesterLockfileMirror:
             for name, version in doctored.items()
             if name in root
         )
+
+
+# ---------------------------------------------------------------------------
+# The deployed backtester image ships the currency-resolution layers
+# ---------------------------------------------------------------------------
+
+
+class TestBacktesterImageShipsCurrencyLayers:
+    """`engine.quotes` needs its two maps, and the image did not ship them.
+
+    Until 2026-08-07 `backtester/Dockerfile` copied the OHLCV store, portfolios,
+    strategies and universes, but neither `data/ticker_currencies.json` (layer
+    1, the hand-maintained override — three entries) nor `data/tickers.json`
+    (layer 2, the vendor-captured registry — 1,019 tickers carrying a
+    currency). Missing, `engine.quotes` falls through to the suffix heuristic,
+    which reads every `.L` ticker as pence-quoted sterling — so the image
+    resolved `PHAG.L` as GBP at a 0.01 vendor scale when it actually quotes in
+    USD. That is a 100x unit error on the very yfinance-fallback path W7.1
+    built `_normalise_vendor_frame` to protect.
+
+    **Layer 2 is the one doing the work here**, which is worth stating because
+    it is the less obvious of the two: the override map is tiny and holds no
+    `.L` ticker at all. The registry is the file that would be missed.
+    """
+
+    @staticmethod
+    def _dockerfile() -> str:
+        return (_ROOT / "backtester" / "Dockerfile").read_text(encoding="utf-8")
+
+    @pytest.mark.parametrize(
+        "asset", ["data/ticker_currencies.json", "data/tickers.json"]
+    )
+    def test_the_image_copies_both_currency_layers(self, asset):
+        copied = [
+            line.strip()
+            for line in self._dockerfile().splitlines()
+            if line.strip().startswith("COPY") and asset in line
+        ]
+        assert copied, (
+            f"{asset} is not COPYied into the backtester image; engine.quotes "
+            "would fall through to the suffix heuristic in production"
+        )
+
+    def test_the_files_the_dockerfile_promises_actually_exist(self):
+        """A COPY of a missing path fails the build, not the test — catch it here."""
+        for asset in ("data/ticker_currencies.json", "data/tickers.json"):
+            assert (_ROOT / asset).exists(), f"{asset} is missing from the repo"
+
+    def test_dropping_the_override_map_really_does_corrupt_a_ticker(
+        self, tmp_path, monkeypatch
+    ):
+        """The control: without this, the two assertions above are cargo cult.
+
+        Reproduces the deployed image's data root — store present, ticker maps
+        absent — and shows `PHAG.L` flipping to GBP/0.01. If a future change to
+        the resolution order makes the maps redundant, this test fails and the
+        Dockerfile assertions above can be reconsidered on evidence.
+        """
+        import json as _json
+
+        (tmp_path / "data" / "market" / "ohlcv").mkdir(parents=True)
+        (tmp_path / "roster.yaml").write_text(
+            (_ROOT / "roster.yaml").read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        monkeypatch.setenv("MIDAS_DATA_DIR", str(tmp_path))
+
+        from engine import config as engine_config
+        from engine import quotes
+
+        engine_config.get_config.cache_clear()
+        for cached in ("_override_map", "_registry_currencies"):
+            fn = getattr(quotes, cached, None)
+            if fn is not None and hasattr(fn, "cache_clear"):
+                fn.cache_clear()
+
+        try:
+            degraded_currency = quotes.ticker_currency("PHAG.L")
+            degraded_scale = quotes.vendor_unit_scale("PHAG.L")
+        finally:
+            engine_config.get_config.cache_clear()
+            for cached in ("_override_map", "_registry_currencies"):
+                fn = getattr(quotes, cached, None)
+                if fn is not None and hasattr(fn, "cache_clear"):
+                    fn.cache_clear()
+
+        # Layer 2, the vendor registry, is what answers for PHAG.L — NOT the
+        # override map, which holds only three hand-written entries. Checked
+        # rather than assumed: an earlier draft of this test asserted the
+        # override map and was wrong, which is the whole reason the assertion
+        # names its source.
+        registry = _json.loads(
+            (_ROOT / "data" / "tickers.json").read_text(encoding="utf-8")
+        )
+        assert registry.get("PHAG.L", {}).get("currency") == "USD", (
+            "fixture assumption broke: PHAG.L is no longer a USD registry entry"
+        )
+        assert (degraded_currency, degraded_scale) == ("GBP", 0.01), (
+            "expected the map-less root to mis-resolve PHAG.L; got "
+            f"{degraded_currency}/{degraded_scale}"
+        )

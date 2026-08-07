@@ -3,6 +3,27 @@
 The bt library returns one row per fill (positive quantity = buy, negative =
 sell). We compute per-position P&L by matching each sell to the FIFO buy of
 the same ticker, then return all rows sorted by descending |P&L| capped at N.
+
+**A P&L here is denominated in the TICKER's currency, and a universe can span
+several.** `stoxx600` covers eight (CHF, DKK, EUR, GBP, NOK, PLN, SEK, USD)
+across 463 constituents and `ftse100` covers three, so ranking by `abs(pnl)`
+compares a krona amount against a pound one as if they were the same unit —
+systematically promoting whichever currency has the weakest unit into the
+"top trades" list. Same class as the cross-currency sums fixed four times
+elsewhere in this project.
+
+Two things follow, and deliberately not a third:
+
+- every `TradeEntry` now carries its `currency`, so a P&L is never an
+  unlabelled number;
+- `mixed_currency_warning` lets the API say the ranking is not comparable,
+  rather than presenting it as though it were.
+
+What is NOT done here is converting to a single reporting currency. That needs
+a rate per trade date, the service has no FX layer, and the site's precedent
+(W7.2) is to suppress a mixed-currency figure rather than invent one. It is a
+decision for the backtester spin-out, recorded here so the gap is visible in
+the response instead of only in a backlog.
 """
 
 from __future__ import annotations
@@ -12,6 +33,7 @@ from collections import defaultdict, deque
 import pandas as pd
 
 from backtester.schemas import TradeEntry
+from engine.quotes import ticker_currency
 
 
 def extract_top_trades(
@@ -28,6 +50,8 @@ def extract_top_trades(
     Returns:
         List of TradeEntry objects sorted by descending absolute P&L, capped at N.
         Buys have pnl=None; sells have realized P&L computed via FIFO matching.
+        Each entry carries the ticker's own `currency` (None when unresolvable);
+        see the module docstring on why the ranking is not cross-comparable.
     """
     if transactions is None or transactions.empty:
         return []
@@ -63,6 +87,7 @@ def extract_top_trades(
                     side="buy",
                     quantity=quantity,
                     price=price,
+                    currency=ticker_currency(ticker),
                     pnl=None,
                 )
             )
@@ -86,9 +111,33 @@ def extract_top_trades(
                     side="sell",
                     quantity=sell_qty,
                     price=price,
+                    currency=ticker_currency(ticker),
                     pnl=realised,
                 )
             )
 
     rows.sort(key=lambda t: abs(t.pnl) if t.pnl is not None else 0.0, reverse=True)
     return rows[:n]
+
+
+MIXED_CURRENCY_WARNING = (
+    "MIXED_CURRENCY_TRADES: these trades are denominated in {currencies}, and "
+    "the P&L ranking compares the raw amounts without converting them. Treat "
+    "the ordering as indicative only; a P&L is comparable to another only "
+    "within the same currency."
+)
+
+
+def mixed_currency_warning(trades: list[TradeEntry]) -> str | None:
+    """Warn when a trade list spans more than one currency, else None.
+
+    Only currencies that actually carry a realised P&L count: a buy-side row
+    has `pnl=None` and contributes nothing to the ranking, so a universe whose
+    foreign names were never sold does not need the warning.
+    """
+    currencies = sorted(
+        {t.currency for t in trades if t.pnl is not None and t.currency}
+    )
+    if len(currencies) < 2:
+        return None
+    return MIXED_CURRENCY_WARNING.format(currencies=", ".join(currencies))

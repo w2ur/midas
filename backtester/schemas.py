@@ -101,6 +101,10 @@ class TradeEntry(BaseModel):
     side: Literal["buy", "sell"]
     quantity: float
     price: float
+    #: The TICKER's own currency, not the run's. A universe can span several
+    #: (stoxx600 covers eight), so a bare `pnl` is an unlabelled number.
+    #: None when engine.quotes cannot resolve it.
+    currency: str | None = None
     pnl: float | None = None
 
 
