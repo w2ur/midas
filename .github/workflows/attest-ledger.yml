@@ -77,6 +77,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # Runs BEFORE today's tag is written, so it checks the previous
+      # attestation against the history that now sits underneath it.
+      #
+      # Until this step existed the workflow computed a digest and asserted
+      # nothing about it: a tampered ledger produced a different hash and a
+      # green run, so 55 consecutive green runs were evidence only that the
+      # workflow had executed. Re-deriving a published tag's digest from that
+      # tag's own tree is the assertion — the one thing the digest was for.
+      - name: Verify the previous attestation still re-derives
+        run: python scripts/attest_ledger.py --verify
+
       - name: Compute ledger digest
         id: digest
         run: |

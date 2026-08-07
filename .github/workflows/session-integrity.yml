@@ -51,6 +51,49 @@ jobs:
       - name: Run ledger-integrity check
         run: pytest tests/test_ledger_integrity.py -v
 
+      # The arithmetic half of the same question. The existence check above
+      # would not notice a trade booked at the wrong notional — which is
+      # exactly what the quote-currency defect did to 24 fills, leaving every
+      # row present, joined, and EUR 2,057.65 wrong across four books. This
+      # reconciliation already existed inside restate_valuations.py as the gate
+      # a restatement must pass; it just never ran unless a human ran one.
+      - name: Run ledger cash-replay reconciliation
+        run: pytest tests/test_ledger_cash.py -v
+
+  append-only:
+    # Published dated rows — agent snapshots and baseline series — are frozen
+    # once committed. `PortfolioManager.add_snapshot` and
+    # `engine.baselines.merge_baseline_series` already enforce that where rows
+    # are written, but neither sees a hand edit, a one-off script, or a bad
+    # merge resolution, and every published-data incident in this project
+    # arrived by one of those routes.
+    #
+    # A session correcting its OWN row (same session_date) is allowed, exactly
+    # as add_snapshot allows it. Anything else needs `[restate]` in the commit
+    # message — not a bypass, but the disclosure requirement made mechanical:
+    # `git log --grep='\[restate\]'` becomes a complete list of every time the
+    # published record moved.
+    #
+    # Deliberately a post-hoc detector, not a merge gate: it fails main after
+    # the fact rather than blocking auto-merge-session, which runs its own
+    # inline copy of the artifact rules. Data that has already been written is
+    # better reported loudly than held hostage.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # HEAD^..HEAD. On a session merge commit HEAD^ is main-before-merge,
+          # which is the comparison we want.
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Check published rows are append-only
+        run: python scripts/check_append_only.py --base HEAD^ --head HEAD
+
   check:
     runs-on: ubuntu-latest
     steps:

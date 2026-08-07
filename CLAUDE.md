@@ -43,6 +43,54 @@ running), and `backtester/tests` sat outside `testpaths`. A testpaths entry
 matching nothing is skipped silently, which is what lets this same
 `pyproject.toml` sync to midas-core, where no `backtester/` exists.
 
+**Published data is guarded in CI, not only in application code** (2026-08-07,
+review W4). `session-integrity.yml` now runs three data checks on every push to
+main, none of which existed as a standing gate before:
+- **ledger-integrity** — every filled inbox row has a matching trade (existence).
+- **ledger cash-replay** (`tests/test_ledger_cash.py`) — `initial_capital +
+  replay(trades) == live cash`, per book. The existence check cannot see a trade
+  booked at the *wrong notional*, which is what the quote-currency defect did to
+  24 fills: every row present, joined cleanly, €2,057.65 wrong. The arithmetic is
+  imported from `scripts/restate_valuations.py`, not reimplemented.
+- **append-only** (`scripts/check_append_only.py`) — a dated row in
+  `data/portfolios/*/snapshots.json` or `data/baselines/**` that already exists
+  at `HEAD^` must be byte-identical at `HEAD`. A session correcting **its own**
+  row is allowed (same `session_date`, exactly what `add_snapshot` permits);
+  baselines get no such exemption because they have no writer identity. Anything
+  else needs `[restate]` in the commit message — the disclosure requirement made
+  mechanical, so `git log --grep='\[restate\]'` is a complete list of every time
+  the published record moved. Deliberately a post-hoc detector, not a merge gate:
+  `auto-merge-session.yml` runs its own inline copy of the artifact rules, so
+  this cannot hold a session hostage. Calibrated by replaying it over real
+  history, not only fixtures — see `test_backtest_against_real_history`.
+
+**Restatement requires disclosure up front** (`engine/disclosure.py`).
+`restate_valuations.py --apply` and `restate_bundles.py --apply` refuse to run
+without `--changelog-entry <anchor>`, and verify the anchor resolves to a real
+`<a id>` in METHODOLOGY.md. Dry runs are ungated — you cannot write the
+disclosure before you know what would move. Origin: the 2026-08-02 ledger
+rewrite that moved a book's published return from +3.30% to +0.19% with no
+changelog entry, found five days later by an unrelated cross-check. A
+precondition, not an audit: an audit tells you afterwards that you forgot.
+
+**Restatement scope is a set, not a bool.** `build_all_baselines(restate_series=…)`
+takes `{"coinflip"}`, `{"benchmark"}` or `{"<agent>/<kind>"}`. The bool it
+replaced could only say "everything", which on 2026-08-07 moved eight passive
+benchmarks that should not have moved (on fresher *prices*, not units) and they
+had to be restored by hand.
+
+**One missing-price policy** (`engine.valuation.value_position`). Snapshots used
+to fall back to `avg_cost`, the leaderboard valued at **zero**, and restatement
+raised — same book, same missing row, three published answers, two of them
+numbers. All three now refuse and name the condition in the broker's own
+vocabulary (`NO_PRICE_DATA` / `NO_FX_RATE` / `CURRENCY_UNRESOLVED`).
+
+**The daily attestation asserts something now.** `attest-ledger.yml` ran for 55
+green days computing a digest and checking nothing about it — a tampered ledger
+produced a different hash and a green run. `attest_ledger.py --verify` re-derives
+the previous `attest/*` tag's digest from that tag's own tree (via a detached
+worktree, so files deleted since are still covered) and fails on divergence.
+
 **Scheduled workflows alert through `.github/actions/failure-issue`.** A red X
 plus a failure email is not a closed loop — `core-drift-guard` was red three
 consecutive Mondays while the public mirror shipped stale engine code. The
