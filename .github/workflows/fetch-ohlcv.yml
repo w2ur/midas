@@ -48,6 +48,7 @@ on:
 
 permissions:
   contents: write  # needed to commit OHLCV updates back to main
+  issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
 concurrency:
   group: fetch-ohlcv
@@ -110,3 +111,22 @@ jobs:
           DATE=$(date -u +%F)
           git commit -m "[data] ${DATE} OHLCV update"
           git push
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "fetch-ohlcv: the price store was not updated"
+          body: |
+            A scheduled `fetch-ohlcv` run failed. The trading session has no
+            outbound HTTP: it prices entirely from the committed store, so a
+            store that stops advancing is not a visible outage — the next
+            session simply values every book against older closes.
+
+            **Where to look**
+            - Yahoo rejecting or throttling the request (the run log prints a
+              per-symbol failure count).
+            - A push that lost a race with another scheduled writer.
+            - `scripts/fetch_ohlcv.py --dry-run` locally to confirm symbol
+              resolution still works.

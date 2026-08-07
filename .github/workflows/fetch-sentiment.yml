@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: write  # needed to commit news digests back to main
+  issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
 concurrency:
   group: fetch-sentiment
@@ -77,3 +78,23 @@ jobs:
           DATE=$(date -u +%F)
           git commit -m "[data] ${DATE} sentiment digests"
           git push
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "fetch-sentiment: news digests were not refreshed"
+          body: |
+            A scheduled `fetch-sentiment` run failed, so `data/market/news/`
+            holds no fresh digest for this session.
+
+            This one is not just a data gap: the sentiment treatment is a
+            **pre-registered A/B**, and the treatment agents read whatever is
+            committed. A missing digest silently turns that session's treatment
+            arm into a control arm, with nothing in the published record saying
+            so.
+
+            **Where to look**
+            - The fetch step's log for a provider error or rate limit.
+            - Whether the session that followed consumed a stale digest.

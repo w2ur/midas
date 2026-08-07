@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  issues: write  # failure has to reach a human — see .github/actions/failure-issue
 
 concurrency:
   group: refresh-universes
@@ -67,3 +68,24 @@ jobs:
           DATE=$(date -u +%F)
           git commit -m "[data] ${DATE} universe refresh"
           git push
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "refresh-universes: index constituents were not refreshed"
+          body: |
+            The weekly `refresh-universes` run failed — usually a Wikipedia
+            layout change breaking one index's scraper.
+
+            The failure degrades slowly rather than loudly: the committed
+            `data/universes/*.json` files stay readable, so sessions keep
+            running against an increasingly stale constituent list. The
+            universe allowlist is also a broker safety rail, so a stale list
+            quietly changes what agents are permitted to trade.
+
+            **Where to look**
+            - The refresh step's log names the index that failed.
+            - `python scripts/refresh_universes.py` locally against the live
+              page markup.
