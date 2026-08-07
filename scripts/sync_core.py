@@ -76,6 +76,9 @@ LIVE_ONLY_TESTS = {
     # Reads this repo's .github/workflows/ and backtester/, neither of which
     # exists in core (core ships its own .github/ as a core-native file).
     "test_ci_guards.py",
+    # Reads the committed portfolios, pending orders, inbox ledger and
+    # universes — live desk state, none of which core ships.
+    "test_rails_live_coverage.py",
     # NOTE: the 21 formerly-live-only cast-coupled tests were reclaimed into
     # core in SP5. They ship to core byte-identical; the ones that assert on the
     # live cast carry @pytest.mark.live_cast and skip on the demo desk (see

@@ -6,8 +6,11 @@ import { currentDayNumber } from "../src/lib/session";
 import { cadenceStats } from "../src/lib/cadence";
 
 describe("rails registry", () => {
-  it("carries the 15 broker codes", () => {
-    expect(BROKER_RAILS).toHaveLength(15);
+  it("carries the 19 broker codes", () => {
+    // 15 -> 19 on 2026-08-07 (reliability review W1): CURRENCY_UNRESOLVED,
+    // PRICE_IMPLAUSIBLE, TRIGGER_LEVEL_IMPLAUSIBLE, VALUATION_UNAVAILABLE.
+    // tests/test_reason_codes.py binds this file to the engine's own set.
+    expect(BROKER_RAILS).toHaveLength(19);
   });
 
   it("carries the single watcher code", () => {
