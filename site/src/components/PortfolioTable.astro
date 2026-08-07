@@ -1,6 +1,6 @@
 ---
 import type { AgentPortfolio } from "@/lib/output";
-import { loadLastClose, inferCurrency } from "@/lib/ohlcv";
+import { loadPositionQuote } from "@/lib/ohlcv";
 import { tickerSlug } from "@/lib/orders";
 import { tickerName } from "@/lib/tickers";
 
@@ -22,16 +22,18 @@ type Row = {
   currency: string | null;
 };
 
+// loadPositionQuote returns the close already in an ISO currency — an LSE
+// listing's pence quote is pounds by the time it lands here, so `close` and
+// `value` are both in `currency` and never 100x the truth.
 const rows: Row[] = portfolio.positions.map((p) => {
-  const quote = loadLastClose(p.ticker, asOf);
-  const currency = inferCurrency(p.ticker);
+  const quote = loadPositionQuote(p.ticker, asOf);
   return {
     ticker: p.ticker,
     shares: p.shares,
-    close: quote?.close ?? null,
+    close: quote?.price ?? null,
     closeDate: quote?.date ?? null,
-    value: quote ? quote.close * p.shares : null,
-    currency,
+    value: quote ? quote.price * p.shares : null,
+    currency: quote?.currency ?? null,
   };
 });
 

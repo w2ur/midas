@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { inferCurrency, loadLastClose } from "@/lib/ohlcv";
+import { inferCurrency, loadLastClose, loadPositionQuote, quoteUnit } from "@/lib/ohlcv";
 
 describe("inferCurrency", () => {
   it("maps -USD / -EUR / -GBP suffix to the suffix currency", () => {
@@ -8,8 +8,15 @@ describe("inferCurrency", () => {
     expect(inferCurrency("XAU-GBP")).toBe("GBP");
   });
 
-  it("returns null for FX pairs (=X suffix)", () => {
-    expect(inferCurrency("EURUSD=X")).toBe(null);
+  it("resolves an FX pair to its quote leg from the vendor registry", () => {
+    // Was `null` while currency came from the suffix alone: no rule on the
+    // string "EURUSD=X" says which leg is quoted. data/tickers.json now
+    // carries the vendor's answer, and it is the SECOND leg — the same one
+    // engine.quotes resolves, so the site and the broker finally agree on
+    // how monsieur-forex's AUDUSD=X position is denominated.
+    expect(inferCurrency("EURUSD=X")).toBe("USD");
+    expect(inferCurrency("EURGBP=X")).toBe("GBP");
+    expect(inferCurrency("AUDUSD=X")).toBe("USD");
   });
 
   it("defaults to USD when no dot suffix is present", () => {
@@ -25,8 +32,18 @@ describe("inferCurrency", () => {
     expect(inferCurrency("SAN.MC")).toBe("EUR");
   });
 
-  it("maps London (.L) to GBP", () => {
+  it("maps London (.L) to GBP as an ISO code, but quotes it in pence", () => {
+    // The LSE quotes in pence. `GBp` is a unit, not a currency: the ISO code
+    // is GBP and the price carries the 1/100 (see loadPositionQuote).
+    expect(quoteUnit("HSBA.L")).toBe("GBp");
     expect(inferCurrency("HSBA.L")).toBe("GBP");
+  });
+
+  it("does not assume every .L ticker is sterling", () => {
+    // PHAG.L quotes in USD. No suffix rule can tell it from LLOY.L — this is
+    // exactly what the vendor registry layer exists to carry.
+    expect(inferCurrency("PHAG.L")).toBe("USD");
+    expect(inferCurrency("LLOY.L")).toBe("GBP");
   });
 
   it("maps Swiss (.SW) to CHF, Tokyo (.T) to JPY, Toronto (.TO) to CAD", () => {
@@ -43,6 +60,13 @@ describe("inferCurrency", () => {
 
   it("returns null for unknown exchange suffixes", () => {
     expect(inferCurrency("FOO.ZZ")).toBe(null);
+  });
+
+  it("maps the Nordic exchanges to their own currencies, not EUR", () => {
+    // .ST/.OL/.CO were EUR here and USD in the engine — neither is right.
+    expect(inferCurrency("VOLV-B.ST")).toBe("SEK");
+    expect(inferCurrency("EQNR.OL")).toBe("NOK");
+    expect(inferCurrency("NOVO-B.CO")).toBe("DKK");
   });
 
   it("consults data/ticker_currencies.json overrides first", () => {
@@ -71,5 +95,39 @@ describe("loadLastClose", () => {
   it("returns null when target date precedes the first row", () => {
     // OHLCV for AAPL begins well after 1900.
     expect(loadLastClose("AAPL", "1900-01-01")).toBe(null);
+  });
+
+  it("returns the RAW stored quote, pence included", () => {
+    // Deliberate: loadLastClose is the store reader. Normalisation is
+    // loadPositionQuote's job and happens in exactly one place.
+    const raw = loadLastClose("LLOY.L", "2030-01-01");
+    expect(raw).not.toBe(null);
+    if (raw === null) return;
+    expect(raw.close).toBeGreaterThan(50); // pence, ~116
+  });
+});
+
+describe("loadPositionQuote", () => {
+  it("divides a pence quote by 100 and labels it GBP", () => {
+    const raw = loadLastClose("LLOY.L", "2030-01-01");
+    const quote = loadPositionQuote("LLOY.L", "2030-01-01");
+    expect(raw).not.toBe(null);
+    expect(quote).not.toBe(null);
+    if (raw === null || quote === null) return;
+    expect(quote.currency).toBe("GBP");
+    expect(quote.price).toBeCloseTo(raw.close / 100, 10);
+    expect(quote.date).toBe(raw.date);
+  });
+
+  it("leaves a whole-unit quote alone", () => {
+    const raw = loadLastClose("AAPL", "2030-01-01");
+    const quote = loadPositionQuote("AAPL", "2030-01-01");
+    if (raw === null || quote === null) throw new Error("AAPL must be in the store");
+    expect(quote.currency).toBe("USD");
+    expect(quote.price).toBe(raw.close);
+  });
+
+  it("returns null for a ticker with no JSONL file", () => {
+    expect(loadPositionQuote("DOES-NOT-EXIST", "2030-01-01")).toBe(null);
   });
 });
