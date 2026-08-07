@@ -144,13 +144,17 @@ export function inferCurrency(ticker: string): string | null {
 }
 
 /**
- * A position's latest close, already denominated in an ISO currency.
+ * A position's latest close, denominated in an ISO currency.
  *
- * The one place on the site where a pence quote becomes pounds — mirroring
- * `engine.quotes.latest_price`, which is the one place in the engine. Before
- * this existed, PortfolioTable rendered `close * shares` labelled with the
- * suffix-guessed currency, so `world`'s 8 LLOY.L showed as GBP 932.80 rather
- * than GBP 9.33.
+ * Applies **no** scaling: since 2026-08-07 the store is ISO-denominated, the
+ * pence→pounds division having moved to ingest
+ * (`scripts.fetch_ohlcv._normalise_vendor_units`). This mirrors
+ * `engine.quotes.store_quote`. Scaling here now would divide every LSE
+ * position by 100 a second time — the mirror image of the original defect,
+ * where PortfolioTable rendered `world`'s 8 LLOY.L as GBP 932.80.
+ *
+ * It stays a named function rather than collapsing into `loadLastClose`
+ * because the currency label is the part callers must not hand-roll.
  */
 export function loadPositionQuote(
   ticker: string,
@@ -158,7 +162,5 @@ export function loadPositionQuote(
 ): { price: number; currency: string | null; date: string } | null {
   const row = loadLastClose(ticker, onOrBefore);
   if (row === null) return null;
-  const unit = quoteUnit(ticker);
-  const scale = unit === null ? 1 : (SUB_UNITS[unit]?.[1] ?? 1);
-  return { price: row.close * scale, currency: inferCurrency(ticker), date: row.date };
+  return { price: row.close, currency: inferCurrency(ticker), date: row.date };
 }

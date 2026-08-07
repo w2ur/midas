@@ -97,25 +97,31 @@ describe("loadLastClose", () => {
     expect(loadLastClose("AAPL", "1900-01-01")).toBe(null);
   });
 
-  it("returns the RAW stored quote, pence included", () => {
-    // Deliberate: loadLastClose is the store reader. Normalisation is
-    // loadPositionQuote's job and happens in exactly one place.
+  it("returns the stored quote, which is ISO-denominated", () => {
+    // Since 2026-08-07 the store holds pounds, not pence — the division moved
+    // to ingest (scripts/fetch_ohlcv._normalise_vendor_units). A Lloyds close
+    // above 50 would mean the store had reverted to pence.
     const raw = loadLastClose("LLOY.L", "2030-01-01");
     expect(raw).not.toBe(null);
     if (raw === null) return;
-    expect(raw.close).toBeGreaterThan(50); // pence, ~116
+    expect(raw.close).toBeGreaterThan(0.1);
+    expect(raw.close).toBeLessThan(50); // pounds, ~1.16
   });
 });
 
 describe("loadPositionQuote", () => {
-  it("divides a pence quote by 100 and labels it GBP", () => {
+  it("labels an LSE quote GBP without rescaling it", () => {
+    // The store is already pounds, so loadPositionQuote must pass the price
+    // through untouched. Scaling here again would divide every LSE position
+    // by 100 a second time — the mirror image of the original defect, and the
+    // exact regression this equality is here to catch.
     const raw = loadLastClose("LLOY.L", "2030-01-01");
     const quote = loadPositionQuote("LLOY.L", "2030-01-01");
     expect(raw).not.toBe(null);
     expect(quote).not.toBe(null);
     if (raw === null || quote === null) return;
     expect(quote.currency).toBe("GBP");
-    expect(quote.price).toBeCloseTo(raw.close / 100, 10);
+    expect(quote.price).toBe(raw.close);
     expect(quote.date).toBe(raw.date);
   });
 
