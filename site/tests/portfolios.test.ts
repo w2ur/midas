@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { loadPortfolioSnapshots } from "@/lib/portfolios";
+import {
+  isMixedCurrency,
+  loadPortfolioSnapshots,
+  positionWeights,
+} from "@/lib/portfolios";
 import { DATA_DIR } from "@/lib/paths";
 
 describe("loadPortfolioSnapshots", () => {
@@ -48,5 +52,77 @@ describe("loadPortfolioSnapshots", () => {
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Weight column — cross-currency sums (2026-08-07 review, W7.2)
+// ---------------------------------------------------------------------------
+
+describe("positionWeights", () => {
+  it("computes share-of-total for a single-currency book", () => {
+    expect(
+      positionWeights([
+        { value: 750, currency: "EUR" },
+        { value: 250, currency: "EUR" },
+      ]),
+    ).toEqual([75, 25]);
+  });
+
+  it("returns null for every row once the book mixes currencies", () => {
+    // `world` really does hold CHF, EUR and GBP at once. Summing them made
+    // every row's weight wrong, not only the foreign one's.
+    expect(
+      positionWeights([
+        { value: 750, currency: "EUR" },
+        { value: 250, currency: "GBP" },
+      ]),
+    ).toEqual([null, null]);
+  });
+
+  it("excludes unpriced rows from the denominator without killing the column", () => {
+    expect(
+      positionWeights([
+        { value: 750, currency: "EUR" },
+        { value: 250, currency: "EUR" },
+        { value: null, currency: "EUR" },
+      ]),
+    ).toEqual([75, 25, null]);
+  });
+
+  it("suppresses weights when nothing is valued", () => {
+    expect(positionWeights([{ value: null, currency: "EUR" }])).toEqual([null]);
+  });
+
+  it("treats an unlabelled value as its own currency bucket", () => {
+    // A value whose currency could not be resolved cannot be proven to share
+    // a unit with the others — fail closed, same as the engine.
+    expect(
+      positionWeights([
+        { value: 750, currency: "EUR" },
+        { value: 250, currency: null },
+      ]),
+    ).toEqual([null, null]);
+  });
+});
+
+describe("isMixedCurrency", () => {
+  it("is false for one currency and true for two", () => {
+    expect(isMixedCurrency([{ value: 1, currency: "EUR" }])).toBe(false);
+    expect(
+      isMixedCurrency([
+        { value: 1, currency: "EUR" },
+        { value: 1, currency: "CHF" },
+      ]),
+    ).toBe(true);
+  });
+
+  it("ignores unpriced rows", () => {
+    expect(
+      isMixedCurrency([
+        { value: 1, currency: "EUR" },
+        { value: null, currency: "GBP" },
+      ]),
+    ).toBe(false);
   });
 });

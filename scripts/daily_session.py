@@ -889,14 +889,18 @@ def step_build_manager_prompt(
         for pos in portfolio.get("positions", []):
             scope.add(pos["ticker"])
 
-    price_lookup: dict[str, tuple[float, str]] = {}
+    # (close, as_of, quote currency). The currency is not decoration: the
+    # Manager's prompt renders these next to a labelled cash line, and an
+    # unlabelled foreign close reads as the book's own currency (W7.3).
+    price_lookup: dict[str, tuple[float, str, str]] = {}
     for ticker in scope:
         if resolved_store is not None:
             close = _lcob(ticker, trade_date, store=resolved_store)
         else:
             close = _lcob(ticker, trade_date)
-        if close is not None:
-            price_lookup[ticker] = (close, trade_date.isoformat())
+        ccy = ticker_currency(ticker)
+        if close is not None and ccy is not None:
+            price_lookup[ticker] = (close, trade_date.isoformat(), ccy)
 
     active_triggers = list_pending(
         pending_dir=_trigger_channel_dir(alloc.channels_prefix, "pending")
