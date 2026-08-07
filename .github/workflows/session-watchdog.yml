@@ -74,7 +74,26 @@ jobs:
                      2>/dev/null | head -n1) || existing=""
 
           echo "Looking for weekday session commit for $yesterday..."
-          if git log origin/main --since="$yesterday 00:00 UTC" --until="$yesterday 23:59 UTC" --pretty=%s | grep -Eq "$pattern"; then
+
+          # Materialise the subjects to a file, then grep the file. NOT
+          # `git log ... | grep -Eq`: `grep -q` exits the instant it matches,
+          # closing the pipe. If `git log` is still walking history at that
+          # moment its next write hits the closed pipe and it dies of SIGPIPE
+          # (141); under `set -o pipefail` that becomes the pipeline's status,
+          # so the `if` reads FALSE and a commit that IS there is reported
+          # missing.
+          #
+          # It is a race on "has git log finished walking yet", which is why
+          # this misfired intermittently rather than daily: the checkout above
+          # is `fetch-depth: 50`, so the walk is short and usually wins.
+          # Measured under bash against this repo's full history (2026-08-04,
+          # one matching subject provably present), the piped form reported
+          # missing in 20 of 20 runs; against a 3-commit fixture it reported
+          # correctly every time. tests/test_ci_guards.py pins both the shape
+          # and the behaviour, on a fixture sized to lose the race.
+          subjects_file="${RUNNER_TEMP:-/tmp}/session-subjects.txt"
+          git log origin/main --since="$yesterday 00:00 UTC" --until="$yesterday 23:59 UTC" --pretty=%s > "$subjects_file"
+          if grep -Eq "$pattern" "$subjects_file"; then
             echo "Found expected weekday session commit for $yesterday."
             # The session landed after a previous run flagged it (a backfill, or
             # a late auto-merge). Retract the alert rather than leaving a

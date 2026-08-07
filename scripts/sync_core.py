@@ -73,6 +73,9 @@ LIVE_ONLY_TESTS = {
     # Drives scripts/bootstrap_venv.sh, live sandbox infrastructure. CORE_SCRIPTS
     # ships .py modules only, so the shell script has no route into core.
     "test_bootstrap_venv.py",
+    # Reads this repo's .github/workflows/ and backtester/, neither of which
+    # exists in core (core ships its own .github/ as a core-native file).
+    "test_ci_guards.py",
     # NOTE: the 21 formerly-live-only cast-coupled tests were reclaimed into
     # core in SP5. They ship to core byte-identical; the ones that assert on the
     # live cast carry @pytest.mark.live_cast and skip on the demo desk (see

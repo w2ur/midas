@@ -1,5 +1,9 @@
 name: tests
 
+# Two suites, two jobs: `pytest` (Python engine + scripts + backtester) and
+# `site-tests` (the Astro site's vitest suite). Both run on every trigger
+# below; neither gates the other.
+#
 # Runs the full pytest suite (incl. the import-smoke guard) on every pull
 # request AND on every code-bearing push to `main`. The PR trigger is the
 # pre-merge gate; the push trigger closes the hole behind it — a commit pushed
@@ -75,3 +79,41 @@ jobs:
 
       - name: Run test suite
         run: pytest -q
+
+  # The site's 197 vitest tests had never run in CI: no node job existed in any
+  # workflow, so `site/tests/ohlcv.test.ts`'s double-divide regression (which
+  # reads the real committed OHLCV store), the WCAG contrast guard, the
+  # ledger-notes anchor checker and the hub-feed projection tests were all
+  # green-by-never-executing. They ran only when someone typed `npm test` in
+  # `site/`.
+  #
+  # No per-job path filter, for the same reason the pytest job uses
+  # `paths-ignore` rather than an allowlist: the site suite reads committed
+  # engine artifacts (`data/market/ohlcv`, `data/ticker_currencies.json`,
+  # METHODOLOGY.md anchors), so "site tests only matter when site/** changes"
+  # is false. It is a ~40s node job; running it on every trigger costs less
+  # than reasoning about which paths can reach it.
+  site-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Run site test suite
+        working-directory: site
+        run: npm test

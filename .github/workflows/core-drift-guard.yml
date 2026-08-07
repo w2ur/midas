@@ -3,6 +3,14 @@ on:
   schedule:
     - cron: "17 6 * * 1"      # Mondays 06:17 UTC — after the weekly universe refresh
   workflow_dispatch:
+
+# issues: write — this guard was red three consecutive Mondays while the public
+# mirror shipped stale engine code and nothing consumed the failure. A red X on
+# a weekly cron is invisible by Wednesday.
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   drift:
     runs-on: ubuntu-latest
@@ -19,3 +27,24 @@ jobs:
           python-version: "3.12"
       - name: Assert code manifest is in sync
         run: python scripts/sync_core.py check --core "$GITHUB_WORKSPACE/_core"
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "core-drift-guard: midas-core has drifted from midas-live"
+          body: |
+            The weekly `core-drift-guard` run found the midas-core mirror out of
+            sync with this repo's manifest, or could not complete the check.
+
+            **Where to look**
+            - Engine or orchestration edited directly in the midas-core checkout
+              instead of here. Live is the source of truth; core is a mirror.
+            - A change landed here without the follow-up
+              `python scripts/sync_core.py apply --core <checkout>`.
+            - `scripts/sync_core.py check` output in the run log names the
+              diverging files.
+
+            The public mirror ships whatever is on midas-core's `main`, so this
+            staying open means forks are installing stale engine code.

@@ -46,6 +46,7 @@ on:
 
 permissions:
   contents: write  # needed to commit OHLCV/portfolio updates back to main
+  issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
 concurrency:
   group: resweep-held-tickers
@@ -94,3 +95,25 @@ jobs:
           DATE=$(date -u +%F)
           git commit -m "[data] ${DATE} held-ticker resweep"
           git push
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "resweep-held-tickers: split detection did not run"
+          body: |
+            The weekly `resweep-held-tickers` run failed. This is the ONLY
+            scheduled trigger for corporate-action detection: the nightly
+            `fetch-ohlcv` run uses a 1-day revision window, which structurally
+            cannot give `detect_split` the historical overlap it needs.
+
+            While this is failing, a real split silently leaves a stale share
+            count valued against a post-split price — the book is mis-valued by
+            the split ratio, and nothing else in the pipeline will notice.
+
+            **Where to look**
+            - The resweep step's log for a Yahoo failure.
+            - A lost push: this job's commit can carry `data/portfolios/`
+              adjustments from `PortfolioManager.apply_split`, so a discarded
+              push discards a real portfolio correction.

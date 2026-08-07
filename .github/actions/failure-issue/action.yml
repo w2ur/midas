@@ -1,0 +1,94 @@
+name: Failure issue
+description: >
+  File (or reuse) a persistent GitHub issue when a scheduled job fails, and
+  close it again once the same job succeeds.
+
+# Why this exists: a red X plus a workflow-failure email is not a closed loop.
+# `session-watchdog` learned that the hard way (2026-08-01: the job correctly
+# caught a missing session and the alert went unconsumed for a day). Failures
+# in the *other* scheduled writers had no consumer at all — `core-drift-guard`
+# was red three consecutive Mondays while the public mirror shipped stale
+# engine code, and nobody noticed until the drift self-healed.
+#
+# Idempotency is per CAUSE, not per date. The watchdog keys its title on the
+# date because each missed session is a separate fact; a cron job that has been
+# failing for five days is one fact, and five issues for it is the alert-
+# fatigue machine this is meant to replace. So: an open issue with the same
+# title gets a comment recording the new occurrence, and only the first failure
+# creates one. It closes on the next success, because an issue tracker nobody
+# trusts to be current is the same dead end as an unread email.
+
+inputs:
+  title:
+    description: "Issue title. Identifies the cause; must be stable across recurrences."
+    required: true
+  body:
+    description: "Markdown body used when the issue is first created."
+    required: true
+  outcome:
+    description: "job.status of the job being reported on: success | failure | cancelled."
+    required: true
+  token:
+    description: "Token with issues: write on this repository."
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: File or close the failure issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TITLE: ${{ inputs.title }}
+        BODY: ${{ inputs.body }}
+        OUTCOME: ${{ inputs.outcome }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        # No `-e`: this step reports on another job's outcome and must never
+        # become the reason a run's verdict changes. Every gh call is
+        # individually tolerant; the step always exits 0.
+        set -uo pipefail
+
+        if [[ "$OUTCOME" == "cancelled" ]]; then
+          echo "Job was cancelled — not an alertable failure."
+          exit 0
+        fi
+
+        # Exact-title match, not the fuzzy search ranking: `gh issue list
+        # --search` is a relevance query and will happily return a different
+        # issue whose title merely scores well.
+        existing=$(gh issue list --state open --search "in:title \"$TITLE\"" \
+                     --json number,title \
+                     --jq ".[] | select(.title == \"$TITLE\") | .number" \
+                   2>/dev/null | head -n1) || existing=""
+
+        if [[ "$OUTCOME" == "success" ]]; then
+          if [[ -n "$existing" ]]; then
+            gh issue close "$existing" \
+              --comment "Recovered: a later run of this job succeeded ([run]($RUN_URL)). Closed automatically." \
+              || echo "::warning::Could not close issue #$existing."
+            echo "Closed issue #$existing after recovery."
+          else
+            echo "Job succeeded and no issue is open. Nothing to do."
+          fi
+          exit 0
+        fi
+
+        if [[ -n "$existing" ]]; then
+          gh issue comment "$existing" \
+            --body "Still failing: [another run]($RUN_URL) of this job failed." \
+            || echo "::warning::Could not comment on issue #$existing."
+          echo "Recorded a recurrence on issue #$existing."
+          exit 0
+        fi
+
+        # --body-file, not --body "$(...)": an apostrophe inside a heredoc
+        # nested in a command substitution is a bash syntax error (the lesson
+        # from session-watchdog's own issue body).
+        body_file="${RUNNER_TEMP:-/tmp}/failure-issue.md"
+        printf '%s\n\n---\n\nDetected by [this run](%s).\n' "$BODY" "$RUN_URL" > "$body_file"
+
+        url=$(gh issue create --title "$TITLE" --body-file "$body_file" | tail -n1) \
+          || { echo "::warning::Could not file an issue for: $TITLE"; exit 0; }
+        echo "Filed $url"

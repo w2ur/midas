@@ -29,8 +29,29 @@ the `Successfully installed …` line of a green CI run), and commit both files.
 
 ## Testing
 ```bash
-pytest tests/ -v
+pytest -q            # tests/ AND backtester/tests — both are in `testpaths`
+cd site && npm test  # 197 vitest tests
 ```
+
+`.github/workflows/tests.yml` runs **two** jobs: `pytest` and `site-tests`.
+Neither is path-filtered per job — the site suite reads committed engine
+artifacts (the OHLCV store, `data/ticker_currencies.json`, METHODOLOGY.md
+anchors), so "site tests only matter when `site/**` changes" is false. Both had
+coverage that existed but never executed: the site suite had no CI job at all
+(its double-divide regression and the WCAG contrast guard were green by never
+running), and `backtester/tests` sat outside `testpaths`. A testpaths entry
+matching nothing is skipped silently, which is what lets this same
+`pyproject.toml` sync to midas-core, where no `backtester/` exists.
+
+**Scheduled workflows alert through `.github/actions/failure-issue`.** A red X
+plus a failure email is not a closed loop — `core-drift-guard` was red three
+consecutive Mondays while the public mirror shipped stale engine code. The
+composite action files a GitHub issue on failure, comments on the existing one
+instead of filing duplicates (idempotent per *cause*, not per date — a job
+failing five days running is one fact), and closes it on the next success.
+Wired into `core-drift-guard`, `fetch-ohlcv`, `fetch-sentiment`,
+`refresh-universes`, `resweep-held-tickers`; `session-watchdog` keeps its own
+per-date variant because each missed session is a separate fact.
 
 ## Dashboard
 ```bash
