@@ -18,8 +18,13 @@ import type { AgentId } from "./roster";
  */
 
 export interface LedgerNote {
-  /** The order whose confirmed fill never reached the portfolio ledger. */
-  orderId: string;
+  /**
+   * The single order at the heart of the incident, where there is one.
+   * Omitted when the incident spans several fills (the 2026-08-07 quote-
+   * currency reconciliation touched up to 13 in one book), in which case the
+   * count belongs in `summary` and the enumeration on /methodology.
+   */
+  orderId?: string;
   /** Short, page-safe label for a compact marker (leaderboard tile, badge). */
   label: string;
   /** Stand-alone paragraph explaining the artifact, for the agent's own dossier. */
@@ -41,6 +46,38 @@ export const LEDGER_NOTES: Partial<Record<AgentId, LedgerNote>> = {
       "reconciled: the lost sale was inserted, the 2026-06-24 sale it invalidated was voided, " +
       "and the return shown above already reflects the corrected book.",
     methodologyHref: "/methodology#lost-fill-2026-05-21",
+  },
+  world: {
+    orderId: "ord_2026-08-05_world_001",
+    label: "Ledger artifact — reconciled 2026-08-07",
+    summary:
+      "The London Stock Exchange quotes in pence, and the broker read those pence as pounds. " +
+      "This book's BUY of 8 LLOY.L at 116.60 (2026-08-05) was therefore paid for at €1,090.19 " +
+      "instead of €10.90 — a factor of 100 — and every valuation after it carried the same " +
+      "error. On 2026-08-07 the fill was reconciled and €1,079.29 of cash restored; the return " +
+      "shown above already reflects the corrected book.",
+    methodologyHref: "/methodology#sweep-and-restatement-2026-08-07",
+  },
+  goldfinger: {
+    label: "Ledger artifact — reconciled 2026-08-07",
+    summary:
+      "A ticker's currency used to be guessed from its suffix, and `.L` is not uniformly " +
+      "sterling: this book's silver (PHAG.L) and oil (CRUD.L) quote in US dollars but were " +
+      "bought and sold as though they quoted in pounds. Eight fills between 2026-04-20 and " +
+      "2026-07-23 moved the wrong amount of cash. On 2026-08-07 they were reconciled and " +
+      "€676.35 restored; the return shown above already reflects the corrected book.",
+    methodologyHref: "/methodology#sweep-and-restatement-2026-08-07",
+  },
+  "monsieur-forex": {
+    label: "Ledger artifact — reconciled 2026-08-07",
+    summary:
+      "A currency pair is quoted in its second leg — EURJPY=X in yen, USDCAD=X in Canadian " +
+      "dollars, USDCHF=X in francs, EURGBP=X in sterling — but the broker converted all four " +
+      "as US dollars. Thirteen fills between 2026-05-18 and 2026-08-05 moved the wrong amount " +
+      "of cash, the largest by a factor of about 160. On 2026-08-07 they were reconciled and " +
+      "€21.98 restored — small only because the errors ran in both directions and largely " +
+      "cancelled; the return shown above already reflects the corrected book.",
+    methodologyHref: "/methodology#sweep-and-restatement-2026-08-07",
   },
 };
 
