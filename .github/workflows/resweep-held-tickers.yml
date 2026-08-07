@@ -78,23 +78,20 @@ jobs:
       - name: Resweep held tickers (split detection)
         run: python scripts/fetch_ohlcv.py --resweep-held --history-days 90
 
+      - name: Resolve commit date
+        id: today
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      # Touches two directories: data/market/ohlcv/ (the resweep itself) and
+      # data/portfolios/ (only when a split was actually detected and a held
+      # position adjusted — most weeks this is empty). That second one is why
+      # this job of all four most needs the retry: a lost push here silently
+      # discards a share and cost-basis correction for a week.
       - name: Commit and push updates
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Touches two directories: data/market/ohlcv/ (the resweep itself)
-          # and data/portfolios/ (only when a split was actually detected and
-          # a held position adjusted — most weeks this is empty).
-          if [[ -z "$(git status --porcelain data/market/ohlcv/ data/portfolios/)" ]]; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
-          git add data/market/ohlcv/ data/portfolios/
-          DATE=$(date -u +%F)
-          git commit -m "[data] ${DATE} held-ticker resweep"
-          git push
+        uses: ./.github/actions/push-with-retry
+        with:
+          paths: data/market/ohlcv/ data/portfolios/
+          message: "[data] ${{ steps.today.outputs.date }} held-ticker resweep"
 
       - name: Report outcome
         if: always()

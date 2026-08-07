@@ -1,0 +1,87 @@
+name: Push with rebase retry
+description: >
+  Commit staged changes and push to main, rebasing and retrying when another
+  scheduled writer got there first.
+
+# Why this exists: four scheduled workflows pushed to main with a bare
+# `git push` and no retry — fetch-ohlcv, fetch-sentiment, refresh-universes and
+# resweep-held-tickers. GitHub's scheduler is late by 42 minutes to 6 hours and
+# never on time (measured across this repo's run history), so their nominal
+# separation guarantees nothing about the order they actually land in. When two
+# collide, the loser's push is rejected, the step fails, and its commit dies
+# with the runner.
+#
+# The worst case is `resweep-held-tickers`: its commit can carry a
+# corporate-action adjustment applied to real holdings by
+# `PortfolioManager.apply_split`. A lost push there silently discards a share
+# and cost-basis correction for a week, until the next Monday's run.
+#
+# `scripts/refresh_leaderboard._push_with_rebase_retry` and
+# `scripts/check_triggers` already did this in Python. This is the same
+# contract for the workflows that only ever touch git from shell.
+#
+# Rebase, not merge: these are data commits on top of main, and a merge commit
+# per collision would litter the history that `git log --grep='[restate]'` and
+# the session-integrity guard read.
+
+inputs:
+  paths:
+    description: "Paths to `git add`. Nothing is committed if these are clean."
+    required: true
+  message:
+    description: "Commit message."
+    required: true
+  attempts:
+    description: "Total push attempts, including the first."
+    required: false
+    default: "3"
+
+outputs:
+  pushed:
+    description: '"true" when a commit was created and pushed, "false" when there was nothing to commit.'
+    value: ${{ steps.push.outputs.pushed }}
+
+runs:
+  using: composite
+  steps:
+    - id: push
+      shell: bash
+      env:
+        INPUT_PATHS: ${{ inputs.paths }}
+        INPUT_MESSAGE: ${{ inputs.message }}
+        INPUT_ATTEMPTS: ${{ inputs.attempts }}
+      run: |
+        set -euo pipefail
+
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+        if [[ -z "$(git status --porcelain -- $INPUT_PATHS)" ]]; then
+          echo "Nothing to commit under: $INPUT_PATHS"
+          echo "pushed=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        git add -- $INPUT_PATHS
+        git commit -m "$INPUT_MESSAGE"
+
+        # A shallow checkout cannot rebase onto a fetched main. Deepen once,
+        # up front, rather than discovering it on the retry path — where the
+        # failure would look like a rebase conflict instead of a missing base.
+        git fetch --unshallow origin main 2>/dev/null || git fetch origin main
+
+        for attempt in $(seq 1 "$INPUT_ATTEMPTS"); do
+          if git push origin HEAD:main; then
+            echo "Pushed on attempt ${attempt}."
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$attempt" -eq "$INPUT_ATTEMPTS" ]]; then
+            break
+          fi
+          echo "Push rejected (attempt ${attempt}/${INPUT_ATTEMPTS}) — another writer landed first; rebasing."
+          git pull --rebase origin main
+        done
+
+        echo "::error::Push to main failed after ${INPUT_ATTEMPTS} attempts. This commit is lost with the runner." >&2
+        exit 1

@@ -217,9 +217,22 @@ def apply(core: Path, root: Path = LIVE_ROOT) -> None:
 
 
 def check(core: Path, root: Path = LIVE_ROOT) -> list[Path]:
+    """Files that differ between live and core, over the FULL apply manifest.
+
+    Iterates `apply_manifest`, not `code_manifest` (2026-08-07 review, W2.9).
+    `apply` copies the generic data files — `data/ticker_currencies.json`,
+    `data/tickers.json`, the strategy and universe JSON — and `check` did not
+    look at them, so the two halves of the mirror contract disagreed about
+    what the mirror contains. Those two ticker maps are currency-resolution
+    **layers 1 and 2**: a fork resolving a ticker through a stale copy of them
+    prices it in the wrong currency, which is the 2026-08-07 defect exactly.
+    They were the least-guarded files in the manifest and the most consequential.
+    """
     drift: list[Path] = []
-    for rel in code_manifest(root):
+    for rel in apply_manifest(root):
         src, dst = root / rel, core / rel
+        if not src.exists():
+            continue  # a glob that matched nothing here is not core's drift
         if not dst.exists() or not filecmp.cmp(src, dst, shallow=False):
             drift.append(rel)
     return drift
@@ -239,11 +252,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     drift = check(core)
     if drift:
-        print(f"[sync_core] DRIFT: {len(drift)} code file(s) differ:", file=sys.stderr)
+        print(
+            f"[sync_core] DRIFT: {len(drift)} manifest file(s) differ:",
+            file=sys.stderr,
+        )
         for rel in drift:
             print(f"  {rel}", file=sys.stderr)
         return 1
-    print("[sync_core] in sync (code manifest matches)")
+    print("[sync_core] in sync (apply manifest matches)")
     return 0
 
 
