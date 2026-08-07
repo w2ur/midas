@@ -212,6 +212,9 @@ def test_cast_tests_reclaimed_into_manifest():
         "test_rails_live_coverage.py",
         # Drives scripts/check_append_only.py, a live-repo CI tool.
         "test_append_only_gate.py",
+        # Drives scripts/prompt_hash.py against docs/triggers/, both live-desk
+        # RemoteTrigger infrastructure that core does not carry.
+        "test_prompt_hash.py",
     }
     # All reclaimed tests now ship in the code manifest.
     manifest_names = {p.name for p in sync_core.code_manifest()}

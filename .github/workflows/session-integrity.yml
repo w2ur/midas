@@ -2,7 +2,10 @@ name: session-integrity
 
 # Enforces the load-bearing pipeline rules documented in CLAUDE.md:
 #  - A daily-session commit that publishes posts/blog/output MUST also
-#    rewrite agent journals (Step 9) and refresh baselines (Step 9a).
+#    rewrite agent journals (Step 8) and refresh baselines (Step 9).
+#    Step numbers match docs/triggers/weekday-session.md — the prose an
+#    operator reads next after this error. They disagreed until 2026-08-07,
+#    so the two diagnosis paths pointed at different steps.
 #  - A weekend-refresh commit MUST update data/baselines/ AND
 #    data/leaderboard/current.json.
 #  - A session commit that authors real manager orders (data/orders/manager-outbox/)
@@ -201,11 +204,11 @@ jobs:
 
           fail=0
           if [[ $touches_journals -eq 0 ]]; then
-            echo "::error::Session commit publishes posts/blog/output but does NOT rewrite data/agent_memory/*.md (Step 9 skipped)."
+            echo "::error::Session commit publishes posts/blog/output but does NOT rewrite data/agent_memory/*.md (Step 8 skipped)."
             fail=1
           fi
           if [[ $touches_baselines -eq 0 ]]; then
-            echo "::error::Session commit publishes posts/blog/output but does NOT refresh data/baselines/ (Step 9a skipped)."
+            echo "::error::Session commit publishes posts/blog/output but does NOT refresh data/baselines/ (Step 9 skipped)."
             fail=1
           fi
           # current.json is DERIVED, self-healing state — the watcher refreshes it
