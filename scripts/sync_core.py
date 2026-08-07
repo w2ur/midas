@@ -87,6 +87,9 @@ LIVE_ONLY_TESTS = {
     # Drives scripts/check_append_only.py, live-repo CI infrastructure that is
     # not in CORE_SCRIPTS.
     "test_append_only_gate.py",
+    # Same shape: drives scripts/check_session_freshness.py, the session-integrity
+    # guard. Live CI infrastructure, not in CORE_SCRIPTS.
+    "test_session_freshness.py",
     # Imports app/, the Streamlit dashboard. Core ships the engine and the
     # orchestration, not this desk's local UI.
     "test_app_formatting.py",

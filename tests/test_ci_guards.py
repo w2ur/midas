@@ -241,6 +241,11 @@ ALERTING_WORKFLOWS = [
     "fetch-sentiment.yml",
     "refresh-universes.yml",
     "resweep-held-tickers.yml",
+    # Not scheduled, but the same "a red X is not a consumer" problem: it runs
+    # on every push to main, and on 2026-08-07 it went red on the session
+    # commit with no issue filed and nothing to read but the X. Its three jobs
+    # guard published data — the least visible place for silence to sit.
+    "session-integrity.yml",
 ]
 
 
@@ -332,21 +337,40 @@ def test_alerting_workflows_report_their_outcome():
         workflow = yaml.safe_load(
             (REPO_ROOT / ".github" / "workflows" / name).read_text()
         )
-        job = next(iter(workflow["jobs"].values()))
+        # The reporter may live in any job, not only the first: a multi-job
+        # workflow reports once from a trailing job that `needs` the others,
+        # because one red run is one fact and three issues for it is the
+        # alert-fatigue machine this action exists to replace.
         reporters = [
-            s
+            (job_name, s)
+            for job_name, job in workflow["jobs"].items()
             for s in job["steps"]
             if s.get("uses") == "./.github/actions/failure-issue"
         ]
         assert len(reporters) == 1, f"{name} does not report its outcome exactly once"
-        step = reporters[0]
+        job_name, step = reporters[0]
         # `if: always()` — without it the step is skipped on the failure it exists to report.
         assert step.get("if") == "always()", (
             f"{name}'s reporter is conditional on success"
         )
-        assert step["with"]["outcome"] == "${{ job.status }}", (
-            f"{name} reports a hardcoded outcome"
-        )
+
+        outcome = step["with"]["outcome"]
+        guarded_jobs = set(workflow["jobs"]) - {job_name}
+        if guarded_jobs:
+            # A dedicated reporting job's own `job.status` is always success —
+            # it would report green on every red run. It must aggregate the
+            # jobs it watches, and must actually depend on all of them or it
+            # races them to the finish.
+            assert "needs.*.result" in outcome, (
+                f"{name}'s reporter job reports its own status, not the jobs it watches"
+            )
+            declared = workflow["jobs"][job_name].get("needs") or []
+            assert set(declared) == guarded_jobs, (
+                f"{name}'s reporter waits on {sorted(declared)}, "
+                f"not on {sorted(guarded_jobs)}"
+            )
+        else:
+            assert outcome == "${{ job.status }}", f"{name} reports a hardcoded outcome"
 
         # `issues: write` at workflow level, or gh 403s and the alert is lost.
         assert workflow["permissions"]["issues"] == "write", (
