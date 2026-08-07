@@ -158,7 +158,7 @@ def manager_env(midas_data_root, monkeypatch):
     in the real data dirs.
     """
     import engine.orders as orders_mod
-    import engine.paper_broker as broker_mod
+    import engine.quotes as quotes_mod
     import scripts.daily_session as session_mod
 
     cfg = get_config()
@@ -191,8 +191,9 @@ def manager_env(midas_data_root, monkeypatch):
     portfolios = midas_data_root / "data" / "portfolios"
     portfolios.mkdir(parents=True)
 
-    # Broker path constants.
-    monkeypatch.setattr(broker_mod, "_TICKER_CURRENCY_OVERRIDES", None)
+    # Broker path constants. The ticker-currency cache moved to engine.quotes
+    # when currency resolution left the execution layer.
+    monkeypatch.setattr(quotes_mod, "_TICKER_CURRENCY_OVERRIDES", None)
 
     # Orders module dirs (default channel + manager channel).
 
