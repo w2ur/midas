@@ -223,6 +223,9 @@ def test_cast_tests_reclaimed_into_manifest():
         "test_rails_live_coverage.py",
         # Drives scripts/check_append_only.py, a live-repo CI tool.
         "test_append_only_gate.py",
+        # Drives scripts/check_session_freshness.py, the same shape: a
+        # live-repo CI tool backing session-integrity, absent from CORE_SCRIPTS.
+        "test_session_freshness.py",
         # Drives scripts/prompt_hash.py against docs/triggers/, both live-desk
         # RemoteTrigger infrastructure that core does not carry.
         "test_prompt_hash.py",
@@ -304,3 +307,48 @@ def test_check_iterates_the_full_apply_manifest(tmp_path):
     (core / doctored).write_text('{"PROBE": {"currency": "XXX"}}', encoding="utf-8")
 
     assert sync_core.check(core) == [doctored]
+
+
+def test_no_synced_test_imports_a_live_only_script():
+    """A test that ships to core must not import a script that does not.
+
+    `LIVE_ONLY_TESTS` is hand-maintained, so the coupling it encodes — "this
+    test drives a script core has no copy of" — is only as good as whoever last
+    edited the set remembered to be. Every entry is discoverable from the
+    imports instead, so discover it: a synced test importing `scripts.foo`
+    where `foo.py` is absent from `CORE_SCRIPTS` is an ImportError in the
+    public repo's suite, and the live suite is structurally unable to see it.
+
+    Found the real thing on its first run: `test_session_freshness.py` shipped
+    while `check_session_freshness.py` (live CI infrastructure, like
+    `check_append_only.py`) did not.
+    """
+    import ast
+
+    synced = {p.name for p in sync_core.code_manifest() if p.parts[0] == "tests"}
+    offenders: list[str] = []
+
+    for name in sorted(synced):
+        path = sync_core.LIVE_ROOT / "tests" / name
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        modules: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith(
+                "scripts."
+            ):
+                modules.add(node.module.split(".")[1])
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.startswith("scripts."):
+                        modules.add(alias.name.split(".")[1])
+        for module in sorted(modules):
+            if f"{module}.py" not in sync_core.CORE_SCRIPTS:
+                offenders.append(
+                    f"{name} imports scripts.{module}, not in CORE_SCRIPTS"
+                )
+
+    assert offenders == [], (
+        "these tests would ImportError in midas-core — add them to "
+        "LIVE_ONLY_TESTS, or add the script to CORE_SCRIPTS:\n  "
+        + "\n  ".join(offenders)
+    )

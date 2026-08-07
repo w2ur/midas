@@ -21,19 +21,33 @@ describe("cadenceStats", () => {
     expect(cadenceStats().totalFills).toBe(expected);
   });
 
-  // Pinned literal — this is deliberate (see cadence.ts module doc): if a
-  // data refresh changes the roster fill count, this test MUST fail so the
-  // homepage/methodology prose gets regenerated rather than going stale.
-  it("pins the current roster fill count (216) so drift breaks the build", () => {
-    expect(cadenceStats().totalFills).toBe(216);
+  // These were exact literals (216 / 87 / 58 / a per-agent map) on the stated
+  // rationale that drift "MUST fail so the homepage/methodology prose gets
+  // regenerated rather than going stale". That rationale no longer holds:
+  // every consumer — PreRegistrationStatus, MethodologyFacts, oss-stats and
+  // the homepage — calls cadenceStats() at build time, so no figure is
+  // transcribed anywhere and none can go stale. What the pins actually did
+  // was go red on every session that filled a trade, days later, on an
+  // unrelated PR: `tests.yml` has `paths-ignore: data/**`, and a session
+  // commit's only footprint IS data/, so the suite that reads it never runs
+  // on the commit that moved it. 2026-08-07 left main red exactly this way.
+  //
+  // Floors instead, in the shape the Python side already uses for the same
+  // ledger (`test_rails_live_coverage.py`: `assert len(fills) > 100`). This
+  // is not a weaker test of a different thing — it is the right test of the
+  // real risk. The ledger only ever grows, so a *decrease* is the failure
+  // mode that has actually occurred here: the 2026-05-18..23 `commit_and_push`
+  // pathspec bug silently dropped fills for two months.
+  it("never regresses below the fills already published", () => {
+    expect(cadenceStats().totalFills).toBeGreaterThanOrEqual(226);
   });
 
   it("recomputes the session count directly from data/output/*.json", () => {
     expect(cadenceStats().sessions).toBe(listDates().length);
   });
 
-  it("pins the current session count (87)", () => {
-    expect(cadenceStats().sessions).toBe(87);
+  it("never regresses below the sessions already published", () => {
+    expect(cadenceStats().sessions).toBeGreaterThanOrEqual(88);
   });
 
   it("recomputes the distinct-days-with-a-fill count from trades.json dates", () => {
@@ -47,8 +61,8 @@ describe("cadenceStats", () => {
     expect(cadenceStats().daysWithFill).toBe(days.size);
   });
 
-  it("pins the current distinct-days-with-a-fill count (58)", () => {
-    expect(cadenceStats().daysWithFill).toBe(58);
+  it("never regresses below the fill-days already published", () => {
+    expect(cadenceStats().daysWithFill).toBeGreaterThanOrEqual(59);
   });
 
   it("reports fewer distinct fill-days than sessions — the desk is selective, not idle", () => {
@@ -63,22 +77,30 @@ describe("cadenceStats", () => {
     expect(s.perAgent.reduce((sum, a) => sum + a.fills, 0)).toBe(s.totalFills);
   });
 
-  // Pinned per-agent literals — the exact fill counts from the brief, recomputed
-  // AND pinned so a data refresh that changes any one of them breaks the build.
-  it("pins the current per-agent fill counts", () => {
-    const byId = Object.fromEntries(cadenceStats().perAgent.map((a) => [a.id, a.fills]));
-    expect(byId).toEqual({
+  // Per-agent floors, not an exact map. Strictly more sensitive than the
+  // roster-wide floor above: a session that adds fills to one book while
+  // silently dropping them from another can leave the total flat, and only a
+  // per-book comparison sees it. Ratchet these up when a floor becomes so
+  // stale it stops meaning anything; never edit one downward without an
+  // explanation of where the published fills went.
+  it("never regresses below the per-agent fills already published", () => {
+    const floors: Record<string, number> = {
       "steady-eddie-eur": 16,
       "steady-eddie-usd": 20,
-      "sharp-shooter-eur": 25,
-      "sharp-shooter-usd": 34,
-      "yolo-sapiens-eur": 19,
-      "yolo-sapiens-usd": 24,
+      "sharp-shooter-eur": 27,
+      "sharp-shooter-usd": 37,
+      "yolo-sapiens-eur": 20,
+      "yolo-sapiens-usd": 26,
       satoshi: 7,
       "monsieur-forex": 22,
       goldfinger: 18,
-      world: 31,
-    });
+      world: 33,
+    };
+    const byId = Object.fromEntries(cadenceStats().perAgent.map((a) => [a.id, a.fills]));
+    expect(Object.keys(byId).sort()).toEqual(Object.keys(floors).sort());
+    for (const [id, floor] of Object.entries(floors)) {
+      expect(byId[id], `${id} lost published fills`).toBeGreaterThanOrEqual(floor);
+    }
   });
 
   it("marks satoshi as the minimum-fill agent — the binding constraint on the pre-registered bar", () => {
@@ -89,10 +111,21 @@ describe("cadenceStats", () => {
   it("computes dormancy as calendar days between an agent's last fill and the asOf date", () => {
     const s = cadenceStats();
     const satoshi = s.perAgent.find((a) => a.id === "satoshi")!;
+
+    // asOf is the newest session on record, not a transcribed date — pinning
+    // it to a literal made this test fail on the next session that ran, for
+    // no defect. The arithmetic is what this test is about, so assert that.
+    expect(s.asOf).toBe(listDates()[listDates().length - 1]);
     expect(satoshi.lastFillDate).toBe("2026-06-04");
-    // asOf is pinned indirectly via the session-count test above (2026-08-05).
-    expect(s.asOf).toBe("2026-08-05");
-    expect(satoshi.daysDormant).toBe(62);
+
+    const expectedDays = Math.round(
+      (Date.parse(`${s.asOf}T00:00:00Z`) - Date.parse(`${satoshi.lastFillDate}T00:00:00Z`)) /
+        86_400_000,
+    );
+    expect(satoshi.daysDormant).toBe(expectedDays);
+    // Directional sanity: satoshi has not filled since June, so the gap only
+    // widens. A shrinking gap means a fill appeared in the past.
+    expect(satoshi.daysDormant!).toBeGreaterThanOrEqual(62);
   });
 
   it("agrees exactly with the orders outbox/inbox join — the ledger anomaly is closed", () => {

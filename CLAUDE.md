@@ -30,7 +30,7 @@ the `Successfully installed …` line of a green CI run), and commit both files.
 ## Testing
 ```bash
 pytest -q            # tests/ AND backtester/tests — both are in `testpaths`
-cd site && npm test  # 197 vitest tests
+cd site && npm test  # the vitest suite; `npm test` is the authority on the count
 ```
 
 `.github/workflows/tests.yml` runs **two** jobs: `pytest` and `site-tests`.
@@ -42,6 +42,29 @@ coverage that existed but never executed: the site suite had no CI job at all
 running), and `backtester/tests` sat outside `testpaths`. A testpaths entry
 matching nothing is skipped silently, which is what lets this same
 `pyproject.toml` sync to midas-core, where no `backtester/` exists.
+
+**The jobs are not path-filtered; the workflow is** (`paths-ignore: data/**`),
+and that gap has teeth because the site suite *reads* `data/`. A session
+commit's only footprint is `data/`, so the one commit class that changes what
+the site suite asserts is the one class that never runs it. Until 2026-08-07
+`site/tests/cadence.test.ts` pinned exact literals (216 fills / 87 sessions /
+58 fill-days / a per-agent map / a fixed `asOf`), so every session that filled
+a trade left `main` red — invisibly, until some unrelated PR ran `pull_request`
+(which has no path filter) and failed for reasons that had nothing to do with
+it. That is what happened to the 08-07 session: `main` sat red on `npm test`
+with nothing reporting it. The pins are now **floors**, matching what
+`tests/test_rails_live_coverage.py` already did for the same ledger
+(`assert len(fills) > 100`). This is not a weaker assertion of the same thing —
+it is the right assertion: the ledger only grows, so a *decrease* is the real
+failure mode, and it has occurred (the 2026-05-18..23 `commit_and_push`
+pathspec bug silently dropped fills for two months). Per-agent floors are kept
+alongside the roster-wide one because a session that adds fills to one book
+while dropping them from another leaves the total flat. Verified by deleting a
+single fill from `world`'s ledger: three tests fire. The pins' original
+rationale — "so the prose gets regenerated rather than going stale" — no longer
+applies at all: every consumer (`PreRegistrationStatus`, `MethodologyFacts`,
+`oss-stats`, the homepage) calls `cadenceStats()` at build time, so no cadence
+figure is transcribed anywhere.
 
 **Warnings are errors, with three named third-party exceptions** (`pyproject.toml`
 `filterwarnings`, 2026-08-07). The zero-warnings policy was being asserted, not
@@ -77,6 +100,21 @@ main, none of which existed as a standing gate before:
   booked at the *wrong notional*, which is what the quote-currency defect did to
   24 fills: every row present, joined cleanly, €2,057.65 wrong. The arithmetic is
   imported from `scripts/restate_valuations.py`, not reimplemented.
+- **baseline freshness** (`scripts/check_session_freshness.py`, 2026-08-07) —
+  the `check` job's Step 9 assertion. It used to grep the commit's changed-file
+  list for `^data/baselines/`, which is a proxy for the thing it cares about,
+  and the two came apart the same day the append-or-refuse contract landed:
+  `a4dc9dce2 [restate]` rebuilt every series that morning, so the evening
+  session's Step 9 ran against an already-current series, `merge_baseline_series`
+  correctly wrote nothing, and both this guard and the inline copy in
+  `auto-merge-session` failed a correct session. **The auto-merge one gates the
+  merge** — it was inert only because the direct push to main had already
+  succeeded. A diff cannot answer "did Step 9 run"; the published state can: a
+  genuine skip leaves the baselines *behind* the snapshots (the Apr 25 shape),
+  a correct no-op leaves them level, and a restatement may legitimately run
+  ahead, so the check is one-sided. Stdlib only, so no runner needs
+  `setup-python`. Calibrated by replaying the real `check` step against
+  `32038bcf8` — the commit that went red — and against a hand-broken copy of it.
 - **append-only** (`scripts/check_append_only.py`) — a dated row in
   `data/portfolios/*/snapshots.json` or `data/baselines/**` that already exists
   at `HEAD^` must be byte-identical at `HEAD`. A session correcting **its own**
@@ -135,8 +173,21 @@ composite action files a GitHub issue on failure, comments on the existing one
 instead of filing duplicates (idempotent per *cause*, not per date — a job
 failing five days running is one fact), and closes it on the next success.
 Wired into `core-drift-guard`, `fetch-ohlcv`, `fetch-sentiment`,
-`refresh-universes`, `resweep-held-tickers`; `session-watchdog` keeps its own
-per-date variant because each missed session is a separate fact.
+`refresh-universes`, `resweep-held-tickers`, and **`session-integrity`**;
+`session-watchdog` keeps its own per-date variant because each missed session is
+a separate fact.
+
+`session-integrity` is the one that is not scheduled, and it was added on
+2026-08-07 for the same reason the others were: it went red on main that
+evening and produced nothing but an X, found only because someone asked an
+unrelated question about the merge. Its three jobs read committed data, so
+silence there is the most expensive kind. It reports **once, from a trailing
+`alert` job** that `needs` the other three — a run where all three fail is
+still one fact, and the action is idempotent per cause, not per job. That job's
+own `job.status` is always `success` (it only reports), so the outcome is
+aggregated from `needs.*.result`; `tests/test_ci_guards.py` asserts the
+aggregation and the `needs` list, and all three of those assertions were
+confirmed capable of failing by breaking them one at a time.
 
 ## Dashboard
 ```bash
@@ -185,7 +236,7 @@ streamlit run app/main.py
 ## Repo Split (SP4 mirror + SP5 publish-prep)
 - **`w2ur/midas-core` (PUBLIC, MIT) is a mirror of this repo's engine + reusable orchestration + `examples/demo-desk`**, produced by `scripts/sync_core.py` — a dev/CI tool that is NEVER imported on the runtime path. `midas-live` (this repo) is the single source of truth and its runtime is unchanged by the split. Core-native files (`README.md`, `CONTRIBUTING.md`, `LICENSE`, `DISCLAIMER.md`, root `roster.yaml`, `.github/`, `.gitignore`) are edited directly in the midas-core checkout — they live outside the synced trees and sync never touches them.
 - **Discipline: edit engine/orchestration HERE, then `python scripts/sync_core.py apply --core <checkout>`; never hand-edit midas-core.** The `core-drift-guard` workflow (`.github/workflows/core-drift-guard.yml`, Mondays) asserts the code manifest stays byte-identical.
-- **Manifest** (in `scripts/sync_core.py`): core gets `engine/`, the **16** reusable scripts plus `scripts/__init__.py` (incl. `fetch_ohlcv.py`, added 2026-07-24 as the price-data bootstrap for forks — it also un-broke the `midas fetch-ohlcv` subcommand in core; `tests/test_cli.py` guards the CLI-map-vs-manifest coupling), `examples/demo-desk/` (now with a README documenting the roster.yaml schema + a verified Brain/Hands walkthrough, proven hermetically by `tests/test_demo_walkthrough.py`), generic data (`data/strategies`, `data/universes`, ticker maps), and **88** engine test files (**102** `test_*.py` minus the **14** live-only). Within those, **25** files carry `@pytest.mark.live_cast` on **97** cast-coupled test functions that skip on the demo desk (a `conftest` hook detects the all-`demo-*` roster and fails closed — an unreadable roster runs them); they run in full on the live desk. Live-only (14 tests, not shipped): those that import a live-only script, read the committed OHLCV store or live desk state, drive live CI/RemoteTrigger infrastructure, or import the dev-only `sync_core` tool. **These counts are derived, not typed** — `python -c "from scripts import sync_core; print(len(sync_core.code_manifest()))"` and `len(sync_core.CORE_SCRIPTS)` are the authority; they read 11/67/74/21/87 from the split until 2026-08-07 and had drifted on every one. Core ships a core-native root `roster.yaml` (demo cast) so `get_config()` and the `midas_data_root` conftest fixture work at its root. `sync_core.apply` prunes stale files in synced trees (engine/scripts/tests/demo-desk source) but spares the demo-desk `data/` fixture subtree (a core-managed test fixture that universe resolvers regenerate and that live never populates).
+- **Manifest** (in `scripts/sync_core.py`): core gets `engine/`, the **16** reusable scripts plus `scripts/__init__.py` (incl. `fetch_ohlcv.py`, added 2026-07-24 as the price-data bootstrap for forks — it also un-broke the `midas fetch-ohlcv` subcommand in core; `tests/test_cli.py` guards the CLI-map-vs-manifest coupling), `examples/demo-desk/` (now with a README documenting the roster.yaml schema + a verified Brain/Hands walkthrough, proven hermetically by `tests/test_demo_walkthrough.py`), generic data (`data/strategies`, `data/universes`, ticker maps), and **88** engine test files (**103** `test_*.py` minus the **15** live-only). Within those, **25** files carry `@pytest.mark.live_cast` on **97** cast-coupled test functions that skip on the demo desk (a `conftest` hook detects the all-`demo-*` roster and fails closed — an unreadable roster runs them); they run in full on the live desk. Live-only (15 tests, not shipped): those that import a live-only script, read the committed OHLCV store or live desk state, drive live CI/RemoteTrigger infrastructure, or import the dev-only `sync_core` tool. **That set is hand-maintained, and since 2026-08-07 `test_sync_core.test_no_synced_test_imports_a_live_only_script` derives the check instead of trusting it**: a test that ships to core while importing a `scripts.foo` absent from `CORE_SCRIPTS` is an ImportError in the *public* repo's suite, which the live suite is structurally unable to see. It caught a real one on its first run (`test_session_freshness.py`) and flagged nothing else, which is also the evidence that the rest of the hand-maintained list is correct. **These counts are derived, not typed** — `python -c "from scripts import sync_core; print(len(sync_core.code_manifest()))"` and `len(sync_core.CORE_SCRIPTS)` are the authority; they read 11/67/74/21/87 from the split until 2026-08-07 and had drifted on every one. Core ships a core-native root `roster.yaml` (demo cast) so `get_config()` and the `midas_data_root` conftest fixture work at its root. `sync_core.apply` prunes stale files in synced trees (engine/scripts/tests/demo-desk source) but spares the demo-desk `data/` fixture subtree (a core-managed test fixture that universe resolvers regenerate and that live never populates).
 - **SP5 (safe bundle) DONE:** 21 cast-coupled tests reclaimed into core (skip on the demo desk via `live_cast`), `sync_core.apply` now prunes stale files, and `midas-core` ships MIT `LICENSE` + `DISCLAIMER.md`. The repo went public 2026-07-15; `core-drift-guard` checks out `midas-core` token-lessly (the `MIDAS_CORE_RO_TOKEN` secret is retired). **SP6 SHIPPED 2026-07-24:** open-source callout on `/methodology` (anchored `#open-source` section — explicit `<a id>` because marked emits id-less headings), homepage lede link, and footer link; METHODOLOGY.md's "public git repository" wording corrected to distinguish the open engine from this private live repo. **Still deferred:** the package-dependency cutover (delete `engine/` from live, install core as a package) — its own future session.
 
 ## Infrastructure

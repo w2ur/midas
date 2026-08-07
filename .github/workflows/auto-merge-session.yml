@@ -71,9 +71,19 @@ jobs:
             echo "::error::Session commit missing data/agent_memory/*.md (Step 8 skipped) — refusing to merge."
             fail=1
           fi
+          # Same correction as session-integrity's `check` job, and it matters
+          # MORE here: this one gates the merge. `merge_baseline_series` is
+          # append-or-refuse, so a correct Step 9 against an already-current
+          # series writes nothing, and on 2026-08-07 that shape refused to
+          # merge a good session — inert only because the direct push to main
+          # had already succeeded. State, not diff.
           if [[ $touches_baselines -eq 0 ]]; then
-            echo "::error::Session commit missing data/baselines/ (Step 9 skipped) — refusing to merge."
-            fail=1
+            if python3 scripts/check_session_freshness.py; then
+              echo "data/baselines/ unchanged, but every series is level with its snapshots — Step 9 ran and correctly wrote nothing."
+            else
+              echo "::error::Baseline series lag their snapshots (Step 9 skipped) — refusing to merge."
+              fail=1
+            fi
           fi
           [[ $fail -eq 0 ]]
 

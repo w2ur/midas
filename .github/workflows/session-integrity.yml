@@ -23,6 +23,11 @@ on:
   push:
     branches: [main]
 
+# `issues: write` for the `alert` job below, or gh 403s and the alert is lost.
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   ledger-integrity:
     # Standing data invariant, independent of commit-message scoping above:
@@ -153,9 +158,17 @@ jobs:
 
           if [[ "$mode" == "refresh" ]]; then
             fail=0
+            # Same append-or-refuse caveat as the session branch below: a
+            # weekend refresh over an unadvanced store legitimately writes no
+            # baseline row. The refresh still has to produce current.json,
+            # which is checked separately — so this arm keeps its teeth.
             if [[ $touches_baselines -eq 0 ]]; then
-              echo "::error::Weekend refresh commit does NOT refresh data/baselines/."
-              fail=1
+              if python3 scripts/check_session_freshness.py; then
+                echo "data/baselines/ unchanged, but every series is level with its snapshots — the refresh ran and correctly wrote nothing."
+              else
+                echo "::error::Weekend refresh commit leaves the baseline series behind their snapshots."
+                fail=1
+              fi
             fi
             if [[ $touches_leaderboard -eq 0 ]]; then
               echo "::error::Weekend refresh commit does NOT write data/leaderboard/current.json."
@@ -207,9 +220,23 @@ jobs:
             echo "::error::Session commit publishes posts/blog/output but does NOT rewrite data/agent_memory/*.md (Step 8 skipped)."
             fail=1
           fi
+          # An empty diff is NOT evidence that Step 9 was skipped.
+          # `merge_baseline_series` is append-or-refuse, so a Step 9 that runs
+          # against a series already carrying the session's date writes nothing
+          # — which is byte-identical, in the diff, to never having run. That
+          # came apart on 2026-08-07: `a4dc9dce2 [restate]` rebuilt every
+          # series earlier the same day, and both this guard and the inline
+          # copy in auto-merge-session failed a session whose Step 9 was
+          # correct. Ask the published state instead: a genuine skip leaves the
+          # baselines behind the snapshots (the Apr 25 shape), a correct no-op
+          # leaves them level. Stdlib only — no setup-python needed.
           if [[ $touches_baselines -eq 0 ]]; then
-            echo "::error::Session commit publishes posts/blog/output but does NOT refresh data/baselines/ (Step 9 skipped)."
-            fail=1
+            if python3 scripts/check_session_freshness.py; then
+              echo "data/baselines/ unchanged, but every series is level with its snapshots — Step 9 ran and correctly wrote nothing."
+            else
+              echo "::error::Session commit publishes posts/blog/output and the baseline series lag their snapshots (Step 9 skipped)."
+              fail=1
+            fi
           fi
           # current.json is DERIVED, self-healing state — the watcher refreshes it
           # every 15 min (try/except, never fatal), the weekend refresh rewrites it,
@@ -231,3 +258,55 @@ jobs:
           fi
 
           echo "Session integrity OK: manager-review (if authored) + artifacts + journals + baselines all present."
+
+  # A red X is not a consumer. These three jobs guard published data — the
+  # ledger reconciliation, the append-only freeze on published rows, and the
+  # per-mode pipeline contract — and until 2026-08-07 a failure produced
+  # nothing but a red tick and an email. That day the `check` job went red on
+  # a correct session and the only reason it was noticed was someone asking
+  # whether the merge had happened.
+  #
+  # One reporter for the whole workflow, in a trailing job: a run where all
+  # three jobs fail is still ONE fact, and the shared action is idempotent per
+  # cause, not per job. `job.status` would be this job's own status (always
+  # success — it only reports), so the outcome is aggregated from what it
+  # watches. `always()` so it still runs when the jobs it needs have failed.
+  alert:
+    needs: [ledger-integrity, append-only, check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          # One line deliberately: a `>-` block folds *more-indented* lines
+          # literally, so the wrapped version of this embedded newlines in the
+          # expression rather than spaces.
+          outcome: "${{ contains(needs.*.result, 'failure') && 'failure' || contains(needs.*.result, 'cancelled') && 'cancelled' || 'success' }}"
+          title: "session-integrity: a published-data guard failed on main"
+          body: |
+            A push to `main` failed one of the `session-integrity` jobs. All
+            three read committed data, so a failure here means the published
+            record may be wrong — not merely that a build broke.
+
+            **Which job, and what it means**
+            - `ledger-integrity` — a filled inbox row has no matching trade, or
+              a book's `initial_capital + replay(trades)` no longer equals its
+              recorded cash. Treat as a data incident, not a flaky test.
+            - `append-only` — a dated row in `data/portfolios/*/snapshots.json`
+              or `data/baselines/**` moved without `[restate]` in the commit
+              message. Either the move was unintended, or the disclosure is
+              missing.
+            - `check` — a session or weekend-refresh commit skipped a
+              load-bearing step (journals, baselines, manager-review,
+              `current.json` on a refresh).
+
+            **Before assuming the guard is wrong:** it has been, once. On
+            2026-08-07 the baselines check read an empty diff as "Step 9
+            skipped" when `merge_baseline_series` had correctly written
+            nothing. That specific proxy is now a state check
+            (`scripts/check_session_freshness.py`); a *new* false positive is
+            worth the same scepticism, but verify it rather than assuming it.
