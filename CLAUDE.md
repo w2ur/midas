@@ -43,6 +43,20 @@ running), and `backtester/tests` sat outside `testpaths`. A testpaths entry
 matching nothing is skipped silently, which is what lets this same
 `pyproject.toml` sync to midas-core, where no `backtester/` exists.
 
+**Warnings are errors, with three named third-party exceptions** (`pyproject.toml`
+`filterwarnings`, 2026-08-07). The zero-warnings policy was being asserted, not
+enforced — 69 warnings had accumulated. `filterwarnings = ["error", …]` means any
+warning not on the list fails the suite; the three that are listed are
+unfixable from here (starlette's `TestClient` via `fastapi.testclient`,
+`pandas_ta` setting the deprecated `mode.copy_on_write` at import, and `bt`'s
+own chained assignment inside `get_transactions`). Matching is on the **message,
+not the module**, so an entry stops applying if upstream changes its text — a
+stale ignore surfaces as a red run rather than as silent over-suppression.
+**A hard gate on warnings is normally fragile and is safe here only because
+`requirements.txt` is a full lockfile**: a new third-party warning can arrive
+only with a deliberate lock bump. It caught a real defect on its first run —
+`test_strategy_specs.py` leaked 15 file handles via `json.load(open(path))`.
+
 **Hypothesis settings live in one profile** (`tests/conftest.py`, `midas`):
 `max_examples=1000` per the portfolio mandate, and `deadline=None`. The deadline
 is wall-clock and several properties touch the filesystem, so under CI load it
