@@ -1,0 +1,221 @@
+---
+// A contribution-grid view of every session the desk has run.
+//
+// The archive was a linear month-grouped list — 9.3 screens for 87 sessions —
+// which answers "jump to a date I already know" but never "which days were
+// interesting?". Laid out by ISO week the whole experiment fits in about one
+// screen and the shape of it becomes visible.
+//
+// Colour encodes the day's leader return on a diverging scale, but never alone:
+// every cell carries the date, the leader and the figure in its accessible name
+// and its tooltip, and the full month-grouped list still sits underneath as the
+// complete record. (WCAG `color-not-only`.)
+export interface CalendarDay {
+  date: string;
+  leaderName: string;
+  leaderPct: number;
+  oracleTitle: string | null;
+}
+
+interface Props {
+  days: CalendarDay[];
+}
+const { days } = Astro.props as Props;
+
+const byDate = new Map(days.map((d) => [d.date, d]));
+
+const MS_DAY = 86_400_000;
+function utc(iso: string): number {
+  const [y, m, d] = iso.split("-").map(Number);
+  return Date.UTC(y, m - 1, d);
+}
+function iso(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+/** Monday-based weekday index, 0 = Monday. */
+function dow(ms: number): number {
+  return (new Date(ms).getUTCDay() + 6) % 7;
+}
+
+const sorted = days.map((d) => d.date).sort();
+const first = sorted[0];
+const last = sorted[sorted.length - 1];
+
+// Start on the Monday of the first session's week and end on the Sunday of the
+// last, so every column is a full week and the weekday rows line up.
+const start = utc(first) - dow(utc(first)) * MS_DAY;
+const end = utc(last) + (6 - dow(utc(last))) * MS_DAY;
+
+type Cell = { date: string; day: CalendarDay | undefined; weekend: boolean };
+const weeks: Cell[][] = [];
+for (let ms = start; ms <= end; ms += 7 * MS_DAY) {
+  const week: Cell[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = iso(ms + i * MS_DAY);
+    week.push({ date: d, day: byDate.get(d), weekend: i >= 5 });
+  }
+  weeks.push(week);
+}
+
+// Month labels sit above the first week that contains that month's 1st-of-month
+// (or the first week overall), which is where the eye expects the boundary.
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const monthLabels = weeks.map((week, i) => {
+  const firstOfMonth = week.find((c) => c.date.endsWith("-01"));
+  if (i === 0) return MONTHS[Number(week[0].date.slice(5, 7)) - 1];
+  return firstOfMonth ? MONTHS[Number(firstOfMonth.date.slice(5, 7)) - 1] : "";
+});
+
+/** Five diverging buckets. Magnitudes are returns in percent. */
+function bucket(pct: number): string {
+  if (pct <= -5) return "n2";
+  if (pct < -0.005) return "n1";
+  if (pct < 0.005) return "z";
+  if (pct < 5) return "p1";
+  return "p2";
+}
+function fmtPct(n: number): string {
+  return `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
+}
+function label(c: Cell): string {
+  if (!c.day) return "";
+  const t = c.day.oracleTitle ? ` — ${c.day.oracleTitle}` : "";
+  return `${c.date}: leader ${c.day.leaderName} ${fmtPct(c.day.leaderPct)}${t}`;
+}
+
+const DOW_LABELS = ["Mon", "", "Wed", "", "Fri", "", ""];
+---
+<section class="cal" aria-label="Every session, by week">
+  <div class="cal-scroll">
+    <div class="cal-grid">
+      <div class="cal-months" aria-hidden="true">
+        {monthLabels.map((m) => <span class="cal-month">{m}</span>)}
+      </div>
+
+      <div class="cal-dows" aria-hidden="true">
+        {DOW_LABELS.map((d) => <span class="cal-dow">{d}</span>)}
+      </div>
+
+      <ol class="cal-weeks">
+        {weeks.map((week) => (
+          <li class="cal-week">
+            {week.map((c) =>
+              c.day ? (
+                <a
+                  class={`cal-cell has-session ${bucket(c.day.leaderPct)}`}
+                  href={`/archive/${c.date}`}
+                  aria-label={label(c)}
+                  title={label(c)}
+                ></a>
+              ) : (
+                <span class={`cal-cell empty ${c.weekend ? "weekend" : ""}`} aria-hidden="true"></span>
+              ),
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+
+  <div class="cal-legend">
+    <span class="cal-legend-label">Leader return</span>
+    <span class="cal-key"><span class="cal-cell n2"></span>≤ −5%</span>
+    <span class="cal-key"><span class="cal-cell n1"></span>&lt; 0</span>
+    <span class="cal-key"><span class="cal-cell z"></span>flat</span>
+    <span class="cal-key"><span class="cal-cell p1"></span>&gt; 0</span>
+    <span class="cal-key"><span class="cal-cell p2"></span>≥ +5%</span>
+    <span class="cal-key"><span class="cal-cell empty"></span>no session</span>
+  </div>
+</section>
+
+<style>
+  .cal { margin: 0 0 var(--sp-6); }
+  .cal-scroll { overflow-x: auto; padding-bottom: var(--sp-2); }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      ".    months"
+      "dows weeks";
+    gap: 0.35rem;
+    min-width: max-content;
+  }
+
+  .cal-months {
+    grid-area: months;
+    display: flex;
+    gap: 3px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
+  .cal-month {
+    width: 13px;
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .cal-dows {
+    grid-area: dows;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-right: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
+  .cal-dow { height: 13px; line-height: 13px; }
+
+  .cal-weeks {
+    grid-area: weeks;
+    display: flex;
+    gap: 3px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .cal-week { display: flex; flex-direction: column; gap: 3px; }
+
+  .cal-cell {
+    display: block;
+    width: 13px;
+    height: 13px;
+    border-radius: 2px;
+    background: var(--bg-elev2);
+    border: 1px solid var(--rule);
+  }
+  .cal-cell.empty.weekend { background: var(--bg); }
+  a.cal-cell:hover { outline: 2px solid var(--ink); outline-offset: 1px; }
+  a.cal-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Diverging scale, anchored on the desk's own semantic pair rather than a
+     red/green ramp — `--neg`/`--pos` already carry the contrast guarantee. */
+  .cal-cell.n2 { background: var(--neg); border-color: var(--neg); }
+  .cal-cell.n1 { background: color-mix(in srgb, var(--neg) 45%, var(--bg-elev2)); border-color: color-mix(in srgb, var(--neg) 55%, var(--rule)); }
+  .cal-cell.z  { background: var(--rule-strong); border-color: var(--rule-strong); }
+  .cal-cell.p1 { background: color-mix(in srgb, var(--pos) 45%, var(--bg-elev2)); border-color: color-mix(in srgb, var(--pos) 55%, var(--rule)); }
+  .cal-cell.p2 { background: var(--pos); border-color: var(--pos); }
+
+  .cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-4);
+    margin-top: var(--sp-3);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+  .cal-legend-label { text-transform: uppercase; letter-spacing: 0.1em; }
+  .cal-key { display: inline-flex; align-items: center; gap: 0.5ch; }
+
+  /* Touch: a 13px cell is far under the 44px target, so on coarse pointers the
+     grid scales up rather than asking for a pixel-perfect tap. */
+  @media (pointer: coarse) {
+    .cal-cell { width: 20px; height: 20px; }
+    .cal-month { width: 20px; }
+    .cal-dow { height: 20px; line-height: 20px; }
+  }
+</style>

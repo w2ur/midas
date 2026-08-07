@@ -313,19 +313,30 @@ function fmtInt(n: number): string {
   .os-node text.os-sub { fill: var(--ink-muted); font-size: 11px; }
   .os-edge path { fill: none; stroke: var(--rule-strong); stroke-width: 1.2; }
 
-  .os-rails { margin: 0; display: grid; gap: 0; border-top: 1px solid var(--rule-strong); }
+  /* Two columns above 60rem: 19 single-file rows ran 1,378px — the tallest
+     block on the page — for content that is a reference list, not prose. */
+  .os-rails {
+    margin: 0;
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--rule-strong);
+  }
+  @media (min-width: 60rem) {
+    .os-rails {
+      grid-template-columns: 1fr 1fr;
+      column-gap: var(--sp-6);
+    }
+  }
   .os-rail {
     display: grid;
-    gap: 0.15rem var(--sp-4);
-    padding: 0.7rem 0.25rem;
+    gap: 0.15rem;
+    padding: 0.6rem 0.25rem;
     border-bottom: 1px solid var(--rule);
-  }
-  @media (min-width: 48rem) {
-    .os-rail { grid-template-columns: 16rem minmax(0, 1fr); align-items: baseline; }
+    align-content: start;
   }
   .os-rail dt {
     font-family: var(--font-mono);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-xs);
     color: var(--accent);
     letter-spacing: 0.02em;
   }

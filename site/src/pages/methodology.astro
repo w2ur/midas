@@ -1,25 +1,17 @@
 ---
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { marked } from "marked";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import PreRegistrationStatus from "@/components/PreRegistrationStatus.astro";
-import { REPO_ROOT } from "@/lib/paths";
-
-const mdPath = path.join(REPO_ROOT, "METHODOLOGY.md");
-const raw = fs.existsSync(mdPath) ? fs.readFileSync(mdPath, "utf-8") : "";
+import MethodologyFacts from "@/components/MethodologyFacts.astro";
+import { renderMethodology, renderChangelog, methodologyToc, CHANGELOG_PATH } from "@/lib/methodology";
 
 // The generated pre-registration status block is not hand-typed prose in
 // METHODOLOGY.md — it's an Astro component rendered from live cadence data
-// (see PreRegistrationStatus.astro). Split the markdown around the noise
-// statement so the block lands right after the pre-registered threshold and
-// before the known-distortions section.
-const STATUS_MARKER = "## Known distortions in the current leaderboard";
-const splitIdx = raw.indexOf(STATUS_MARKER);
-const beforeStatus = splitIdx === -1 ? raw : raw.slice(0, splitIdx);
-const afterStatus = splitIdx === -1 ? "" : raw.slice(splitIdx);
-const htmlBefore = marked.parse(beforeStatus, { async: false }) as string;
-const htmlAfter = marked.parse(afterStatus, { async: false }) as string;
+// (see PreRegistrationStatus.astro). The document is sliced so the block lands
+// right after the pre-registered threshold and before the known-distortions
+// section; the changelog is sliced out entirely onto its own page.
+const { htmlBefore, htmlAfter, movedAnchors } = renderMethodology();
+const { entryCount } = renderChangelog();
+const toc = methodologyToc();
 ---
 <BaseLayout
   title="Methodology"
@@ -30,12 +22,56 @@ const htmlAfter = marked.parse(afterStatus, { async: false }) as string;
     <header class="methodology-head">
       <p class="kicker">The Midas Experiment</p>
     </header>
-    <article class="article methodology-body" set:html={htmlBefore} />
-    <div class="methodology-status">
-      <PreRegistrationStatus />
+
+    <MethodologyFacts />
+
+    <div class="methodology-layout">
+      <nav class="methodology-toc" aria-labelledby="toc-heading">
+        <p class="toc-heading" id="toc-heading">Contents</p>
+        <ol>
+          {toc.map((item) => (
+            <li><a href={`#${item.id}`}>{item.label}</a></li>
+          ))}
+          <li class="toc-away"><a href={CHANGELOG_PATH}>Changelog ({entryCount})</a></li>
+        </ol>
+      </nav>
+
+      <div class="methodology-main">
+        <article class="article methodology-body" set:html={htmlBefore} />
+        <div class="methodology-status">
+          <PreRegistrationStatus />
+        </div>
+        <article class="article methodology-body" set:html={htmlAfter} />
+
+        <aside class="changelog-card">
+          <p class="cc-eyebrow">Disclosure record</p>
+          <h2 class="cc-title">{entryCount} logged changes to the published record</h2>
+          <p class="cc-body">
+            Every methodology change, restatement, and correction since April 2026 — including the
+            ones that made the desk look worse. Kept on its own page because it is written for
+            somebody auditing what moved, not for somebody asking what this is.
+          </p>
+          <a class="cc-link" href={CHANGELOG_PATH}>Read the changelog →</a>
+        </aside>
+      </div>
     </div>
-    <article class="article methodology-body" set:html={htmlAfter} />
   </div>
+
+  {movedAnchors.length > 0 && (
+    <script is:inline define:vars={{ movedAnchors, changelogPath: CHANGELOG_PATH }}>
+      /* Forward the eleven anchors that moved to the changelog page.
+         A fragment is never sent to the server, so no redirect rule can see
+         one — links published in commit messages and ledger notes before the
+         split can only be honoured here, on the client. `replace` keeps the
+         dead URL out of the back button. */
+      (function () {
+        var id = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+        if (id && movedAnchors.indexOf(id) !== -1) {
+          window.location.replace(changelogPath + "#" + id);
+        }
+      })();
+    </script>
+  )}
 </BaseLayout>
 <style>
   /* Editorial essay: --font-serif body via the shared .article class, an
@@ -52,13 +88,103 @@ const htmlAfter = marked.parse(afterStatus, { async: false }) as string;
     color: var(--accent);
     margin: 0 0 var(--sp-2, 0.5rem);
   }
-  .methodology-body { padding-bottom: var(--sp-8, 4rem); }
+
+  /* ── Layout: centred measure column, contents parked in the right margin ──
+     Below 68rem there is no margin to park in, so the contents collapse to a
+     plain list above the essay rather than competing for the reading column. */
+  .methodology-layout { display: block; }
+  .methodology-main { min-width: 0; }
+
+  .methodology-toc {
+    max-width: var(--measure);
+    margin: 0 auto var(--sp-6);
+    padding: var(--sp-4) var(--sp-5);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    background: var(--bg-elev);
+  }
+  .toc-heading {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-3);
+  }
+  .methodology-toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: toc;
+  }
+  .methodology-toc li {
+    counter-increment: toc;
+    margin-bottom: var(--sp-2);
+    font-size: var(--fs-sm);
+    line-height: 1.35;
+  }
+  .methodology-toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    margin-right: 0.6ch;
+  }
+  .methodology-toc a {
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+  .methodology-toc a:hover { color: var(--accent); }
+  .methodology-toc .toc-away {
+    margin-top: var(--sp-3);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--rule);
+  }
+  .methodology-toc .toc-away::before { content: "→"; }
+  .methodology-toc .toc-away a { color: var(--accent); }
+
+  @media (min-width: 68rem) {
+    .methodology-layout {
+      display: grid;
+      grid-template-columns: minmax(0, var(--measure)) 1fr;
+      gap: var(--sp-7);
+      justify-content: center;
+    }
+    .methodology-main { grid-column: 1; }
+    .methodology-toc {
+      grid-column: 2;
+      grid-row: 1;
+      position: sticky;
+      /* Clears the sticky status strip, which is the only fixed chrome. */
+      top: var(--sp-6);
+      align-self: start;
+      max-width: 17rem;
+      margin: 0;
+      background: none;
+      border: none;
+      border-left: 1px solid var(--rule);
+      border-radius: 0;
+      padding: 0 0 0 var(--sp-4);
+      max-height: calc(100vh - var(--sp-8));
+      overflow-y: auto;
+    }
+    /* The centred .article column and the centred head both sit inside the
+       grid track now, so their own auto margins must not re-centre them. */
+    .methodology-head,
+    .methodology-status,
+    .methodology-main :global(.article) { margin-left: 0; margin-right: 0; }
+    .methodology-head { max-width: none; }
+  }
+
+  .methodology-body { padding-bottom: var(--sp-6, 2rem); }
   .methodology-body :global(h1) { font-size: var(--fs-3xl); margin-bottom: var(--sp-4, 1rem); }
   .methodology-body :global(h2) {
     margin-top: var(--sp-7, 2.5rem);
     margin-bottom: var(--sp-3, 0.75rem);
     border-top: 1px solid var(--rule);
     padding-top: var(--sp-5, 1.5rem);
+    /* Anchor targets must clear the sticky status strip when jumped to. */
+    scroll-margin-top: var(--sp-6);
   }
   .methodology-body :global(blockquote) {
     border-left: 3px solid var(--rule-strong);
@@ -73,9 +199,44 @@ const htmlAfter = marked.parse(afterStatus, { async: false }) as string;
     background: var(--bg-elev2, var(--bg-elev));
     padding: 0.1em 0.35em;
     border-radius: var(--r-sm, 3px);
+    /* Long dotted-path identifiers are unbreakable tokens wider than a phone
+       viewport — see the note in methodology/changelog.astro. */
+    overflow-wrap: anywhere;
   }
   .methodology-body :global(hr) { border: none; border-top: 1px solid var(--rule); margin: var(--sp-6, 2rem) 0; }
   .methodology-body :global(ul), .methodology-body :global(ol) { padding-left: var(--sp-5, 1.5rem); }
   .methodology-body :global(li) { margin-bottom: var(--sp-1, 0.4rem); }
   .methodology-body :global(a) { color: var(--accent); }
+
+  /* ── Hand-off card to the changelog ── */
+  .changelog-card {
+    max-width: var(--measure);
+    margin: 0 0 var(--sp-8);
+    padding: var(--sp-5);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-md);
+    background: var(--bg-elev);
+  }
+  .cc-eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 var(--sp-2);
+  }
+  .cc-title { font-size: var(--fs-lg); margin: 0 0 var(--sp-3); }
+  .cc-body {
+    font-family: var(--font-serif);
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-4);
+  }
+  .cc-link {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .cc-link:hover { color: var(--accent-strong); }
 </style>

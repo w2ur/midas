@@ -2,16 +2,46 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { listBlogDates, loadBlogByDate, excerpt } from "@/lib/blog";
 
+// The index used to print all 87 columns with a 220-char excerpt each: 18.5
+// screens of undifferentiated timeline, where finding a column about a known
+// event meant scrolling past everything newer. Excerpts now earn their space
+// only at the head of the list; everything older is a dated one-liner, grouped
+// by month with a sticky header, and filterable.
+const EXCERPTED = 5;
+
 const dates = listBlogDates().slice().reverse();
-const entries = dates.map((d) => {
+const entries = dates.map((d, i) => {
   const p = loadBlogByDate(d);
-  return { date: d, title: p.title, slug: p.slug, excerpt: excerpt(p.body, 220) };
+  return {
+    date: d,
+    title: p.title,
+    excerpt: i < EXCERPTED ? excerpt(p.body, 200) : null,
+  };
 });
 
 function humanDate(iso: string): string {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
     day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
   });
+}
+function dayStamp(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  return `${String(d.getUTCDate()).padStart(2, "0")} ${d
+    .toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })
+    .toUpperCase()}`;
+}
+function monthKey(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+    month: "long", year: "numeric", timeZone: "UTC",
+  });
+}
+
+const groups: { month: string; items: typeof entries }[] = [];
+for (const e of entries) {
+  const key = monthKey(e.date);
+  const last = groups[groups.length - 1];
+  if (last && last.month === key) last.items.push(e);
+  else groups.push({ month: key, items: [e] });
 }
 ---
 <BaseLayout title="The Oracle" current="journal" description="The Oracle's daily column on the Midas experiment.">
@@ -22,19 +52,75 @@ function humanDate(iso: string): string {
     </header>
     <p class="lede">A daily column on what the agents did and what it means.</p>
 
-    <ol class="oracle-index">
-      {entries.map((e) => (
-        <li class="oc-entry">
-          <span class="oc-tick" aria-hidden="true"></span>
-          <a class="oc-link" href={`/journal/${e.date}`}>
-            <span class="oc-date">{humanDate(e.date)}</span>
-            <span class="oc-title">{e.title}</span>
-            <span class="oc-excerpt">{e.excerpt}</span>
-          </a>
-        </li>
-      ))}
-    </ol>
+    <div class="oc-tools">
+      <label class="oc-search">
+        <span class="visually-hidden">Filter columns by title or date</span>
+        <input
+          type="search"
+          id="oc-filter"
+          placeholder="Filter by title or date…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </label>
+      <p class="oc-count"><span id="oc-shown">{entries.length}</span> of {entries.length} columns</p>
+    </div>
+    <p class="oc-empty" id="oc-empty" hidden>No column matches that filter.</p>
+
+    {groups.map((g) => (
+      <section class="oc-month" data-month>
+        <h3 class="oc-month-head">{g.month}</h3>
+        <ol class="oracle-index">
+          {g.items.map((e) => (
+            <li class="oc-entry" data-search={`${e.title} ${e.date} ${humanDate(e.date)}`.toLowerCase()}>
+              <a class="oc-link" href={`/journal/${e.date}`}>
+                <span class="oc-stamp"><span class="oc-tick" aria-hidden="true"></span>{dayStamp(e.date)}</span>
+                <span class="oc-text">
+                  <span class="oc-title">{e.title}</span>
+                  {e.excerpt && <span class="oc-excerpt">{e.excerpt}</span>}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
   </section>
+
+  <script is:inline>
+    (function () {
+      var input = document.getElementById("oc-filter");
+      var shown = document.getElementById("oc-shown");
+      var empty = document.getElementById("oc-empty");
+      if (!input) return;
+      var entries = Array.prototype.slice.call(document.querySelectorAll(".oc-entry"));
+      var months = Array.prototype.slice.call(document.querySelectorAll("[data-month]"));
+
+      function apply() {
+        var q = input.value.trim().toLowerCase();
+        var count = 0;
+        entries.forEach(function (el) {
+          var hit = !q || (el.getAttribute("data-search") || "").indexOf(q) !== -1;
+          el.hidden = !hit;
+          if (hit) count++;
+        });
+        // A month whose every column is filtered out hides its header too,
+        // otherwise the list reads as a run of empty sections.
+        months.forEach(function (m) {
+          var any = m.querySelectorAll(".oc-entry:not([hidden])").length > 0;
+          m.hidden = !any;
+        });
+        shown.textContent = String(count);
+        empty.hidden = count !== 0;
+      }
+
+      var t;
+      input.addEventListener("input", function () {
+        clearTimeout(t);
+        t = setTimeout(apply, 120);
+      });
+    })();
+  </script>
 </BaseLayout>
 <style>
   /* ── Section head: mono amber kicker + display heading (homepage pattern) ── */
@@ -61,64 +147,134 @@ function humanDate(iso: string): string {
   }
   .lede {
     max-width: var(--measure);
-    margin: 0 0 var(--sp-6, 2rem);
+    margin: 0 0 var(--sp-5);
     color: var(--ink-muted);
     font-size: var(--fs-md);
   }
 
-  /* ── Teletype timeline: a reverse-chron session log of columns ── */
-  .oracle-index {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  /* ── Filter ── */
+  .oc-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
     max-width: var(--measure);
+    margin-bottom: var(--sp-5);
   }
-  .oc-entry {
-    position: relative;
-    margin-left: 0.5rem;
-    padding: 1.25rem 0 1.25rem 1.5rem;
-    border-left: 1px solid var(--rule);
+  .oc-search { flex: 1 1 16rem; min-width: 0; }
+  .oc-search input {
+    width: 100%;
+    /* 44px minimum touch target and ≥16px text so iOS does not zoom on focus. */
+    min-height: 2.75rem;
+    font-size: 1rem;
+    font-family: var(--font-mono);
+    color: var(--ink);
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-sm);
+    padding: 0.5rem 0.75rem;
   }
-  .oc-entry:first-child { padding-top: 0.5rem; }
-  /* the amber session tick, punched through the spine */
-  .oc-tick {
+  .oc-search input::placeholder { color: var(--ink-faint); }
+  .oc-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .oc-count {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    flex: none;
+  }
+  .oc-empty {
+    max-width: var(--measure);
+    margin: 0 0 var(--sp-5);
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+  .visually-hidden {
     position: absolute;
-    left: -4px;
-    top: 1.85rem;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 0 3px var(--bg);
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
-  .oc-entry:first-child .oc-tick { top: 1.1rem; }
 
-  .oc-link {
-    display: block;
-    padding: 0.1rem 0;
-    color: inherit;
-    text-decoration: none;
-  }
-  .oc-date {
-    display: block;
+  /* ── Month grouping ── */
+  .oc-month { max-width: var(--measure); }
+  .oc-month-head {
+    position: sticky;
+    /* Sits below the sticky status strip rather than under it. */
+    top: 0;
+    z-index: 5;
+    margin: var(--sp-5) 0 0;
+    padding: var(--sp-2) 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--rule-strong);
     font-family: var(--font-mono);
     font-size: var(--fs-xs);
-    letter-spacing: 0.08em;
+    font-weight: 500;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--ink-muted);
   }
-  .oc-title {
-    display: block;
-    margin: 0.3rem 0 0.35rem;
-    font-family: var(--font-serif);
-    font-size: var(--fs-lg);
-    line-height: 1.15;
-    color: var(--ink);
+
+  /* ── Entries ── */
+  .oracle-index { list-style: none; margin: 0; padding: 0; }
+  .oc-entry { border-bottom: 1px solid var(--rule); }
+
+  .oc-link {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: var(--sp-4);
+    align-items: baseline;
+    padding: 0.7rem 0;
+    color: inherit;
+    text-decoration: none;
   }
   .oc-link:hover .oc-title { color: var(--accent); }
-  .oc-excerpt {
+  .oc-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .oc-stamp {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5ch;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  .oc-tick {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex: none;
+    align-self: center;
+  }
+
+  .oc-text { min-width: 0; }
+  .oc-title {
     display: block;
     font-family: var(--font-serif);
+    font-size: var(--fs-md);
+    line-height: 1.25;
+    color: var(--ink);
+  }
+  .oc-excerpt {
+    display: block;
+    margin-top: 0.3rem;
+    font-family: var(--font-serif);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-body);
     color: var(--ink-muted);
+  }
+
+  @media (max-width: 30rem) {
+    .oc-link { grid-template-columns: 1fr; gap: 0.2rem; }
   }
 </style>
