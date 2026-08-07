@@ -432,3 +432,101 @@ class TestRegressionCitations:
             ).returncode
             != 0
         )
+
+
+# ---------------------------------------------------------------------------
+# backtester/requirements.txt mirrors the root lockfile
+# ---------------------------------------------------------------------------
+#
+# The service image installs a NARROWED package set (it imports only bt,
+# fastapi, uvicorn, pandas, pandas_ta, pydantic, yaml and yfinance), but every
+# version in it is copied verbatim from the root lockfile so the image runs
+# exactly what CI tested. That contract lived only in a comment at the top of
+# the file, and it had already been broken once: until 2026-08-05 four
+# transitive packages (markdown-it-py, mdurl, pygments, rich) were absent from
+# the list and therefore installed UNPINNED into a deployed service — precisely
+# the reproducibility hole the root lockfile exists to close.
+
+_ROOT = Path(__file__).resolve().parents[1]
+_PIN = re.compile(r"^([A-Za-z0-9._-]+)==(.+)$")
+
+
+def _normalise(name: str) -> str:
+    """PEP 503 normalisation — `curl_cffi` and `curl-cffi` are one package."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _pins(path: Path) -> dict[str, str]:
+    pins: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        bare = line.split("#")[0].strip()
+        match = _PIN.match(bare)
+        if match:
+            pins[_normalise(match.group(1))] = match.group(2).strip()
+    return pins
+
+
+def _unpinned_requirement_lines(path: Path) -> list[str]:
+    """Requirement lines that are not an exact `==` pin."""
+    loose = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        bare = line.split("#")[0].strip()
+        if not bare or bare.startswith("-"):
+            continue
+        if not _PIN.match(bare):
+            loose.append(bare)
+    return loose
+
+
+class TestBacktesterLockfileMirror:
+    def test_every_backtester_pin_matches_the_root_lockfile(self):
+        """The narrowing may drop packages; it may never re-resolve versions."""
+        root = _pins(_ROOT / "requirements.txt")
+        service = _pins(_ROOT / "backtester" / "requirements.txt")
+        assert service, "backtester/requirements.txt has no pins — parser broke"
+        drift = {
+            name: (version, root[name])
+            for name, version in service.items()
+            if name in root and root[name] != version
+        }
+        assert drift == {}, (
+            "backtester/requirements.txt must copy the root lockfile's versions "
+            f"verbatim; these differ (service, root): {drift}"
+        )
+
+    def test_backtester_introduces_no_package_the_root_lockfile_lacks(self):
+        """A service-only package would be installed at a version CI never ran."""
+        root = _pins(_ROOT / "requirements.txt")
+        service = _pins(_ROOT / "backtester" / "requirements.txt")
+        orphans = sorted(set(service) - set(root))
+        assert orphans == [], (
+            "these are pinned for the service but absent from the root "
+            f"lockfile, so nothing tests them: {orphans}"
+        )
+
+    def test_every_requirement_is_an_exact_pin(self):
+        """The 2026-08-05 defect's shape: a requirement present but unpinned."""
+        for name in ("requirements.txt", "backtester/requirements.txt"):
+            loose = _unpinned_requirement_lines(_ROOT / name)
+            assert loose == [], f"{name} has non-`==` requirement lines: {loose}"
+
+    def test_the_parser_can_actually_see_drift(self):
+        """The control: these assertions rest on `_pins` reading real content.
+
+        A parser that silently returned `{}` would make every test above pass
+        on any file at all, which is the failure mode this whole class exists
+        to prevent elsewhere.
+        """
+        root = _pins(_ROOT / "requirements.txt")
+        service = _pins(_ROOT / "backtester" / "requirements.txt")
+        assert len(root) > 50 and len(service) > 20
+        assert set(service) < set(root), "service set should be a strict subset"
+        # A doctored pin must register as drift.
+        doctored = dict(service)
+        first = sorted(doctored)[0]
+        doctored[first] = "0.0.0-not-a-real-version"
+        assert any(
+            root.get(name) != version
+            for name, version in doctored.items()
+            if name in root
+        )
