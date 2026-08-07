@@ -46,6 +46,7 @@ it must never import a vendor client. The vendor call lives in
 from __future__ import annotations
 
 import json
+import logging
 import re
 from datetime import date
 from pathlib import Path
@@ -53,6 +54,8 @@ from typing import NamedTuple
 
 from engine.config import get_config, register_reset_callback
 from engine.ohlcv_store import latest_close_on_or_before
+
+logger = logging.getLogger(__name__)
 
 
 class Quote(NamedTuple):
@@ -148,7 +151,21 @@ def _load_ticker_currency_overrides() -> dict[str, str]:
                 _TICKER_CURRENCY_OVERRIDES = json.loads(
                     path.read_text(encoding="utf-8")
                 )
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
+                # Degrading to {} demotes every ticker to the layers below —
+                # a whole-desk change of behaviour from one stray comma, and
+                # invisible before this line existed (2026-08-07, W7.4). The
+                # empty map is still the right fallback (fail-closed: an
+                # unresolvable ticker becomes CURRENCY_UNRESOLVED at the
+                # broker rather than trading at a guessed currency), but it
+                # must not be quiet.
+                logger.error(
+                    "ticker-currency override map %s is unparseable (%s) — "
+                    "EVERY ticker now falls through to the vendor registry "
+                    "and the suffix heuristic. Fix the file.",
+                    path,
+                    exc,
+                )
                 _TICKER_CURRENCY_OVERRIDES = {}
         else:
             _TICKER_CURRENCY_OVERRIDES = {}
@@ -176,7 +193,16 @@ def _load_registry_currencies() -> dict[str, str]:
         if path.exists():
             try:
                 raw = json.loads(path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
+                # Same failure shape as the override map above: an empty
+                # registry silently demotes 1,000+ tickers to the suffix
+                # heuristic, which is the layer the 2026-08-07 defect lived in.
+                logger.error(
+                    "ticker registry %s is unparseable (%s) — EVERY ticker "
+                    "now falls through to the suffix heuristic. Fix the file.",
+                    path,
+                    exc,
+                )
                 raw = {}
             for symbol, info in (raw or {}).items():
                 if not isinstance(info, dict):

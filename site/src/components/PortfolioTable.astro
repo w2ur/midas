@@ -3,6 +3,7 @@ import type { AgentPortfolio } from "@/lib/output";
 import { loadPositionQuote } from "@/lib/ohlcv";
 import { tickerSlug } from "@/lib/orders";
 import { tickerName } from "@/lib/tickers";
+import { isMixedCurrency, positionWeights } from "@/lib/portfolios";
 
 interface Props {
   portfolio: AgentPortfolio;
@@ -43,7 +44,8 @@ rows.sort((a, b) => {
   return bv - av;
 });
 
-const valuedTotal = rows.reduce((acc, r) => acc + (r.value ?? 0), 0);
+const weights = positionWeights(rows);
+const mixedCurrency = isMixedCurrency(rows);
 
 function fmtPrice(n: number): string {
   const digits = Math.abs(n) < 10 ? 4 : 2;
@@ -74,12 +76,14 @@ function fmtShares(n: number): string {
             <th class="num">Shares</th>
             <th class="num">Last close</th>
             <th class="num">Value</th>
-            <th>Weight</th>
+            <th>{mixedCurrency ? (
+              <span title="This book holds positions in more than one currency, so a share-of-total cannot be computed here without converting them.">Weight</span>
+            ) : "Weight"}</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => {
-            const weight = r.value !== null && valuedTotal > 0 ? (r.value / valuedTotal) * 100 : null;
+          {rows.map((r, i) => {
+            const weight = weights[i];
             return (
               <tr>
                 <td><a class="tick" href={`/ticker/${tickerSlug(r.ticker)}`} title={tickerName(r.ticker) ?? undefined}>{r.ticker}</a></td>
