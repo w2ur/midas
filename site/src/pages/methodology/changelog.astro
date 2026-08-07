@@ -1,0 +1,107 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { renderChangelog, METHODOLOGY_PATH } from "@/lib/methodology";
+
+// The disclosure record, split out of /methodology because it is 80% of that
+// document's words and serves a different reader. Same source file
+// (METHODOLOGY.md) — see src/lib/methodology.ts for why the file itself is
+// never split on disk.
+const { html, entryCount } = renderChangelog();
+---
+<BaseLayout
+  title="Methodology changelog"
+  description="Every methodology change, restatement, and correction to the published Midas record — logged rather than silently applied."
+  current="methodology"
+>
+  <div class="page">
+    <header class="cl-head">
+      <p class="kicker">Disclosure record</p>
+      <h1>Methodology changelog</h1>
+      <p class="cl-lede">
+        Methodology changes are logged here rather than silently applied — pre-registration honesty.
+        {entryCount} entries, newest first, including the ones that made the desk look worse.
+      </p>
+      <p class="cl-back"><a href={METHODOLOGY_PATH}>← Back to the methodology</a></p>
+    </header>
+
+    <article class="article changelog-body" set:html={html} />
+  </div>
+</BaseLayout>
+<style>
+  .cl-head {
+    max-width: var(--measure);
+    margin: 0 auto var(--sp-6);
+    padding-bottom: var(--sp-5);
+    border-bottom: 1px solid var(--rule);
+  }
+  .kicker {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--accent);
+    margin: 0 0 var(--sp-2);
+  }
+  .cl-head h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-3); }
+  .cl-lede {
+    font-family: var(--font-serif);
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-4);
+  }
+  .cl-back a {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .cl-back a:hover { color: var(--accent-strong); }
+
+  .changelog-body { padding-bottom: var(--sp-8); }
+  /* Each entry is a top-level <li> carrying an <a id> — give it the weight of
+     a section so the log reads as a list of dated events rather than one long
+     bulleted paragraph, and so a linked anchor lands somewhere legible. */
+  .changelog-body :global(> ul) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .changelog-body :global(> ul > li) {
+    margin: 0 0 var(--sp-6);
+    padding: var(--sp-5) 0 0;
+    border-top: 1px solid var(--rule);
+    /* Clears the sticky status strip when an anchor is jumped to. */
+    scroll-margin-top: var(--sp-6);
+  }
+  .changelog-body :global(> ul > li:first-child) { border-top: none; padding-top: 0; }
+  .changelog-body :global(> ul > li > strong:first-of-type) {
+    display: block;
+    font-family: var(--font-display);
+    font-size: var(--fs-md);
+    line-height: var(--lh-tight);
+    color: var(--ink);
+    margin-bottom: var(--sp-3);
+  }
+  .changelog-body :global(ul ul) {
+    margin: var(--sp-3) 0;
+    padding-left: var(--sp-5);
+  }
+  .changelog-body :global(li) { margin-bottom: var(--sp-2); }
+  .changelog-body :global(p) { margin: var(--sp-3) 0; }
+  .changelog-body :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--bg-elev2, var(--bg-elev));
+    padding: 0.1em 0.35em;
+    border-radius: var(--r-sm);
+    /* Dotted-path identifiers like
+       `scripts/daily_session._compute_positions_value` are single unbreakable
+       tokens wider than a 375px viewport, and pushed the whole page into
+       horizontal scroll. Pre-existing on the unsplit page. */
+    overflow-wrap: anywhere;
+  }
+  .changelog-body :global(a) { color: var(--accent); }
+  .changelog-body :global(del) { color: var(--ink-faint); }
+</style>

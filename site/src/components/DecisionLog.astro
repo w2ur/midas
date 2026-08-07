@@ -1,0 +1,342 @@
+---
+// The Manager's decision log.
+//
+// Replaces 36 expanded `<pre>{review.render}</pre>` dumps — 1,000–2,500 chars
+// each, ~19 screens in total — with the structure the records already carry.
+// Nothing is parsed out of the rendered string: `manager-review/*.json` stores
+// `conviction`, `positions[]`, `action`, `size_eur`, `stop_loss`, `trigger`,
+// `entry_guidance` and `reasoning` as fields, and the `<pre>` was throwing all
+// of that away to print a pre-formatted transcript of it.
+//
+// `render` is still shipped, behind a per-decision "raw record" toggle: it is
+// the artifact the allocator actually emitted, and the point of this desk is
+// that the primary record stays reachable.
+import type { ManagerReview } from "@/lib/manager";
+import { tickerSlug } from "@/lib/orders";
+
+interface Props {
+  reviews: ManagerReview[];
+  /** How many decisions open on load. The rest collapse to their summary row. */
+  openCount?: number;
+}
+const { reviews, openCount = 3 } = Astro.props as Props;
+
+/** Explicit HOLD entries are decisions too, but they are not commitments. */
+function committed(r: ManagerReview) {
+  return r.positions.filter((p) => p.action !== "HOLD");
+}
+
+const eur = (n: number) =>
+  new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 }).format(n);
+
+const CONVICTION_STEPS = 10;
+---
+<div class="decision-log">
+  <div class="dl-filter" role="group" aria-label="Filter decisions">
+    <button type="button" data-filter="all" aria-pressed="true">All <span class="dl-n">{reviews.length}</span></button>
+    <button type="button" data-filter="act" aria-pressed="false">
+      Committed <span class="dl-n">{reviews.filter((r) => committed(r).length > 0).length}</span>
+    </button>
+    <button type="button" data-filter="hold" aria-pressed="false">
+      Held <span class="dl-n">{reviews.filter((r) => committed(r).length === 0).length}</span>
+    </button>
+  </div>
+
+  <ol class="dl-list">
+    {reviews.map((r, i) => {
+      const acts = committed(r);
+      const kind = acts.length > 0 ? "act" : "hold";
+      return (
+        <li class="dl-item" data-kind={kind}>
+          <details open={i < openCount}>
+            <summary>
+              <span class="dl-date">{r.date}</span>
+
+              <span class="dl-conv" title={`Conviction ${r.conviction} of ${CONVICTION_STEPS}`}>
+                <span class="dl-meter" aria-hidden="true">
+                  {Array.from({ length: CONVICTION_STEPS }, (_, s) => (
+                    <span class={`dl-seg ${s < r.conviction ? "on" : ""}`}></span>
+                  ))}
+                </span>
+                <span class="dl-conv-num">{r.conviction}/{CONVICTION_STEPS}</span>
+              </span>
+
+              <span class={`dl-tag ${kind}`}>
+                {acts.length > 0
+                  ? `${acts.length} position${acts.length > 1 ? "s" : ""}`
+                  : "hold"}
+              </span>
+
+              {acts.length > 0 && (
+                <span class="dl-tickers">
+                  {acts.map((p) => (
+                    <span class={`dl-chip ${p.action.toLowerCase()}`}>{p.action} {p.ticker}</span>
+                  ))}
+                </span>
+              )}
+
+              <span class="dl-caret" aria-hidden="true"></span>
+            </summary>
+
+            <div class="dl-body">
+              {r.positions.length === 0 && !r.hold_reasoning && (
+                <p class="dl-empty">No positions and no stated reasoning for this session.</p>
+              )}
+
+              {r.hold_reasoning && (
+                <p class="dl-hold-reason">{r.hold_reasoning}</p>
+              )}
+
+              {r.positions.map((p) => (
+                <div class="dl-pos">
+                  <div class="dl-pos-head">
+                    <a class="dl-pos-tick" href={`/ticker/${tickerSlug(p.ticker)}`}>{p.ticker}</a>
+                    <span class={`dl-pos-act ${p.action.toLowerCase()}`}>{p.action}</span>
+                    <span class="dl-pos-size">EUR {eur(p.size_eur)}</span>
+                    {p.stop_loss != null && <span class="dl-pos-stop">stop {p.stop_loss}</span>}
+                    {p.trigger && (
+                      <span class="dl-pos-trig">
+                        trigger {p.trigger.op} {p.trigger.level}
+                        {p.expires ? ` · expires ${p.expires}` : ""}
+                      </span>
+                    )}
+                  </div>
+                  {p.entry_guidance && (
+                    <p class="dl-pos-line"><span class="dl-lab">Entry</span>{p.entry_guidance}</p>
+                  )}
+                  {p.reasoning && (
+                    <p class="dl-pos-line"><span class="dl-lab">Why</span>{p.reasoning}</p>
+                  )}
+                </div>
+              ))}
+
+              <details class="dl-raw">
+                <summary>Raw record</summary>
+                <pre>{r.render}</pre>
+              </details>
+            </div>
+          </details>
+        </li>
+      );
+    })}
+  </ol>
+</div>
+
+<script is:inline>
+  (function () {
+    var root = document.querySelector(".decision-log");
+    if (!root) return;
+    var buttons = root.querySelectorAll(".dl-filter button");
+    var items = root.querySelectorAll(".dl-item");
+    buttons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var f = btn.getAttribute("data-filter");
+        buttons.forEach(function (b) {
+          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+        });
+        items.forEach(function (it) {
+          var show = f === "all" || it.getAttribute("data-kind") === f;
+          it.hidden = !show;
+        });
+      });
+    });
+  })();
+</script>
+
+<style>
+  .decision-log { margin-top: var(--sp-4); }
+
+  /* ── Filter ── */
+  .dl-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-5);
+  }
+  .dl-filter button {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-pill);
+    padding: 0.4rem 0.85rem;
+    cursor: pointer;
+    /* 44px minimum touch target without inflating the visual pill. */
+    min-height: 2.25rem;
+  }
+  .dl-filter button:hover { color: var(--ink); border-color: var(--rule-strong); }
+  .dl-filter button[aria-pressed="true"] {
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .dl-n { opacity: 0.7; }
+
+  /* ── List ── */
+  .dl-list { list-style: none; margin: 0; padding: 0; }
+  .dl-item { border-top: 1px solid var(--rule); }
+  .dl-item:last-child { border-bottom: 1px solid var(--rule); }
+
+  .dl-item summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem var(--sp-4);
+    padding: var(--sp-4) 0;
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-sm);
+  }
+  .dl-item summary::-webkit-details-marker { display: none; }
+  .dl-item summary:hover { background: var(--bg-elev); }
+  .dl-item summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .dl-date { color: var(--ink); flex: none; }
+
+  /* ── Conviction meter — value carried by the number too, never colour alone ── */
+  .dl-conv { display: inline-flex; align-items: center; gap: 0.6ch; flex: none; }
+  .dl-meter { display: inline-flex; gap: 2px; }
+  .dl-seg {
+    width: 5px;
+    height: 12px;
+    border-radius: 1px;
+    background: var(--rule-strong);
+  }
+  .dl-seg.on { background: var(--accent); }
+  .dl-conv-num { color: var(--ink-muted); font-size: var(--fs-xs); }
+
+  .dl-tag {
+    flex: none;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--rule-strong);
+    color: var(--ink-muted);
+  }
+  .dl-tag.act { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+
+  .dl-tickers { display: inline-flex; flex-wrap: wrap; gap: 0.35rem; min-width: 0; }
+  .dl-chip {
+    font-size: var(--fs-xs);
+    letter-spacing: 0.04em;
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--r-sm);
+    background: var(--bg-elev2);
+    border: 1px solid var(--rule);
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  .dl-chip.buy { border-color: color-mix(in srgb, var(--pos) 55%, var(--rule)); }
+  .dl-chip.sell { border-color: color-mix(in srgb, var(--neg) 55%, var(--rule)); }
+
+  .dl-caret {
+    margin-left: auto;
+    flex: none;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid var(--ink-faint);
+    transition: transform 0.18s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dl-caret { transition: none; }
+  }
+  .dl-item details[open] > summary .dl-caret { transform: rotate(180deg); }
+
+  /* ── Expanded body ── */
+  .dl-body { padding: 0 0 var(--sp-5); }
+  .dl-empty, .dl-hold-reason {
+    font-family: var(--font-serif);
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-4);
+    max-width: var(--measure);
+  }
+
+  .dl-pos {
+    margin-bottom: var(--sp-4);
+    padding-left: var(--sp-4);
+    border-left: 2px solid var(--rule-strong);
+  }
+  .dl-pos-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem var(--sp-3);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-sm);
+    margin-bottom: var(--sp-2);
+  }
+  .dl-pos-tick {
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: 1px dotted var(--rule-strong);
+  }
+  .dl-pos-tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .dl-pos-act {
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    padding: 0.05rem 0.45rem;
+    border-radius: var(--r-sm);
+    color: var(--accent-ink);
+  }
+  .dl-pos-act.buy { background: var(--pos); }
+  .dl-pos-act.sell { background: var(--neg); }
+  .dl-pos-act.hold { background: var(--rule-strong); color: var(--ink); }
+  .dl-pos-size { color: var(--ink); }
+  .dl-pos-stop, .dl-pos-trig { color: var(--ink-muted); font-size: var(--fs-xs); }
+
+  .dl-pos-line {
+    font-family: var(--font-serif);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-body);
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-2);
+    max-width: var(--measure);
+  }
+  .dl-lab {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-right: 0.7ch;
+  }
+
+  /* ── The allocator's own emitted record, kept reachable ── */
+  .dl-raw { margin-top: var(--sp-3); }
+  .dl-raw > summary {
+    display: inline-block;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    cursor: pointer;
+  }
+  .dl-raw > summary:hover { color: var(--accent); }
+  .dl-raw pre {
+    margin: var(--sp-3) 0 0;
+    padding: var(--sp-4);
+    background: var(--bg-elev2);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-sm);
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    line-height: 1.5;
+    color: var(--ink-muted);
+    white-space: pre-wrap;
+  }
+</style>

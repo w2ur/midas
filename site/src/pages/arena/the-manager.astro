@@ -3,6 +3,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import AgentCrest from "@/components/AgentCrest.astro";
 import PortfolioTable from "@/components/PortfolioTable.astro";
 import BaselineChart from "@/components/BaselineChart.astro";
+import DecisionLog from "@/components/DecisionLog.astro";
 import type { AgentPortfolio } from "@/lib/output";
 import { tickerSlug } from "@/lib/orders";
 import {
@@ -66,7 +67,7 @@ function statusCls(status: string): string {
 ---
 <BaseLayout
   title={MANAGER.display_name}
-  current="arena"
+  current="manager"
   description="The Manager — a paper allocator that sizes positions from the ten analysts' convictions. Off the ranked leaderboard by design; its record is visible, not comparable."
 >
   <article class="page dossier" data-agent={MANAGER.id}>
@@ -143,31 +144,15 @@ function statusCls(status: string): string {
     <section class="dsec decisions">
       <p class="eyebrow">Decision log</p>
       <h2>What it decided, session by session</h2>
-      <p class="note">Reverse-chronological. The allocator's own record — every commit and every hold.</p>
+      <p class="note">
+        Reverse-chronological. The allocator's own record — every commit and every hold.
+        Each session collapses to its conviction and what it committed; open one for the
+        per-position sizing, stops and reasoning, or its raw emitted record.
+      </p>
       {reviews.length === 0 ? (
         <p class="empty">No decision records yet.</p>
       ) : (
-        <ol class="decision-list">
-          {reviews.map((r) => {
-            // The decision engine supports explicit HOLD entries inside `positions`
-            // (engine/manager_decision.py) — only non-HOLD entries are commitments.
-            const committed = r.positions.filter((p) => p.action !== "HOLD");
-            return (
-              <li class="decision">
-                <div class="decision-head">
-                  <span class="d-date">{r.date}</span>
-                  <span class="d-conv">conviction {r.conviction}/10</span>
-                  <span class={`d-tag ${committed.length > 0 ? "act" : "hold"}`}>
-                    {committed.length > 0
-                      ? `${committed.length} position${committed.length > 1 ? "s" : ""}`
-                      : "hold"}
-                  </span>
-                </div>
-                <pre class="d-render">{r.render}</pre>
-              </li>
-            );
-          })}
-        </ol>
+        <DecisionLog reviews={reviews} />
       )}
     </section>
 
@@ -184,21 +169,30 @@ function statusCls(status: string): string {
         <ol class="fill-list">
           {fills.map((f) => (
             <li class="fill">
-              <div class="fill-row">
-                <span class="f-date">{f.date}</span>
-                <a class="f-tick" href={`/ticker/${tickerSlug(f.ticker)}`}>{f.ticker}</a>
-                <span class="f-action">{f.action}</span>
-                <span class="f-notional">
-                  {f.notional_base !== null ? `EUR ${eur(f.notional_base)}` : "—"}
-                </span>
-                <span class={`f-status ${statusCls(f.status)}`}>{statusLabel(f)}</span>
-              </div>
-              {f.trigger && (
-                <p class="f-trigger">
-                  trigger {f.trigger.op} {f.trigger.level}{f.expires ? ` · expires ${f.expires}` : ""}
-                </p>
-              )}
-              <p class="f-reasoning">{f.reasoning}</p>
+              {/* Same disclosure shape as the decision log above: the row is the
+                  scannable record, the rationale is one click down. Printing
+                  every reasoning paragraph inline made this section 2,567px —
+                  the second-tallest block on the page after the log itself. */}
+              <details>
+                <summary>
+                  <span class="f-date">{f.date}</span>
+                  <a class="f-tick" href={`/ticker/${tickerSlug(f.ticker)}`}>{f.ticker}</a>
+                  <span class="f-action">{f.action}</span>
+                  <span class="f-notional">
+                    {f.notional_base !== null ? `EUR ${eur(f.notional_base)}` : "—"}
+                  </span>
+                  <span class={`f-status ${statusCls(f.status)}`}>{statusLabel(f)}</span>
+                  <span class="f-caret" aria-hidden="true"></span>
+                </summary>
+                <div class="f-body">
+                  {f.trigger && (
+                    <p class="f-trigger">
+                      trigger {f.trigger.op} {f.trigger.level}{f.expires ? ` · expires ${f.expires}` : ""}
+                    </p>
+                  )}
+                  <p class="f-reasoning">{f.reasoning}</p>
+                </div>
+              </details>
             </li>
           ))}
         </ol>
@@ -358,63 +352,36 @@ function statusCls(status: string): string {
   }
   .empty { color: var(--ink-muted); font-style: italic; margin: 0; }
 
-  /* Decision log — machine voice: monospace render blocks. */
-  .decision-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--sp-4); }
-  .decision {
-    border: 1px solid var(--rule);
-    border-left: 3px solid var(--agent-color, var(--accent));
-    border-radius: var(--r-md);
-    background: var(--bg-elev);
-    padding: var(--sp-4) var(--sp-5);
-  }
-  .decision-head {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-4);
-    flex-wrap: wrap;
-    font-family: var(--font-mono);
-    font-size: var(--fs-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: var(--sp-3);
-  }
-  .d-date { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
-  .d-conv { color: var(--agent-color, var(--accent)); font-variant-numeric: tabular-nums; }
-  .d-tag {
-    margin-left: auto;
-    padding: 0.15em 0.6em;
-    border-radius: var(--r-sm);
-    border: 1px solid var(--rule-strong);
-    color: var(--ink-muted);
-  }
-  .d-tag.act { color: var(--ink); border-color: var(--agent-color, var(--accent)); }
-  .d-render {
-    font-family: var(--font-mono);
-    font-size: var(--fs-sm);
-    line-height: 1.55;
-    color: var(--ink-muted);
-    white-space: pre-wrap;
-    word-break: break-word;
-    margin: 0;
-  }
-
   /* Fills */
-  .fill-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--sp-4); }
-  .fill {
-    border: 1px solid var(--rule);
-    border-radius: var(--r-md);
-    background: var(--bg-elev);
-    padding: var(--sp-4) var(--sp-5);
-  }
-  .fill-row {
+  .fill-list { list-style: none; padding: 0; margin: 0; }
+  .fill { border-top: 1px solid var(--rule); }
+  .fill:last-child { border-bottom: 1px solid var(--rule); }
+  .fill summary {
     display: flex;
     align-items: baseline;
     gap: var(--sp-4);
     flex-wrap: wrap;
+    padding: var(--sp-3) 0;
+    cursor: pointer;
+    list-style: none;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-size: var(--fs-sm);
   }
+  .fill summary::-webkit-details-marker { display: none; }
+  .fill summary:hover { background: var(--bg-elev); }
+  .fill summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .f-caret {
+    align-self: center;
+    flex: none;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid var(--ink-faint);
+  }
+  .fill details[open] .f-caret { transform: rotate(180deg); }
+  .f-body { padding: 0 0 var(--sp-4); }
   .f-date { color: var(--ink-muted); }
   .f-tick {
     color: var(--ink);

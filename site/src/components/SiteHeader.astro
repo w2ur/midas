@@ -3,6 +3,9 @@ const { current } = Astro.props as { current?: string };
 const nav = [
   { href: "/", label: "Front page", key: "home" },
   { href: "/arena", label: "The Arena", key: "arena" },
+  // The allocator is off the ranked board by design, but it was reachable only
+  // as a dashed card at the foot of /arena — a dedicated page with no entrance.
+  { href: "/arena/the-manager", label: "The Manager", key: "manager" },
   { href: "/journal", label: "The Oracle", key: "journal" },
   { href: "/feed", label: "Feed", key: "feed" },
   { href: "/archive", label: "Archive", key: "archive" },

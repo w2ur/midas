@@ -1,0 +1,111 @@
+---
+// The methodology page in six facts, above the essay.
+//
+// Every figure is derived from committed artifacts at build time — the same
+// sources the essay's prose is checked against — so this block cannot assert a
+// cadence or a fill count the data does not support.
+import { cadenceStats, preRegistrationStatus } from "@/lib/cadence";
+import { TRADING_AGENTS } from "@/lib/roster";
+import { DAY_ONE } from "@/lib/session";
+
+const cadence = cadenceStats();
+const prereg = preRegistrationStatus();
+
+/** Every book opens at this figure in its own base currency — see roster.yaml. */
+const INITIAL_CAPITAL = 10_000;
+
+function humanDate(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+  });
+}
+
+const facts = [
+  {
+    label: "Money at risk",
+    value: "None",
+    note: "Paper simulation throughout. No broker, no capital.",
+  },
+  {
+    label: "The desk",
+    value: `${TRADING_AGENTS.length} agents`,
+    note: `${INITIAL_CAPITAL.toLocaleString("en-GB")} each, in the agent's own base currency.`,
+  },
+  {
+    label: "Sessions",
+    value: String(cadence.sessions),
+    note: `Weekdays since ${humanDate(DAY_ONE)}.`,
+  },
+  {
+    label: "Fills",
+    value: String(cadence.totalFills),
+    note: `Across ${cadence.daysWithFill} days that saw at least one trade.`,
+  },
+  {
+    label: "Controls per agent",
+    value: "2",
+    note: "A passive benchmark and a coin flip, both run alongside every book.",
+  },
+  {
+    label: "Skill claim",
+    value: "Not yet",
+    note: `Pre-registered: no claim before ${prereg.monthsRequired} months and ${prereg.fillsPerAgentRequired} fills per agent.`,
+  },
+];
+---
+<section class="facts" aria-label="The experiment in six facts">
+  <dl>
+    {facts.map((f) => (
+      <div class="fact">
+        <dt>{f.label}</dt>
+        <dd class="fact-val">{f.value}</dd>
+        <dd class="fact-note">{f.note}</dd>
+      </div>
+    ))}
+  </dl>
+</section>
+<style>
+  .facts {
+    max-width: var(--measure-wide);
+    margin: 0 auto var(--sp-7);
+  }
+  .facts dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .fact {
+    background: var(--bg-elev);
+    padding: var(--sp-4);
+    min-width: 0;
+  }
+  .fact dt {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .fact-val {
+    margin: var(--sp-2) 0 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-lg);
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    line-height: 1.1;
+  }
+  .fact-note {
+    margin: var(--sp-2) 0 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-sm);
+    line-height: 1.4;
+    color: var(--ink-muted);
+  }
+</style>

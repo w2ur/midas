@@ -1,0 +1,390 @@
+---
+// Side-by-side agent comparison for /arena.
+//
+// The Arena's whole job is comparison and it could not compare: every tile was
+// a link out to a 4-screen dossier, so holding two agents side by side meant
+// two page loads, a back-navigation and remembering numbers.
+//
+// All ten series are rendered server-side and toggled on the client, so
+// switching agents costs nothing and needs no data fetch. Every series is
+// indexed to its own first session (percent return), which is the only basis on
+// which books in different base currencies are comparable — the figures come
+// from the engine's own EUR-normalised snapshots, and no FX arithmetic happens
+// here. A TypeScript copy of a currency rule is what the quote-currency defect
+// was made of.
+import { TRADING_AGENTS, type Agent } from "@/lib/roster";
+
+type Point = { date: string; portfolio_value: number };
+
+export interface Series {
+  agent: Agent;
+  points: Point[];
+  /** Rank on the current board — drives the default selection. */
+  rank: number;
+}
+
+interface Props {
+  series: Series[];
+}
+const { series } = Astro.props as Props;
+
+/** Percent return against the series' own first session. */
+function toPct(points: Point[]): { date: string; val: number }[] {
+  if (points.length === 0) return [];
+  const base = points[0].portfolio_value;
+  if (!base) return [];
+  return points.map((p) => ({ date: p.date, val: ((p.portfolio_value - base) / base) * 100 }));
+}
+
+const curves = series
+  .map((s) => ({ ...s, pts: toPct(s.points) }))
+  .filter((s) => s.pts.length > 0);
+
+const allDates = Array.from(new Set(curves.flatMap((c) => c.pts.map((p) => p.date)))).sort();
+const n = allDates.length;
+const dateToIdx = new Map(allDates.map((d, i) => [d, i]));
+
+const WIDTH = 900;
+const HEIGHT = 360;
+const PAD_L = 54;
+const PAD_R = 66; // room for the end-of-line value labels
+const PAD_T = 22;
+const PAD_B = 38;
+
+const xs = (i: number) => PAD_L + ((WIDTH - PAD_L - PAD_R) * i) / Math.max(n - 1, 1);
+
+// The y-domain covers every series, not only the selected ones: rescaling on
+// each toggle would make two agents look identical at different moments.
+const vals = curves.flatMap((c) => c.pts.map((p) => p.val));
+const yMin = vals.length ? Math.min(0, ...vals) : -1;
+const yMax = vals.length ? Math.max(0, ...vals) : 1;
+const yPad = (yMax - yMin) * 0.08 || 1;
+const ymn = yMin - yPad;
+const ymx = yMax + yPad;
+const ys = (v: number) => PAD_T + ((HEIGHT - PAD_T - PAD_B) * (ymx - v)) / (ymx - ymn);
+
+function pathFor(pts: { date: string; val: number }[]): string {
+  return pts
+    .map((p, k) => `${k === 0 ? "M" : "L"} ${xs(dateToIdx.get(p.date)!).toFixed(1)} ${ys(p.val).toFixed(1)}`)
+    .join(" ");
+}
+
+function fmtPct(v: number): string {
+  return `${v > 0 ? "+" : ""}${v.toFixed(2)}%`;
+}
+
+const drawn = curves.map((c) => {
+  const last = c.pts[c.pts.length - 1];
+  return {
+    id: c.agent.id,
+    name: c.agent.display_name,
+    rank: c.rank,
+    d: pathFor(c.pts),
+    endX: xs(dateToIdx.get(last.date)!),
+    endY: ys(last.val),
+    endVal: last.val,
+    endLabel: fmtPct(last.val),
+  };
+});
+
+// Default selection: the top and the bottom of the board — the story on arrival.
+const ranked = [...drawn].sort((a, b) => a.rank - b.rank);
+const defaults = ranked.length > 1
+  ? [ranked[0].id, ranked[ranked.length - 1].id]
+  : ranked.map((r) => r.id);
+
+const firstDate = allDates[0] ?? "";
+const lastDate = allDates[n - 1] ?? "";
+const hasData = n > 0 && drawn.length > 0;
+
+const agentOptions = TRADING_AGENTS.filter((a) => drawn.some((d) => d.id === a.id));
+---
+{hasData && (
+  <section class="cmp" data-compare data-defaults={defaults.join(",")}>
+    <div class="cmp-head">
+      <div>
+        <p class="cmp-kicker">Compare</p>
+        <h2 class="cmp-h">Two agents, one axis</h2>
+      </div>
+      <p class="cmp-note">
+        Cumulative return, each indexed to its own first session. Pick any agents below.
+      </p>
+    </div>
+
+    <div class="cmp-picker" role="group" aria-label="Agents to compare">
+      {agentOptions.map((a) => (
+        <label class="cmp-opt" data-agent={a.id}>
+          <input type="checkbox" value={a.id} checked={defaults.includes(a.id)} />
+          <span class="cmp-swatch" aria-hidden="true"></span>
+          <span class="cmp-opt-name">{a.display_name}</span>
+        </label>
+      ))}
+      <button type="button" class="cmp-clear" data-clear>Reset</button>
+    </div>
+
+    <figure class="cmp-figure">
+      <svg class="cmp-svg" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img"
+           aria-label={`Cumulative return by agent from ${firstDate} to ${lastDate}. The table below carries every value.`}>
+        <g aria-hidden="true">
+          <line x1={PAD_L} x2={WIDTH - PAD_R} y1={ys(ymx)} y2={ys(ymx)} class="c-grid" />
+          <line x1={PAD_L} x2={WIDTH - PAD_R} y1={ys(ymn)} y2={ys(ymn)} class="c-grid" />
+          <line x1={PAD_L} x2={WIDTH - PAD_R} y1={ys(0)} y2={ys(0)} class="c-base" />
+          <line x1={PAD_L} x2={PAD_L} y1={PAD_T - 4} y2={HEIGHT - PAD_B + 2} class="c-grid" />
+
+          <text x={PAD_L - 10} y={ys(ymx) + 4} text-anchor="end" class="c-label">{ymx.toFixed(1)}%</text>
+          <text x={PAD_L - 10} y={ys(0) + 4} text-anchor="end" class="c-label c-zero">0%</text>
+          <text x={PAD_L - 10} y={ys(ymn) + 4} text-anchor="end" class="c-label">{ymn.toFixed(1)}%</text>
+          <text x={PAD_L} y={HEIGHT - 12} text-anchor="start" class="c-label">{firstDate}</text>
+          <text x={WIDTH - PAD_R} y={HEIGHT - 12} text-anchor="end" class="c-label">{lastDate}</text>
+
+          {drawn.map((s) => (
+            <g class="c-series" data-series={s.id} data-agent={s.id}>
+              <path d={s.d} class="c-line" fill="none" />
+              <circle cx={s.endX} cy={s.endY} r="4" class="c-node" />
+              <text x={s.endX + 8} y={s.endY + 4} class="c-end">{s.endLabel}</text>
+            </g>
+          ))}
+        </g>
+      </svg>
+    </figure>
+
+    {/* The chart is aria-hidden geometry; this table is the accessible record
+        and the no-JS fallback, and it doubles as the delta strip. */}
+    <table class="cmp-table">
+      <caption class="visually-hidden">Cumulative return by agent, {firstDate} to {lastDate}</caption>
+      <thead>
+        <tr><th scope="col">Agent</th><th scope="col" class="ta-r">Return</th><th scope="col" class="ta-r">Rank</th></tr>
+      </thead>
+      <tbody>
+        {ranked.map((s) => (
+          <tr data-row={s.id} data-agent={s.id}>
+            <th scope="row"><span class="cmp-swatch" aria-hidden="true"></span>{s.name}</th>
+            <td class={`ta-r num ${s.endVal > 0 ? "pos" : s.endVal < 0 ? "neg" : ""}`}>{s.endLabel}</td>
+            <td class="ta-r num">{s.rank}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+)}
+
+<script is:inline>
+  (function () {
+    var root = document.querySelector("[data-compare]");
+    if (!root) return;
+    var boxes = Array.prototype.slice.call(root.querySelectorAll(".cmp-picker input"));
+    var defaults = (root.getAttribute("data-defaults") || "").split(",").filter(Boolean);
+
+    function selected() {
+      return boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; });
+    }
+
+    function render() {
+      var on = selected();
+      root.querySelectorAll("[data-series]").forEach(function (g) {
+        g.classList.toggle("is-on", on.indexOf(g.getAttribute("data-series")) !== -1);
+      });
+      root.querySelectorAll("[data-row]").forEach(function (tr) {
+        tr.classList.toggle("is-on", on.indexOf(tr.getAttribute("data-row")) !== -1);
+      });
+      // A comparison is content on a narrative site: keep it in the URL so it
+      // can be linked ("these two diverged in July"). replaceState, so toggling
+      // does not stack history entries.
+      var q = on.length ? "?c=" + on.join(",") : location.pathname;
+      history.replaceState(null, "", on.length ? q : location.pathname);
+    }
+
+    var params = new URLSearchParams(location.search);
+    var fromUrl = (params.get("c") || "").split(",").filter(Boolean);
+    if (fromUrl.length) {
+      boxes.forEach(function (b) { b.checked = fromUrl.indexOf(b.value) !== -1; });
+    }
+
+    boxes.forEach(function (b) { b.addEventListener("change", render); });
+    var clear = root.querySelector("[data-clear]");
+    if (clear) {
+      clear.addEventListener("click", function () {
+        boxes.forEach(function (b) { b.checked = defaults.indexOf(b.value) !== -1; });
+        render();
+      });
+    }
+    render();
+  })();
+</script>
+
+<style>
+  .cmp {
+    margin: 0 0 var(--sp-6);
+    padding: var(--sp-5);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    background: var(--bg-elev);
+  }
+  .cmp-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3) var(--sp-5);
+    margin-bottom: var(--sp-4);
+  }
+  .cmp-kicker {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+  .cmp-h { font-size: var(--fs-lg); margin: 0.15rem 0 0; }
+  .cmp-note {
+    margin: 0;
+    max-width: 28rem;
+    font-family: var(--font-serif);
+    font-size: var(--fs-sm);
+    color: var(--ink-muted);
+  }
+
+  /* ── Picker ── */
+  .cmp-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-4);
+  }
+  .cmp-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5ch;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--r-pill);
+    background: var(--bg);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+  .cmp-opt:hover { border-color: var(--rule-strong); color: var(--ink); }
+  .cmp-opt:has(input:checked) {
+    border-color: var(--agent-color, var(--accent));
+    color: var(--ink);
+    background: color-mix(in srgb, var(--agent-color, var(--accent)) 12%, var(--bg));
+  }
+  .cmp-opt:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cmp-opt input {
+    /* Kept in the a11y tree and keyboard-reachable; the pill is the visual. */
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .cmp-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex: none;
+    background: var(--agent-color, var(--ink-faint));
+    opacity: 0.35;
+  }
+  .cmp-opt:has(input:checked) .cmp-swatch { opacity: 1; }
+
+  .cmp-clear {
+    min-height: 2.25rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px dashed var(--rule-strong);
+    border-radius: var(--r-pill);
+    background: none;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+  }
+  .cmp-clear:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── Chart ── */
+  .cmp-figure { margin: 0; }
+  .cmp-svg { display: block; width: 100%; height: auto; }
+  .c-grid { stroke: var(--rule); stroke-width: 1; }
+  .c-base { stroke: var(--rule-strong); stroke-width: 1.5; }
+  .c-label {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    fill: var(--ink-muted);
+  }
+  .c-zero { fill: var(--ink); }
+
+  /* Unselected series stay out of the drawing entirely rather than ghosting —
+     ten faint lines is noise, not context. */
+  .c-series { display: none; }
+  .c-series.is-on { display: inline; }
+  .c-line {
+    stroke: var(--agent-color, var(--accent));
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .c-node { fill: var(--agent-color, var(--accent)); }
+  .c-end {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    font-weight: 500;
+    fill: var(--agent-color, var(--accent));
+  }
+
+  /* ── Table: the accessible record and the delta strip ── */
+  .cmp-table {
+    width: 100%;
+    margin-top: var(--sp-4);
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-sm);
+  }
+  .cmp-table th, .cmp-table td {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--rule);
+    text-align: left;
+    font-weight: 400;
+  }
+  .cmp-table thead th {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    border-bottom-color: var(--rule-strong);
+  }
+  .cmp-table tbody th {
+    display: flex;
+    align-items: center;
+    gap: 0.6ch;
+    color: var(--ink-muted);
+  }
+  .cmp-table .ta-r { text-align: right; }
+  .cmp-table .pos { color: var(--pos); }
+  .cmp-table .neg { color: var(--neg); }
+  /* Selected rows are emphasised; the rest stay readable, because the table is
+     the full record whether or not a series is drawn. */
+  .cmp-table tbody tr.is-on th { color: var(--ink); font-weight: 500; }
+  .cmp-table tbody tr.is-on { background: color-mix(in srgb, var(--agent-color, var(--accent)) 8%, transparent); }
+  .cmp-table tbody tr:not(.is-on) .cmp-swatch { opacity: 0.3; }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 40rem) {
+    .cmp { padding: var(--sp-4); }
+  }
+</style>

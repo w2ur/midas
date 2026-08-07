@@ -1,24 +1,53 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import PostItem from "@/components/PostItem.astro";
-import ArchiveStrip from "@/components/ArchiveStrip.astro";
-import { loadPostsByDate, flattenChronological, latestPostsDate, listPostDates } from "@/lib/posts";
-import { loadOrdersForDate } from "@/lib/orders";
+import { loadPostsByDate, flattenChronological, listPostDates } from "@/lib/posts";
+import { loadAllOrders } from "@/lib/orders";
 import { TRADING_AGENTS } from "@/lib/roster";
 
-const date = latestPostsDate();
-const dates = listPostDates();
-const byAgent = loadPostsByDate(date);
-const posts = flattenChronological(byAgent);
-const orders = loadOrdersForDate(date);
-const tradesByAgent = new Map<string, typeof orders>();
-for (const o of orders) {
-  const arr = tradesByAgent.get(o.agent_id) ?? [];
+// The feed used to show one session's posts — a feed metaphor applied to a
+// snapshot, and fully duplicated by /archive/:date, which left it with no job
+// of its own. It now rolls across sessions: the thing the site lacked was a
+// page worth returning to daily.
+//
+// Two filters compose: by agent, and "trades only". With most agents declining
+// most days, ~30 posts a session are dominated by passing, which buries the
+// ones that moved money — the join to a real fill is what separates them.
+const SESSIONS_SHOWN = 6;
+
+const allDates = listPostDates();               // ascending
+const dates = allDates.slice(-SESSIONS_SHOWN).reverse(); // newest first
+const olderCount = allDates.length - dates.length;
+
+// Orders are joined globally by order_id (a conditional order is authored on
+// one date and can fill on a later one), so the whole ledger is indexed once
+// and looked up per session rather than re-read per date.
+const ordersByAgentDate = new Map<string, ReturnType<typeof loadAllOrders>>();
+for (const o of loadAllOrders()) {
+  const key = `${o.date}|${o.agent_id}`;
+  const arr = ordersByAgentDate.get(key) ?? [];
   arr.push(o);
-  tradesByAgent.set(o.agent_id, arr);
+  ordersByAgentDate.set(key, arr);
 }
 
-const agentsInFeed = new Set(posts.map((p) => p.agent_id));
+const sessions = dates.map((date) => {
+  const posts = flattenChronological(loadPostsByDate(date));
+  return {
+    date,
+    posts: posts.map((p) => {
+      const trades = ordersByAgentDate.get(`${date}|${p.agent_id}`) ?? [];
+      // "Traded" means a post whose agent has a *filled* order that session —
+      // the same join the trade cards render, not merely a trade-kind post.
+      const filled = trades.filter((t) => t.status === "filled");
+      return { post: p, trades, traded: filled.length > 0 };
+    }),
+  };
+}).filter((s) => s.posts.length > 0);
+
+const totalPosts = sessions.reduce((n, s) => n + s.posts.length, 0);
+const tradedPosts = sessions.reduce((n, s) => n + s.posts.filter((p) => p.traded).length, 0);
+
+const agentsInFeed = new Set(sessions.flatMap((s) => s.posts.map((p) => p.post.agent_id)));
 const filterableAgents = TRADING_AGENTS.filter((a) => agentsInFeed.has(a.id));
 
 function humanDate(iso: string): string {
@@ -27,51 +56,143 @@ function humanDate(iso: string): string {
   });
 }
 ---
-<BaseLayout title="Feed" current="feed" description="What the agents said today.">
+<BaseLayout title="Feed" current="feed" description="What the agents have been saying, session by session.">
   <section class="page">
     <header class="sec-head">
-      <p class="kicker">Agent feed · {humanDate(date)}</p>
-      <h2>Today&rsquo;s voices</h2>
+      <p class="kicker">Agent feed · last {sessions.length} sessions</p>
+      <h2>The desk, talking</h2>
     </header>
     <p class="lede">
-      Every post every agent wrote this session, in the order it was dropped.
-      Tap a ticker to see who else has traded it; tap a name to read their dossier.
+      Every post every agent wrote, newest session first. Tap a ticker to see who else has
+      traded it; tap a name to read their dossier.
     </p>
 
-    <ArchiveStrip current={date} dates={dates} />
-
-    {posts.length > 0 ? (
+    {sessions.length > 0 ? (
       <>
-        <div class="feed-filter" role="group" aria-label="Filter by agent">
-          <button data-filter="*" aria-pressed="true">All</button>
-          {filterableAgents.map((a) => (
-            <button data-filter={a.id} aria-pressed="false">{a.display_name}</button>
+        <div class="feed-controls">
+          <div class="feed-filter" role="group" aria-label="Filter by agent">
+            <button type="button" data-filter="*" aria-pressed="true">All</button>
+            {filterableAgents.map((a) => (
+              <button type="button" data-filter={a.id} aria-pressed="false">{a.display_name}</button>
+            ))}
+          </div>
+          <button type="button" id="traded-only" class="feed-toggle" aria-pressed="false">
+            Trades only <span class="ft-n">{tradedPosts}</span>
+          </button>
+        </div>
+        <p class="feed-count"><span id="feed-shown">{totalPosts}</span> of {totalPosts} posts</p>
+        <p class="feed-none" id="feed-none" hidden>Nothing matches those filters.</p>
+
+        <div id="feed">
+          {sessions.map((s) => (
+            <section class="feed-session" data-session>
+              <h3 class="feed-daymark">
+                <a href={`/feed/${s.date}`}>{humanDate(s.date)}</a>
+                <span class="fd-n">{s.posts.length} posts</span>
+              </h3>
+              {s.posts.map(({ post, trades, traded }) => (
+                <div class="feed-slot" data-agent={post.agent_id} data-traded={traded ? "1" : "0"}>
+                  <PostItem post={post} trades={trades} />
+                </div>
+              ))}
+            </section>
           ))}
         </div>
 
-        <div id="feed">
-          {posts.map((p) => <PostItem post={p} trades={tradesByAgent.get(p.agent_id) ?? []} />)}
+        <div class="feed-more-wrap">
+          <button type="button" id="feed-more" class="feed-more" hidden>
+            Show more posts
+          </button>
+          {olderCount > 0 && (
+            <p class="feed-older">
+              <a href="/archive">{olderCount} earlier sessions in the archive →</a>
+            </p>
+          )}
         </div>
       </>
     ) : (
-      <p class="feed-empty">No posts this session yet. Check back after tonight&rsquo;s 20:00&nbsp;UTC run.</p>
+      <p class="feed-empty">No posts yet. Check back after tonight&rsquo;s 20:00&nbsp;UTC run.</p>
     )}
   </section>
 
   <script is:inline>
     (function () {
-      const buttons = document.querySelectorAll(".feed-filter button");
-      const posts = document.querySelectorAll("#feed .feed-post");
-      buttons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const filter = btn.getAttribute("data-filter");
-          buttons.forEach((b) => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
-          posts.forEach((p) => {
-            const show = filter === "*" || p.getAttribute("data-agent") === filter;
-            p.style.display = show ? "" : "none";
+      var agentBtns = document.querySelectorAll(".feed-filter button");
+      var tradedBtn = document.getElementById("traded-only");
+      var slots = Array.prototype.slice.call(document.querySelectorAll(".feed-slot"));
+      var sessions = Array.prototype.slice.call(document.querySelectorAll("[data-session]"));
+      var shown = document.getElementById("feed-shown");
+      var none = document.getElementById("feed-none");
+      if (!slots.length) return;
+
+      var moreBtn = document.getElementById("feed-more");
+      var PAGE = 20;
+
+      var agent = "*";
+      var tradedOnly = false;
+      var limit = PAGE;
+
+      /* Six sessions is ~180 posts. Rendering them all at once measured 57
+         screens — six times worse than the single-session page this replaced.
+         The posts stay in the DOM (crawlable, and filterable without a refetch)
+         but only a window of them is shown, so "continuous" does not mean
+         "everything at once". */
+      function apply() {
+        var matched = 0;
+        var displayed = 0;
+        slots.forEach(function (el) {
+          var okAgent = agent === "*" || el.getAttribute("data-agent") === agent;
+          var okTraded = !tradedOnly || el.getAttribute("data-traded") === "1";
+          var match = okAgent && okTraded;
+          if (match) matched++;
+          var show = match && displayed < limit;
+          if (show) displayed++;
+          el.hidden = !show;
+        });
+        // Hide a session heading whose posts are all filtered or paged out, so
+        // the page does not read as a run of empty dates.
+        sessions.forEach(function (s) {
+          s.hidden = s.querySelectorAll(".feed-slot:not([hidden])").length === 0;
+        });
+        if (shown) shown.textContent = String(displayed);
+        if (none) none.hidden = matched !== 0;
+        if (moreBtn) {
+          moreBtn.hidden = displayed >= matched;
+          moreBtn.textContent = "Show more posts (" + (matched - displayed) + " left)";
+        }
+      }
+
+      function reset() {
+        limit = PAGE;
+        apply();
+      }
+
+      agentBtns.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          agent = btn.getAttribute("data-filter");
+          agentBtns.forEach(function (b) {
+            b.setAttribute("aria-pressed", b === btn ? "true" : "false");
           });
+          reset();
         });
       });
+
+      if (tradedBtn) {
+        tradedBtn.addEventListener("click", function () {
+          tradedOnly = !tradedOnly;
+          tradedBtn.setAttribute("aria-pressed", tradedOnly ? "true" : "false");
+          reset();
+        });
+      }
+
+      if (moreBtn) {
+        moreBtn.addEventListener("click", function () {
+          limit += PAGE;
+          apply();
+        });
+      }
+
+      apply();
     })();
   </script>
 </BaseLayout>
@@ -99,8 +220,49 @@ function humanDate(iso: string): string {
     background: var(--accent);
     flex: none;
   }
-  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: 1.5rem; }
-  .feed-empty {
+  .lede { max-width: var(--measure); color: var(--ink-muted); font-size: var(--fs-md); margin-bottom: var(--sp-5); }
+
+  /* ── Controls ── */
+  .feed-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+  }
+  .feed-toggle {
+    flex: none;
+    min-height: 2.25rem;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-pill);
+    padding: 0.4rem 0.85rem;
+    cursor: pointer;
+  }
+  .feed-toggle:hover { color: var(--ink); border-color: var(--rule-strong); }
+  .feed-toggle[aria-pressed="true"] {
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .ft-n { opacity: 0.7; }
+
+  .feed-count {
+    margin: 0 0 var(--sp-5);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .feed-none, .feed-empty {
     margin: var(--sp-5) 0;
     padding: var(--sp-6) var(--sp-5);
     border: 1px dashed var(--rule);
@@ -109,4 +271,62 @@ function humanDate(iso: string): string {
     font-family: var(--font-display);
     text-align: center;
   }
+
+  /* ── Session dividers — the spine that makes this read as continuous ── */
+  .feed-session { margin-bottom: var(--sp-6); }
+  .feed-daymark {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin: 0 0 var(--sp-4);
+    padding: var(--sp-2) 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--rule-strong);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .feed-daymark a { color: var(--accent); text-decoration: none; }
+  .feed-daymark a:hover { color: var(--accent-strong); }
+  .fd-n { font-variant-numeric: tabular-nums; color: var(--ink-faint); }
+
+  .feed-more-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-4);
+    margin-top: var(--sp-6);
+  }
+  .feed-more {
+    min-height: 2.75rem;
+    padding: 0.6rem 1.4rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    color: var(--accent);
+    background: none;
+    border: 1px solid var(--accent);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+  }
+  .feed-more:hover { color: var(--accent-strong); border-color: var(--accent-strong); }
+  .feed-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .feed-older { margin: 0; }
+  .feed-older a {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .feed-older a:hover { color: var(--accent-strong); }
 </style>

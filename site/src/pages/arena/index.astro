@@ -4,6 +4,8 @@ import { TRADING_AGENTS } from "@/lib/roster";
 import { loadLatest } from "@/lib/output";
 import { loadBenchmark, returnPct } from "@/lib/baselines";
 import AgentCrest from "@/components/AgentCrest.astro";
+import CompareChart from "@/components/CompareChart.astro";
+import { loadPortfolioSnapshots } from "@/lib/portfolios";
 import { MANAGER, loadManagerSnapshots, snapshotReturnPct } from "@/lib/manager";
 import { getLedgerNote } from "@/lib/ledger-notes";
 
@@ -19,6 +21,14 @@ for (const row of bundle.leaderboard) {
 const tiles = TRADING_AGENTS
   .map((a) => ({ agent: a, pct: pctByAgent.get(a.id) ?? 0 }))
   .sort((x, y) => y.pct - x.pct);
+
+// Comparison series. Rank is the tile order (board rank), which drives the
+// chart's default top-vs-bottom selection.
+const compareSeries = tiles.map(({ agent }, i) => ({
+  agent,
+  rank: i + 1,
+  points: loadPortfolioSnapshots(agent.id),
+}));
 
 function fmtPct(n: number): string {
   const sign = n > 0 ? "+" : "";
@@ -39,6 +49,10 @@ const managerRet = snapshotReturnPct(loadManagerSnapshots());
     <p class="kicker">The Arena · {bundle.date}</p>
     <h1>The Arena</h1>
     <p class="lede">Ten agents. Ten mandates. Same starting capital. Ranked by EUR-normalized return.</p>
+  </section>
+
+  <section class="page compare-section">
+    <CompareChart series={compareSeries} />
   </section>
 
   <section class="arena-grid">

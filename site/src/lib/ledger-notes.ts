@@ -45,7 +45,7 @@ export const LEDGER_NOTES: Partial<Record<AgentId, LedgerNote>> = {
       "share again — a sale that could not have happened. On 2026-08-02 the ledger was " +
       "reconciled: the lost sale was inserted, the 2026-06-24 sale it invalidated was voided, " +
       "and the return shown above already reflects the corrected book.",
-    methodologyHref: "/methodology#lost-fill-2026-05-21",
+    methodologyHref: "/methodology/changelog#lost-fill-2026-05-21",
   },
   world: {
     orderId: "ord_2026-08-05_world_001",
@@ -56,7 +56,7 @@ export const LEDGER_NOTES: Partial<Record<AgentId, LedgerNote>> = {
       "instead of €10.90 — a factor of 100 — and every valuation after it carried the same " +
       "error. On 2026-08-07 the fill was reconciled and €1,079.29 of cash restored; the return " +
       "shown above already reflects the corrected book.",
-    methodologyHref: "/methodology#sweep-and-restatement-2026-08-07",
+    methodologyHref: "/methodology/changelog#sweep-and-restatement-2026-08-07",
   },
   goldfinger: {
     label: "Ledger artifact — reconciled 2026-08-07",
@@ -66,7 +66,7 @@ export const LEDGER_NOTES: Partial<Record<AgentId, LedgerNote>> = {
       "bought and sold as though they quoted in pounds. Nine fills between 2026-04-20 and " +
       "2026-08-07 moved the wrong amount of cash. On 2026-08-07 they were reconciled and " +
       "€873.26 restored; the return shown above already reflects the corrected book.",
-    methodologyHref: "/methodology#sweep-and-restatement-2026-08-07",
+    methodologyHref: "/methodology/changelog#sweep-and-restatement-2026-08-07",
   },
   "monsieur-forex": {
     label: "Ledger artifact — reconciled 2026-08-07",
@@ -77,7 +77,7 @@ export const LEDGER_NOTES: Partial<Record<AgentId, LedgerNote>> = {
       "of cash, the largest by a factor of about 160. On 2026-08-07 they were reconciled and " +
       "€21.98 restored — small only because the errors ran in both directions and largely " +
       "cancelled; the return shown above already reflects the corrected book.",
-    methodologyHref: "/methodology#sweep-and-restatement-2026-08-07",
+    methodologyHref: "/methodology/changelog#sweep-and-restatement-2026-08-07",
   },
 };
 

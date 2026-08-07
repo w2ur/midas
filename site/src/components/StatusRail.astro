@@ -1,7 +1,13 @@
 ---
-// StatusRail — the signature "session-timeline spine".
-// Desktop (>=48rem): a fixed vertical rail down the left edge that reads like a
-// trading-desk session log. Mobile (<48rem): a condensed horizontal status strip.
+// StatusRail — the desk's status strip.
+//
+// A single horizontal readout that sits under the masthead at every breakpoint.
+// It replaced a fixed 72px vertical spine whose stamps were set in
+// `writing-mode: vertical-rl`: four facts that could only be read by tilting
+// your head, at the cost of 72px of viewport on every page. The strip carries
+// the same facts (plus the two the mobile variant used to drop) horizontally,
+// and the layout gets its gutter back.
+//
 // All data is build-time static, read from committed artifacts.
 import { currentDayNumber } from "@/lib/session";
 import { loadCurrentLeaderboard } from "@/lib/leaderboard";
@@ -30,156 +36,66 @@ function hhmmUtc(iso: string): string {
 
 // "LIVE" only for an intraday conditional-order fire (the desk is mid-market);
 // every other writer (weekday session close, weekend valuation) is a settled
-// readout → "CLOSED".
-const sessionState = board && board.trigger === "trigger-fire" ? "LIVE" : "CLOSED";
-const timeStamp = board ? `${hhmmUtc(board.updated_at)} UTC · ${sessionState}` : null;
+// readout → "CLOSED". The vertical rail used to print a permanent "LIVE" label
+// *above* a stamp reading "CLOSED", which contradicted itself; the strip states
+// the session's actual condition once.
+const isLive = board?.trigger === "trigger-fire";
+const sessionState = isLive ? "Live" : "Closed";
+const stamp = board ? hhmmUtc(board.updated_at) : null;
+
+const summary = [
+  `Session ${sessionState.toLowerCase()}`,
+  stamp ? `last update ${stamp} UTC` : null,
+  `day ${day}`,
+  msciLabel ? `MSCI World ${msciLabel}` : null,
+  `${agentCount} agents`,
+].filter(Boolean).join(", ");
 ---
 
-<!-- Desktop spine -->
-<aside class="status-rail" aria-label="Session status">
-  <span class="rail-live">
-    <span class="pulse-dot" aria-hidden="true"></span>
-    <span class="rail-live-label">LIVE</span>
-  </span>
+<div class="status-strip" role="status" aria-label={`Desk status: ${summary}`}>
+  <div class="strip-inner">
+    <span class={`sv-state ${isLive ? "is-live" : ""}`}>
+      <span class="pulse-dot" aria-hidden="true"></span>
+      {sessionState}
+    </span>
 
-  <ol class="rail-stamps">
-    <li class="rail-stamp">
-      <span class="rail-tick" aria-hidden="true"></span>
-      <span class="rail-stamp-text">DAY {day}</span>
-    </li>
-    {timeStamp && (
-      <li class="rail-stamp">
-        <span class="rail-tick" aria-hidden="true"></span>
-        <span class="rail-stamp-text">{timeStamp}</span>
-      </li>
+    {stamp && (
+      <>
+        <span class="sv-sep" aria-hidden="true">·</span>
+        <span class="sv-item"><span class="sv-num">{stamp}</span> UTC</span>
+      </>
     )}
+
+    <span class="sv-sep" aria-hidden="true">·</span>
+    <span class="sv-item">Day <span class="sv-num sv-amber">{day}</span></span>
+
     {msciLabel && (
-      <li class="rail-stamp">
-        <span class="rail-tick" aria-hidden="true"></span>
-        <span class="rail-stamp-text">MSCI {msciLabel}</span>
-      </li>
+      <>
+        <span class="sv-sep" aria-hidden="true">·</span>
+        <span class="sv-item sv-fold">MSCI <span class="sv-num sv-amber">{msciLabel}</span></span>
+      </>
     )}
-    <li class="rail-stamp">
-      <span class="rail-tick" aria-hidden="true"></span>
-      <span class="rail-stamp-text">{agentCount} AGENTS</span>
-    </li>
-  </ol>
-</aside>
 
-<!-- Mobile condensed strip -->
-<div class="status-strip">
-  <span class="strip-live"><span class="pulse-dot" aria-hidden="true"></span>LIVE</span>
-  <span class="strip-sep" aria-hidden="true">·</span>
-  <span>DAY <span class="strip-amber">{day}</span></span>
-  {msciLabel && (
-    <>
-      <span class="strip-sep" aria-hidden="true">·</span>
-      <span>MSCI <span class="strip-amber">{msciLabel}</span></span>
-    </>
-  )}
+    <span class="sv-sep sv-fold" aria-hidden="true">·</span>
+    <span class="sv-item sv-fold"><span class="sv-num">{agentCount}</span> agents</span>
+  </div>
 </div>
 
 <style>
-  /* ── Shared pulse dot ── */
-  .pulse-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
-    flex: none;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .pulse-dot { animation: rail-pulse 2.4s ease-out infinite; }
-  }
-  @keyframes rail-pulse {
-    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent),
-                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
-    70%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent),
-                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
-    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent),
-                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
-  }
-
-  /* ── Desktop spine ── */
-  .status-rail {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: var(--rail-w);
-    background: var(--bg-elev2);
-    border-right: 1px solid var(--rule);
-    z-index: 40;
-    display: none; /* shown >=48rem */
-    flex-direction: column;
-    align-items: center;
-    gap: var(--sp-6);
-    padding: var(--sp-5) 0;
-    overflow: hidden;
-  }
-  @media (min-width: 48rem) {
-    .status-rail { display: flex; }
-  }
-
-  .rail-live {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--sp-3);
-  }
-  .rail-live-label {
-    writing-mode: vertical-rl;
-    font-family: var(--font-mono);
-    font-size: var(--fs-xs);
-    font-weight: 500;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--accent);
-  }
-
-  .rail-stamps {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--sp-5);
-  }
-  .rail-stamp {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--sp-2);
-  }
-  .rail-tick {
-    width: 6px;
-    height: 6px;
-    border-radius: 1.5px;
-    background: var(--accent);
-    box-shadow: 0 0 0 3px var(--bg-elev2);
-    flex: none;
-  }
-  .rail-stamp-text {
-    writing-mode: vertical-rl;
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    font-size: var(--fs-xs);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    white-space: nowrap;
-  }
-
-  /* ── Mobile condensed strip ── */
   .status-strip {
-    display: flex;
-    align-items: center;
-    gap: 0.5ch;
-    padding: var(--sp-2) var(--gutter);
+    position: sticky;
+    top: 0;
+    z-index: 40;
     background: var(--bg-elev2);
     border-bottom: 1px solid var(--rule);
+  }
+  .strip-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.55ch;
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: 0.4rem var(--gutter);
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-size: var(--fs-xs);
@@ -188,26 +104,57 @@ const timeStamp = board ? `${hhmmUtc(board.updated_at)} UTC · ${sessionState}` 
     color: var(--ink-muted);
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
   }
-  @media (min-width: 48rem) {
-    .status-strip { display: none; }
-  }
-  .strip-live {
+
+  .sv-item { flex: none; }
+  .sv-num { color: var(--ink); }
+  .sv-amber { color: var(--accent); }
+  .sv-sep { color: var(--rule-strong); flex: none; }
+
+  .sv-state {
     display: inline-flex;
     align-items: center;
     gap: 0.6ch;
-    color: var(--accent);
+    flex: none;
     font-weight: 500;
+    color: var(--ink);
+  }
+  .sv-state.is-live { color: var(--accent); }
+
+  /* ── Status dot ── */
+  .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink-faint);
     flex: none;
   }
-  .status-strip .pulse-dot { width: 7px; height: 7px; }
-  .strip-sep { color: var(--rule-strong); }
-  .strip-amber { color: var(--accent); }
+  .sv-state.is-live .pulse-dot {
+    background: var(--accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  /* Only a genuinely live desk pulses — a settled readout is a static dot, so
+     the motion means "mid-market" rather than "the page loaded". */
+  @media (prefers-reduced-motion: no-preference) {
+    .sv-state.is-live .pulse-dot { animation: strip-pulse 2.4s ease-out infinite; }
+  }
+  @keyframes strip-pulse {
+    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent),
+                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
+    70%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent),
+                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent),
+                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
+  }
+
+  /* Narrow phones keep the session state and the day count; the reference
+     figure and the roster size fold away rather than truncating mid-word. */
+  @media (max-width: 26rem) {
+    .sv-fold { display: none; }
+  }
 
   /* Chrome — never print the status furniture. */
   @media print {
-    .status-rail,
     .status-strip { display: none !important; }
   }
 </style>
