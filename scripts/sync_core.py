@@ -43,6 +43,12 @@ CORE_SCRIPTS = [
     # would otherwise fail to import on the mirror.
     "restate_valuations.py",
     "restate_bundles.py",
+    # Same rationale one layer down: restate_* re-derive *valuations* from a
+    # corrected store, this one corrects the *fills* underneath when the defect
+    # reached execution — a notional converted at the wrong quote currency.
+    # Config-driven, no live-cast coupling, and it imports restate_valuations
+    # for the inception-capital back-solve so the two must ship together.
+    "reconcile_quote_currency.py",
     "run_backtest.py",
     "run_all_combos.py",
     "refresh_universes.py",
