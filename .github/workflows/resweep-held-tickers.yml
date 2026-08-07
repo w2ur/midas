@@ -34,10 +34,14 @@ name: resweep-held-tickers
 # mode it guards against (a stale share count silently mis-valuing a book)
 # degrades slowly, not catastrophically, between runs.
 #
-# Scheduled well clear of every other cron this repo runs: the 19:55-20:30
+# Scheduled well clear of every other cron this repo runs: the 19:55-21:00
 # UTC blackout the trigger watcher (check-triggers.yml) observes around the
 # daily session, the 22:30 UTC (weekdays) / 19:30 UTC (weekends) full
 # fetch-ohlcv.yml runs, and refresh-universes.yml's Monday 03:15 UTC slot.
+# "Clear of" is a statement about the *nominal* schedule and nothing more:
+# GitHub's scheduler runs 42 min to 6 h late, so overlap is possible and the
+# push goes through .github/actions/push-with-retry rather than relying on it
+# not happening.
 
 on:
   schedule:
