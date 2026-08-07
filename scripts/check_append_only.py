@@ -164,9 +164,13 @@ def find_violations(base: str, head: str) -> list[Violation]:
                 for key in set(old_row) | set(new_row)
                 if old_row.get(key) != new_row.get(key)
             )
-            violations.append(
-                Violation(path, row_date, f"changed {changed} without [restate]")
-            )
+            # Reason states *what* changed, never whether it was declared —
+            # the caller knows that and says so in its header. Baking
+            # "without [restate]" in here printed it on every row of a
+            # correctly *declared* restatement too, directly under a header
+            # saying the opposite. An honesty tool contradicting itself in
+            # its own output is worse than terse output.
+            violations.append(Violation(path, row_date, f"changed {changed}"))
     return violations
 
 
