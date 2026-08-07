@@ -49,6 +49,11 @@ CORE_SCRIPTS = [
     # Config-driven, no live-cast coupling, and it imports restate_valuations
     # for the inception-capital back-solve so the two must ship together.
     "reconcile_quote_currency.py",
+    # One-shot store migration, shipped for the same reason as the restatement
+    # tooling: a fork whose store predates the ISO-at-ingest contract needs it
+    # to convert, and it is config-driven with no live-cast coupling. Marker-
+    # guarded, so shipping it cannot cause a double-division downstream.
+    "normalise_store_units.py",
     "run_backtest.py",
     "run_all_combos.py",
     "refresh_universes.py",
