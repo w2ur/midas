@@ -68,11 +68,11 @@ jobs:
 
           fail=0
           if [[ $touches_journals -eq 0 ]]; then
-            echo "::error::Session commit missing data/agent_memory/*.md (Step 9 skipped) — refusing to merge."
+            echo "::error::Session commit missing data/agent_memory/*.md (Step 8 skipped) — refusing to merge."
             fail=1
           fi
           if [[ $touches_baselines -eq 0 ]]; then
-            echo "::error::Session commit missing data/baselines/ (Step 9a skipped) — refusing to merge."
+            echo "::error::Session commit missing data/baselines/ (Step 9 skipped) — refusing to merge."
             fail=1
           fi
           [[ $fail -eq 0 ]]

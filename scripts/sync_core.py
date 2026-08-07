@@ -71,6 +71,10 @@ LIVE_ONLY_TESTS = {
     "test_manager_session.py",
     # Imports scripts.sync_core, the dev-only tool not in core.
     "test_sync_core.py",
+    # Drives scripts/prompt_hash.py against docs/triggers/weekday-session.md.
+    # Both are live-desk RemoteTrigger infrastructure: core has no trigger doc
+    # and prompt_hash.py is not in CORE_SCRIPTS.
+    "test_prompt_hash.py",
     # Drives scripts/bootstrap_venv.sh, live sandbox infrastructure. CORE_SCRIPTS
     # ships .py modules only, so the shell script has no route into core.
     "test_bootstrap_venv.py",

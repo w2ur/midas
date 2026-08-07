@@ -81,6 +81,8 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
+PROMPT_SHA256: b2a3af8edc1411669f030c6db0dad90d46ecee27a56974dde77f9fc869bab88f
+
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
 git reset --hard origin/main
@@ -125,6 +127,17 @@ Activate the venv, then VERIFY it — do NOT build or repair it here:
 # on conflicts — merging would have reverted the 08-01 fills.
 # If the guard aborts: do NOT reconcile by hand. Abandon the run and report;
 # the next scheduled session starts clean.
+
+# Step 0d — Confirm this prompt matches the repo (report-only, never fatal)
+python scripts/prompt_hash.py --expect <the PROMPT_SHA256 value at the top of
+this prompt, copied literally>
+# This prompt lives in the RemoteTrigger configuration, outside the repo, and
+# is kept in step with docs/triggers/weekday-session.md by hand. Nothing ever
+# checked that they agreed, so a session could run a months-old prompt against
+# current helpers with no symptom but a step quietly not happening.
+# If it prints PROMPT DRIFT: run the pipeline exactly as written anyway and put
+# the mismatch in your final report. Do NOT edit this prompt mid-run, and do
+# NOT abort — a stale prompt still trades; a lost session does not.
 
 ROSTER = [
     "steady-eddie-eur", "steady-eddie-usd",
@@ -176,6 +189,14 @@ NEVER reconcile state by hand. Portfolios, orders, baselines and the
 leaderboard are written by helpers only. If they disagree with each
 other, that is a finding to report, not a file to edit.
 
+A `[SKIP] <step> already completed this session.` line is an ABORT
+condition, not reassurance. Step markers are scoped to this session's
+ledger base, so on a first run of the evening nothing can legitimately
+be marked done: a `[SKIP]` means another run — an ad-hoc invocation, or
+a previous fire — is anchored to the same base and its state leaked
+into yours. Stop, report which step printed it, and do not continue. The
+one legitimate `[SKIP]` is a deliberate resume you were told to perform.
+
 The checks in this prompt are contract assertions on committed
 artifacts, not requests to double-check your reasoning. Run them
 exactly as written, and add none of your own. You already verify your
@@ -192,6 +213,22 @@ python scripts/fetch_market_data.py
 # Writes data/market/today.json from the committed OHLCV store. Sandbox
 # has no outbound HTTP — that is by design. If this exits non-zero, abort
 # and report. Do not improvise a hand-built today.json.
+# It now also asserts freshness: StaleMarketDataError means the equity side
+# of the store has not advanced in more than 4 calendar days, i.e. the
+# fetch-ohlcv cron has been failing. That is a hard abort — snapshots are
+# immutable, so a snapshot written at three-week-old closes is permanent.
+# Do NOT work around it by fetching prices yourself.
+
+# Step 1a — Sentiment A/B arm check (report-only, never fatal)
+    from scripts.daily_session import step_check_sentiment_freshness
+    step_check_sentiment_freshness(today)
+# Records which arm of the pre-registered sentiment A/B this session
+# actually ran, to data/market/sentiment_arm.jsonl (committed). If the
+# collector's digests for today are not on main, the two treatment agents
+# read yesterday's headlines and the arm is confounded — which is what was
+# happening at every session until 2026-08-07. Keep running: a missing news
+# feed is not a reason to lose a session. Mention a `degraded-to-control`
+# result in your final report.
 
 # Step 2 — Trading round (DISPATCH IN PARALLEL — one Task call per agent)
     from scripts.daily_session import (
@@ -500,6 +537,7 @@ git show HEAD --stat must include:
   - data/posts/{today}.json
   - data/blog/{today}.md
   - data/leaderboard/current.json
+  - data/market/sentiment_arm.jsonl
 Also confirm the leaderboard in data/output/{today}.json was produced
 by step_build_leaderboard, not by hand. Spot-check one EUR agent and
 one USD agent against (portfolio_mtm_eur / 10_000 - 1) * 100 — values
