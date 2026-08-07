@@ -229,6 +229,13 @@ Read your context from disk:
 - data/agent_memory/{agent_id}.md              (your prior-self journal — your beliefs, lessons, biases)
 - data/market/today.json                       (today's market snapshot + benchmarks)
 - data/blog/{yesterday}.md                     (yesterday's overall session, narrated by The Oracle — read for continuity, optional if missing)
+- data/market/ohlcv/{TICKER}.jsonl             (daily closes, if you want price history beyond today's snapshot)
+
+Prices in the OHLCV store are in each ticker's own ISO currency — the same
+units your portfolio records cost basis in, and the same units the broker
+fills and prices trigger levels in. A London line reads in POUNDS, not pence
+(`LLOY.L` at 1.16, not 116). Size positions and set trigger levels in those
+units directly; do not scale anything.
 
 Stay in your persona, mandate, universe, and base currency. Long-only;
 use bearish ETFs to express short views. Respect your position limits

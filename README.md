@@ -101,7 +101,7 @@ This split implements the **Brain / Hands** principle documented in CLAUDE.md. R
 
 Per-agent safety rails live in `roster.yaml` (enforced by the broker); `data/agent_config/` holds only `live_switch.json`.
 
-**Ticker → currency** resolves in `engine/quotes.py`, in three layers: the hand-maintained override map `data/ticker_currencies.json`, then the vendor's own answer captured into `data/tickers.json` by `scripts/fetch_ohlcv.py`, then a suffix heuristic as a last resort. The vendor layer exists because a suffix cannot answer the question — `LLOY.L` quotes in pence and `PHAG.L` quotes in US dollars. **`GBp` is a unit, not a currency**: the store holds the raw pence quote, and `engine.quotes.normalise_quote` is the single place it becomes GBP/100, so no two pricing paths can disagree about whether that has happened.
+**Ticker → currency** resolves in `engine/quotes.py`, in three layers: the hand-maintained override map `data/ticker_currencies.json`, then the vendor's own answer captured into `data/tickers.json` by `scripts/fetch_ohlcv.py`, then a suffix heuristic as a last resort. The vendor layer exists because a suffix cannot answer the question — `LLOY.L` quotes in pence and `PHAG.L` quotes in US dollars. **`GBp` is a unit, not a currency**: the store is ISO-denominated, the pence→pounds division happening once at ingest (`scripts.fetch_ohlcv._normalise_vendor_units`). Read paths use `engine.quotes.store_quote`/`latest_price`, which never scale — so no two pricing paths can disagree about whether the conversion has happened, and the agents, who read the store directly rather than through the engine, see the same units their books are denominated in.
 
 ---
 
