@@ -123,6 +123,7 @@ _SUFFIX_UNITS: dict[str, str] = {
     "SW": "CHF",  # SIX Swiss
     "T": "JPY",  # Tokyo
     "TO": "CAD",  # Toronto
+    "V": "CAD",  # TSX Venture
     "HK": "HKD",  # Hong Kong
     "AX": "AUD",  # ASX
 }
@@ -211,6 +212,17 @@ def _heuristic_unit(ticker: str) -> str | None:
     A bare ticker with no suffix keeps `USD`. That is not a guess about an
     unknown exchange — it is Yahoo's convention for a US listing, and the
     only shape it can take.
+
+    **An FX pair (`…=X`) refuses.** A pair quotes in its *second* leg, which
+    no suffix rule can see, and `…=X` carries no dot — so this function used
+    to fall through to the bare-ticker branch and answer `USD` for every
+    pair. Right for `EURUSD=X` by luck, wrong for `EURGBP=X`, `GBPJPY=X`,
+    `USDJPY=X` and `EURJPY=X`, and wrong in the silent way: a mislabelled
+    price still prices. The vendor registry answers all of these correctly
+    (verified 2026-08-07 against the committed `data/tickers.json`), so the
+    heuristic has nothing to add and refuses instead of guessing. This also
+    puts it back in step with `site/src/lib/ohlcv.ts`, which already
+    refused; `tests/test_quote_parity.py` now pins the two together.
     """
     if ticker.endswith("-EUR"):
         return "EUR"
@@ -218,6 +230,8 @@ def _heuristic_unit(ticker: str) -> str | None:
         return "USD"
     if ticker.endswith("-GBP"):
         return "GBP"
+    if ticker.endswith("=X"):
+        return None
     _, dot, suffix = ticker.rpartition(".")
     if dot:
         return _SUFFIX_UNITS.get(suffix.upper())

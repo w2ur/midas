@@ -228,7 +228,9 @@ def test_watchdog_reports_a_genuinely_missing_session(absent_repo, tmp_path):
 # W2.4 — the failure-issue action's branching
 # --------------------------------------------------------------------------
 
-FAILURE_ISSUE_ACTION = REPO_ROOT / ".github" / "actions" / "failure-issue" / "action.yml"
+FAILURE_ISSUE_ACTION = (
+    REPO_ROOT / ".github" / "actions" / "failure-issue" / "action.yml"
+)
 
 # The workflows expected to route their outcome through the shared action.
 # Named rather than counted: an addition should be a deliberate edit here, not
@@ -327,14 +329,106 @@ def test_alerting_workflows_report_their_outcome():
     wiring is the whole fix, so wiring is what gets asserted.
     """
     for name in ALERTING_WORKFLOWS:
-        workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / name).read_text())
+        workflow = yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / name).read_text()
+        )
         job = next(iter(workflow["jobs"].values()))
-        reporters = [s for s in job["steps"] if s.get("uses") == "./.github/actions/failure-issue"]
+        reporters = [
+            s
+            for s in job["steps"]
+            if s.get("uses") == "./.github/actions/failure-issue"
+        ]
         assert len(reporters) == 1, f"{name} does not report its outcome exactly once"
         step = reporters[0]
         # `if: always()` — without it the step is skipped on the failure it exists to report.
-        assert step.get("if") == "always()", f"{name}'s reporter is conditional on success"
-        assert step["with"]["outcome"] == "${{ job.status }}", f"{name} reports a hardcoded outcome"
+        assert step.get("if") == "always()", (
+            f"{name}'s reporter is conditional on success"
+        )
+        assert step["with"]["outcome"] == "${{ job.status }}", (
+            f"{name} reports a hardcoded outcome"
+        )
 
         # `issues: write` at workflow level, or gh 403s and the alert is lost.
-        assert workflow["permissions"]["issues"] == "write", f"{name} cannot file issues"
+        assert workflow["permissions"]["issues"] == "write", (
+            f"{name} cannot file issues"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Regression-comment citations (2026-08-07 review, W6 meta-finding 2)
+# ---------------------------------------------------------------------------
+
+_REGRESSION_CITE = re.compile(r"Regression:\s*([0-9a-f]{7,40})\b")
+
+
+def _regression_citations() -> list[tuple[Path, str]]:
+    out: list[tuple[Path, str]] = []
+    for path in sorted((REPO_ROOT / "tests").glob("test_*.py")):
+        for sha in _REGRESSION_CITE.findall(path.read_text(encoding="utf-8")):
+            out.append((path, sha))
+    return out
+
+
+def _is_shallow() -> bool:
+    return (REPO_ROOT / ".git" / "shallow").exists()
+
+
+class TestRegressionCitations:
+    """`// Regression: <hash> — <bug>` is the portfolio's convention, and a
+    convention with no check drifts: `test_ohlcv_ingest.py`'s crypto
+    partial-bar test cited `63970d933`, the unrelated XSS/universe PR, for a
+    year of readers to follow into the wrong commit.
+
+    **Scope limit, stated rather than hidden.** The resolution check needs
+    history, and CI checks out at `fetch-depth: 1` — with 2.5 GB of committed
+    price store behind this repo, a full-depth clone on every push is not a
+    trade worth making for this. So the shape check runs everywhere and the
+    resolution check runs on a full clone, i.e. for whoever writes the
+    comment, at the moment they write it. That is the useful moment; it is
+    not the same as a CI gate, and this docstring is where that is admitted.
+    """
+
+    def test_citations_exist_at_all(self) -> None:
+        """The control. A parser that finds nothing passes both tests below
+        forever."""
+        assert len(_regression_citations()) >= 5
+
+    def test_every_citation_is_shaped_like_a_sha(self) -> None:
+        """Always runs, shallow clone or not."""
+        for path, sha in _regression_citations():
+            assert re.fullmatch(r"[0-9a-f]{7,40}", sha), f"{path.name}: {sha!r}"
+
+    @pytest.mark.skipif(_is_shallow(), reason="shallow clone has no history to resolve")
+    def test_every_citation_resolves_to_a_real_commit(self) -> None:
+        unresolved = [
+            f"{path.name}: {sha}"
+            for path, sha in _regression_citations()
+            if subprocess.run(
+                ["git", "cat-file", "-e", f"{sha}^{{commit}}"],
+                cwd=REPO_ROOT,
+                capture_output=True,
+            ).returncode
+            != 0
+        ]
+        assert not unresolved, (
+            "regression comments cite commits that do not exist in this "
+            f"repository: {unresolved}"
+        )
+
+    @pytest.mark.skipif(_is_shallow(), reason="shallow clone has no history to resolve")
+    def test_the_resolver_can_fail(self) -> None:
+        """Control for the test above — `git cat-file -e` must actually
+        reject a hash, not return 0 for anything hex-shaped."""
+        assert (
+            subprocess.run(
+                [
+                    "git",
+                    "cat-file",
+                    "-e",
+                    "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef^{commit}",
+                ],
+                cwd=REPO_ROOT,
+                capture_output=True,
+            ).returncode
+            != 0
+        )
