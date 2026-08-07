@@ -63,9 +63,9 @@ export const LEDGER_NOTES: Partial<Record<AgentId, LedgerNote>> = {
     summary:
       "A ticker's currency used to be guessed from its suffix, and `.L` is not uniformly " +
       "sterling: this book's silver (PHAG.L) and oil (CRUD.L) quote in US dollars but were " +
-      "bought and sold as though they quoted in pounds. Eight fills between 2026-04-20 and " +
-      "2026-07-23 moved the wrong amount of cash. On 2026-08-07 they were reconciled and " +
-      "€676.35 restored; the return shown above already reflects the corrected book.",
+      "bought and sold as though they quoted in pounds. Nine fills between 2026-04-20 and " +
+      "2026-08-07 moved the wrong amount of cash. On 2026-08-07 they were reconciled and " +
+      "€873.26 restored; the return shown above already reflects the corrected book.",
     methodologyHref: "/methodology#sweep-and-restatement-2026-08-07",
   },
   "monsieur-forex": {

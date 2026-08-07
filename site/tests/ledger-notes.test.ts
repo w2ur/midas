@@ -15,11 +15,29 @@ describe("ledger-notes", () => {
     expect(note!.methodologyHref).toMatch(/^\/methodology#/);
   });
 
+  it("carries the three quote-currency reconciliations of 2026-08-07", () => {
+    // world (LSE pence read as pounds), goldfinger (.L quoting in USD) and
+    // monsieur-forex (pairs quoting in their second leg) each had fills
+    // converted at a guessed currency. Only world's is a single order, so
+    // only world's pins an orderId.
+    for (const id of ["world", "goldfinger", "monsieur-forex"] as const) {
+      const note = getLedgerNote(id);
+      expect(note, `${id} should carry a ledger note`).not.toBeNull();
+      expect(note!.summary).toMatch(/reconciled/i);
+      expect(note!.methodologyHref).toBe("/methodology#sweep-and-restatement-2026-08-07");
+    }
+    expect(getLedgerNote("world")!.orderId).toBe("ord_2026-08-05_world_001");
+    expect(getLedgerNote("goldfinger")!.orderId).toBeUndefined();
+  });
+
   it("returns null for agents with no known ledger artifact", () => {
-    const clean = TRADING_AGENTS.filter((a) => a.id !== "sharp-shooter-eur");
+    // Derived from LEDGER_NOTES rather than hardcoded, so adding an incident
+    // does not falsify this test — but every agent NOT listed must still
+    // return null, which is the property worth guarding.
+    const clean = TRADING_AGENTS.filter((a) => !(a.id in LEDGER_NOTES));
     expect(clean.length).toBeGreaterThan(0);
     for (const agent of clean) {
-      expect(getLedgerNote(agent.id)).toBeNull();
+      expect(getLedgerNote(agent.id), `${agent.id} should have no note`).toBeNull();
     }
   });
 

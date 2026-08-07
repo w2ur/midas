@@ -24,16 +24,16 @@ describe("cadenceStats", () => {
   // Pinned literal — this is deliberate (see cadence.ts module doc): if a
   // data refresh changes the roster fill count, this test MUST fail so the
   // homepage/methodology prose gets regenerated rather than going stale.
-  it("pins the current roster fill count (165) so drift breaks the build", () => {
-    expect(cadenceStats().totalFills).toBe(165);
+  it("pins the current roster fill count (216) so drift breaks the build", () => {
+    expect(cadenceStats().totalFills).toBe(216);
   });
 
   it("recomputes the session count directly from data/output/*.json", () => {
     expect(cadenceStats().sessions).toBe(listDates().length);
   });
 
-  it("pins the current session count (80)", () => {
-    expect(cadenceStats().sessions).toBe(80);
+  it("pins the current session count (87)", () => {
+    expect(cadenceStats().sessions).toBe(87);
   });
 
   it("recomputes the distinct-days-with-a-fill count from trades.json dates", () => {
@@ -47,8 +47,8 @@ describe("cadenceStats", () => {
     expect(cadenceStats().daysWithFill).toBe(days.size);
   });
 
-  it("pins the current distinct-days-with-a-fill count (50)", () => {
-    expect(cadenceStats().daysWithFill).toBe(50);
+  it("pins the current distinct-days-with-a-fill count (58)", () => {
+    expect(cadenceStats().daysWithFill).toBe(58);
   });
 
   it("reports fewer distinct fill-days than sessions — the desk is selective, not idle", () => {
@@ -68,16 +68,16 @@ describe("cadenceStats", () => {
   it("pins the current per-agent fill counts", () => {
     const byId = Object.fromEntries(cadenceStats().perAgent.map((a) => [a.id, a.fills]));
     expect(byId).toEqual({
-      "steady-eddie-eur": 12,
-      "steady-eddie-usd": 15,
-      "sharp-shooter-eur": 20,
-      "sharp-shooter-usd": 24,
-      "yolo-sapiens-eur": 17,
-      "yolo-sapiens-usd": 19,
+      "steady-eddie-eur": 16,
+      "steady-eddie-usd": 20,
+      "sharp-shooter-eur": 25,
+      "sharp-shooter-usd": 34,
+      "yolo-sapiens-eur": 19,
+      "yolo-sapiens-usd": 24,
       satoshi: 7,
-      "monsieur-forex": 16,
-      goldfinger: 17,
-      world: 18,
+      "monsieur-forex": 22,
+      goldfinger: 18,
+      world: 31,
     });
   });
 
@@ -90,24 +90,30 @@ describe("cadenceStats", () => {
     const s = cadenceStats();
     const satoshi = s.perAgent.find((a) => a.id === "satoshi")!;
     expect(satoshi.lastFillDate).toBe("2026-06-04");
-    // asOf is pinned indirectly via the session-count test above (2026-07-24).
-    expect(s.asOf).toBe("2026-07-24");
-    expect(satoshi.daysDormant).toBe(50);
+    // asOf is pinned indirectly via the session-count test above (2026-08-05).
+    expect(s.asOf).toBe("2026-08-05");
+    expect(satoshi.daysDormant).toBe(62);
   });
 
-  it("agrees with the orders outbox/inbox join to within the one known ledger anomaly", () => {
-    // See cadence.ts's module doc: the orders join (loadAllOrders(), now
-    // fixed to resolve conditional-order fills across dates) reports 166
-    // roster fills; trades.json reports 165. The +1 is a single stray inbox
-    // row (ord_2026-05-21_sharp-shooter-eur_001) that was never applied to
-    // the portfolio — a genuine ledger anomaly, not a counting bug. If this
-    // gap ever changes, that's new information worth re-investigating, not
-    // silently absorbing.
+  it("agrees exactly with the orders outbox/inbox join — the ledger anomaly is closed", () => {
+    // This assertion used to allow a +1 gap: the orders join reported one
+    // more roster fill than trades.json, because the confirmed inbox row
+    // ord_2026-05-21_sharp-shooter-eur_001 had never been applied to the
+    // portfolio. The 2026-08-02 reconciliation closed that gap from both
+    // ends — it inserted the lost sale into trades.json and voided the
+    // 2026-06-24 inbox row the corrected ledger could not support — so the
+    // two sources now agree exactly, and the allowance is gone rather than
+    // re-pinned to a new constant.
+    //
+    // Keep this at 0. A non-zero gap means a fill exists on one side of the
+    // Brain/Hands boundary and not the other, which is the exact failure
+    // class the 2026-05-21 incident belonged to — new information worth
+    // investigating, never silently absorbing.
     const roster = new Set(TRADING_AGENTS.map((a) => a.id));
     const joinFilled = loadAllOrders().filter(
       (o) => o.status === "filled" && roster.has(o.agent_id as (typeof TRADING_AGENTS)[number]["id"]),
     ).length;
-    expect(joinFilled - cadenceStats().totalFills).toBe(1);
+    expect(joinFilled - cadenceStats().totalFills).toBe(0);
   });
 });
 
