@@ -9,7 +9,11 @@
   "currency": "EUR",
   "trigger": {
     "op": "<=",
-    "level": 111.0
+    "level": 1.11
   },
-  "expires": "2026-09-30"
+  "expires": "2026-09-30",
+  "originally_recorded": {
+    "trigger_level": 111.0
+  },
+  "unit_migration_note": "Trigger level authored against the pre-2026-08-07 store, which held LSE prices in pence; rescaled to GBP when the store was normalised to ISO units. The agent's intent (a stop at 111.00 pence) is unchanged. See METHODOLOGY.md, 2026-08-07 entry."
 }
