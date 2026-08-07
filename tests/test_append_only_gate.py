@@ -234,6 +234,59 @@ class TestOutOfScope:
         assert _gate(repo).returncode == 0
 
 
+def _has_deep_history(depth: int = 40) -> bool:
+    """False on a shallow clone — CI checks out `fetch-depth: 1` for pytest."""
+    try:
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"HEAD~{depth}^{{commit}}"],
+            cwd=REPO_ROOT,
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError:
+        return False
+    return True
+
+
+class TestCannotEvaluateIsNotAViolation:
+    """A crash must not read as a finding.
+
+    This is how CI found the defect: on a shallow PR checkout `HEAD~1` does
+    not resolve, git raised, the traceback exited 1, and exit 1 is the gate's
+    "published row was rewritten" signal. The distinction gets its own exit
+    code and its own tests.
+    """
+
+    def test_an_unresolvable_base_is_not_a_violation(self, repo):
+        _write_snapshots(repo, [ROW_A])
+        _commit(repo, "the very first commit")
+
+        result = _gate(repo, base="HEAD^", head="HEAD")
+        assert result.returncode == 0, result.stdout
+        assert "nothing to compare" in result.stdout
+
+    def test_an_unresolvable_head_is_reported_distinctly(self, repo):
+        _write_snapshots(repo, [ROW_A])
+        _commit(repo, "seed")
+
+        result = _gate(repo, base="HEAD", head="refs/heads/does-not-exist")
+        assert result.returncode == 2, result.stdout
+        assert "::error::" in result.stdout
+
+    def test_a_real_violation_still_exits_one(self, repo):
+        """The control: exit 1 must still mean what it meant."""
+        _write_snapshots(repo, [ROW_A])
+        _commit(repo, "seed")
+        _write_snapshots(repo, [dict(ROW_A, session_date="2026-04-20", cash=1.0)])
+        _commit(repo, "chore: weekday session 2026-04-20")
+
+        assert _gate(repo).returncode == 1
+
+
+@pytest.mark.skipif(
+    not _has_deep_history(),
+    reason="shallow checkout — the real-history backtest needs 40 commits",
+)
 def test_backtest_against_real_history():
     """Replay the gate over this repo's own recent commits.
 

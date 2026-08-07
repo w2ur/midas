@@ -174,14 +174,43 @@ def _commit_messages(base: str, head: str) -> str:
     return _git("log", "--format=%B", f"{base}..{head}")
 
 
+def _resolves(ref: str) -> bool:
+    try:
+        _git("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
+    except subprocess.CalledProcessError:
+        return False
+    return True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", required=True, help="ref the rows are frozen from")
     parser.add_argument("--head", required=True, help="ref being checked")
     args = parser.parse_args()
 
-    declared = RESTATE_TRAILER in _commit_messages(args.base, args.head)
-    violations = find_violations(args.base, args.head)
+    # "Cannot evaluate" must never look like "violation". Both used to exit 1:
+    # on a shallow checkout `HEAD^` does not resolve, git raised, the traceback
+    # exited 1, and the caller read that as a rewritten published row. A gate
+    # whose crash is indistinguishable from its finding is a false-alarm
+    # generator, and false alarms are how gates get switched off.
+    if not _resolves(args.head):
+        print(f"::error::--head {args.head!r} does not resolve to a commit.")
+        return 2
+    if not _resolves(args.base):
+        # The genuine case: the repository's first commit, or a checkout too
+        # shallow to have a parent. There are no frozen rows to protect yet.
+        print(
+            f"append-only: --base {args.base!r} does not resolve "
+            "(shallow checkout or root commit) — nothing to compare against."
+        )
+        return 0
+
+    try:
+        declared = RESTATE_TRAILER in _commit_messages(args.base, args.head)
+        violations = find_violations(args.base, args.head)
+    except subprocess.CalledProcessError as exc:
+        print(f"::error::append-only check could not run: {exc}")
+        return 2
 
     if not violations:
         print("append-only: no published row was modified.")
