@@ -95,7 +95,26 @@ jobs:
           # All downstream steps (summary, tag message, tag name) read from
           # this single file so that date, content, and tag name can never
           # disagree across a midnight boundary.
-          python scripts/attest_ledger.py --json > digest.json
+          #
+          # The label comes from the HEAD commit's UTC date, not from the
+          # clock (2026-08-07 review, W2.7). This job is scheduled 23:00 UTC
+          # and GitHub's scheduler is never on time: measured over the eight
+          # most recent tags it actually fired at 00:01-01:44, i.e. ALWAYS
+          # past midnight, so `attest/2026-08-06` was created at 00:03 on
+          # 08-06 attesting a ledger whose newest commit was 08-05 23:42.
+          # Seven of eight sampled tags were labelled a day ahead of the
+          # ledger they attest.
+          #
+          # "Yesterday UTC" would fix the measured pattern and break the
+          # first run that lands at 23:5x. The HEAD commit's date is a
+          # property of the thing being attested rather than of when the
+          # runner woke up, so it is right on either side of midnight. A day
+          # in which nothing was committed re-cuts the same tag, which the
+          # idempotent delete-and-recreate below already handles — and which
+          # is the honest answer: the ledger did not move.
+          LEDGER_DATE=$(TZ=UTC git log -1 --date=format:%F --format=%ad)
+          echo "Attesting the ledger as of its newest commit: ${LEDGER_DATE}"
+          python scripts/attest_ledger.py --json --date "$LEDGER_DATE" > digest.json
 
           # Extract fields for use in later steps.
           TAG_DATE=$(jq -r '.generated_for_date' digest.json)

@@ -97,23 +97,18 @@ jobs:
           fi
           python scripts/fetch_ohlcv.py "${FLAGS[@]}"
 
+      - name: Resolve commit date
+        id: today
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      # data/market/quarantine/ travels with the store: a row the ingest
+      # tripwire refused is evidence, and evidence that only exists on an
+      # ephemeral runner is no evidence at all.
       - name: Commit and push updates
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # data/market/quarantine/ travels with the store: a row the ingest
-          # tripwire refused is evidence, and evidence that only exists on an
-          # ephemeral runner is no evidence at all.
-          if [[ -z "$(git status --porcelain data/market/ohlcv/ data/market/quarantine/)" ]]; then
-            echo "No OHLCV changes to commit."
-            exit 0
-          fi
-
-          git add data/market/ohlcv/ data/market/quarantine/
-          DATE=$(date -u +%F)
-          git commit -m "[data] ${DATE} OHLCV update"
-          git push
+        uses: ./.github/actions/push-with-retry
+        with:
+          paths: data/market/ohlcv/ data/market/quarantine/
+          message: "[data] ${{ steps.today.outputs.date }} OHLCV update"
 
       - name: Report outcome
         if: always()

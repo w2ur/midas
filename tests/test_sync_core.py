@@ -90,10 +90,17 @@ def test_check_detects_code_drift(tmp_path):
     assert REL("engine/config.py") in sync_core.check(tmp_path)
 
 
-def test_check_ignores_generic_data_drift(tmp_path):
+def test_check_catches_generic_data_drift(tmp_path):
+    """This test asserted the opposite until 2026-08-07 (W2.9) — that data was
+    "synced but not guarded". It was pinning the gap, not a decision: `apply`
+    copies these files, so `check` claiming the mirror is in sync while they
+    differ is the two halves of one contract disagreeing. `sp500.json` decides
+    what a fork's universe resolver returns; the two ticker maps beside it are
+    currency-resolution layers 1 and 2."""
     sync_core.apply(tmp_path)
+    assert sync_core.check(tmp_path) == []
     (tmp_path / "data" / "universes" / "sp500.json").write_text("[]", encoding="utf-8")
-    assert sync_core.check(tmp_path) == []  # data is synced but not guarded
+    assert sync_core.check(tmp_path) == [Path("data/universes/sp500.json")]
 
 
 def test_main_check_exits_nonzero_on_drift(tmp_path):
@@ -266,3 +273,30 @@ def test_manifest_is_closed_under_scripts_imports():
     assert not missing, "manifest not closed under imports:\n  " + "\n  ".join(
         sorted(set(missing))
     )
+
+
+# ---------------------------------------------------------------------------
+# check() covers the data files too (2026-08-07 review, W2.9)
+# ---------------------------------------------------------------------------
+
+
+def test_check_iterates_the_full_apply_manifest(tmp_path):
+    """`apply` copies the generic data files and `check` did not look at
+    them, so the two halves of the mirror contract disagreed about what the
+    mirror contains. `data/ticker_currencies.json` and `data/tickers.json` are
+    currency-resolution layers 1 and 2 — a fork resolving through a stale copy
+    prices in the wrong currency, which is the 2026-08-07 defect exactly."""
+    core = tmp_path / "core"
+    for rel in sync_core.apply_manifest():
+        dst = core / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes((sync_core.LIVE_ROOT / rel).read_bytes())
+
+    assert sync_core.check(core) == []
+
+    doctored = Path("data/tickers.json")
+    assert doctored in sync_core.apply_manifest()
+    assert doctored not in sync_core.code_manifest()  # the gap this closes
+    (core / doctored).write_text('{"PROBE": {"currency": "XXX"}}', encoding="utf-8")
+
+    assert sync_core.check(core) == [doctored]

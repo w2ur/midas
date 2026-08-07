@@ -53,21 +53,17 @@ jobs:
       # the successful indexes still get committed, while the job stays red
       # so the owner gets the workflow-failure email. A broken scraper must
       # neither stall the other indexes nor fail silently.
+      - name: Resolve commit date
+        if: ${{ success() || failure() }}
+        id: today
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
       - name: Commit and push updates
         if: ${{ success() || failure() }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if [[ -z "$(git status --porcelain data/universes/)" ]]; then
-            echo "No universe changes to commit."
-            exit 0
-          fi
-
-          git add data/universes/
-          DATE=$(date -u +%F)
-          git commit -m "[data] ${DATE} universe refresh"
-          git push
+        uses: ./.github/actions/push-with-retry
+        with:
+          paths: data/universes/
+          message: "[data] ${{ steps.today.outputs.date }} universe refresh"
 
       - name: Report outcome
         if: always()

@@ -75,20 +75,15 @@ jobs:
           fi
           python scripts/fetch_sentiment.py "${FLAGS[@]}"
 
+      - name: Resolve commit date
+        id: today
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
       - name: Commit and push updates
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if [[ -z "$(git status --porcelain data/market/news/)" ]]; then
-            echo "No sentiment changes to commit."
-            exit 0
-          fi
-
-          git add data/market/news/
-          DATE=$(date -u +%F)
-          git commit -m "[data] ${DATE} sentiment digests"
-          git push
+        uses: ./.github/actions/push-with-retry
+        with:
+          paths: data/market/news/
+          message: "[data] ${{ steps.today.outputs.date }} sentiment digests"
 
       - name: Report outcome
         if: always()
