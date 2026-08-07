@@ -31,7 +31,14 @@ function loadOHLCV(ticker: string): OHLCVRow[] | null {
   return rows;
 }
 
-/** The raw stored close — in whatever unit the vendor quotes, pence included. */
+/**
+ * The stored close, already in the ticker's ISO currency.
+ *
+ * This said "in whatever unit the vendor quotes, pence included" until
+ * 2026-08-07. It is no longer true — the store is ISO-denominated at ingest —
+ * and it was an instruction to divide, which is how the double-divide gets
+ * reintroduced. Use `loadPositionQuote` when you need the currency label too.
+ */
 export function loadLastClose(ticker: string, onOrBefore: string): { close: number; date: string } | null {
   const rows = loadOHLCV(ticker);
   if (!rows || rows.length === 0) return null;
@@ -77,12 +84,19 @@ function loadRegistryCurrencies(): Record<string, string> {
   return registryCurrencies;
 }
 
-/** Vendor sub-unit → [ISO currency, price multiplier]. Case-sensitive: GBp ≠ GBP. */
-const SUB_UNITS: Record<string, [string, number]> = {
-  GBp: ["GBP", 0.01],
-  GBX: ["GBP", 0.01],
-  ZAc: ["ZAR", 0.01],
-  ILA: ["ILS", 0.01],
+/**
+ * Vendor sub-unit → ISO currency. Case-sensitive: GBp ≠ GBP.
+ *
+ * The 0.01 multipliers that used to sit here were dead — nothing read them
+ * once the pence→pounds division moved to ingest (2026-08-07) — and a dead
+ * multiplier next to a price is an invitation. Deleted rather than kept
+ * "for reference": the one thing this file must not do is scale.
+ */
+const SUB_UNITS: Record<string, string> = {
+  GBp: "GBP",
+  GBX: "GBP",
+  ZAc: "ZAR",
+  ILA: "ILS",
 };
 
 /**
@@ -140,7 +154,7 @@ export function quoteUnit(ticker: string): string | null {
 export function inferCurrency(ticker: string): string | null {
   const unit = quoteUnit(ticker);
   if (unit === null) return null;
-  return SUB_UNITS[unit]?.[0] ?? unit.toUpperCase();
+  return SUB_UNITS[unit] ?? unit.toUpperCase();
 }
 
 /**
