@@ -56,8 +56,12 @@ data/session_state/
 
 # Plan files (plans live in ~/.claude/plans/, never in the repo)
 docs/plans/
-# Superpowers plan files are transient too; keep docs/superpowers/specs/ (design docs).
-docs/superpowers/plans/
+# Superpowers artefacts — plans AND design specs — never live in the repo.
+# Owner decision 2026-08-08, overriding the earlier "keep specs/" carve-out:
+# a design doc is either executed (and the code is the record) or it belongs
+# on the owner's machine, not in version control. The three specs that were
+# tracked here moved to ~/.claude/plans/.
+docs/superpowers/
 
 # OS files
 Thumbs.db
