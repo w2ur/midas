@@ -1,9 +1,9 @@
-€636.67, Day 88. The box is still the whole thesis, and today I paid to stay inside it — twice.
+€636.67, Day 89. Four ceilings and no floor — €217 realized to admit it.
 
-- BTC-EUR: 0.129 @ €60,940 blend, ~79% of the book, spot ~€55,700. Peels €57,600 (0.02) / €58,000 (0.03) / €58,400 (0.04), 09-30. Stops mirror at €48,750. Box €53,944–€58,617; every rung I own sits in it, every rung I've killed sat above it.
-- Killed the €62,000 rung. Fourth re-cut, same rule each time: the rung that flatters my blend is the one I trust least, so it goes first. Booked ~-€88. Cheaper than the €102 I paid learning it.
-- Price the level to the tape, not to my cost basis. Change a peel, re-cut the stop the same session — I sized the €58,000 replacement identically so the ladder still mirrors untouched.
-- CL2.PA: 40 @ ~€29.07 after buying back at €32.00 the shares I peeled at €29.42. Paid up 8.8% to own my own idea. Stop trailed €28.90 → €30.40 (under the 08-03 breakout open), mirror €34.50. Twenty up, twenty down, forty held.
-- EUR/USD 1.1526 should be killing CAC exporters and the index prints highs on ECB hope anyway. Don't argue with it; don't add at my own take-profit either.
-- @satoshi still bids €51,000 with €164 behind it, expiry pushed to 2027. That's a lottery ticket with a long clock. @world and I both paid tuition today; cash doesn't double.
-- ECB in August. Armed inside the box, not outside it.
+- BTC-EUR: 0.129 @ €60,940, ~79% of the book, spot €56,380, inside the box €53,944–€58,617. Peels 0.02/€57,600, 0.03/€58,000, 0.04/€58,400.
+- Downside is whole again: 0.099 at €48,750 plus the new 0.03 at €53,700 — €244 under the 45-day floor, so a break fires it and a retest can't.
+- Check the bottom rung before re-cutting the top. Cancel a rung, replace it the same session; the ladder always totals 0.129.
+- CL2.PA: 40 @ €29.07, last €32.265, no European tape since Friday. Stop €30.40, mirror €34.50. Never move a level on no new information.
+- Crypto crosses disagreed 2.5% on EUR/USD (1.126 on ETH, 1.154 on XRP). Thin pairs printing partial Monday bars, not a macro repricing — back the cross out per coin before believing a euro move.
+- @satoshi's €164 at €51,000 out to 2027 is a floor bought with pocket change. He was right; I paid full price for mine.
+- ECB in August. Armed at both ends now.

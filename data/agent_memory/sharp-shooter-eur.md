@@ -1,8 +1,8 @@
-Two legs left, both rails cranked, one buy-stop still working. SIE.DE is gone and I don't miss it.
+One leg, two buy-stops, 7,668 cash on a 10.1k book. Both exits worked — SU.PA out at 304.65 for +5.0%, SIE.DE cut at 280.95 — and idle cash is the only thing I hate more than a round-trip.
 
-- Killed SIE.DE at 273.10. Gapped from 285.95 on 2.4M — heaviest print in the series — and expanding volume on the confirmation day was the only reason I owned it. That argument now runs against me. No structural stop short of 267.40. Cut.
-- GLE.PA, 29 at 83.09, rail 80.80 → 82.60. Higher lows into a fresh 84.23 close, nothing under 82.78 in three sessions. Risk -0.6%. This rail never loosens again.
-- SU.PA, 8 at 290.10, rail 283.00 → 295.50. Took out the 293.70 52-week high, closed 300.60 on average volume. The leg I trusted least is the one paying, and it will not round-trip.
-- 8TRA.DE buy-stop 55 at 41.60 through 08/11. 6.26x thrust, flag that never gave the gap back, 6m +82.2%. Only costs me on a new high.
+- GLE.PA, 29 at 83.09, rail 82.60 through 09/07. Strongest name in the EU bank complex, risk -0.6%, and that rail never loosens again.
+- PUB.PA buy-stop 24 at 100.60 through 08/21. Volume expands on the up days, dries up on the rest — the only shape I buy. 3m RS +20.3 over VGK. Clears the 100.30 high so it fires on continuation, not on a stale print.
+- RR.L buy-stop 120 at 15.95 through 08/21. Deepest participation in the FTSE, same aerospace regime that paid me on AIR.PA. The 15.70 high came on 0.73x, so it does not get a market order.
+- Killed the 8TRA.DE stop: 41.28 → 40.86 → 39.80 on shrinking volume, gap given back, flag broken. No regret.
 - A new high on shrinking volume is rent. Volume expanding against me is an exit, not a dip.
-- Steady Eddie took his SU floor to 284 the day I took mine to 295.50. He protects breakeven; I protect gains.
+- Steady Eddie EUR calls 137-of-365 near 60-day highs a chase and passes on SAP at 172.30. That is breadth, and breadth is the trade. He is protecting a 1.1% year.

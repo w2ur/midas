@@ -1,0 +1,21 @@
+{
+  "date": "2026-08-10",
+  "conviction": 6,
+  "positions": [
+    {
+      "ticker": "BTC-EUR",
+      "action": "SELL",
+      "size_eur": 150,
+      "entry_guidance": "Conditional stop-reduce only: sell roughly half the position if BTC-EUR trades at or below EUR 53,944 (the box floor). No action while the box holds; do not market-sell into the current EUR 56,380 print.",
+      "stop_loss": null,
+      "reasoning": "yolo-sapiens-eur, the originating tactical thesis on this holding, has flipped to reduce at conviction 7 and names EUR 53,944 as its explicit falsification level, while satoshi still holds at conviction 7 down to EUR 50.8k — halving on the box break books the tactical break without abandoning the months-horizon accumulation read. The position is at -3.2% unrealised so the fire crystallises a crypto-regime loss rather than a PFU event, and Kraken's 0.40% taker on ~EUR 150 is ~EUR 0.60, immaterial against the 9.6% further drawdown the reduce is sized to avoid.",
+      "trigger": {
+        "op": "<=",
+        "level": 53944.0
+      },
+      "expires": "2026-08-21"
+    }
+  ],
+  "hold_reasoning": "No BUY is available this session and none of the buy-biased notes clears the bar anyway. Structural: the book holds 6 of a maximum 6 positions (4GLD.DE 315.56, AIR.PA 314.27, BTC-EUR 310.09, ALV.DE 288.31, NVDA 259.03, PHAG.L 256.36 = 1,743.62 EUR against 260.71 cash, ~2,004 EUR total), and with the EUR 150 floor only ~110 EUR is investable — below the EUR 250 minimum ticket. Every position sits inside the EUR 400 cap, so there is no risk-budget breach to trim. On the theses: yolo-sapiens-usd (8) is the strongest note, but its NVDA leg is already owned and its QQQ3.L leg is a leveraged Nasdaq add I have no slot, no cash and no appetite for (last QQQ3.L entry returned -3.79%, alpha -4.25%). goldfinger (7) is constructive on metals I already own two of, but explicitly adds only on a retest into the Aug 5 gap (4GLD EUR 116, SGLN.MI EUR 69.8) — 4GLD prints 121.10 and SGLN.MI 72.97, so by his own rule this is the vertical, not the entry. sharp-shooter-usd (7) is MSFT/RTX continuation I cannot fund. PRICE DISCREPANCY FLAGGED: sharp-shooter-eur, sharp-shooter-usd and yolo-sapiens-eur all state the store is frozen at 08-06/08-07, but every verified close is dated 2026-08-10; their breakout levels are therefore scanned off stale tape and two have already resolved against them at the verified prints (PUB.PA 100.20 has not cleared 100.30, RR.L 15.654 has not cleared 15.86) — I am not reconciling those numbers, I am declining to act on levels computed from a tape the analysts themselves called stale. monsieur-forex (6) needs AUDUSD above 0.7080 and it prints 0.7070; below threshold and unfunded. The parked ACX.MC BUY (>= 18.55, expires 2026-08-11) is left alone deliberately: no analyst supports it this session, it would breach both the 6-position cap and the EUR 150 cash floor at ~EUR 254 notional so the broker's cash rail refuses it, and it expires tomorrow on its own — cancelling it would spend turnover on a problem that self-resolves.",
+  "render": "[Manager Decision]\n  conviction: 6/10\n  positions (1):\n    BTC-EUR        SELL EUR 150  stop=none\n      entry:   Conditional stop-reduce only: sell roughly half the position if BTC-EUR trades at or below EUR 53,944 (the box floor). No action while the box holds; do not market-sell into the current EUR 56,380 print.\n      reason:  yolo-sapiens-eur, the originating tactical thesis on this holding, has flipped to reduce at conviction 7 and names EUR 53,944 as its explicit falsification level, while satoshi still holds at conviction 7 down to EUR 50.8k — halving on the box break books the tactical break without abandoning the months-horizon accumulation read. The position is at -3.2% unrealised so the fire crystallises a crypto-regime loss rather than a PFU event, and Kraken's 0.40% taker on ~EUR 150 is ~EUR 0.60, immaterial against the 9.6% further drawdown the reduce is sized to avoid."
+}
