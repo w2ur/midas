@@ -78,6 +78,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Fetch OHLCV
+        id: fetch
         env:
           HISTORY_DAYS: ${{ github.event.inputs.history_days || '730' }}
           MANUAL_CRYPTO_ONLY: ${{ github.event.inputs.crypto_only || 'false' }}
@@ -95,7 +96,22 @@ jobs:
             echo "Weekend or manual crypto-only dispatch — restricting to crypto pairs."
             FLAGS+=(--crypto-only)
           fi
+          # Capture the exit code rather than letting `set -e` end the step, so
+          # the commit gate below can distinguish the script's DELIBERATE
+          # refusals (2 = a row quarantined, 3 = a vendor outage; both mean
+          # "commit what arrived, then go red") from an unhandled traceback,
+          # which exits 1 partway through the loop. Committing a crashed run's
+          # half-written store would publish one immutable snapshot per book at
+          # two different market dates. The step still fails with the real code.
+          set +e
           python scripts/fetch_ohlcv.py "${FLAGS[@]}"
+          rc=$?
+          set -e
+          case "$rc" in
+            0|2|3) echo "committable=true"  >> "$GITHUB_OUTPUT" ;;
+            *)     echo "committable=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+          exit "$rc"
 
       - name: Resolve commit date
         id: today
@@ -106,19 +122,29 @@ jobs:
       # tripwire refused is evidence, and evidence that only exists on an
       # ephemeral runner is no evidence at all.
       #
-      # `!cancelled()`, not the default success-only gate, because both of the
-      # script's non-zero exits mean "commit this, then go red": a quarantined
-      # row IS the evidence to preserve, and a partial store after a vendor
-      # outage is strictly better than no store at all. Under the default gate
-      # this step never ran on either — so the one artifact the quarantine
-      # feature exists to produce was discarded with the runner every time,
-      # and the failure-rate exit threw away a whole night's good rows along
-      # with the bad news. The run still fails; the data still lands.
+      # Gated on the script's deliberate exits, not on success alone and not on
+      # `!cancelled()`. Both of its non-zero exits mean "commit this, then go
+      # red": a quarantined row IS the evidence to preserve, and a partial store
+      # after a vendor outage beats no store. Under the default success-only
+      # gate this step never ran on either — so the one artifact the quarantine
+      # feature exists to produce was discarded with the runner every time, and
+      # the failure-rate exit threw away a whole night's good rows with the bad
+      # news. A bare `!cancelled()` would go too far the other way and commit a
+      # half-written store after a mid-loop crash. The run still fails; the
+      # data still lands.
+      #
+      # data/tickers.json is staged here too: `save_registry` rewrites it on
+      # every run and NO workflow was staging it, so the nightly refresh was
+      # discarded every night and the file has moved only by hand (three
+      # commits, ever). It is currency-resolution layer 2 — a ticker newly
+      # added to a universe never acquired an entry, and since the layer-3
+      # heuristic now returns None for an unenumerated suffix, the agent's
+      # order died at the broker with CURRENCY_UNRESOLVED.
       - name: Commit and push updates
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' }}
         uses: ./.github/actions/push-with-retry
         with:
-          paths: data/market/ohlcv/ data/market/quarantine/
+          paths: data/market/ohlcv/ data/market/quarantine/ data/tickers.json
           message: "[data] ${{ steps.today.outputs.date }} OHLCV update"
 
       - name: Report outcome

@@ -103,6 +103,43 @@ def test_check_catches_generic_data_drift(tmp_path):
     assert sync_core.check(tmp_path) == [Path("data/ticker_currencies.json")]
 
 
+def test_check_catches_drift_in_a_glob_matched_generic_file(tmp_path):
+    """The GENERIC_DATA_GLOBS path needs its own case, not just the named files.
+
+    The test above covers a `GENERIC_DATA_FILES` entry. Without this one,
+    moving `data/strategies/*.json` into the presence-only tier would leave the
+    whole suite green — verified: making exactly that edit passed 22 + 32 tests
+    before this was added.
+    """
+    sync_core.apply(tmp_path)
+    specs = sorted((tmp_path / "data" / "strategies").glob("*.json"))
+    assert specs, "no strategy specs were applied"
+
+    specs[0].write_text("{}", encoding="utf-8")
+
+    assert sync_core.check(tmp_path) == [Path("data/strategies") / specs[0].name]
+
+
+def test_the_alternative_universes_stay_byte_guarded(tmp_path):
+    """Only the SCRAPED indexes are exempt.
+
+    congressional/insider/high-short regenerate deterministically from
+    constants in engine/universes/alternative.py, which is itself byte-synced
+    to core — so live and core produce identical bytes by construction and a
+    divergence there is a real defect, not a weekly refresh.
+    """
+    sync_core.apply(tmp_path)
+    exempt = {str(p) for p in sync_core.regenerated_manifest()}
+    for name in ("congressional", "insider", "high-short"):
+        assert f"data/universes/{name}.json" not in exempt
+
+    (tmp_path / "data" / "universes" / "congressional.json").write_text(
+        "[]", encoding="utf-8"
+    )
+
+    assert sync_core.check(tmp_path) == [Path("data/universes/congressional.json")]
+
+
 def test_regenerated_data_is_seeded_but_not_held_byte_identical(tmp_path):
     """Regression: 5599e64f6 — a guard a cron was guaranteed to trip weekly.
 

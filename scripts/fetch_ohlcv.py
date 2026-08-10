@@ -218,6 +218,20 @@ def _crypto_symbols() -> list[str]:
 #: whole symbol list.
 MAX_FAILURE_RATE = 0.10
 
+#: Deliberate non-zero exits. Distinct from 1 on purpose: 1 is what an
+#: unhandled traceback exits with, and the workflow must be able to tell "I
+#: refused this data, commit the rest and go red" from "I crashed at symbol 500
+#: of 1,150". Committing the latter publishes a store where a third of the
+#: symbols carry today's bar and the rest stop at yesterday's — and the session
+#: that prices it writes ONE immutable snapshot row per book, so the books mark
+#: at different dates with no writer responsible and no way to correct it
+#: (`add_snapshot` refuses a later session's rewrite of that market date).
+EXIT_QUARANTINED = 2
+EXIT_VENDOR_OUTAGE = 3
+
+#: The exits on which the workflow should still commit what arrived.
+COMMITTABLE_EXITS = (0, EXIT_QUARANTINED, EXIT_VENDOR_OUTAGE)
+
 
 def _fetch_symbol(symbol: str, start: date, end: date) -> pd.DataFrame | None:
     """Fetch OHLCV for a single symbol. Returns None on failure."""
@@ -494,11 +508,14 @@ def main() -> int:
     total_new = 0
     total_revised = 0
     total_quarantined = 0
-    failures = 0
     # Split by whether the store already covers the symbol — see the exit path.
-    attempted_covered = 0
+    # `considered_covered` counts every covered symbol the run formed a view on,
+    # including those skipped as already-current: they are evidence the store is
+    # healthy, and dropping them collapses the denominator.
+    considered_covered = 0
     covered_failures = 0
     unresolved: list[str] = []
+    served = 0
     splits_detected = 0
     for i, symbol in enumerate(symbols, start=1):
         if not args.names_only:
@@ -524,6 +541,19 @@ def main() -> int:
                     registry_updates[symbol] = resolve_name(
                         symbol, _fetch_ticker_info(symbol)
                     )
+                    # A symbol the store already carries through `end` is
+                    # evidence the store is healthy, so it belongs in the
+                    # gate's denominator even though nothing was requested for
+                    # it. Skipping it here collapses that denominator onto the
+                    # handful of permanently-dead names that ARE still
+                    # attempted (their store is stale, so they never take this
+                    # branch) — MATIC-USD and UNI-USD alone read 2/2 = 100%
+                    # and fail a fully current store. Reachable whenever most
+                    # symbols are already up to date: a second run in one UTC
+                    # day, or a Friday cron delayed past midnight that writes
+                    # Saturday rows before the Saturday crypto-only run.
+                    if path.exists():
+                        considered_covered += 1
                     continue  # OHLCV already up to date; still refresh name
                 start = window_start
                 if revise_days and last is not None:
@@ -534,16 +564,16 @@ def main() -> int:
             # the write below creates the file.
             covered = path.exists()
             if covered:
-                attempted_covered += 1
+                considered_covered += 1
 
             df = _fetch_symbol(symbol, start, end)
             if df is None:
-                failures += 1
                 if covered:
                     covered_failures += 1
                 else:
                     unresolved.append(symbol)
             else:
+                served += 1
                 # Split detection needs a genuinely historical overlap between
                 # what's already stored and what was just re-fetched — only
                 # --resweep re-requests the full history window against
@@ -598,6 +628,10 @@ def main() -> int:
             f"symbols resolved to a name."
         )
 
+    # Derived, not tracked in parallel: the two populations partition every
+    # failure, so a separate counter could only ever disagree with them.
+    failures = covered_failures + len(unresolved)
+
     if args.names_only:
         print(f"\nDone (names-only).")
     else:
@@ -612,13 +646,6 @@ def main() -> int:
                 else ""
             )
         )
-    # A quarantined row is a refusal to ingest something that looked like a
-    # unit flip or a bad tick. It is not a crash, but it must not scroll past
-    # in a green run either: exiting non-zero routes it to the workflow's
-    # failure-issue action, which files a persistent issue.
-    if total_quarantined:
-        return 1
-
     # A symbol the store has never covered is a different fault from one that
     # stopped answering, and folding the two together is what made the rate
     # below unusable. 118 of the 120 failures on 2026-08-07 were Refinitiv-style
@@ -653,11 +680,11 @@ def main() -> int:
     # exact outage it was written to detect, caused by the detector. Against
     # store coverage the same night reads 2 of ~1,030 (0.2%), and a genuine
     # vendor outage still reads ~100%.
-    if not args.names_only and attempted_covered:
-        covered_rate = covered_failures / attempted_covered
+    if not args.names_only and considered_covered:
+        covered_rate = covered_failures / considered_covered
         if covered_rate > MAX_FAILURE_RATE:
             print(
-                f"\nFAILED: {covered_failures} of {attempted_covered} symbols "
+                f"\nFAILED: {covered_failures} of {considered_covered} symbols "
                 "the store already covers returned no data "
                 f"({covered_rate:.0%}, limit {MAX_FAILURE_RATE:.0%}). A symbol "
                 "that served yesterday and serves nothing today is a "
@@ -667,7 +694,32 @@ def main() -> int:
                 "stale closes.",
                 file=sys.stderr,
             )
-            return 1
+            return EXIT_VENDOR_OUTAGE
+
+    # Nothing is covered yet — a fork's first bootstrap, or a run after the
+    # store directory moved. The rate above cannot measure anything there, and
+    # returning 0 unconditionally would reopen W2.5's exact hole on the one run
+    # with nothing to fall back on. What IS decidable without coverage is
+    # whether the vendor answered at all: a bootstrap where every single symbol
+    # came back empty is an outage, while one where 1,030 of 1,150 served is a
+    # healthy bootstrap with a bad universe.
+    if not args.names_only and not considered_covered and symbols and not served:
+        print(
+            f"\nFAILED: none of the {len(symbols)} symbols returned any data, "
+            "and the store has no prior coverage to compare against. On an "
+            "empty store this is the only decidable outage signal — a "
+            "bootstrap in which the vendor answered for nothing at all.",
+            file=sys.stderr,
+        )
+        return EXIT_VENDOR_OUTAGE
+
+    # A quarantined row is a refusal to ingest something that looked like a
+    # unit flip or a bad tick. It is not a crash, but it must not scroll past
+    # in a green run either: exiting non-zero routes it to the workflow's
+    # failure-issue action, which files a persistent issue. Checked last so the
+    # reports above are never cut off by an early return.
+    if total_quarantined:
+        return EXIT_QUARANTINED
     return 0
 
 

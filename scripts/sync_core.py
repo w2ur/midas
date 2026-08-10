@@ -100,20 +100,36 @@ LIVE_ONLY_TESTS = {
 }
 
 GENERIC_DATA_FILES = ["data/ticker_currencies.json", "data/tickers.json"]
-GENERIC_DATA_GLOBS = ["data/strategies/*.json"]
+# Universes stay here so `apply` copies ALL of them and `check` byte-compares
+# every one it is not told to exempt — see REGENERATED_DATA_GLOBS, which names
+# only the seven scraped indexes. The two lists overlap deliberately;
+# apply_manifest dedupes.
+GENERIC_DATA_GLOBS = ["data/strategies/*.json", "data/universes/*.json"]
 
 #: Generic data that live REGENERATES on a schedule. `apply` seeds it into core
 #: so a fresh fork has a working universe list; `check` verifies it is present,
 #: not that it is byte-identical.
 #:
 #: Byte-equality here is an invariant a cron legitimately breaks. Live's
-#: `refresh-universes.yml` rewrites `data/universes/*.json` every Monday at
-#: 04:53 UTC and commits it; nothing propagates that to core; `core-drift-guard`
-#: then runs at 08:05 UTC the same morning and goes red. On 2026-08-10 it did
-#: exactly that on `sp500.json` and `nasdaq100.json`, three hours after the
-#: refresh commit. A guard that a scheduled job is guaranteed to trip weekly
-#: teaches everyone to ignore it — which is the failure `.github/actions/
-#: failure-issue` was built to end, reintroduced one layer up.
+#: `refresh-universes.yml` (cron `15 03 * * 1`, Mondays 03:15 UTC) rescrapes
+#: these from Wikipedia and commits whatever the page says that week; nothing
+#: propagates that to core; `core-drift-guard` (cron `17 6 * * 1`, Mondays
+#: 06:17 UTC) then runs the same morning and goes red. It did exactly that on
+#: 2026-08-10 on `sp500.json` and `nasdaq100.json`. A guard a scheduled job is
+#: guaranteed to trip weekly teaches everyone to ignore it — the failure
+#: `.github/actions/failure-issue` was built to end, reintroduced one layer up.
+#: (Those are the declared crons. The observed starts that Monday were 04:55
+#: and 08:05 UTC — GitHub's scheduler runs 42 min to 6 h late, which is why the
+#: schedule is cited here and a single observed pair is not.)
+#:
+#: NAMED INDIVIDUALLY, not globbed. `data/universes/*.json` would also exempt
+#: congressional/insider/high-short, and those are NOT scraped: they are
+#: regenerated deterministically from constants in `engine/universes/
+#: alternative.py` (e.g. `refresh_congressional` is
+#: `sorted(_CONGRESSIONAL_FALLBACK)`), and that module is itself byte-synced to
+#: core via `code_manifest`. So live and core produce identical bytes for them
+#: by construction, they can never legitimately drift, and exempting them would
+#: hide a genuinely stale or hand-edited copy behind a green guard.
 #:
 #: This does NOT weaken W2.9. Its point was that `apply` and `check` must agree
 #: about what the mirror contains, and its real target was the two ticker maps
@@ -123,7 +139,15 @@ GENERIC_DATA_GLOBS = ["data/strategies/*.json"]
 #: letting `check` look away. Core ships `refresh_universes.py` (it is in
 #: CORE_SCRIPTS), so a fork regenerates these itself; index composition is not
 #: a correctness surface the way a currency map is.
-REGENERATED_DATA_GLOBS = ["data/universes/*.json"]
+REGENERATED_DATA_GLOBS = [
+    "data/universes/cac40.json",
+    "data/universes/dax.json",
+    "data/universes/dow30.json",
+    "data/universes/ftse100.json",
+    "data/universes/nasdaq100.json",
+    "data/universes/sp500.json",
+    "data/universes/stoxx600.json",
+]
 
 TOP_LEVEL = ["pyproject.toml", "requirements.in", "requirements.txt"]
 

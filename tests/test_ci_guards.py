@@ -554,6 +554,101 @@ def test_every_push_with_retry_caller_names_paths_that_can_be_checked():
         )
 
 
+class TestPushGateMatchesExitCodes:
+    """Both callers of fetch_ohlcv.py must gate their push on its exit code.
+
+    Lives here rather than beside the script's own tests because it reads
+    `.github/workflows/`, which does not exist in midas-core — a
+    workflow-reading test in a synced module is an unconditional failure in the
+    public repo's suite, and `sync_core check` cannot see it (the file is
+    byte-identical in both repos; that is precisely the problem). Found by
+    running core's suite after the sync.
+    """
+
+    WORKFLOWS = ["fetch-ohlcv.yml", "resweep-held-tickers.yml"]
+
+    @pytest.mark.parametrize("workflow", WORKFLOWS)
+    def test_the_push_is_gated_on_a_committable_exit(self, workflow):
+        """`resweep-held-tickers` needs this most: `_apply_split_to_holders`
+        has already persisted a share/cost-basis correction by the time the
+        failure-rate exit fires, and a skipped commit discards it for a week."""
+        spec = yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / workflow).read_text()
+        )
+        steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+
+        push = [
+            s for s in steps if s.get("uses") == "./.github/actions/push-with-retry"
+        ]
+        assert len(push) == 1, f"{workflow} does not push exactly once"
+        assert "steps.fetch.outputs.committable == 'true'" in push[0].get("if", ""), (
+            f"{workflow} commits without consulting the script's exit code"
+        )
+
+    @pytest.mark.parametrize("workflow", WORKFLOWS)
+    def test_the_shell_mapping_matches_the_python_constants(self, workflow):
+        """Otherwise the two halves of the contract drift apart silently.
+
+        A deliberate exit the shell forgets to list stops committing; an
+        unhandled traceback the shell wrongly lists starts committing a
+        half-written store.
+        """
+        from scripts.fetch_ohlcv import COMMITTABLE_EXITS
+
+        text = (REPO_ROOT / ".github" / "workflows" / workflow).read_text()
+        listed = re.search(r"^\s*([0-9|]+)\)\s*echo \"committable=true\"", text, re.M)
+        assert listed, f"{workflow} has no committable-exit case arm"
+
+        assert {int(c) for c in listed.group(1).split("|")} == set(COMMITTABLE_EXITS), (
+            f"{workflow}'s case arm {listed.group(1)!r} disagrees with "
+            f"COMMITTABLE_EXITS {COMMITTABLE_EXITS}"
+        )
+
+
+#: The one caller path that legitimately does not exist most of the time — it
+#: is created only when the ingest tripwire refuses a row.
+OPTIONAL_PUSH_PATHS = {"data/market/quarantine/"}
+
+
+def test_every_non_optional_caller_path_resolves_in_the_repo():
+    """A skipped path is now silent, so the paths themselves need a guard.
+
+    Filtering absent pathspecs fixed a hard failure but replaced it with an
+    exit-0 skip that no caller reads (`pushed` is consumed nowhere) and that
+    `failure-issue` cannot see, because the job stays green. If a caller's
+    directory is renamed, it would quietly stop committing forever. Only
+    `data/market/quarantine/` is allowed to be absent.
+    """
+    workflows = (REPO_ROOT / ".github" / "workflows").glob("*.yml")
+    callers = [
+        (path.name, step["with"]["paths"])
+        for path in workflows
+        for job in yaml.safe_load(path.read_text())["jobs"].values()
+        for step in job.get("steps", [])
+        if step.get("uses") == "./.github/actions/push-with-retry"
+    ]
+    assert callers, "no workflow uses push-with-retry — has it been renamed?"
+    for workflow, paths in callers:
+        for path in paths.split():
+            if path in OPTIONAL_PUSH_PATHS:
+                continue
+            assert (REPO_ROOT / path).exists(), (
+                f"{workflow} stages {path!r}, which does not exist — the action "
+                "will skip it silently and the job will stay green"
+            )
+
+
+def test_the_optional_path_really_is_absent():
+    """The control for the exemption above.
+
+    If `data/market/quarantine/` were committed, the exemption would be
+    covering nothing and the test above would pass without exercising it.
+    """
+    assert not (REPO_ROOT / "data" / "market" / "quarantine").exists(), (
+        "quarantine is committed now — drop it from OPTIONAL_PUSH_PATHS"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Regression-comment citations (2026-08-07 review, W6 meta-finding 2)
 # ---------------------------------------------------------------------------
