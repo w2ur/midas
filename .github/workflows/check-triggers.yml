@@ -2,7 +2,7 @@ name: check-triggers
 
 # Runs scripts/check_triggers.py every 15 minutes to evaluate pending
 # conditional orders against live prices. The script blacks itself out
-# during 19:55-21:00 UTC to avoid commit-races with the daily session.
+# during 19:55-21:30 UTC to avoid commit-races with the daily session.
 # The end was 20:30 until 2026-08-07; measured session tails (commit
 # 20:09-20:39, auto-merge to 20:45) ran past it. See BLACKOUT_END in
 # scripts/check_triggers.py for the measurements and the caveat.

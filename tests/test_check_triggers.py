@@ -127,6 +127,11 @@ class TestBlackoutWindow:
             (20, 31),
             (20, 45),
             (21, 0),
+            # Extended 21:00 → 21:30 on 2026-08-10, when the session moved to
+            # 20:30 UTC and pushed the merge tail to 21:15.
+            (21, 1),
+            (21, 15),
+            (21, 30),
         ],
     )
     def test_blackout_skips_processing(self, broker_env, hh, mm) -> None:
@@ -138,7 +143,10 @@ class TestBlackoutWindow:
         assert result["blacked_out"] is True
         assert len(list_pending()) == 1  # untouched
 
-    @pytest.mark.parametrize("hh,mm", [(19, 54), (21, 1), (3, 0), (14, 30)])
+    # 21:31 is the first minute outside the window; it was 21:01 until the
+    # session moved to 20:30 UTC on 2026-08-10. Both edges are pinned so a
+    # widened blackout cannot silently become an all-day one.
+    @pytest.mark.parametrize("hh,mm", [(19, 54), (21, 31), (3, 0), (14, 30)])
     def test_normal_hours_do_run(self, broker_env, monkeypatch, hh, mm) -> None:
         from scripts import check_triggers
         from engine import triggers as triggers_mod

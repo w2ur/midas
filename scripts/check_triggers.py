@@ -2,8 +2,8 @@
 
 Runs every 15 min via .github/workflows/check-triggers.yml. Walks pending
 orders, fetches current prices, fires when triggers are hit, expires old
-ones. Blackout window 19:55-21:00 UTC to avoid commit-races with the
-20:00 UTC daily session (see BLACKOUT_END for why 21:00, not 20:30).
+ones. Blackout window 19:55-21:30 UTC to avoid commit-races with the
+20:30 UTC daily session (see BLACKOUT_END for why it tracks the session).
 
 Usage:
     python scripts/check_triggers.py            # normal run
@@ -54,7 +54,15 @@ BLACKOUT_START = time(19, 55)
 # 21:00 clears the measured tail with ~15 min of headroom. It does not clear
 # everything: 2026-07-29 committed at 21:46. A blackout is a race-narrower,
 # not a lock — the session guard remains the actual correctness mechanism.
-BLACKOUT_END = time(21, 0)
+# 21:30, not 21:00, since 2026-08-10: the weekday session RemoteTrigger moved
+# from 20:00 to 20:30 UTC (22:30 Paris), which shifts the whole measured
+# distribution above by +30 min — commits 20:39-21:09, merges 20:42-21:15. A
+# 21:00 end would sit INSIDE the merge window rather than after it, with the
+# worst measured case (2026-08-05, merged 20:45 → 21:15) fully exposed. The
+# blackout end is a function of the session start; move one and this must move
+# with it. NB the cron is UTC and does not follow DST, so "22:30 Paris" becomes
+# 21:30 Paris in late October — revisit both then.
+BLACKOUT_END = time(21, 30)
 
 # Type alias for the injectable committer used in process_fired_order.
 # Signature: (order_id, today, paths) -> None
