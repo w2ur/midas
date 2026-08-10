@@ -94,13 +94,54 @@ def test_check_catches_generic_data_drift(tmp_path):
     """This test asserted the opposite until 2026-08-07 (W2.9) — that data was
     "synced but not guarded". It was pinning the gap, not a decision: `apply`
     copies these files, so `check` claiming the mirror is in sync while they
-    differ is the two halves of one contract disagreeing. `sp500.json` decides
-    what a fork's universe resolver returns; the two ticker maps beside it are
-    currency-resolution layers 1 and 2."""
+    differ is the two halves of one contract disagreeing. The two ticker maps
+    are currency-resolution layers 1 and 2 — the consequential case, and the
+    one W2.9 was actually aimed at."""
     sync_core.apply(tmp_path)
     assert sync_core.check(tmp_path) == []
-    (tmp_path / "data" / "universes" / "sp500.json").write_text("[]", encoding="utf-8")
+    (tmp_path / "data" / "ticker_currencies.json").write_text("{}", encoding="utf-8")
+    assert sync_core.check(tmp_path) == [Path("data/ticker_currencies.json")]
+
+
+def test_regenerated_data_is_seeded_but_not_held_byte_identical(tmp_path):
+    """Regression: 5599e64f6 — a guard a cron was guaranteed to trip weekly.
+
+    `refresh-universes.yml` rewrites `data/universes/*.json` in live every
+    Monday 04:53 UTC; `core-drift-guard` runs 08:05 UTC the same morning and
+    went red on `sp500.json` + `nasdaq100.json` on 2026-08-10. Nothing
+    propagates live's refresh to core and nothing should — core ships
+    `refresh_universes.py` and regenerates its own.
+    """
+    sync_core.apply(tmp_path)
+    universes = tmp_path / "data" / "universes"
+    assert (universes / "sp500.json").is_file(), "apply must still seed them"
+
+    (universes / "sp500.json").write_text("[]", encoding="utf-8")
+
+    assert sync_core.check(tmp_path) == []
+
+
+def test_a_missing_regenerated_seed_is_still_drift(tmp_path):
+    """Presence-only is not no-check: `apply` promised to put the file there.
+
+    Without this, dropping universes from the manifest entirely would be
+    indistinguishable from seeding them correctly.
+    """
+    sync_core.apply(tmp_path)
+    (tmp_path / "data" / "universes" / "sp500.json").unlink()
+
     assert sync_core.check(tmp_path) == [Path("data/universes/sp500.json")]
+
+
+def test_regenerated_data_is_a_strict_subset_of_what_apply_copies(tmp_path):
+    """The two halves of the contract must still name the same files.
+
+    W2.9's principle, kept: a path exempted from byte-equality must still be
+    one `apply` actually writes, or `check` is exempting something that was
+    never there.
+    """
+    assert set(sync_core.regenerated_manifest()) <= set(sync_core.apply_manifest())
+    assert sync_core.regenerated_manifest(), "the exemption list matched nothing"
 
 
 def test_main_check_exits_nonzero_on_drift(tmp_path):

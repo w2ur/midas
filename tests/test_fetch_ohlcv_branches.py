@@ -697,15 +697,34 @@ def _all_symbols_fail(symbol: str, start: date, end: date):
     return None
 
 
+def _cover(symbols: list[str], close: float = 1.5) -> None:
+    """Give each symbol a store file, i.e. a history of having served rows.
+
+    The gate's denominator is store coverage, so a test that does not seed the
+    store is testing the "cannot measure" branch whatever else it sets up.
+    """
+    for symbol in symbols:
+        _write_raw(
+            get_config().ohlcv_dir / f"{symbol}.jsonl",
+            [_tight_line("2026-08-05", close)],
+        )
+
+
 class TestFailureRateGate:
     """`fetch_ohlcv.py` exited 0 regardless of the failure count, so a total
     vendor outage produced a green run, "No OHLCV changes to commit", and a
     session pricing a stale store the next evening — with nothing anywhere
-    saying the data had not arrived."""
+    saying the data had not arrived.
+
+    The denominator is the symbols the store ALREADY COVERS. Against the full
+    symbol list the gate was mis-calibrated from the day it shipped and fired
+    on every full-universe run — see `TestUnresolvedSymbolsAreNotAnOutage`.
+    """
 
     def test_total_outage_exits_nonzero(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
+        _cover(["AAPL", "MSFT", "SAP.DE", "BP.L"])
         monkeypatch.setattr(fo, "_fetch_symbol", _all_symbols_fail)
         monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
 
@@ -720,6 +739,7 @@ class TestFailureRateGate:
         """The control, and the reason the threshold is a rate rather than a
         count: `MATIC-USD` and `UNI-USD` have served nothing since March and
         April 2025. Any absolute floor would fire every night or never."""
+        _cover(_MANY)
         good = _make_fake_fetch_symbol(
             {s: {"2026-08-06": [1, 2, 0.5, 1.5, 1.5, 100]} for s in _MANY[:-1]}
         )
@@ -733,6 +753,7 @@ class TestFailureRateGate:
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The falsifying pair for the rate itself."""
+        _cover(_MANY)
         # 3 of 20 = 15%, over the limit.
         good = _make_fake_fetch_symbol(
             {s: {"2026-08-06": [1, 2, 0.5, 1.5, 1.5, 100]} for s in _MANY[:-3]}
@@ -742,15 +763,122 @@ class TestFailureRateGate:
 
         assert _run_main(monkeypatch, ["--symbols", ",".join(_MANY)]) == 1
 
+    def test_an_empty_store_cannot_measure_an_outage(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A first bootstrap has no coverage to compare against, so no verdict.
+
+        Deliberate: on a fresh clone every symbol is uncovered, and "nothing
+        served" is indistinguishable from "nothing has ever served here". The
+        alternative — failing the bootstrap run of every fork — is worse, and
+        the store cannot go stale before it exists.
+        """
+        monkeypatch.setattr(fo, "_fetch_symbol", _all_symbols_fail)
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+
+        assert _run_main(monkeypatch, ["--symbols", "AAPL,MSFT,SAP.DE,BP.L"]) == 0
+
     def test_empty_vendor_frame_is_reported_on_stderr(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
         """An empty frame used to return None without a word."""
-        monkeypatch.setattr(
-            fo.yf, "download", lambda *a, **k: pd.DataFrame()
-        )
+        monkeypatch.setattr(fo.yf, "download", lambda *a, **k: pd.DataFrame())
         assert fo._fetch_symbol("AAPL", date(2026, 8, 1), date(2026, 8, 6)) is None
         assert "AAPL: vendor returned no rows" in capsys.readouterr().err
+
+
+class TestUnresolvedSymbolsAreNotAnOutage:
+    """Regression: 5599e64f6 — the gate fired on its own steady state.
+
+    A symbol that has never served a row and has no store file is a ticker
+    that does not resolve at the vendor, not a vendor that stopped answering.
+    Counting the two together put the 2026-08-07 baseline (121 failures of
+    1,150 = 10.5%) permanently over the 10% limit, so every full-universe run
+    exited 1, the commit step was skipped, and the price store stopped
+    advancing for four days — the outage the gate exists to detect, produced
+    by the gate. 118 of those 121 are Refinitiv-style codes in
+    `data/universes/stoxx600.json` that Yahoo has no route for.
+    """
+
+    def test_the_production_shape_does_not_fail_the_run(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The exact 2026-08-07 proportions: 10.5% of the list, 0.2% of coverage."""
+        covered = [f"COV{i}" for i in range(1030)]
+        never_served = [f"BADTICKER{i}.PA" for i in range(121)]
+        _cover(covered)
+
+        # Every covered symbol answers except two — NKLA and ROG.SW on the night.
+        good = _make_fake_fetch_symbol(
+            {s: {"2026-08-06": [1, 2, 0.5, 1.5, 1.5, 100]} for s in covered[:-2]}
+        )
+        monkeypatch.setattr(fo, "_fetch_symbol", good)
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+
+        rc = _run_main(monkeypatch, ["--symbols", ",".join(covered + never_served)])
+
+        assert rc == 0, "the steady-state baseline must not fail the run"
+
+    def test_the_old_denominator_would_have_failed_this(
+        self, midas_data_root: Path
+    ) -> None:
+        """The control: prove the shape above really is over the old limit.
+
+        Without this, `test_the_production_shape_does_not_fail_the_run` passes
+        just as happily against a gate that never fires at all.
+        """
+        total, unresolved_count, covered_failures = 1151, 121, 2
+        assert unresolved_count / total > fo.MAX_FAILURE_RATE
+        assert covered_failures / (total - unresolved_count) < fo.MAX_FAILURE_RATE
+
+    def test_a_covered_symbol_going_dark_still_fails(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
+    ) -> None:
+        """The gate must still bind on what it was built for.
+
+        Unresolvable tickers alongside a real outage must not dilute it — under
+        the old denominator they would have, by inflating the population the
+        rate is taken over.
+        """
+        covered = [f"COV{i}" for i in range(20)]
+        _cover(covered)
+        # 5 of 20 covered symbols go dark = 25%, over the limit.
+        good = _make_fake_fetch_symbol(
+            {s: {"2026-08-06": [1, 2, 0.5, 1.5, 1.5, 100]} for s in covered[:-5]}
+        )
+        monkeypatch.setattr(fo, "_fetch_symbol", good)
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+
+        rc = _run_main(
+            monkeypatch,
+            ["--symbols", ",".join(covered + [f"BAD{i}.PA" for i in range(200)])],
+        )
+
+        assert rc == 1
+        assert "the store already covers" in capsys.readouterr().err
+
+    def test_unresolved_symbols_are_reported_not_silently_tolerated(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
+    ) -> None:
+        """Not failing the run is not the same as saying nothing.
+
+        ~120 unfetchable tickers in a committed universe is a real defect; it
+        is just not one a red nightly run can fix, and holding the price store
+        hostage to it is what broke the desk.
+        """
+        _cover(["AAPL"])
+        good = _make_fake_fetch_symbol(
+            {"AAPL": {"2026-08-06": [1, 2, 0.5, 1.5, 1.5, 100]}}
+        )
+        monkeypatch.setattr(fo, "_fetch_symbol", good)
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+
+        rc = _run_main(monkeypatch, ["--symbols", "AAPL,AIRP.PA,BNPP.PA"])
+
+        err = capsys.readouterr().err
+        assert rc == 0
+        assert "2 symbol(s) have never served a row" in err
+        assert "AIRP.PA" in err
 
 
 _MANY = [f"SYM{i}" for i in range(20)]

@@ -99,12 +99,23 @@ jobs:
 
       - name: Resolve commit date
         id: today
+        if: ${{ !cancelled() }}
         run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
       # data/market/quarantine/ travels with the store: a row the ingest
       # tripwire refused is evidence, and evidence that only exists on an
       # ephemeral runner is no evidence at all.
+      #
+      # `!cancelled()`, not the default success-only gate, because both of the
+      # script's non-zero exits mean "commit this, then go red": a quarantined
+      # row IS the evidence to preserve, and a partial store after a vendor
+      # outage is strictly better than no store at all. Under the default gate
+      # this step never ran on either — so the one artifact the quarantine
+      # feature exists to produce was discarded with the runner every time,
+      # and the failure-rate exit threw away a whole night's good rows along
+      # with the bad news. The run still fails; the data still lands.
       - name: Commit and push updates
+        if: ${{ !cancelled() }}
         uses: ./.github/actions/push-with-retry
         with:
           paths: data/market/ohlcv/ data/market/quarantine/
