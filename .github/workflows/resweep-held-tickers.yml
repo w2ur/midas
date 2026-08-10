@@ -79,11 +79,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Same exit-code contract as fetch-ohlcv.yml — this runs the same script,
+      # so it inherits the same deliberate refusals. It matters more here: the
+      # held set is ~39 tickers and all of them are store-covered, so four
+      # vendor misses is already 10.3% and trips the failure-rate exit.
       - name: Resweep held tickers (split detection)
-        run: python scripts/fetch_ohlcv.py --resweep-held --history-days 90
+        id: fetch
+        run: |
+          set +e
+          python scripts/fetch_ohlcv.py --resweep-held --history-days 90
+          rc=$?
+          set -e
+          case "$rc" in
+            0|2|3) echo "committable=true"  >> "$GITHUB_OUTPUT" ;;
+            *)     echo "committable=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+          exit "$rc"
 
       - name: Resolve commit date
         id: today
+        if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' }}
         run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
       # Touches two directories: data/market/ohlcv/ (the resweep itself) and
@@ -91,7 +106,15 @@ jobs:
       # position adjusted — most weeks this is empty). That second one is why
       # this job of all four most needs the retry: a lost push here silently
       # discards a share and cost-basis correction for a week.
+      #
+      # And why it needs the gate: `_apply_split_to_holders` calls
+      # PortfolioManager.apply_split, which PERSISTS portfolio.json mid-loop.
+      # Under the default success-only condition, a later failure-rate exit in
+      # the same run skipped this step and discarded a correction that had
+      # already been written — the exact loss the paragraph above describes,
+      # arriving by a route the retry loop cannot help with.
       - name: Commit and push updates
+        if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' }}
         uses: ./.github/actions/push-with-retry
         with:
           paths: data/market/ohlcv/ data/portfolios/

@@ -100,7 +100,54 @@ LIVE_ONLY_TESTS = {
 }
 
 GENERIC_DATA_FILES = ["data/ticker_currencies.json", "data/tickers.json"]
+# Universes stay here so `apply` copies ALL of them and `check` byte-compares
+# every one it is not told to exempt — see REGENERATED_DATA_GLOBS, which names
+# only the seven scraped indexes. The two lists overlap deliberately;
+# apply_manifest dedupes.
 GENERIC_DATA_GLOBS = ["data/strategies/*.json", "data/universes/*.json"]
+
+#: Generic data that live REGENERATES on a schedule. `apply` seeds it into core
+#: so a fresh fork has a working universe list; `check` verifies it is present,
+#: not that it is byte-identical.
+#:
+#: Byte-equality here is an invariant a cron legitimately breaks. Live's
+#: `refresh-universes.yml` (cron `15 03 * * 1`, Mondays 03:15 UTC) rescrapes
+#: these from Wikipedia and commits whatever the page says that week; nothing
+#: propagates that to core; `core-drift-guard` (cron `17 6 * * 1`, Mondays
+#: 06:17 UTC) then runs the same morning and goes red. It did exactly that on
+#: 2026-08-10 on `sp500.json` and `nasdaq100.json`. A guard a scheduled job is
+#: guaranteed to trip weekly teaches everyone to ignore it — the failure
+#: `.github/actions/failure-issue` was built to end, reintroduced one layer up.
+#: (Those are the declared crons. The observed starts that Monday were 04:55
+#: and 08:05 UTC — GitHub's scheduler runs 42 min to 6 h late, which is why the
+#: schedule is cited here and a single observed pair is not.)
+#:
+#: NAMED INDIVIDUALLY, not globbed. `data/universes/*.json` would also exempt
+#: congressional/insider/high-short, and those are NOT scraped: they are
+#: regenerated deterministically from constants in `engine/universes/
+#: alternative.py` (e.g. `refresh_congressional` is
+#: `sorted(_CONGRESSIONAL_FALLBACK)`), and that module is itself byte-synced to
+#: core via `code_manifest`. So live and core produce identical bytes for them
+#: by construction, they can never legitimately drift, and exempting them would
+#: hide a genuinely stale or hand-edited copy behind a green guard.
+#:
+#: This does NOT weaken W2.9. Its point was that `apply` and `check` must agree
+#: about what the mirror contains, and its real target was the two ticker maps
+#: (currency-resolution layers 1 and 2), which stay byte-guarded along with the
+#: strategy specs. Here the two halves are brought back into agreement by
+#: correcting what `apply` PROMISES — a seed, not a mirror — rather than by
+#: letting `check` look away. Core ships `refresh_universes.py` (it is in
+#: CORE_SCRIPTS), so a fork regenerates these itself; index composition is not
+#: a correctness surface the way a currency map is.
+REGENERATED_DATA_GLOBS = [
+    "data/universes/cac40.json",
+    "data/universes/dax.json",
+    "data/universes/dow30.json",
+    "data/universes/ftse100.json",
+    "data/universes/nasdaq100.json",
+    "data/universes/sp500.json",
+    "data/universes/stoxx600.json",
+]
 
 TOP_LEVEL = ["pyproject.toml", "requirements.in", "requirements.txt"]
 
@@ -130,15 +177,34 @@ def code_manifest(root: Path = LIVE_ROOT) -> list[Path]:
     return _rel_sorted(files)
 
 
-def apply_manifest(root: Path = LIVE_ROOT) -> list[Path]:
-    """Everything copied to core: code_manifest() + generic (non-moat) data."""
-    files = list(code_manifest(root))
-    for rel in GENERIC_DATA_FILES:
-        files.append(Path(rel))
-    for pattern in GENERIC_DATA_GLOBS:
+def _expand(patterns: list[str], root: Path) -> list[Path]:
+    files: list[Path] = []
+    for pattern in patterns:
         base, glob = pattern.rsplit("/", 1)
         for p in sorted((root / base).glob(glob)):
             files.append(p.relative_to(root))
+    return files
+
+
+def regenerated_manifest(root: Path = LIVE_ROOT) -> list[Path]:
+    """Generic data seeded into core but not held byte-identical.
+
+    See REGENERATED_DATA_GLOBS for why these are presence-checked only.
+    """
+    return _rel_sorted(_expand(REGENERATED_DATA_GLOBS, root))
+
+
+def apply_manifest(root: Path = LIVE_ROOT) -> list[Path]:
+    """Everything copied to core: code_manifest() + generic (non-moat) data.
+
+    Includes the regenerated data — `apply` really does copy it, as a seed.
+    `check` is where the two tiers diverge.
+    """
+    files = list(code_manifest(root))
+    for rel in GENERIC_DATA_FILES:
+        files.append(Path(rel))
+    files.extend(_expand(GENERIC_DATA_GLOBS, root))
+    files.extend(regenerated_manifest(root))
     return _rel_sorted(files)
 
 
@@ -233,13 +299,22 @@ def check(core: Path, root: Path = LIVE_ROOT) -> list[Path]:
     **layers 1 and 2**: a fork resolving a ticker through a stale copy of them
     prices it in the wrong currency, which is the 2026-08-07 defect exactly.
     They were the least-guarded files in the manifest and the most consequential.
+
+    Two tiers. Most of the manifest must be byte-identical. The regenerated
+    data (REGENERATED_DATA_GLOBS) is checked for PRESENCE only — live rewrites
+    it on a schedule and core has its own copy of the tool that produces it, so
+    requiring equality would go red every Monday by design. A *missing* seed is
+    still drift: `apply` promised to put it there.
     """
+    regenerated = set(regenerated_manifest(root))
     drift: list[Path] = []
     for rel in apply_manifest(root):
         src, dst = root / rel, core / rel
         if not src.exists():
             continue  # a glob that matched nothing here is not core's drift
-        if not dst.exists() or not filecmp.cmp(src, dst, shallow=False):
+        if not dst.exists():
+            drift.append(rel)
+        elif rel not in regenerated and not filecmp.cmp(src, dst, shallow=False):
             drift.append(rel)
     return drift
 

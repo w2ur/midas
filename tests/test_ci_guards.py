@@ -378,6 +378,277 @@ def test_alerting_workflows_report_their_outcome():
         )
 
 
+# --------------------------------------------------------------------------
+# push-with-retry — staging paths that may not exist
+# --------------------------------------------------------------------------
+
+PUSH_WITH_RETRY_ACTION = (
+    REPO_ROOT / ".github" / "actions" / "push-with-retry" / "action.yml"
+)
+
+
+def _push_with_retry_script() -> str:
+    action = yaml.safe_load(PUSH_WITH_RETRY_ACTION.read_text())
+    steps = action["runs"]["steps"]
+    assert len(steps) == 1, "expected a single step in the push-with-retry action"
+    return steps[0]["run"]
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", *args],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+
+
+@pytest.fixture
+def pushable_repo(tmp_path):
+    """A clone with a real local `origin`, so the push path actually runs.
+
+    Stubbing `git push` would leave the action's whole reason for existing —
+    commit, push, rebase, retry — untested. A bare repo on disk is cheap.
+    """
+    remote = tmp_path / "remote.git"
+    subprocess.run(
+        ["git", "init", "--bare", "-b", "main", str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    repo = tmp_path / "work"
+    subprocess.run(
+        ["git", "clone", str(remote), str(repo)], check=True, capture_output=True
+    )
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "test")
+    (repo / "data").mkdir()
+    (repo / "data" / "store").mkdir()
+    (repo / "data" / "store" / "AAPL.jsonl").write_text('{"date": "2026-08-06"}\n')
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "init")
+    _git(repo, "push", "-u", "origin", "main")
+    return repo
+
+
+def _run_push(repo: Path, tmp_path: Path, paths: str) -> subprocess.CompletedProcess:
+    output = tmp_path / "github-output.txt"
+    output.touch()
+    return subprocess.run(
+        ["bash", "-c", _push_with_retry_script()],
+        cwd=repo,
+        env={
+            "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "HOME": str(tmp_path),
+            "GITHUB_OUTPUT": str(output),
+            "INPUT_PATHS": paths,
+            "INPUT_MESSAGE": "[data] test commit",
+            "INPUT_ATTEMPTS": "3",
+        },
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_absent_pathspec_does_not_kill_the_push(pushable_repo, tmp_path):
+    """Regression: 5599e64f6 — `fetch-ohlcv` staged a directory that never exists.
+
+    `data/market/quarantine/` is created only when the ingest tripwire refuses
+    a row. On every healthy night it is absent, and `git add` exits 128 on a
+    pathspec matching nothing while the `git status` guard above it exits 0.
+    Two runs' worth of OHLCV was fetched and then discarded with the runner.
+    """
+    (pushable_repo / "data" / "store" / "MSFT.jsonl").write_text('{"date": "x"}\n')
+
+    result = _run_push(
+        pushable_repo, tmp_path, "data/store/ data/quarantine-that-does-not-exist/"
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "MSFT.jsonl" in _git(pushable_repo, "show", "--stat", "origin/main")
+
+
+def test_the_absent_path_is_the_only_thing_skipped(pushable_repo, tmp_path):
+    """The present sibling must still be staged, not dropped with it."""
+    (pushable_repo / "data" / "store" / "MSFT.jsonl").write_text('{"date": "x"}\n')
+
+    result = _run_push(pushable_repo, tmp_path, "data/store/ data/nope/")
+
+    assert "Skipping 'data/nope/'" in result.stdout
+    assert "Skipping 'data/store/'" not in result.stdout
+
+
+def test_all_paths_absent_is_nothing_to_commit_not_a_failure(pushable_repo, tmp_path):
+    result = _run_push(pushable_repo, tmp_path, "data/nope/ data/also-nope/")
+
+    assert result.returncode == 0, result.stderr
+    assert "None of the requested paths exist" in result.stdout
+
+
+def test_a_deleted_tracked_path_still_stages_its_deletion(pushable_repo, tmp_path):
+    """Filtering on `-e` alone would silently skip a deletion.
+
+    An absent path is normally "nothing to stage", but a *tracked* path that
+    has been deleted is a real change `git add` handles fine. The filter keys
+    on the index too, so removing a whole directory still commits.
+    """
+    subprocess.run(["rm", "-rf", str(pushable_repo / "data" / "store")], check=True)
+
+    result = _run_push(pushable_repo, tmp_path, "data/store/")
+
+    assert result.returncode == 0, result.stderr
+    committed = _git(pushable_repo, "show", "--stat", "origin/main")
+    assert "AAPL.jsonl" in committed
+
+
+def test_the_absent_path_check_can_actually_fail(pushable_repo, tmp_path):
+    """The control: without the filter, this is the 128 that broke fetch-ohlcv.
+
+    Asserting only that the fixed action succeeds proves nothing about the bug
+    it fixes — a green test here would stay green if the filter were deleted
+    and the pathspec happened to exist. So run the *unfiltered* command the
+    action used to run, and require it to blow up.
+    """
+    (pushable_repo / "data" / "store" / "MSFT.jsonl").write_text('{"date": "x"}\n')
+
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "--", "data/store/", "data/nope/"],
+        cwd=pushable_repo,
+        capture_output=True,
+        text=True,
+    )
+    add = subprocess.run(
+        ["git", "add", "--", "data/store/", "data/nope/"],
+        cwd=pushable_repo,
+        capture_output=True,
+        text=True,
+    )
+
+    assert status.returncode == 0, "git status is what made the guard pass"
+    assert add.returncode != 0, "git add is what made the stage fail"
+    assert "did not match any files" in add.stderr
+
+
+def test_every_push_with_retry_caller_names_paths_that_can_be_checked():
+    """Every caller's paths must be a plain space-separated list.
+
+    The filter loop word-splits `$INPUT_PATHS`, so a path containing a space
+    would silently split into two nonexistent ones and be skipped — the same
+    silent data loss in a new costume.
+    """
+    workflows = (REPO_ROOT / ".github" / "workflows").glob("*.yml")
+    callers = [
+        step["with"]["paths"]
+        for path in workflows
+        for job in yaml.safe_load(path.read_text())["jobs"].values()
+        for step in job.get("steps", [])
+        if step.get("uses") == "./.github/actions/push-with-retry"
+    ]
+    assert callers, "no workflow uses push-with-retry — has it been renamed?"
+    for paths in callers:
+        for path in paths.split():
+            assert not path.startswith("-"), f"{path!r} would parse as a git flag"
+        assert paths.split() == paths.split(" "), (
+            f"{paths!r} has repeated or padded separators; word-splitting is lossy"
+        )
+
+
+class TestPushGateMatchesExitCodes:
+    """Both callers of fetch_ohlcv.py must gate their push on its exit code.
+
+    Lives here rather than beside the script's own tests because it reads
+    `.github/workflows/`, which does not exist in midas-core — a
+    workflow-reading test in a synced module is an unconditional failure in the
+    public repo's suite, and `sync_core check` cannot see it (the file is
+    byte-identical in both repos; that is precisely the problem). Found by
+    running core's suite after the sync.
+    """
+
+    WORKFLOWS = ["fetch-ohlcv.yml", "resweep-held-tickers.yml"]
+
+    @pytest.mark.parametrize("workflow", WORKFLOWS)
+    def test_the_push_is_gated_on_a_committable_exit(self, workflow):
+        """`resweep-held-tickers` needs this most: `_apply_split_to_holders`
+        has already persisted a share/cost-basis correction by the time the
+        failure-rate exit fires, and a skipped commit discards it for a week."""
+        spec = yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / workflow).read_text()
+        )
+        steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+
+        push = [
+            s for s in steps if s.get("uses") == "./.github/actions/push-with-retry"
+        ]
+        assert len(push) == 1, f"{workflow} does not push exactly once"
+        assert "steps.fetch.outputs.committable == 'true'" in push[0].get("if", ""), (
+            f"{workflow} commits without consulting the script's exit code"
+        )
+
+    @pytest.mark.parametrize("workflow", WORKFLOWS)
+    def test_the_shell_mapping_matches_the_python_constants(self, workflow):
+        """Otherwise the two halves of the contract drift apart silently.
+
+        A deliberate exit the shell forgets to list stops committing; an
+        unhandled traceback the shell wrongly lists starts committing a
+        half-written store.
+        """
+        from scripts.fetch_ohlcv import COMMITTABLE_EXITS
+
+        text = (REPO_ROOT / ".github" / "workflows" / workflow).read_text()
+        listed = re.search(r"^\s*([0-9|]+)\)\s*echo \"committable=true\"", text, re.M)
+        assert listed, f"{workflow} has no committable-exit case arm"
+
+        assert {int(c) for c in listed.group(1).split("|")} == set(COMMITTABLE_EXITS), (
+            f"{workflow}'s case arm {listed.group(1)!r} disagrees with "
+            f"COMMITTABLE_EXITS {COMMITTABLE_EXITS}"
+        )
+
+
+#: The one caller path that legitimately does not exist most of the time — it
+#: is created only when the ingest tripwire refuses a row.
+OPTIONAL_PUSH_PATHS = {"data/market/quarantine/"}
+
+
+def test_every_non_optional_caller_path_resolves_in_the_repo():
+    """A skipped path is now silent, so the paths themselves need a guard.
+
+    Filtering absent pathspecs fixed a hard failure but replaced it with an
+    exit-0 skip that no caller reads (`pushed` is consumed nowhere) and that
+    `failure-issue` cannot see, because the job stays green. If a caller's
+    directory is renamed, it would quietly stop committing forever. Only
+    `data/market/quarantine/` is allowed to be absent.
+    """
+    workflows = (REPO_ROOT / ".github" / "workflows").glob("*.yml")
+    callers = [
+        (path.name, step["with"]["paths"])
+        for path in workflows
+        for job in yaml.safe_load(path.read_text())["jobs"].values()
+        for step in job.get("steps", [])
+        if step.get("uses") == "./.github/actions/push-with-retry"
+    ]
+    assert callers, "no workflow uses push-with-retry — has it been renamed?"
+    for workflow, paths in callers:
+        for path in paths.split():
+            if path in OPTIONAL_PUSH_PATHS:
+                continue
+            assert (REPO_ROOT / path).exists(), (
+                f"{workflow} stages {path!r}, which does not exist — the action "
+                "will skip it silently and the job will stay green"
+            )
+
+
+def test_the_optional_path_really_is_absent():
+    """The control for the exemption above.
+
+    If `data/market/quarantine/` were committed, the exemption would be
+    covering nothing and the test above would pass without exercising it.
+    """
+    assert not (REPO_ROOT / "data" / "market" / "quarantine").exists(), (
+        "quarantine is committed now — drop it from OPTIONAL_PUSH_PATHS"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Regression-comment citations (2026-08-07 review, W6 meta-finding 2)
 # ---------------------------------------------------------------------------

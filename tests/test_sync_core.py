@@ -94,13 +94,91 @@ def test_check_catches_generic_data_drift(tmp_path):
     """This test asserted the opposite until 2026-08-07 (W2.9) — that data was
     "synced but not guarded". It was pinning the gap, not a decision: `apply`
     copies these files, so `check` claiming the mirror is in sync while they
-    differ is the two halves of one contract disagreeing. `sp500.json` decides
-    what a fork's universe resolver returns; the two ticker maps beside it are
-    currency-resolution layers 1 and 2."""
+    differ is the two halves of one contract disagreeing. The two ticker maps
+    are currency-resolution layers 1 and 2 — the consequential case, and the
+    one W2.9 was actually aimed at."""
     sync_core.apply(tmp_path)
     assert sync_core.check(tmp_path) == []
-    (tmp_path / "data" / "universes" / "sp500.json").write_text("[]", encoding="utf-8")
+    (tmp_path / "data" / "ticker_currencies.json").write_text("{}", encoding="utf-8")
+    assert sync_core.check(tmp_path) == [Path("data/ticker_currencies.json")]
+
+
+def test_check_catches_drift_in_a_glob_matched_generic_file(tmp_path):
+    """The GENERIC_DATA_GLOBS path needs its own case, not just the named files.
+
+    The test above covers a `GENERIC_DATA_FILES` entry. Without this one,
+    moving `data/strategies/*.json` into the presence-only tier would leave the
+    whole suite green — verified: making exactly that edit passed 22 + 32 tests
+    before this was added.
+    """
+    sync_core.apply(tmp_path)
+    specs = sorted((tmp_path / "data" / "strategies").glob("*.json"))
+    assert specs, "no strategy specs were applied"
+
+    specs[0].write_text("{}", encoding="utf-8")
+
+    assert sync_core.check(tmp_path) == [Path("data/strategies") / specs[0].name]
+
+
+def test_the_alternative_universes_stay_byte_guarded(tmp_path):
+    """Only the SCRAPED indexes are exempt.
+
+    congressional/insider/high-short regenerate deterministically from
+    constants in engine/universes/alternative.py, which is itself byte-synced
+    to core — so live and core produce identical bytes by construction and a
+    divergence there is a real defect, not a weekly refresh.
+    """
+    sync_core.apply(tmp_path)
+    exempt = {str(p) for p in sync_core.regenerated_manifest()}
+    for name in ("congressional", "insider", "high-short"):
+        assert f"data/universes/{name}.json" not in exempt
+
+    (tmp_path / "data" / "universes" / "congressional.json").write_text(
+        "[]", encoding="utf-8"
+    )
+
+    assert sync_core.check(tmp_path) == [Path("data/universes/congressional.json")]
+
+
+def test_regenerated_data_is_seeded_but_not_held_byte_identical(tmp_path):
+    """Regression: 5599e64f6 — a guard a cron was guaranteed to trip weekly.
+
+    `refresh-universes.yml` rewrites `data/universes/*.json` in live every
+    Monday 04:53 UTC; `core-drift-guard` runs 08:05 UTC the same morning and
+    went red on `sp500.json` + `nasdaq100.json` on 2026-08-10. Nothing
+    propagates live's refresh to core and nothing should — core ships
+    `refresh_universes.py` and regenerates its own.
+    """
+    sync_core.apply(tmp_path)
+    universes = tmp_path / "data" / "universes"
+    assert (universes / "sp500.json").is_file(), "apply must still seed them"
+
+    (universes / "sp500.json").write_text("[]", encoding="utf-8")
+
+    assert sync_core.check(tmp_path) == []
+
+
+def test_a_missing_regenerated_seed_is_still_drift(tmp_path):
+    """Presence-only is not no-check: `apply` promised to put the file there.
+
+    Without this, dropping universes from the manifest entirely would be
+    indistinguishable from seeding them correctly.
+    """
+    sync_core.apply(tmp_path)
+    (tmp_path / "data" / "universes" / "sp500.json").unlink()
+
     assert sync_core.check(tmp_path) == [Path("data/universes/sp500.json")]
+
+
+def test_regenerated_data_is_a_strict_subset_of_what_apply_copies(tmp_path):
+    """The two halves of the contract must still name the same files.
+
+    W2.9's principle, kept: a path exempted from byte-equality must still be
+    one `apply` actually writes, or `check` is exempting something that was
+    never there.
+    """
+    assert set(sync_core.regenerated_manifest()) <= set(sync_core.apply_manifest())
+    assert sync_core.regenerated_manifest(), "the exemption list matched nothing"
 
 
 def test_main_check_exits_nonzero_on_drift(tmp_path):
