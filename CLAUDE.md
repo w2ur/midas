@@ -125,7 +125,12 @@ main, none of which existed as a standing gate before:
   the published record moved. Deliberately a post-hoc detector, not a merge gate:
   `auto-merge-session.yml` runs its own inline copy of the artifact rules, so
   this cannot hold a session hostage. Calibrated by replaying it over real
-  history, not only fixtures — see `test_backtest_against_real_history`.
+  history, not only fixtures — the gate's ability to fire is pinned against
+  seven real mutating commits BY SHA (`KNOWN_FIRING_COMMITS`), because the
+  40-commit scan that used to carry that proof drifted past every one of them
+  by 2026-08-11 and asserted nothing. The scan survives as the separate
+  "no new mutation route opened" check, where finding nothing is the pass.
+  Neither runs in CI — `fetch-depth: 1`, and `.git` is 2.5 GB.
 
 **Restatement requires disclosure up front** (`engine/disclosure.py`).
 `restate_valuations.py --apply` and `restate_bundles.py --apply` refuse to run

@@ -368,9 +368,17 @@ def test_manifest_is_closed_under_scripts_imports():
 def test_check_iterates_the_full_apply_manifest(tmp_path):
     """`apply` copies the generic data files and `check` did not look at
     them, so the two halves of the mirror contract disagreed about what the
-    mirror contains. `data/ticker_currencies.json` and `data/tickers.json` are
-    currency-resolution layers 1 and 2 — a fork resolving through a stale copy
-    prices in the wrong currency, which is the 2026-08-07 defect exactly."""
+    mirror contains.
+
+    The probe is `data/ticker_currencies.json` — currency-resolution layer 1,
+    the HAND-MAINTAINED override map, where a human decision is recorded. It
+    was `data/tickers.json` (layer 2) until 2026-08-11, when that file moved to
+    the presence-only tier: `fetch-ohlcv` started staging the registry it
+    rewrites on every run, and Yahoo's unstable name strings churn ~110 lines a
+    night. Byte-guarding it would have put core-drift-guard permanently red.
+    The gap W2.9 closed is unchanged — a data file in `apply_manifest` but not
+    `code_manifest` is still byte-checked; see the companion test for the other
+    tier."""
     core = tmp_path / "core"
     for rel in sync_core.apply_manifest():
         dst = core / rel
@@ -379,12 +387,39 @@ def test_check_iterates_the_full_apply_manifest(tmp_path):
 
     assert sync_core.check(core) == []
 
-    doctored = Path("data/tickers.json")
+    doctored = Path("data/ticker_currencies.json")
     assert doctored in sync_core.apply_manifest()
     assert doctored not in sync_core.code_manifest()  # the gap this closes
-    (core / doctored).write_text('{"PROBE": {"currency": "XXX"}}', encoding="utf-8")
+    (core / doctored).write_text('{"PROBE": "XXX"}', encoding="utf-8")
 
     assert sync_core.check(core) == [doctored]
+
+
+def test_the_vendor_registry_is_seeded_but_not_byte_guarded(tmp_path):
+    """`data/tickers.json` is regenerated nightly, so it gets the seed contract.
+
+    Layer 2 of currency resolution, but machine-populated: `save_registry` runs
+    on every `fetch_ohlcv` invocation and the vendor's name strings are not
+    stable ("Crédit Agricole S.A." → "CREDIT AGRICOLE"). Core ships
+    `fetch_ohlcv.py`, so a fork regenerates its own on first fetch and the
+    seeded copy is a bootstrap, not a contract. A MISSING seed is still drift —
+    an absent registry is worse than a stale one.
+    """
+    core = tmp_path / "core"
+    for rel in sync_core.apply_manifest():
+        dst = core / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes((sync_core.LIVE_ROOT / rel).read_bytes())
+
+    registry = Path("data/tickers.json")
+    assert registry in sync_core.apply_manifest(), "apply must still seed it"
+    assert registry in sync_core.regenerated_manifest()
+
+    (core / registry).write_text('{"PROBE": {"currency": "XXX"}}', encoding="utf-8")
+    assert sync_core.check(core) == [], "content drift must not fail the guard"
+
+    (core / registry).unlink()
+    assert sync_core.check(core) == [registry], "a missing seed is still drift"
 
 
 def test_no_synced_test_imports_a_live_only_script():

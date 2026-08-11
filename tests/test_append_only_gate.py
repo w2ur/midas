@@ -9,7 +9,8 @@ a weekend refresh or an ordinary session commit would be switched off within a
 week, and then the incident it exists to catch happens anyway.
 
 Calibrated against real history, not only these fixtures — see
-`test_backtest_against_real_history`.
+`test_the_gate_fires_on_a_real_published_row_mutation` (pinned by SHA) and
+`test_no_new_mutation_route_has_opened` (the recent-history scan).
 """
 
 from __future__ import annotations
@@ -283,64 +284,119 @@ class TestCannotEvaluateIsNotAViolation:
         assert _gate(repo).returncode == 1
 
 
-@pytest.mark.skipif(
-    not _has_deep_history(),
-    reason="shallow checkout — the real-history backtest needs 40 commits",
+#: Real commits that genuinely mutate a published row, PINNED BY SHA.
+#:
+#: By SHA, not by "the last N commits", because a window decays. This was a
+#: 40-commit scan asserting it fired on something; by 2026-08-11 the nearest
+#: firing commit had scrolled to 52 back, the scan found nothing, and the
+#: assertion that the gate "cannot be working" fired on a gate that works
+#: perfectly. It had gone red silently — CI skips this module's history tests
+#: on its shallow checkout, so nothing but a local run could see it, and the
+#: gap only widens with every data commit.
+#:
+#: A SHA cannot scroll out of range. These are on main and reachable forever.
+#:
+#: Three are the deliberate restatements of 2026-08-06/07. Four are ordinary
+#: session commits from BEFORE `merge_baseline_series` became append-or-refuse
+#: (2026-08-06) and before the snapshot-immutability fix (PR #19, 2026-08-04)
+#: — i.e. the gate fires on exactly the defect those two fixes removed.
+KNOWN_FIRING_COMMITS = (
+    ("1d1bfed3a026", "fix(data): convert the store to ISO units"),
+    ("640b9b743bf8", "fix(data): reconcile 23 mis-converted fills"),
+    ("ae6718f6a9a8", "fix(data): restate published valuations"),
+    ("7b844967c542", "chore: weekday session 2026-08-04"),
+    ("93e0e4ad9b7e", "chore: weekday session 2026-08-05"),
+    ("b63617d8bfb3", "Merge sandbox session claude/tender-ritchie-vzgvew"),
+    ("0965b867aa06", "Merge pull request #19 "),
 )
-def test_backtest_against_real_history():
-    """Replay the gate over this repo's own recent commits.
 
-    Synthetic fixtures prove the logic; only real commits prove the
-    calibration. Every commit the gate fires on here must be a genuine
-    published-row mutation — if an ordinary session commit appears in this
-    list, the gate is miscalibrated and would turn main red on Monday.
+#: Subjects allowed to fire in the recent-window scan below. Same set as above,
+#: matched by prefix — a re-run of one of those restatements under a new SHA is
+#: still the same known event.
+_KNOWN_FIRING_SUBJECTS = tuple(subject for _, subject in KNOWN_FIRING_COMMITS)
 
-    Measured 2026-08-07 over the last 60 commits: six firings, all real. Three
-    are the deliberate restatements of 2026-08-06/07. Three are ordinary
-    session commits from BEFORE `merge_baseline_series` became append-or-refuse
-    (2026-08-06) and before the snapshot-immutability fix (PR #19, 2026-08-04)
-    — i.e. the gate is firing on exactly the defect those two fixes removed.
 
-    The honest limitation: no ordinary session has run since both fixes landed
-    (2026-08-06 was cancelled), so the first live weekday session is the real
-    calibration test. This test asserts the known-bad set has not grown, which
-    is what would happen if a new mutation route opened.
-    """
-    known_bad_subjects = (
-        "fix(data): convert the store to ISO units",
-        "fix(data): reconcile 23 mis-converted fills",
-        "fix(data): restate published valuations",
-        "chore: weekday session 2026-08-04",
-        "chore: weekday session 2026-08-05",
-        "Merge sandbox session claude/tender-ritchie-vzgvew",
-        "Merge pull request #19 ",
+def _commit_exists(rev: str) -> bool:
+    return (
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+        ).returncode
+        == 0
     )
 
-    fired: list[str] = []
-    for i in range(1, 40):
-        head = f"HEAD~{i - 1}"
-        base = f"HEAD~{i}"
-        try:
-            subject = subprocess.run(
-                ["git", "log", "-1", "--format=%s", head],
-                cwd=REPO_ROOT,
-                capture_output=True,
-                text=True,
-                check=True,
-            ).stdout.strip()
-        except subprocess.CalledProcessError:
-            break
-        result = _gate(REPO_ROOT, base=base, head=head)
-        if result.returncode == 1:
-            fired.append(subject)
 
-    assert fired, "the gate fired on nothing in 40 commits — it cannot be working"
-    unexpected = [
-        subject
-        for subject in fired
-        if not any(subject.startswith(known) for known in known_bad_subjects)
-    ]
+@pytest.mark.parametrize("sha,subject", KNOWN_FIRING_COMMITS)
+def test_the_gate_fires_on_a_real_published_row_mutation(sha, subject):
+    """The gate must produce exit 1 on commits known to mutate published rows.
+
+    This is the half that proves the gate CAN fail — the standing rule that a
+    check which has never produced the opposite answer is not evidence.
+    Synthetic fixtures prove the logic; only real commits prove the calibration.
+
+    CI LIMITATION, stated rather than implied by a green tick: `tests.yml`
+    checks out at `fetch-depth: 1`, so these objects are absent and every case
+    here skips. Deepening is not a fix — `.git` is 2.5 GB, and a targeted fetch
+    of each commit still pulls that commit's whole `data/` tree. This runs
+    locally and in any full clone; it is not CI coverage and must not be
+    counted as such.
+    """
+    if not _commit_exists(sha) or not _commit_exists(f"{sha}^"):
+        pytest.skip(f"{sha} not present — shallow clone")
+
+    actual = subprocess.run(
+        ["git", "log", "-1", "--format=%s", sha],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    assert actual.startswith(subject), (
+        f"{sha} is no longer {subject!r} but {actual!r} — history was rewritten "
+        "and this pin needs re-deriving, not deleting"
+    )
+
+    result = _gate(REPO_ROOT, base=f"{sha}^", head=sha)
+    assert result.returncode == 1, (
+        f"the gate no longer fires on {sha} ({subject}), a commit that "
+        f"demonstrably rewrites a published row: {result.stdout}"
+    )
+
+
+@pytest.mark.skipif(
+    not _has_deep_history(),
+    reason="shallow checkout — the real-history scan needs 40 commits",
+)
+def test_no_new_mutation_route_has_opened():
+    """Scan recent history: nothing may fire except the known events.
+
+    The complement of the test above, and the reason the two are now separate.
+    This one is SUPPOSED to find nothing — an empty result is the pass. It can
+    therefore never serve as proof the gate works, which is exactly the job it
+    was wrongly doing when its window drifted past every firing commit.
+
+    What it does catch: an ordinary session commit starting to fire, which
+    means either a new published-row mutation route opened or the gate went
+    miscalibrated and would turn main red.
+    """
+    unexpected: list[str] = []
+    for i in range(1, 40):
+        head, base = f"HEAD~{i - 1}", f"HEAD~{i}"
+        if not _commit_exists(base):
+            break
+        subject = subprocess.run(
+            ["git", "log", "-1", "--format=%s", head],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        if _gate(REPO_ROOT, base=base, head=head).returncode == 1:
+            if not subject.startswith(_KNOWN_FIRING_SUBJECTS):
+                unexpected.append(subject)
+
     assert unexpected == [], (
-        "the gate fired on commits not in the known-bad set — either a new "
+        "the gate fired on commits outside the known set — either a new "
         f"published-row mutation landed, or the gate is miscalibrated: {unexpected}"
     )

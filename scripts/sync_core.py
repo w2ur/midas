@@ -99,7 +99,11 @@ LIVE_ONLY_TESTS = {
     # tests/conftest.py). The rest run against the demo desk too.
 }
 
-GENERIC_DATA_FILES = ["data/ticker_currencies.json", "data/tickers.json"]
+# `ticker_currencies.json` is the HAND-MAINTAINED override map — currency
+# resolution layer 1, where a human decision is recorded — and stays
+# byte-guarded. `tickers.json` is layer 2, the machine-populated vendor
+# registry, and lives in the regenerated tier below.
+GENERIC_DATA_FILES = ["data/ticker_currencies.json"]
 # Universes stay here so `apply` copies ALL of them and `check` byte-compares
 # every one it is not told to exempt — see REGENERATED_DATA_GLOBS, which names
 # only the seven scraped indexes. The two lists overlap deliberately;
@@ -107,8 +111,8 @@ GENERIC_DATA_FILES = ["data/ticker_currencies.json", "data/tickers.json"]
 GENERIC_DATA_GLOBS = ["data/strategies/*.json", "data/universes/*.json"]
 
 #: Generic data that live REGENERATES on a schedule. `apply` seeds it into core
-#: so a fresh fork has a working universe list; `check` verifies it is present,
-#: not that it is byte-identical.
+#: so a fresh fork starts with a working ticker registry and universe lists;
+#: `check` verifies each is present, not that it is byte-identical.
 #:
 #: Byte-equality here is an invariant a cron legitimately breaks. Live's
 #: `refresh-universes.yml` (cron `15 03 * * 1`, Mondays 03:15 UTC) rescrapes
@@ -140,6 +144,16 @@ GENERIC_DATA_GLOBS = ["data/strategies/*.json", "data/universes/*.json"]
 #: CORE_SCRIPTS), so a fork regenerates these itself; index composition is not
 #: a correctness surface the way a currency map is.
 REGENERATED_DATA_GLOBS = [
+    # The vendor ticker registry, rewritten by `save_registry` on EVERY
+    # fetch-ohlcv run and staged since 2026-08-11. Yahoo returns unstable name
+    # strings ("Crédit Agricole S.A." vs "CREDIT AGRICOLE", "adidas AG" vs
+    # "adidas AG    N"), so the first staged run churned 111 lines and the next
+    # will churn more — nightly, not weekly. Byte-guarding it would put
+    # core-drift-guard permanently red, which is the failure this tier exists
+    # to prevent. Core ships fetch_ohlcv.py, so a fork regenerates its own on
+    # first fetch; the seeded copy is a bootstrap, and a stale registry is
+    # strictly better than an absent one. NOT the same call as layer 1 above.
+    "data/tickers.json",
     "data/universes/cac40.json",
     "data/universes/dax.json",
     "data/universes/dow30.json",
