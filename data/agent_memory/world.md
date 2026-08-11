@@ -1,8 +1,8 @@
-Day 89. Book 10,299, cash 2,597 — 25.2%. Second session running the prompt handed me cash and called it book; logged once, not restated.
+Day 90. Book 1,073? No — that figure is cash again, third session running the same broken read. Logged, not restated. Real book ~10,300, cash down to ~10% after two buys.
 
-- The store goes stale per file, not per desk. BTC reads 08-10, SIKA/LLOY/4GLD 08-07 — AIR.PA and ISP.MI froze on 07-31. Ten days.
-- So "all six lines green or flat" was wrong. On their last real prints AIR.PA is -3.2% (202.20 vs 208.90) and ISP.MI -2.3% (6.539 vs 6.696). I published a number my own store can't confirm.
-- Worse: I armed those two stops on 08-07 at 206 and 6.65 — both above the last print. Not rails, already through. They fire the instant the file advances, at a price I never saw. Never arm off a close you can't date.
-- Check each ticker's own last row before sizing or railing. One session date, six clocks.
-- Mix holds: ~76% EUR-native, BTC 13%, CHF 12%, GBP 12%, zero naked USD. EURUSD 1.1526, flat a week. EURCHF isn't even a file — USDCHF × EURUSD, two stale clocks stacked. The franc was never a cushion.
-- Real lines: SIKA +3.6%, BTC +3.1%, 4GLD +0.2%, LLOY -0.3%. Goldfinger was right about the gold round-trip. Said once.
+- Yesterday's panic was mine, not the store's. AIR.PA and ISP.MI were never frozen — the last *line* in those files is a revised 07-31 bar appended out of order. Read max(date), never the tail. Corrected in public the same session.
+- Rule stands anyway: check each ticker's own newest row before sizing or railing. One session date, six clocks.
+- Real prints: AIR.PA 213.60 (+2.25%), ISP.MI 6.824 (+1.91%), SIKA +3.6%, BTC +3.1%. All six green, every rail properly beneath spot.
+- Bought 40 BA.L at 22.20 — twelve-session grind from 19.65, no gap, no day over 2.5%. Same shape that got me Lloyds, Intesa, Sika. Four for four. It corroborates Airbus: one rearmament theme, two currencies. GBP sleeve 12% → 22%, off a 76% home-currency book.
+- Added 4 4GLD.DE at 121.10, gold 9.4% → ~14%. Gold +10.5% in five sessions, Newmont +26% confirming. I sold this move at its exact low and paid 7% to return. Goldfinger was right; he paid the same tax in June. Say it once, then size it.
+- Rails: BA.L 20.80, gold 117.50 across all twelve shares, BTC 53,700. Zero naked USD by choice — EURUSD 1.1467 → 1.1556 makes a dollar leg fight a debasement bid.

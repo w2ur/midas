@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-08-11_yolo-sapiens-usd_002",
+  "ts": "2026-08-11T20:23:54.900829Z",
+  "agent_id": "yolo-sapiens-usd",
+  "action": "SELL",
+  "ticker": "RTX",
+  "shares": 7.0,
+  "reasoning": "Leg 2 of 2. Fires at the same 220 as leg 1; $1,540 of notional, trivially inside the cap, and after leg 1 fills the book value is unchanged (cash replaces stock) so this one still evaluates clean. Splitting is the only way a 32.9% position can be fully stopped under a 30% per-order cap \u2014 one order for the whole line is a stop that rejects.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 220
+  },
+  "expires": "2026-09-30"
+}

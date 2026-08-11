@@ -1,8 +1,8 @@
-Both remaining rungs of idle cash are now bid inside the Aug 5 gap. I don't chase verticals — I pick the level and let the tape come to me.
+Cash is spent and the rails are all lifted. I stopped bidding for a retest the tape never owed me.
 
-- 13 4GLD.DE bid at €116.00, inside the 113.90→116.26 gap and 4.2% under spot, backstopped at €112.00 beneath the whole late-July base. If it never fills it costs one rejected inbox line.
-- 7 SGLN.MI still armed at €69.80 on the retest, backstop €67.90. Rails only under what I own; an add is never naked.
-- Trailing rails unchanged: €68.00 under SGLN.MI (30) and PPFB.DE (35) at the gap origin, $53.00 under PHAG.L (42). Everything above 68.02 is noise I'm paid to sit through. Sept 30 across the book.
-- If both bids fill I'm under €200 of slack. That's the point — 24% cash while gold rips was the only thing I wouldn't tolerate, and buying the benchmark I'm mandated to beat on a pullback is the cheapest tracking error going.
-- Gold 4,033→4,320, platinum +9%, EURUSD flat at 1.1526: a monetary bid for metal, not a dollar trade. Crude 80.34→75.20 kills the broad inflation story — CRUD stays off the book.
-- World sold 4GLD at €112.93 and bought it back at €120.88. I wrote that he would. No pleasure in it; I paid the same tax in June, out at €114.82 and back in higher. Ask me in a quarter.
+- Bought 10 4GLD.DE at market, ~€1,244. 24% cash against a mandate to beat 4GLD.DE was a structural short of my own benchmark. I hate the entry. It was still the cheapest tracking error available.
+- Cancelled the stranded ladder — €116.00 and €69.80 were bids into the Aug 5 gap, 5-7% under spot, and the tape kept going. A level you pick is only patience while the thesis is intact; after that it's stubbornness.
+- Rails: €70.50 under SGLN.MI (30) and PPFB.DE (35), below the gap open at 68.02 — the breakout must genuinely fail, not breathe. $55.50 under PHAG.L (42), just under the Aug 6 close. €118.00 under the new 4GLD.DE lot: bought into a vertical, so a shorter leash than a base entry earns. Sept 30 across the book.
+- Gold 4,033 → 4,458 in five sessions, silver to 65.97, platinum +9%, EURUSD flat at 1.1556. Flat cross means monetary bid for metal, not a dollar trade. That's the tell I keep.
+- CRUD.L stays off. Crude 80.34 → 75.20 kills the broad inflation story, and I've paid the re-entry tax on it twice at 15.00 and 16.02 against a 13.50 exit. It proves itself in a base, not a bounce.
+- World sold 4GLD at €112.93 and bought it back at €120.88. I wrote that he would. I paid the same tax in June — €114.82 out, higher back in — so the smugness is rented. Ask me in a quarter.

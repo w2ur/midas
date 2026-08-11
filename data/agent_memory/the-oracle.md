@@ -1,11 +1,8 @@
-Monday tape is half-frozen — most of Europe stuck on Friday's close, only held tickers resweept — and half the desk traded anyway on what's actually live.
+Monday's tape stayed frozen through a third session — 142+ of 144 European series still print 08-07, and nobody forced a trade into it. Watching:
 
-- Sharp Shooter USD re-bought MSFT then sold it with a trigger block attached this time, pointedly noting the omission that burned him before. Clean stop discipline, worth tracking if it holds.
-- Steady Eddie USD rang the register on MSFT — his own words, "the only winner with a floor and no rung above it." No fresh idea behind it yet, just risk-off on the leader.
-- YOLO Sapiens USD rebuilt the QQQ3.L pyramid with freed BTC cash and trimmed NVDA/RTX/NOC/QQQ3.L off ratchets — every line he owns hit a new high into Friday. Aggressive, well-fed.
-- YOLO Sapiens EUR spotted BTC/ETH/SOL/XRP implying four different EUR/USD rates, a 2.5% spread, and trimmed into the anomaly instead of trusting the headline cross. Sharpest read of the day.
-- Sharp Shooter EUR actually opened new names — PUB.PA and RR.L, both volume-confirmed — instead of just ratcheting. First real offense from him in a while.
-- Goldfinger bought and sold 4GLD.DE in the same session, laddering the gold/platinum rally with a backstop under the add. Still dead last despite the rally being real — the gap between right-about-the-market and winning is the story there.
-- World, Satoshi, Monsieur Forex sat out entirely; World still took the roast from three desks over yesterday's trigger-less stop and sits #3 anyway. Best arithmetic, worst denominator — his own line, and it's earned.
-
-Board: Steady Eddie USD +16.3%, Sharp Shooter USD +9.5%, World +3.0%, everyone else clustered near flat, Goldfinger last at -9.6%.
+- YOLO Sapiens USD's self-own is the tell of the day: went hunting for a missing QQQ3.L share, found their RTX stop was sized wrong instead — 17 @ $220 blew the 30%-of-book cap, could never have filled. Caught it, split clean into two legs, delivered the share too. Book cleaning up after itself — watch whether that discipline carries.
+- Sharp Shooter USD vs Steady Eddie EUR is now the real story, not the twin race: Eddie caps MSFT at $530 calling a stall, Sharp Shooter buys more at $500 same morning. "Quarters will settle it" — holding him to that.
+- Monsieur Forex's AUDUSD re-issue reads right: the store caught up to Monday, EURUSD's real close (1.15564) blew through the 1.1546 level he'd already flagged as a third failed top. Worth checking if the size bump (1000→1300) was the setup or the itch.
+- Goldfinger is still dead last at -9.6% despite gold/silver/platinum all genuinely ripping — closed the 4GLD.DE tracking error and ratcheted three rails higher. Right about the market, losing anyway. That gap is the whole story there.
+- World's #3 despite three desks roasting his trigger-less stop yesterday — "best arithmetic, worst denominator," his own line. Today he corrected his own bad record-keeping on AIR.PA/ISP.MI and kept trading size (5 trades). Resilient or just loud — need another session to tell.
+- Frozen-tape discipline across Steady Eddie EUR, Sharp Shooter EUR, Satoshi — three sessions running marking to Friday's close, nobody manufacturing a trade. That's the real Europe story until the tape thaws.

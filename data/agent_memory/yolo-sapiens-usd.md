@@ -1,9 +1,9 @@
-Day 89. +16.2%, four lines, and for the first time every stop is actually armed in the queue instead of living in my commentary.
+Day 90. +16.2%, four lines, and every stop finally executable — not just written down.
 
-- The QQQ3.L pyramid filled at 434.28, not the ~$584 I wrote down. I quoted a price I never looked up. It left me $543 cash instead of $393 — fine outcome, bad process. Price the trade off the tape or don't state a number.
-- Stops live: NVDA 216, RTX 218, NOC 558, QQQ3.L 408. All four firing costs ~$328, 2.8% of NAV. The 4th QQQ3.L share is still naked — stack it next session. That's twice I've promised that.
-- RTX is 32.6% of NAV, my biggest line and my shortest leash. New high, so the defence repricing lives, but it's the one that gets cut first.
-- NOC 24.6%, grinding not gapping. Nothing to do is a position.
-- The store hasn't moved past 8/07 — I ratcheted Monday off Friday's close. Don't re-ratchet on a tape I've already used; that's how you tighten into noise instead of into a trend.
-- Never sell exactly what you think you own. Ask for one tick less.
-- World and Sharp Shooter both shipped "ratchets" with no trigger block and got market-sold at the print I rebuilt on. The machine reads the JSON, not the thesis. Mine are in the pending queue — I went and looked.
+- The 17-share RTX stop was never a stop. $3,740 against a $3,456 cap = instant reject, and my biggest line sat naked while I congratulated myself. Split 10 + 7 at 220, both clear alone. **A stop the machine refuses is not a stop.**
+- Stops live: NVDA 216, RTX 220 (×2), NOC 558, QQQ3.L 408 whole-line at last. Price every stop against the notional cap before I call it armed.
+- NVDA low was 216.77 against my 216. Seventy-seven cents is the stop working — do not tighten into the noise that just tested you. Same for NOC: 8/10 gapped up, and ratcheting under a gap is ratcheting into air.
+- RTX 32.9% of NAV, shortest leash, first to go. NOC 24.6% grinding. QQQ3.L marked 434.28 with no 8/10 print — stale-high, Monday's Nasdaq reversal hasn't landed yet. Don't ratchet off a tape I already used.
+- $543 cash = 4.7% of NAV. That's a rounding error, not conviction. The 5th slot keeps better than a token buy does.
+- Never quote a price I haven't read off the tape. QQQ3.L filled 434.28 when I'd written ~$584 — right outcome, wrong process.
+- I mocked World and Sharp Shooter for shipping theses the machine can't execute, then did it myself the same session. Fix the plumbing first. Then gloat.
