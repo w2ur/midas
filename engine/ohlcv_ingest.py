@@ -139,6 +139,26 @@ def row_to_record(row_date: str, row: object) -> dict:
     }
 
 
+def _warn_dropped_no_close(symbol: str, dropped: list[str]) -> None:
+    """Log a row dropped for a missing close. A no-op when nothing was dropped.
+
+    Shared by ``build_new_rows`` and ``merge_rows`` — both discard a row this
+    way, and until 2026-08-12 each did so on a bare ``continue``, which is how
+    the European side of the store ran a full trading day behind the US side
+    for five weeks while every run printed a healthy row count and exited
+    green.
+    """
+    if not dropped:
+        return
+    logger.warning(
+        "%s: dropped %d row(s) with no close — %s. The vendor served the "
+        "date but not a usable price; the store does not advance for it.",
+        symbol or "<unknown symbol>",
+        len(dropped),
+        ", ".join(sorted(dropped)),
+    )
+
+
 def build_new_rows(
     df: pd.DataFrame, existing: set[str], *, symbol: str = ""
 ) -> list[tuple[str, str]]:
@@ -165,14 +185,7 @@ def build_new_rows(
             dropped.append(d)
             continue
         rows_to_append.append((d, json.dumps(record)))
-    if dropped:
-        logger.warning(
-            "%s: dropped %d row(s) with no close — %s. The vendor served the "
-            "date but not a usable price; the store does not advance for it.",
-            symbol or "<unknown symbol>",
-            len(dropped),
-            ", ".join(sorted(dropped)),
-        )
+    _warn_dropped_no_close(symbol, dropped)
     rows_to_append.sort(key=lambda pair: pair[0])
     return rows_to_append
 
@@ -426,14 +439,7 @@ def merge_rows(
             stored[d] = line  # in place — keeps this row's position in the file
             revised += 1
 
-    if dropped_no_close:
-        logger.warning(
-            "%s: dropped %d row(s) with no close — %s. The vendor served the "
-            "date but not a usable price; the store does not advance for it.",
-            symbol,
-            len(dropped_no_close),
-            ", ".join(sorted(dropped_no_close)),
-        )
+    _warn_dropped_no_close(symbol, dropped_no_close)
 
     # Only the NEW dates are sorted, so a multi-day catch-up lands
     # chronologically among itself; the pre-existing order is untouched. On an
