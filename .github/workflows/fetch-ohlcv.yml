@@ -43,28 +43,35 @@ name: fetch-ohlcv
 # is what keeps a lost day of freshness rare; the staleness guard is what
 # makes it survivable.
 #
-# 24/7 instruments now mark on a ~6-hour-formed bar. Yahoo serves a daily bar
-# for crypto and FX as soon as the UTC day opens (verified 2026-08-12: a
-# same-day BTC-USD close is returned at 07:49 UTC), so a 06:00 run writes the
-# current day's row for them six hours into its formation. The 20:00 session
-# publishes that row and `PortfolioManager.add_snapshot` then freezes it, so
-# the next morning's revision arrives too late to move the published mark.
-# Under 22:30 the same bar was ~22.5 h formed. This wants revisiting when the
-# session moves to 11:00 UTC; the likely resolution is to stop writing a
-# forming bar at all rather than to keep timing around one.
+# NO FORMING BAR IS EVER STORED. `scripts/fetch_ohlcv.py` sets its `end` to
+# YESTERDAY, not today. Asking for today costs nothing on a cash market — the
+# day has not opened — but Yahoo serves a daily bar for a 24/7 instrument
+# (crypto, FX, futures on Globex) the moment the UTC day opens (verified
+# 2026-08-12: a same-day BTC-USD close is returned at 07:49 UTC), so at 06:00
+# that row would be about six hours old. The 20:00 session publishes whatever
+# the store holds and `PortfolioManager.add_snapshot` freezes it, so a partial
+# captured at 06:00 would become a permanent published mark. Under the old
+# 22:30 cron the same row was ~22.5 h formed — wrong more cheaply, not right.
+# Ending at yesterday makes every stored bar complete, on every instrument,
+# and the published crypto/FX mark a final close.
 #
-# Partial bars: EVERY symbol runs with a 1-day revision window, not just
-# crypto. The finality measurements below were taken under the 22:30 UTC
-# schedule and are kept as the calibration they are, not restated as a
-# present-tense property of the 06:00 one: only cash equities and ETFs were
-# genuinely final at 22:30 (SPY and AAPL, 0 of 23 trailing bars drifted);
-# commodity futures (`=F`) were mid-Globex — the next session had already
-# opened, and GC=F/PL=F/CL=F each drifted on more than half of their last 23
-# bars, up to +3.4%; FX (`=X`) rolls at 17:00 ET and drifted mildly, worst on
-# Fridays. At 06:00 the cash-equity bar a run is after is the PREVIOUS day's
-# and is final; what forms under it now is the 24/7 row described above.
-# Expect a same-day row to change value on the following run — that is the
-# mechanism working. A bar that WAS final
+# The snapshot dating does not move with it: at 06:00 on day D the store
+# advances to D-1, and the 20:00 session on D publishes a D-1-dated row —
+# exactly what the 22:30 cron on D-1 produced. Verified against the live
+# record, where the 08-04 session published 08-03 and the 08-05 session
+# published 08-04.
+#
+# Revisions: EVERY symbol runs with a 1-day revision window, not just crypto.
+# It no longer catches partial bars — there are none — it catches the vendor
+# revising an already-complete one, which is real and measured. Those
+# measurements were taken under the 22:30 UTC schedule and are kept as the
+# calibration they are, not restated as a present-tense property of the 06:00
+# one: cash equities and ETFs did not move at all (SPY and AAPL, 0 of 23
+# trailing bars drifted); GC=F/PL=F/CL=F each drifted on more than half of
+# their last 23 bars, up to +3.4%; FX (`=X`) drifted mildly, worst on Fridays.
+# Yahoo also restates raw `close` outright for a corporate action, which is
+# what the weekly resweep-held-tickers run adjudicates. A bar the vendor does
+# not revise
 # re-fetches identical, so no already-stored row changes value and the diff for
 # that symbol stays the single appended line. merge_rows preserves the store's
 # existing line order and never re-sorts it: 529 of the 1,046 files are not in

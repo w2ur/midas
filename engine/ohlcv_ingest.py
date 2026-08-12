@@ -106,17 +106,20 @@ def fetch_window_start(
 ) -> date | None:
     """Return the inclusive start date for the next fetch, or None to skip.
 
-    ``end`` is the last day we want (normally today). The OHLCV cron runs at
-    06:00 UTC, so a store holding ``end - 1`` must still attempt ``end``, and
-    what comes back depends on the instrument. For a **cash market** the day
-    has not opened: the vendor returns nothing for it, and the run's real
-    yield is ``end - 1``'s close. For a **24/7 instrument** (crypto, FX) the
-    vendor DOES serve ``end`` — a daily bar exists as soon as the UTC day
-    opens (verified 2026-08-12: a same-day BTC-USD close is returned at
-    07:49 UTC) — so the run stores a bar roughly six hours into its
-    formation. That row is corrected by ``revise_days`` on the FOLLOWING
-    run, not on a later run the same day: only a store that does not already
-    hold ``end`` is fetched at all.
+    ``end`` is the last day we want, and since 2026-08-12 its caller sets it to
+    **yesterday, never today** — so this function is never asked for a day that
+    has not closed. That is the point: a cash market would simply serve nothing
+    for the current day, but a 24/7 instrument (crypto, FX, futures on Globex)
+    is served a bar the moment the UTC day opens (verified 2026-08-12: a
+    same-day BTC-USD close is returned at 07:49 UTC), and under the 06:00 cron
+    that bar would be about six hours old. The 20:00 session publishes whatever
+    the store holds and ``PortfolioManager.add_snapshot`` freezes it, so a
+    partial captured at 06:00 becomes a permanent published mark. Ending at
+    yesterday makes every stored bar a complete one on every instrument.
+
+    A store holding ``end - 1`` must still attempt ``end``; only a store that
+    already holds ``end`` is skipped, which is what makes a second run in one
+    UTC day a no-op.
 
     ``revise_days`` re-requests that many already-stored trailing days so a bar
     that was still forming when it was first written can be corrected by its

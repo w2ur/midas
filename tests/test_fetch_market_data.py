@@ -215,12 +215,18 @@ class TestEquityFreshnessGate:
     def test_easter_style_holiday_weekend_is_not_stale(
         self, tmp_store: Path, tmp_path: Path
     ) -> None:
-        """Good Friday 2026-04-03 closed, Easter Monday 04-06 closed: the
-        Tuesday session reads Thursday 04-02's close (the session runs before
+        """Good Friday 2026-04-03 closed, then the weekend: the **Monday**
+        04-06 session reads Thursday 04-02's close — the session runs before
         its own day's close exists, so that bar is not in the store yet, at
-        any collection hour) — 4 days of
-        legitimate lag. This is the false-positive the threshold exists to
-        clear; it must pass."""
+        any collection hour. 4 days of legitimate lag, and the false positive
+        the threshold exists to clear; it must pass.
+
+        The fixture day is Monday, and that is the arithmetic: 04-02 to 04-06
+        is exactly the 4 calendar days allowed, where a Tuesday 04-07 session
+        would be 5 and should fail. This docstring said "Tuesday" until
+        2026-08-12 while passing `date(2026, 4, 6)` — the fixture was the
+        correct half of that disagreement.
+        """
         from scripts.fetch_market_data import fetch_and_save
 
         _seed_all(tmp_store, equity="2026-04-02", crypto="2026-04-06")
