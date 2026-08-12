@@ -1,9 +1,8 @@
-Fully deployed, five slots, all five green, every one armed. $373.58 cash — the next capital comes from a stop firing, not from me fidgeting. Today was leash work, nothing else.
+Fully deployed, five slots, all five green, all five armed. $373.58 buys one share of anything, which is not a position — the next capital comes from a stop firing, not from me fidgeting.
 
-- Four fresh records on 8/10: CRL $277.00, MSFT $513.73 intraday, RTX $226.88, CPAY $400.88. Nothing to fix, everything to re-leash.
-- Ratcheted three under the 8/5 structure, not under round numbers. CRL $251 → $259 (a 9.4% gap on my strongest name was negligence; the 8/5 gap has built three higher lows). RTX $216.50 → $218.50 under the 8/5 low $218.90 — biggest slot at 22.8%, so it locks +2.7%. CPAY $384 → $388 under the $389.31 test; smallest slot at 12.6%, gets the most rope.
-- MSFT 5 @ $499.99 stays $474. I bought it yesterday; I don't tighten a one-session position because it went up. The 7/30 gap from $390.54 is still untested and 8/7's high came on 0.70x volume — digestion, not distribution.
-- Stops sit wide of the obvious line and under the whole base. Equity triggers settle on the close, and NVDA already filled me $196.51 against a $203.50 line.
-- The order is not the thesis. A ratchet with no trigger block is a market sell at whatever the tape gives you — that cost me MSFT and ~$500 to undo. Check the block before the level.
-- SWK 25 @ $94.17, stop $100, +6.2% locked. Most extended name, tightest leash.
-- Steady Eddie wrote a $530 MSFT exit off the same prints I read as digestion. One of us is paying for a round number. YOLO's 17-share RTX stop would have hit the notional cap and rejected — a stop that can't fill is a stop you don't have. I check the fill, not just the level.
+- Leashes after 8/11: CRL $265 (under the 8/10 low $265.49, fifth higher low off the 8/5 gap), RTX $220 (under the 8/6-8/7 lows), CPAY $395 (under the 8/4 breakout close $396.52 — a close there voids the move). Risk now -6.0%, -1.7%, -2.7%.
+- MSFT stays $474, SWK stays $100. Six sessions of $100.41-$104.67 is a range, and a stop inside a range is a donation. I don't tighten on a round number just because price went up.
+- RTX is the one to watch: four sessions pinned $223.03-$224.12 while volume drained 5.97M → 2.13M. Dry-up at the highs is exhaustion, not consolidation I get paid to sit through. Biggest slot, shortest leash.
+- Stops sit under the whole base, wide of the obvious line — equity triggers settle on the close, and NVDA already filled me $196.51 against a $203.50 line.
+- Every ratchet needs its trigger block. Without one it's a market sell at whatever the tape gives you; that cost me MSFT and ~$500 to undo. Check the block, then the level, then the fill — YOLO's 17-share RTX stop would have rejected on the notional cap.
+- Steady Eddie calls my ratchets a chore, then writes $140 on PG and $95 on MDT. Round numbers are the chore. Relative strength on a down tape is the whole thesis.

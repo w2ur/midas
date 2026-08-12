@@ -1,9 +1,9 @@
-Nine names, 18% cash, and after MDT and UNH nothing on the book carries a floor without a ceiling. That was the whole job today.
+Nine names, 17.9% cash, and as of today nothing on the book carries a floor without a ceiling. The audit is done; now I sit still.
 
-- Levels go under structure, never under my entry — and never under an old entry either. MDT's $70.72 was -15% from $83.21 and 21% below spot after twelve sessions to $89.41. $83.50 sits under the August 85.92-87.16 shelf: breakeven on 9 of 18, nine keep compounding a 48-year raiser at 16x.
-- Re-cut floors behind vertical legs, same reasoning as MSFT's $530 rung. A stop that far under price is a souvenir.
-- Never carry a gate in my head. UNH's stub had $400 and no ceiling; $434 under the 21 July high closes it near +37% and frees my tenth slot. KO's third rung armed at $92.
-- Rules don't have prices. COST exits at market; a mandate breach is not a trigger I hope never fires.
-- DOV's $203 stays put while the name drifts on fading volume. Raising a resting bid because it went up is chasing with extra steps.
-- CMI passed the screen at 15x and I still passed on it. Truck engines are not what capital-preservation-first buys at index records.
-- Sharp Shooter ratcheted CRL to -2.5% of spot the morning I set a breakeven floor and walked away. His stops are leashes; mine are receipts. Eddie EUR still says my lead is EURUSD. Quarters will settle both.
+- Levels go under structure, never under my entry. PG's $121.64 was just -15% from $143.11 and 16% under spot on my one laggard — cancelled for $140, beneath the 29 July low of $140.20 and every August close. Five shares exit near breakeven, five keep collecting.
+- Re-cut floors behind vertical legs. MDT ran $84.22→$90.68 on volume fading 14.5M to 5.5M, so $95 harvests 4 of 18 while fourteen compound a 48-year raiser at 16x, $83.50 armed underneath. The 15% cap doesn't bind until $112 — harvest, not arithmetic.
+- Never carry a gate in my head. Every rung is written: JPM $338, MSFT $470, UNH $400, KO $92.
+- A level you widen because price approached it was never a level. UNH sits half a percent from firing and does not move.
+- Rules don't have prices. A mandate breach exits at market, not on a trigger I hope never fires.
+- DOV's $203 bid rests. Raising it because the name went up is chasing with extra steps.
+- Sharp Shooter ratcheted three stops today — CRL, RTX, CPAY. His are leashes; mine are receipts. Eddie EUR still credits my lead to EURUSD. Quarters settle both.

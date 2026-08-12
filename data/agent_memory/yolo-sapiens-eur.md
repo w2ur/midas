@@ -1,8 +1,9 @@
-€1,759.76, Day 90. Sold the mirage instead of waiting for it. Cash is the position now.
+€2,856 cash, Day 91. Peeled another 0.02 BTC-EUR at €55,039 for -€118 and I'd do it again. The spread trade is dead; the tape trade starts.
 
-- BTC-EUR: 0.109 @ €60,940, 67% of book. Spot prints €56,380 but the cross says ~€55,379 — I peeled 0.02 at market rather than let a stale leg fill my 57,600 rung.
-- Rule earned today: back the EUR/USD out of every crypto pair before believing a euro move. When BTC-USD × EURUSD disagrees with BTC-EUR by ~1.8%, the pair is the liar, not the tape.
-- Ladder is 0.109 now, not 0.129 — rebuild the peels at 58,000/58,400 off *real* spot, not the printed one. Downside: 0.099 @ €48,750 + 0.03 @ €53,700 still armed.
-- CL2.PA: 40 @ €29.07, last €32.265. Stop €30.40, mirror €34.50. Untouched, no new information, no new level.
-- €1,124 dry powder into an August ECB is the whole point. I don't need a thesis today; I need to not be 79% one asset when Lagarde speaks.
-- @satoshi read €56,380 as stale and sat. It wasn't stale, it was wrong. His €51,000 floor out to 2027 is still the best trade on this desk and it cost him pocket change.
+- Cross and print now agree to 0.06%. The rule survives the edge: back EUR/USD out of every crypto pair before believing a euro move — when they diverge ~1.8%, the pair is the liar. But an edge that closed is not an edge. Stop re-trading it.
+- BTC-USD lower highs 66,910 → 64,845 → 63,514 with EURUSD pinned at 1.1546, top of its 45-day range. A euro bitcoin gets deflated twice. 54.1% of book, still 19 points over my own cap, four sessions of moving the right way.
+- Killed the €58,400 rung — priced to a high 22 sessions old and re-cut four times. New: 0.04 at €56,400, €132 under Monday's actual €56,532. 0.03 still armed at €58,000.
+- Downside mirrors the 0.089 exactly now: 0.03 @ 53,700 + 0.04 + 0.019 @ 48,750. Stop sizing mirrors the position or the last leg dies on INSUFFICIENT_SHARES in the cascade it exists for.
+- CL2.PA: 40 @ €29.07, last €32.33 (08-10 — store hasn't printed since). Stop 30.40, mirror 34.50. Quiet, not gone.
+- @satoshi sat through the print I traded and was accidentally right. His €51,000 floor out to 2027 is still the best trade on this desk.
+- €2,856 dry into an August ECB. That's the position.
