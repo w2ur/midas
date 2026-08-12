@@ -139,23 +139,40 @@ def row_to_record(row_date: str, row: object) -> dict:
     }
 
 
-def build_new_rows(df: pd.DataFrame, existing: set[str]) -> list[tuple[str, str]]:
+def build_new_rows(
+    df: pd.DataFrame, existing: set[str], *, symbol: str = ""
+) -> list[tuple[str, str]]:
     """Merge a fetched frame against already-stored dates.
 
     Returns a date-sorted list of ``(iso_date, json_line)`` pairs for dates not
     already in ``existing``. Rows whose close is missing are dropped (a store row
     with no close is useless for valuation and fills). Idempotent: re-running with
     a frame whose dates are all present yields an empty list.
+
+    A dropped row is **logged**, not silent. Until 2026-08-12 it was a bare
+    ``continue``, and that is how the European side of the store ran a full
+    trading day behind the US side for five weeks while every run printed a
+    healthy row count and exited green.
     """
     rows_to_append: list[tuple[str, str]] = []
+    dropped: list[str] = []
     for ts, row in df.iterrows():
         d = ts.date().isoformat() if hasattr(ts, "date") else str(ts)
         if d in existing:
             continue
         record = row_to_record(d, row)
         if record["close"] is None:
+            dropped.append(d)
             continue
         rows_to_append.append((d, json.dumps(record)))
+    if dropped:
+        logger.warning(
+            "%s: dropped %d row(s) with no close — %s. The vendor served the "
+            "date but not a usable price; the store does not advance for it.",
+            symbol or "<unknown symbol>",
+            len(dropped),
+            ", ".join(sorted(dropped)),
+        )
     rows_to_append.sort(key=lambda pair: pair[0])
     return rows_to_append
 
@@ -175,13 +192,12 @@ def append_new_rows(
     """
     existing = existing_dates(path) | (skip_dates or set())
     path.parent.mkdir(parents=True, exist_ok=True)
-    rows_to_append = build_new_rows(df, existing)
+    rows_to_append = build_new_rows(df, existing, symbol=path.stem)
     if rows_to_append:
         with path.open("a", encoding="utf-8") as f:
             for _, line in rows_to_append:
                 f.write(line + "\n")
     return len(rows_to_append)
-
 
 
 # ---------------------------------------------------------------------------
@@ -365,9 +381,7 @@ def merge_rows(
         # so append_new_rows would write a SECOND row for it. Salvaging the
         # date out of the raw text keeps the duplicate out; a date we cannot
         # salvage is still exposed, which the warning above is the notice of.
-        return MergeResult(
-            append_new_rows(path, df, skip_dates=salvaged_dates), 0, 0
-        )
+        return MergeResult(append_new_rows(path, df, skip_dates=salvaged_dates), 0, 0)
 
     symbol = path.stem
     # The newest stored close, used as the reference for a brand-new row.
@@ -380,10 +394,12 @@ def merge_rows(
     new_rows: dict[str, str] = {}
     revised = 0
     refused: list[QuarantinedRow] = []
+    dropped_no_close: list[str] = []
     for ts, row in df.iterrows():
         d = ts.date().isoformat() if hasattr(ts, "date") else str(ts)
         record = row_to_record(d, row)
         if record["close"] is None:
+            dropped_no_close.append(d)
             continue
         line = json.dumps(record)
         incoming = record["close"]
@@ -409,6 +425,15 @@ def merge_rows(
                     continue
             stored[d] = line  # in place — keeps this row's position in the file
             revised += 1
+
+    if dropped_no_close:
+        logger.warning(
+            "%s: dropped %d row(s) with no close — %s. The vendor served the "
+            "date but not a usable price; the store does not advance for it.",
+            symbol,
+            len(dropped_no_close),
+            ", ".join(sorted(dropped_no_close)),
+        )
 
     # Only the NEW dates are sorted, so a multi-day catch-up lands
     # chronologically among itself; the pre-existing order is untouched. On an
