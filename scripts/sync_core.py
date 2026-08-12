@@ -106,8 +106,8 @@ LIVE_ONLY_TESTS = {
 GENERIC_DATA_FILES = ["data/ticker_currencies.json"]
 # Universes stay here so `apply` copies ALL of them and `check` byte-compares
 # every one it is not told to exempt — see REGENERATED_DATA_GLOBS, which names
-# only the seven scraped indexes. The two lists overlap deliberately;
-# apply_manifest dedupes.
+# the seven scraped indexes plus `data/tickers.json` (eight entries). The two
+# lists overlap deliberately; apply_manifest dedupes.
 GENERIC_DATA_GLOBS = ["data/strategies/*.json", "data/universes/*.json"]
 
 #: Generic data that live REGENERATES on a schedule. `apply` seeds it into core
@@ -136,13 +136,18 @@ GENERIC_DATA_GLOBS = ["data/strategies/*.json", "data/universes/*.json"]
 #: hide a genuinely stale or hand-edited copy behind a green guard.
 #:
 #: This does NOT weaken W2.9. Its point was that `apply` and `check` must agree
-#: about what the mirror contains, and its real target was the two ticker maps
-#: (currency-resolution layers 1 and 2), which stay byte-guarded along with the
-#: strategy specs. Here the two halves are brought back into agreement by
-#: correcting what `apply` PROMISES — a seed, not a mirror — rather than by
-#: letting `check` look away. Core ships `refresh_universes.py` (it is in
-#: CORE_SCRIPTS), so a fork regenerates these itself; index composition is not
-#: a correctness surface the way a currency map is.
+#: about what the mirror contains, and its real target was
+#: `data/ticker_currencies.json` (currency-resolution layer 1), which stays
+#: byte-guarded along with the strategy specs. Layer 2 (`data/tickers.json`)
+#: was byte-guarded too when W2.9 landed, but joined THIS presence-only tier
+#: itself on 2026-08-11 — `save_registry` rewrites it every `fetch-ohlcv` run
+#: (nightly) because Yahoo's vendor name strings are unstable, so byte-guarding
+#: it would have gone red permanently, not just weekly. Here the two halves are
+#: brought back into agreement by correcting what `apply` PROMISES — a seed,
+#: not a mirror — rather than by letting `check` look away. Core ships
+#: `refresh_universes.py` and `fetch_ohlcv.py` (both in CORE_SCRIPTS), so a
+#: fork regenerates these itself; index composition and a vendor name registry
+#: are not correctness surfaces the way a currency map is.
 REGENERATED_DATA_GLOBS = [
     # The vendor ticker registry, rewritten by `save_registry` on EVERY
     # fetch-ohlcv run and staged since 2026-08-11. Yahoo returns unstable name
