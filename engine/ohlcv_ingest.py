@@ -107,9 +107,10 @@ def fetch_window_start(
     """Return the inclusive start date for the next fetch, or None to skip.
 
     ``end`` is the last day we want (normally today). The OHLCV cron runs at
-    22:30 UTC — after the US close — so a store holding ``end - 1`` must still
-    fetch ``end``: the bar exists. Only a store that already holds ``end`` is
-    skipped.
+    06:00 UTC, before any market has opened, so a store holding ``end - 1``
+    must still attempt ``end`` — the vendor simply returns nothing for a day
+    that hasn't closed, and the run's real yield is ``end - 1``'s close. Only
+    a store that already holds ``end`` is skipped.
 
     ``revise_days`` re-requests that many already-stored trailing days so a bar
     that was still forming when it was first written can be corrected by its

@@ -550,8 +550,8 @@ def main() -> int:
                     # branch) — MATIC-USD and UNI-USD alone read 2/2 = 100%
                     # and fail a fully current store. Reachable whenever most
                     # symbols are already up to date: a second run in one UTC
-                    # day, or a Friday cron delayed past midnight that writes
-                    # Saturday rows before the Saturday crypto-only run.
+                    # day, or a Saturday cron delayed past midnight that writes
+                    # Sunday rows before the Sunday crypto-only run.
                     if path.exists():
                         considered_covered += 1
                     continue  # OHLCV already up to date; still refresh name

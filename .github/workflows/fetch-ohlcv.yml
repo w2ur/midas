@@ -4,17 +4,24 @@ name: fetch-ohlcv
 # data/market/ohlcv/. The sandboxed agent reads from the committed repo,
 # so this workflow is what keeps it running autonomously.
 #
-# Schedules:
-#   - Mon-Fri 22:30 UTC — full universe (equities + ETFs + forex + crypto),
-#     comfortably after the US close (20:00 UTC in EDT, 21:00 UTC in EST).
-#     Running after the close is the point: the fetch captures the SAME day's
-#     bar. `python scripts/fetch_ohlcv.py --dry-run` prints the symbol count —
-#     it moves with index composition, so it is not restated here.
-#   - Sat-Sun 19:30 UTC — crypto-only subset. Runs BEFORE the 20:00 UTC
-#     weekend session so agents read fresh intraday crypto closes rather than
-#     Friday's stale data. Crypto trades 24/7; everything else is closed and
-#     would return no new rows anyway. That intraday bar is a PARTIAL bar —
-#     the next run re-requests it and replaces it with the final close.
+# Schedule: 06:00 UTC, every day.
+#   - Tue-Sat 06:00 UTC — full universe (equities + ETFs + forex + crypto).
+#     Captures the PREVIOUS calendar day's closes: Tuesday's run stores
+#     Monday, Saturday's run stores Friday.
+#   - Sun-Mon 06:00 UTC — crypto-only subset, for the two days no cash
+#     market trades.
+#
+# It ran at 22:30 UTC (weekdays) / 19:30 UTC (weekends) until 2026-08-12.
+# 22:30 sits in the one window where America has settled and Europe has not:
+# measured, Europe's official EOD bar was ABSENT at 23:24 on D and still
+# absent at 01:41 on D+1, and PRESENT at 05:20 on D+1. The store therefore
+# collected exactly one European trading day short every single night for
+# five weeks, and every session priced European books at D-2 while pricing
+# American books at D-1. 06:00 clears the only measured positive with
+# margin, and clears the Monday 05:10 resweep-held-tickers run.
+#
+# Do not move this later than the session start (11:00 UTC) minus the
+# observed GitHub scheduler lateness (37 min to 3 h). 06:00 leaves 5 h.
 #
 # Partial bars: EVERY symbol runs with a 1-day revision window, not just
 # crypto. Only cash equities and ETFs are genuinely final at 22:30 UTC
@@ -33,8 +40,8 @@ name: fetch-ohlcv
 
 on:
   schedule:
-    - cron: "30 22 * * 1-5"
-    - cron: "30 19 * * 6,0"
+    - cron: "0 6 * * 2-6"
+    - cron: "0 6 * * 0,1"
   workflow_dispatch:
     inputs:
       history_days:
