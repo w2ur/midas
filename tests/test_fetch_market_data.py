@@ -216,8 +216,9 @@ class TestEquityFreshnessGate:
         self, tmp_store: Path, tmp_path: Path
     ) -> None:
         """Good Friday 2026-04-03 closed, Easter Monday 04-06 closed: the
-        Tuesday session reads Thursday 04-02's close (the cron runs after the
-        session, so Tuesday's own bar does not exist yet) — 4 days of
+        Tuesday session reads Thursday 04-02's close (the session runs before
+        its own day's close exists, so that bar is not in the store yet, at
+        any collection hour) — 4 days of
         legitimate lag. This is the false-positive the threshold exists to
         clear; it must pass."""
         from scripts.fetch_market_data import fetch_and_save

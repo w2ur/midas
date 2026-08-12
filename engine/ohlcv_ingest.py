@@ -107,10 +107,16 @@ def fetch_window_start(
     """Return the inclusive start date for the next fetch, or None to skip.
 
     ``end`` is the last day we want (normally today). The OHLCV cron runs at
-    06:00 UTC, before any market has opened, so a store holding ``end - 1``
-    must still attempt ``end`` — the vendor simply returns nothing for a day
-    that hasn't closed, and the run's real yield is ``end - 1``'s close. Only
-    a store that already holds ``end`` is skipped.
+    06:00 UTC, so a store holding ``end - 1`` must still attempt ``end``, and
+    what comes back depends on the instrument. For a **cash market** the day
+    has not opened: the vendor returns nothing for it, and the run's real
+    yield is ``end - 1``'s close. For a **24/7 instrument** (crypto, FX) the
+    vendor DOES serve ``end`` — a daily bar exists as soon as the UTC day
+    opens (verified 2026-08-12: a same-day BTC-USD close is returned at
+    07:49 UTC) — so the run stores a bar roughly six hours into its
+    formation. That row is corrected by ``revise_days`` on the FOLLOWING
+    run, not on a later run the same day: only a store that does not already
+    hold ``end`` is fetched at all.
 
     ``revise_days`` re-requests that many already-stored trailing days so a bar
     that was still forming when it was first written can be corrected by its
@@ -148,6 +154,12 @@ def _warn_dropped_no_close(symbol: str, dropped: list[str]) -> None:
     the European side of the store ran a full trading day behind the US side
     for five weeks while every run printed a healthy row count and exited
     green.
+
+    The two callers are asymmetric ON PURPOSE, so do not "fix" it: a null
+    close for a date the store ALREADY holds reaches ``merge_rows`` and is
+    warned about there, while ``build_new_rows`` has already skipped that date
+    as seen before it ever looks at the close. Neither can warn about the
+    other's rows.
     """
     if not dropped:
         return
@@ -221,9 +233,13 @@ def append_new_rows(
 #: A *revision* — a value replacing an already-stored close for the same date —
 #: moving more than this fraction is quarantined rather than ingested.
 #:
-#: Calibrated against the measured legitimate revisions, not guessed. Commodity
-#: futures drift up to +3.37% between the 22:30 UTC fetch and the final close;
-#: FX up to -1.56% on a Friday. 20% clears both by better than 5x while sitting
+#: Calibrated against the measured legitimate revisions, not guessed. Measured
+#: under the 22:30 UTC schedule in force until 2026-08-12: commodity futures
+#: drifted up to +3.37% between that fetch and the final close, FX up to -1.56%
+#: on a Friday. Those are the calibration figures and are kept as such rather
+#: than restated for the 06:00 schedule, which has NOT been re-measured. The
+#: threshold is unchanged either way: 20% clears both by better than 5x while
+#: sitting
 #: two orders of magnitude below a units flip (100x) or a typical split ratio.
 REVISION_LIMIT = 0.20
 

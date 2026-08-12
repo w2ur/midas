@@ -5,8 +5,10 @@ description: >
 
 # Why this exists: four scheduled workflows pushed to main with a bare
 # `git push` and no retry — fetch-ohlcv, fetch-sentiment, refresh-universes and
-# resweep-held-tickers. GitHub's scheduler is late by 42 minutes to 6 hours and
-# never on time (measured across this repo's run history), so their nominal
+# resweep-held-tickers. GitHub's scheduler is never on time: measured across
+# this repo's run history it typically lands 40 min to 2 h 45 late, with a tail
+# past 5 h (the worst observed was a fetch-sentiment run ~5 h 43 late on
+# 2026-08-07). So their nominal
 # separation guarantees nothing about the order they actually land in. When two
 # collide, the loser's push is rejected, the step fails, and its commit dies
 # with the runner.

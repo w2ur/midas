@@ -6,9 +6,11 @@ name: fetch-sentiment
 #
 # Schedule: Mon-Fri 09:00 UTC. It was 19:00 until 2026-08-07, then 18:00
 # until 2026-08-12. The session runs at 20:00 UTC today and moves to
-# 11:00 UTC in a later change; the collector-to-session margin is
-# unchanged by that move — 18:00 -> 20:00 today is 2 h, and 09:00 -> 11:00
-# after the move is 2 h too.
+# 11:00 UTC in a later change; 09:00 is chosen for the schedule the session
+# is MOVING TO, not the one it has — 09:00 -> 11:00 after the move is a 2 h
+# margin, matching what 18:00 -> 20:00 gave before. Until the session moves,
+# the margin is 11 h and the digest a treatment agent reads at 20:00 is
+# collected before the US session opens.
 #
 # The collector must commit BEFORE the session reads the repo, and its
 # digests must be dated the SAME DAY as the session: step_check_sentiment_
@@ -17,11 +19,18 @@ name: fetch-sentiment
 # an 11:00 session that check would have recorded a degraded arm every
 # single day.
 #
+# What the arm assertion CANNOT see is that the digest's content changed with
+# the hour: a 09:00 collection read by a 20:00 session misses the whole US
+# trading day, where an 18:00 one did not. The label stays correct and the
+# treatment behind it does not. Disclosed in METHODOLOGY.md.
+#
 # Measured scheduler lag (`gh run list`, 14 scheduled fetch-sentiment runs,
 # computed against whichever cron was in force at the time): against the
-# current 18:00 cron, 3 runs since 2026-08-07 landed +37/+40/+44 min late;
-# against the prior 19:00 cron, 10 runs landed +75-97 min late, plus one
-# outlier ~5h43 late (2026-08-07 00:43). Three post-move runs is a thin
+# 18:00 cron in force until 2026-08-12, 3 runs since 2026-08-07 landed
+# +37/+40/+44 min late; against the prior 19:00 cron, 10 runs landed +75-97
+# min late, plus one outlier ~5h43 late (2026-08-07 00:43). This is the
+# repo-wide characterisation cited elsewhere — typically 40 min to 2 h 45
+# late, with a tail past 5 h. Three post-move runs is a thin
 # sample, not a guarantee for the 09:00 slot — but the tail matters as much
 # as the typical case, and a multi-hour-late run has already happened once.
 # If a run lands after the session has started reading the repo,

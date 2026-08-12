@@ -123,7 +123,8 @@ GENERIC_DATA_GLOBS = ["data/strategies/*.json", "data/universes/*.json"]
 #: guaranteed to trip weekly teaches everyone to ignore it — the failure
 #: `.github/actions/failure-issue` was built to end, reintroduced one layer up.
 #: (Those are the declared crons. The observed starts that Monday were 04:55
-#: and 08:05 UTC — GitHub's scheduler runs 42 min to 6 h late, which is why the
+#: and 08:05 UTC — GitHub's scheduler typically runs 40 min to 2 h 45 late with
+#: a tail past 5 h, which is why the
 #: schedule is cited here and a single observed pair is not.)
 #:
 #: NAMED INDIVIDUALLY, not globbed. `data/universes/*.json` would also exempt
