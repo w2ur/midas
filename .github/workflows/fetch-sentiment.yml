@@ -6,15 +6,28 @@ name: fetch-sentiment
 #
 # Schedule: Mon-Fri 09:00 UTC. It was 19:00 until 2026-08-07, then 18:00
 # until 2026-08-12. The session runs at 20:00 UTC today and moves to
-# 11:00 UTC in a later change.
+# 11:00 UTC in a later change; the collector-to-session margin is
+# unchanged by that move — 18:00 -> 20:00 today is 2 h, and 09:00 -> 11:00
+# after the move is 2 h too.
 #
 # The collector must commit BEFORE the session reads the repo, and its
 # digests must be dated the SAME DAY as the session: step_check_sentiment_
 # freshness records `treatment` only when data/market/news/ holds a digest
 # for the session date, and `degraded-to-control` otherwise. At 18:00 with
 # an 11:00 session that check would have recorded a degraded arm every
-# single day. 09:00 lands ~09:37-10:39 under the measured GitHub scheduler
-# drift (37 min to 3 h), inside the same session day and ahead of 11:00.
+# single day.
+#
+# Measured scheduler lag (`gh run list`, 14 scheduled fetch-sentiment runs,
+# computed against whichever cron was in force at the time): against the
+# current 18:00 cron, 3 runs since 2026-08-07 landed +37/+40/+44 min late;
+# against the prior 19:00 cron, 10 runs landed +75-97 min late, plus one
+# outlier ~5h43 late (2026-08-07 00:43). Three post-move runs is a thin
+# sample, not a guarantee for the 09:00 slot — but the tail matters as much
+# as the typical case, and a multi-hour-late run has already happened once.
+# If a run lands after the session has started reading the repo,
+# step_check_sentiment_freshness records `degraded-to-control` for that day
+# rather than silently mislabeling it as treatment — that assertion is what
+# actually protects the experiment, not the schedule.
 #
 # Timing is not the guarantee — the assertion is. Each session appends the
 # arm it actually ran to data/market/sentiment_arm.jsonl, committed.
