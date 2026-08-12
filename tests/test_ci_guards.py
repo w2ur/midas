@@ -554,6 +554,125 @@ def test_every_push_with_retry_caller_names_paths_that_can_be_checked():
         )
 
 
+class TestFetchOhlcvScheduleSelectsTheMode:
+    """Each declared cron must select the mode it was declared for.
+
+    The gate read the runner's clock (`date -u +%u`: Mon-Fri full, Sat-Sun
+    crypto-only) while the crons said Tue-Sat full / Sun-Mon crypto-only. So
+    Saturday — the one run that carries Friday's equity closes — fired the
+    full-universe cron and ran crypto-only, and Monday picked those closes up
+    ~66 h late. Nothing failed; the partition simply moved out from under the
+    gate, and this is that gate's first test.
+
+    Asserted in BOTH directions. "Every cron is mapped" alone would pass a
+    workflow carrying an arm for a cron nobody schedules any more, and "every
+    arm is a real cron" alone would pass one that forgot a cron entirely and
+    fell through to the default.
+    """
+
+    WORKFLOW = REPO_ROOT / ".github" / "workflows" / "fetch-ohlcv.yml"
+
+    #: cron string -> is this run crypto-only?
+    #:
+    #: Hand-maintained ON PURPOSE. It is the statement of intent the workflow
+    #: is checked against; deriving it from the workflow would assert nothing
+    #: at all, which is precisely the state this class ends.
+    EXPECTED = {
+        "0 6 * * 2-6": False,  # Tue-Sat: full universe, carries the cash closes
+        "0 6 * * 0,1": True,  # Sun-Mon: the two days no cash market trades
+    }
+
+    def _text(self) -> str:
+        return self.WORKFLOW.read_text(encoding="utf-8")
+
+    def _declared_crons(self) -> list[str]:
+        return re.findall(r'^\s*-\s*cron:\s*"([^"]+)"', self._text(), re.M)
+
+    def _fetch_step(self) -> dict:
+        """The step that actually runs the script — not the file's prose.
+
+        Read through the parser rather than off the raw text: the header
+        discusses the clock test it replaced, so a whole-file grep for it
+        would fire on the documentation of the fix.
+        """
+        spec = yaml.safe_load(self._text())
+        steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+        fetch = [s for s in steps if s.get("id") == "fetch"]
+        assert len(fetch) == 1, "fetch-ohlcv has no single `fetch` step"
+        return fetch[0]
+
+    def _case_arms(self) -> dict[str, bool]:
+        arms = re.findall(
+            r'^\s*"([^"]*)"\)\s*CRYPTO_ONLY=(true|false)',
+            self._fetch_step()["run"],
+            re.M,
+        )
+        return {pattern: value == "true" for pattern, value in arms}
+
+    def test_every_declared_cron_has_an_arm(self):
+        declared = self._declared_crons()
+        assert declared, "fetch-ohlcv declares no schedule"
+        assert set(declared) == set(self.EXPECTED), (
+            f"declared crons {sorted(declared)} disagree with the intended "
+            f"mapping {sorted(self.EXPECTED)} — update both together"
+        )
+        arms = self._case_arms()
+        for cron in declared:
+            assert cron in arms, (
+                f"cron {cron!r} is scheduled but has no case arm; it would "
+                "fall through to the default and run the full universe"
+            )
+
+    def test_each_cron_selects_its_intended_mode(self):
+        arms = self._case_arms()
+        for cron, crypto_only in self.EXPECTED.items():
+            assert arms[cron] is crypto_only, (
+                f"cron {cron!r} selects crypto_only={arms[cron]}, intended "
+                f"{crypto_only}"
+            )
+
+    def test_no_arm_names_a_cron_nobody_schedules(self):
+        """A stale arm is how the last mapping rotted: it keeps reading right."""
+        declared = set(self._declared_crons())
+        for pattern in self._case_arms():
+            if pattern == "":  # workflow_dispatch, deliberately not a cron
+                continue
+            assert pattern in declared, (
+                f"case arm {pattern!r} matches no declared cron — either the "
+                "schedule was removed or the arm was mistyped"
+            )
+
+    def test_manual_dispatch_runs_the_full_universe(self):
+        """`github.event.schedule` is empty on workflow_dispatch.
+
+        Without an explicit arm it would hit the default, which is also full —
+        but by accident rather than by decision, and a future default change
+        would silently retarget every manual run.
+        """
+        assert self._case_arms().get("") is False
+
+    def test_the_mode_is_not_keyed_on_the_runner_clock(self):
+        """The regression itself: a clock read cannot express a cron partition.
+
+        A run delayed past midnight — routine, the scheduler is late by 40 min
+        to 2 h 45 typically and has a tail past 5 h — would flip its own mode.
+        """
+        step = self._fetch_step()
+        assert step.get("env", {}).get("SCHEDULE") == "${{ github.event.schedule }}", (
+            "the fetch step does not receive the schedule that fired it"
+        )
+        # Comments are stripped first: the step explains the clock test it
+        # replaced, and a raw substring check would fire on that explanation.
+        executed = "\n".join(
+            line
+            for line in step["run"].splitlines()
+            if not line.lstrip().startswith("#")
+        )
+        assert "date -u" not in executed, (
+            "the mode is being derived from the runner's clock again"
+        )
+
+
 class TestPushGateMatchesExitCodes:
     """Both callers of fetch_ohlcv.py must gate their push on its exit code.
 

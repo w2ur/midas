@@ -4,12 +4,22 @@ name: fetch-ohlcv
 # data/market/ohlcv/. The sandboxed agent reads from the committed repo,
 # so this workflow is what keeps it running autonomously.
 #
-# Schedule: 06:00 UTC, every day.
-#   - Tue-Sat 06:00 UTC — full universe (equities + ETFs + forex + crypto).
-#     Captures the PREVIOUS calendar day's closes: Tuesday's run stores
-#     Monday, Saturday's run stores Friday.
-#   - Sun-Mon 06:00 UTC — crypto-only subset, for the two days no cash
+# Schedule: 06:00 UTC, every day, in two modes. THE MODE IS KEYED ON WHICH
+# CRON FIRED (`github.event.schedule`), never on the runner's clock:
+#   - `0 6 * * 2-6`  Tue-Sat — full universe (equities + ETFs + forex +
+#     crypto). Captures the PREVIOUS calendar day's closes: Tuesday's run
+#     stores Monday, Saturday's run stores Friday.
+#   - `0 6 * * 0,1`  Sun-Mon — crypto-only subset, for the two days no cash
 #     market trades.
+#
+# The mode gate read `date -u +%u` until 2026-08-12 — Mon-Fri full, Sat-Sun
+# crypto-only — and the crons above moved on 2026-08-12 without it. Saturday,
+# the one run that carries Friday's equity closes, therefore fired the
+# full-universe cron and ran crypto-only, and Monday picked those closes up
+# ~66 h late. A clock test cannot express this mapping in any case: the
+# calendar day a run fires on is not the day it was scheduled for, so a run
+# delayed past midnight flips its own mode. tests/test_ci_guards.py pins each
+# declared cron to its case arm below, in both directions.
 #
 # It ran at 22:30 UTC (weekdays) / 19:30 UTC (weekends) until 2026-08-12.
 # 22:30 sits in the one window where America has settled and Europe has not:
@@ -20,19 +30,41 @@ name: fetch-ohlcv
 # American books at D-1. 06:00 clears the only measured positive with
 # margin, and clears the Monday 04:10 resweep-held-tickers run.
 #
-# Do not move this later than the session start minus the observed GitHub
-# scheduler lateness (37 min to 3 h). The session runs at 20:00 UTC today
-# and moves to 11:00 UTC; at 06:00 this margin is 5 h even after the move,
-# and 14 h until then.
+# Do not move this later than the session start minus the scheduler's typical
+# lateness. GitHub's scheduler is never on time: measured across this repo's
+# scheduled jobs it typically lands 40 min to 2 h 45 late, with a tail past
+# 5 h. The session runs at 20:00 UTC today and moves to 11:00 UTC; at 06:00
+# the margin is 5 h even after that move, and 14 h until then — so the
+# typical case clears and the tail does not. The tail is deliberately NOT
+# covered by the margin: a run landing after the session simply leaves that
+# session pricing on the previous close, which is inside the 4 calendar days
+# `MAX_EQUITY_STALENESS_DAYS` allows (scripts/fetch_market_data.py), and only
+# a store that has genuinely stopped advancing aborts the session. The margin
+# is what keeps a lost day of freshness rare; the staleness guard is what
+# makes it survivable.
+#
+# 24/7 instruments now mark on a ~6-hour-formed bar. Yahoo serves a daily bar
+# for crypto and FX as soon as the UTC day opens (verified 2026-08-12: a
+# same-day BTC-USD close is returned at 07:49 UTC), so a 06:00 run writes the
+# current day's row for them six hours into its formation. The 20:00 session
+# publishes that row and `PortfolioManager.add_snapshot` then freezes it, so
+# the next morning's revision arrives too late to move the published mark.
+# Under 22:30 the same bar was ~22.5 h formed. This wants revisiting when the
+# session moves to 11:00 UTC; the likely resolution is to stop writing a
+# forming bar at all rather than to keep timing around one.
 #
 # Partial bars: EVERY symbol runs with a 1-day revision window, not just
-# crypto. Only cash equities and ETFs are genuinely final at 22:30 UTC
-# (measured: SPY and AAPL, 0 of 23 trailing bars drifted). Commodity futures
-# (`=F`) are mid-Globex — the next session has already opened, and GC=F/PL=F/
-# CL=F each drifted on more than half of their last 23 bars, up to +3.4%.
-# FX (`=X`) rolls at 17:00 ET
-# and drifts mildly, worst on Fridays. Expect a same-day row to change value on
-# the following run — that is the mechanism working. A bar that WAS final
+# crypto. The finality measurements below were taken under the 22:30 UTC
+# schedule and are kept as the calibration they are, not restated as a
+# present-tense property of the 06:00 one: only cash equities and ETFs were
+# genuinely final at 22:30 (SPY and AAPL, 0 of 23 trailing bars drifted);
+# commodity futures (`=F`) were mid-Globex — the next session had already
+# opened, and GC=F/PL=F/CL=F each drifted on more than half of their last 23
+# bars, up to +3.4%; FX (`=X`) rolls at 17:00 ET and drifted mildly, worst on
+# Fridays. At 06:00 the cash-equity bar a run is after is the PREVIOUS day's
+# and is final; what forms under it now is the 24/7 row described above.
+# Expect a same-day row to change value on the following run — that is the
+# mechanism working. A bar that WAS final
 # re-fetches identical, so no already-stored row changes value and the diff for
 # that symbol stays the single appended line. merge_rows preserves the store's
 # existing line order and never re-sorts it: 529 of the 1,046 files are not in
@@ -91,19 +123,44 @@ jobs:
         env:
           HISTORY_DAYS: ${{ github.event.inputs.history_days || '730' }}
           MANUAL_CRYPTO_ONLY: ${{ github.event.inputs.crypto_only || 'false' }}
+          SCHEDULE: ${{ github.event.schedule }}
         run: |
           # Sanitize: only accept digits. Anything else → fall back to default.
           if ! [[ "$HISTORY_DAYS" =~ ^[0-9]+$ ]]; then
             HISTORY_DAYS=730
           fi
 
-          # Weekend schedule (Sat=6, Sun=7 in `date -u +%u`) → crypto-only.
-          # Manual dispatch can also force crypto-only via the input flag.
-          DAY_OF_WEEK=$(date -u +%u)
+          # Mode is keyed on the cron that fired, NOT on the runner's clock.
+          # `github.event.schedule` is the literal cron string from the `on:`
+          # block above, and is empty on workflow_dispatch. A clock test
+          # (`date -u +%u`) silently disagreed with those crons for the whole
+          # of 2026-08-12 — see the header — and cannot be made to agree,
+          # because a run delayed past midnight would flip its own mode.
+          #
+          # An unrecognised value — including a cron added above and forgotten
+          # here — falls back to the FULL universe. Full is a superset of
+          # crypto-only, so an unmapped schedule over-fetches rather than
+          # silently dropping every equity for the day.
+          case "$SCHEDULE" in
+            "0 6 * * 2-6") CRYPTO_ONLY=false ;;  # full universe, Tue-Sat
+            "0 6 * * 0,1") CRYPTO_ONLY=true  ;;  # no cash market trades
+            "")            CRYPTO_ONLY=false ;;  # workflow_dispatch
+            *)
+              echo "::warning::unrecognised schedule '${SCHEDULE}' — running the full universe"
+              CRYPTO_ONLY=false
+              ;;
+          esac
+          # The manual override can only ever narrow the run.
+          if [[ "$MANUAL_CRYPTO_ONLY" == "true" ]]; then
+            CRYPTO_ONLY=true
+          fi
+
           FLAGS=(--history-days "$HISTORY_DAYS")
-          if [[ "$DAY_OF_WEEK" -ge 6 ]] || [[ "$MANUAL_CRYPTO_ONLY" == "true" ]]; then
-            echo "Weekend or manual crypto-only dispatch — restricting to crypto pairs."
+          if [[ "$CRYPTO_ONLY" == "true" ]]; then
+            echo "Crypto-only run (schedule='${SCHEDULE}', manual=${MANUAL_CRYPTO_ONLY})."
             FLAGS+=(--crypto-only)
+          else
+            echo "Full-universe run (schedule='${SCHEDULE}')."
           fi
           # Capture the exit code rather than letting `set -e` end the step, so
           # the commit gate below can distinguish the script's DELIBERATE

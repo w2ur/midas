@@ -491,11 +491,14 @@ def main() -> int:
     end = date.today()
 
     # Universal 1-day revision window: re-request the trailing stored day and
-    # let its final value replace it. Crypto trades 24/7; commodity futures
-    # (`=F`) have already opened the next Globex session by 22:30 UTC; FX (`=X`)
-    # rolls at 17:00 ET and drifts mildly, worst on Fridays. All three are
-    # still forming when first written. Cash equities and ETFs ARE final at
-    # fetch time — for them the re-fetched bar is identical, `merge_rows` finds
+    # let its final value replace it. Crypto trades 24/7 and FX (`=X`) rolls at
+    # 17:00 ET, so on the 06:00 UTC cron both are written six hours into the
+    # current day's formation; commodity futures (`=F`) had already opened the
+    # next Globex session when this was measured under the 22:30 UTC schedule.
+    # All three are still forming when first written. Cash equities and ETFs
+    # ARE final by the time this run asks for them — the 06:00 cron is after
+    # the previous day's close everywhere it trades — so for them the
+    # re-fetched bar is identical, `merge_rows` finds
     # nothing to replace, and no already-stored row changes value or position.
     # (The file is still rewritten to append the day's new bar, and a genuine
     # revision does rewrite it — what is invariant is the stored rows, not the
@@ -550,8 +553,10 @@ def main() -> int:
                     # branch) — MATIC-USD and UNI-USD alone read 2/2 = 100%
                     # and fail a fully current store. Reachable whenever most
                     # symbols are already up to date: a second run in one UTC
-                    # day, or a Saturday cron delayed past midnight that writes
-                    # Sunday rows before the Sunday crypto-only run.
+                    # day, or the Tue-Sat full run (`0 6 * * 2-6`) delayed past
+                    # midnight into Sunday, writing Sunday rows for the 24/7
+                    # names before the Sun-Mon crypto-only run (`0 6 * * 0,1`)
+                    # asks for them.
                     if path.exists():
                         considered_covered += 1
                     continue  # OHLCV already up to date; still refresh name

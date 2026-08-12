@@ -777,8 +777,10 @@ class TestFailureRateGate:
         permanently-dead names that are still attempted (their store is stale,
         so they never take the skip branch) — `MATIC-USD` and `UNI-USD` alone
         read 2/2 = 100% and fail a fully current store. Reachable by a re-run,
-        by the documented `workflow_dispatch`, or by a Friday cron delayed past
-        midnight writing Saturday rows before the Saturday crypto-only run.
+        by the documented `workflow_dispatch`, or by the Tue-Sat full run
+        (`0 6 * * 2-6`) delayed past midnight into Sunday, writing Sunday rows
+        for the 24/7 names before the Sun-Mon crypto-only run (`0 6 * * 0,1`)
+        asks for them.
         """
         today = date.today().isoformat()
         current = [f"CUR{i}" for i in range(20)]
