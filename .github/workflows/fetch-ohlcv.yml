@@ -20,8 +20,10 @@ name: fetch-ohlcv
 # American books at D-1. 06:00 clears the only measured positive with
 # margin, and clears the Monday 05:10 resweep-held-tickers run.
 #
-# Do not move this later than the session start (11:00 UTC) minus the
-# observed GitHub scheduler lateness (37 min to 3 h). 06:00 leaves 5 h.
+# Do not move this later than the session start minus the observed GitHub
+# scheduler lateness (37 min to 3 h). The session runs at 20:00 UTC today
+# and moves to 11:00 UTC; at 06:00 this margin is 5 h even after the move,
+# and 14 h until then.
 #
 # Partial bars: EVERY symbol runs with a 1-day revision window, not just
 # crypto. Only cash equities and ETFs are genuinely final at 22:30 UTC
