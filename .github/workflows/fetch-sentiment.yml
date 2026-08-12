@@ -4,24 +4,25 @@ name: fetch-sentiment
 # data/market/news/. The sandboxed trading session reads from the committed
 # repo (no network), so this workflow is what keeps sentiment data fresh.
 #
-# Schedule: Mon-Fri 18:00 UTC. It was 19:00 until 2026-08-07, and 19:00 did
-# not work: GitHub's scheduler is late, and this job then installs the full
-# lockfile and fetches ~30 tickers before it commits. Measured over every
-# sentiment commit from 2026-07-13 to 2026-08-05, the digests landed on main at
-# **20:08-20:39 UTC** — i.e. AFTER the 20:00 session had already realigned to
-# origin/main. The treatment agents in the pre-registered A/B were therefore
-# reading the *previous* day's headlines at every session, silently. See the
-# METHODOLOGY changelog entry #sentiment-lag-2026-08-07.
+# Schedule: Mon-Fri 09:00 UTC. It was 19:00 until 2026-08-07, then 18:00
+# until 2026-08-12. The session runs at 20:00 UTC today and moves to
+# 11:00 UTC in a later change.
 #
-# 18:00 nominal lands ~19:08-19:39 under the same measured drift, ahead of the
-# session and still clear of the 19:55-21:00 watcher blackout. The timing is
-# not trusted on its own: `step_check_sentiment_freshness` (Step 1a of the
-# session) asserts what the session actually read and records the arm.
+# The collector must commit BEFORE the session reads the repo, and its
+# digests must be dated the SAME DAY as the session: step_check_sentiment_
+# freshness records `treatment` only when data/market/news/ holds a digest
+# for the session date, and `degraded-to-control` otherwise. At 18:00 with
+# an 11:00 session that check would have recorded a degraded arm every
+# single day. 09:00 lands ~09:37-10:39 under the measured GitHub scheduler
+# drift (37 min to 3 h), inside the same session day and ahead of 11:00.
+#
+# Timing is not the guarantee — the assertion is. Each session appends the
+# arm it actually ran to data/market/sentiment_arm.jsonl, committed.
 # Also exposes manual workflow_dispatch for ad-hoc refresh.
 
 on:
   schedule:
-    - cron: "0 18 * * 1-5"
+    - cron: "0 9 * * 1-5"
   workflow_dispatch:
     inputs:
       date:
