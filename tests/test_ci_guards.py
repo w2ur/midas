@@ -605,19 +605,26 @@ class TestPushGateMatchesExitCodes:
         )
 
 
-#: The one caller path that legitimately does not exist most of the time — it
-#: is created only when the ingest tripwire refuses a row.
-OPTIONAL_PUSH_PATHS = {"data/market/quarantine/"}
-
-
-def test_every_non_optional_caller_path_resolves_in_the_repo():
+def test_every_push_with_retry_caller_path_resolves_in_the_repo():
     """A skipped path is now silent, so the paths themselves need a guard.
 
     Filtering absent pathspecs fixed a hard failure but replaced it with an
     exit-0 skip that no caller reads (`pushed` is consumed nowhere) and that
     `failure-issue` cannot see, because the job stays green. If a caller's
-    directory is renamed, it would quietly stop committing forever. Only
-    `data/market/quarantine/` is allowed to be absent.
+    directory is renamed, it would quietly stop committing forever.
+
+    `data/market/quarantine/` used to be exempted here — the one caller path
+    that could legitimately be absent, since it only materialised once the
+    ingest tripwire actually refused a row. It fired for the first time in
+    `761c60382` (2026-08-11, a quarantined MNST print), so the directory is
+    committed now and can never be absent again; the exemption (and its
+    control test, `test_the_optional_path_really_is_absent`) are retired with
+    it rather than left as a set with nothing in it — an exemption mechanism
+    that iterates zero live entries is a dark guard, not a stricter one. None
+    of the other three `push-with-retry` callers (`fetch-sentiment`,
+    `refresh-universes`, `resweep-held-tickers`) stage a path with the same
+    shape. If one ever does, reintroduce a named exemption set here for it —
+    don't resurrect an empty one preemptively.
     """
     workflows = (REPO_ROOT / ".github" / "workflows").glob("*.yml")
     callers = [
@@ -630,23 +637,10 @@ def test_every_non_optional_caller_path_resolves_in_the_repo():
     assert callers, "no workflow uses push-with-retry — has it been renamed?"
     for workflow, paths in callers:
         for path in paths.split():
-            if path in OPTIONAL_PUSH_PATHS:
-                continue
             assert (REPO_ROOT / path).exists(), (
                 f"{workflow} stages {path!r}, which does not exist — the action "
                 "will skip it silently and the job will stay green"
             )
-
-
-def test_the_optional_path_really_is_absent():
-    """The control for the exemption above.
-
-    If `data/market/quarantine/` were committed, the exemption would be
-    covering nothing and the test above would pass without exercising it.
-    """
-    assert not (REPO_ROOT / "data" / "market" / "quarantine").exists(), (
-        "quarantine is committed now — drop it from OPTIONAL_PUSH_PATHS"
-    )
 
 
 # ---------------------------------------------------------------------------
