@@ -36,9 +36,14 @@ name: resweep-held-tickers
 #
 # Scheduled to sit between the other Monday-morning writers: after
 # refresh-universes.yml (cron `15 03 * * 1`) and roughly two hours ahead of
-# fetch-ohlcv.yml (cron `0 6 * * 2-6`), well clear of the 19:55-21:00 UTC
-# blackout the trigger watcher (check-triggers.yml) observes around the daily
-# session.
+# the fetch-ohlcv.yml cron that actually fires on a Monday, which is the
+# CRYPTO-ONLY one (`0 6 * * 0,1`) — `0 6 * * 2-6` is Tue-Sat and never
+# collides with this job. Well clear of the 19:55-21:00 UTC blackout the
+# trigger watcher (check-triggers.yml) observes around the daily session.
+#
+# Crypto-only is not a lesser collision: this job's held set includes the
+# crypto tickers the agents hold, and it rewrites a 90-day window of exactly
+# the files the Monday fetch appends to.
 #
 # It was `10 05 * * 1` until 2026-08-12, which left 50 minutes to the fetch
 # once that moved from 22:30 to 06:00. The exposure is not a lost push —

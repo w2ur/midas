@@ -121,10 +121,13 @@ def fetch_window_start(
     already holds ``end`` is skipped, which is what makes a second run in one
     UTC day a no-op.
 
-    ``revise_days`` re-requests that many already-stored trailing days so a bar
-    that was still forming when it was first written can be corrected by its
-    final value. It has no effect on an empty store, which fetches the full
-    ``history_days`` window regardless.
+    ``revise_days`` re-requests that many already-stored trailing days. It no
+    longer corrects *partial* bars — with ``end`` at yesterday none are ever
+    stored — it corrects the vendor **revising a bar that was already
+    complete**, which is real and measured: futures moved on 13 of 22 shared
+    days and FX on 5 of 23, and Yahoo restates raw ``close`` outright for a
+    corporate action. It has no effect on an empty store, which fetches the
+    full ``history_days`` window regardless.
     """
     if last is None:
         return end - timedelta(days=history_days)
@@ -330,11 +333,16 @@ def merge_rows(
     are appended, stored dates are never touched.
 
     With ``revise_from`` set to an ISO date, an already-stored row on or after
-    that date is *replaced* when the fetched value differs. This exists for bars
-    that are still forming when they are first written — 24/7 crypto, commodity
-    futures whose next session has already opened, FX after its 17:00 ET roll —
-    which the store previously had no way to correct. A bar that was already
-    final re-fetches identical, so no stored value is replaced.
+    that date is *replaced* when the fetched value differs. It was built for
+    bars that were still forming when first written — 24/7 crypto, commodity
+    futures whose next session had already opened, FX after its 17:00 ET roll —
+    which the store had no way to correct. Since 2026-08-12 the fetch ends at
+    yesterday and stores no forming bar at all, so what this now corrects is the
+    vendor **revising an already-complete bar**: measured, futures moved on 13
+    of 22 shared days and FX on 5 of 23, and Yahoo restates raw ``close``
+    outright for a corporate action (which ``detect_split`` adjudicates on the
+    weekly resweep). A bar the vendor does not revise re-fetches identical, so
+    no stored value is replaced.
 
     **The store's existing line order is preserved.** A revision overwrites its
     row in place; new dates are appended at the end, in ascending date order

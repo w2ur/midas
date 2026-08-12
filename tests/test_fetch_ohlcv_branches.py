@@ -1,17 +1,23 @@
 """Branch coverage for scripts.fetch_ohlcv.main() — the nightly, unattended cron
 entry point.
 
-Every symbol now runs with a 1-day revision window — the trailing stored bar is
-re-requested and replaced when its value changed. The two halves of that
-behaviour are pinned separately:
+Since 2026-08-12 `main()` fetches through YESTERDAY, never today, so no forming
+bar is ever stored (`_fetch_end()` below is the fixtures' anchor for that).
+Every symbol still runs with a 1-day revision window — the trailing stored bar
+is re-requested and replaced when its value changed — but what it catches is
+the vendor revising an already-complete bar, not a partial one this run wrote
+itself. The two halves of that behaviour are pinned separately:
 
-- **No churn.** A cash equity or ETF bar IS final at the 22:30 UTC fetch
-  (measured: SPY and AAPL, 0 of 23 trailing bars drifted), so the re-fetch is
-  identical, `merge_rows` finds nothing to replace, and every stored byte
-  survives. This is why widening the window to ~1,100 committed files is safe.
-- **Revision.** Crypto (24/7) and commodity futures (`=F`, whose next Globex
-  session has already opened at 22:30 UTC — GC=F drifted on 13 of the last 22
-  bars, worst +2.865%) are still forming when written, and must be corrected.
+- **No churn.** A cash equity or ETF close does not move once its session has
+  ended (measured: SPY and AAPL, 0 of 23 trailing bars drifted), so the
+  re-fetch is identical, `merge_rows` finds nothing to replace, and every
+  stored byte survives. This is why widening the window to ~1,100 committed
+  files is safe.
+- **Revision.** Commodity futures (`=F`) and crypto do get revised by the
+  vendor after the fact — GC=F drifted on 13 of the last 22 bars, worst
+  +2.865% — and must be corrected. (Those figures were measured under the
+  22:30 UTC schedule, when the same bars were also still forming at fetch
+  time; that second cause is gone, the vendor revisions are not.)
 
 All tests here drive `main()` end-to-end with `_fetch_symbol` and
 `_fetch_ticker_info` monkeypatched to synthetic, network-free responses —
