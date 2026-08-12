@@ -34,18 +34,30 @@ name: resweep-held-tickers
 # mode it guards against (a stale share count silently mis-valuing a book)
 # degrades slowly, not catastrophically, between runs.
 #
-# Scheduled well clear of every other cron this repo runs: the 19:55-21:00
-# UTC blackout the trigger watcher (check-triggers.yml) observes around the
-# daily session, the 06:00 UTC (daily) full fetch-ohlcv.yml runs, and
-# refresh-universes.yml's Monday 03:15 UTC slot.
+# Scheduled to sit between the other Monday-morning writers: after
+# refresh-universes.yml (cron `15 03 * * 1`) and roughly two hours ahead of
+# fetch-ohlcv.yml (cron `0 6 * * 2-6`), well clear of the 19:55-21:00 UTC
+# blackout the trigger watcher (check-triggers.yml) observes around the daily
+# session.
+#
+# It was `10 05 * * 1` until 2026-08-12, which left 50 minutes to the fetch
+# once that moved from 22:30 to 06:00. The exposure is not a lost push —
+# .github/actions/push-with-retry rebases and retries — but a rebase
+# CONFLICT, which kills the step under `set -euo pipefail`: this job rewrites
+# a 90-day window of data/market/ohlcv/ and the fetch rewrites the trailing
+# day of the same files. The likely loser is this job, and its commit is the
+# one that can carry a PortfolioManager.apply_split correction to real
+# holdings.
+#
 # "Clear of" is a statement about the *nominal* schedule and nothing more:
-# GitHub's scheduler runs 42 min to 6 h late, so overlap is possible and the
-# push goes through .github/actions/push-with-retry rather than relying on it
-# not happening.
+# GitHub's scheduler is never on time — measured across this repo's scheduled
+# jobs it typically lands 40 min to 2 h 45 late, with a tail past 5 h — so
+# overlap is still possible and the push goes through push-with-retry rather
+# than relying on it not happening.
 
 on:
   schedule:
-    - cron: "10 05 * * 1"  # Monday 05:10 UTC
+    - cron: "10 04 * * 1"  # Monday 04:10 UTC
   workflow_dispatch:
 
 permissions:
