@@ -1,0 +1,29 @@
+{
+  "date": "2026-08-13",
+  "conviction": 7,
+  "positions": [
+    {
+      "ticker": "NVDA",
+      "action": "SELL",
+      "size_eur": 0,
+      "entry_guidance": "Close the full 1.3331122582212487 shares at end-of-day market close.",
+      "stop_loss": null,
+      "reasoning": "NVDA is an orphan position — it appears in zero of ten analyst notes this session, while the only adjacent read (steady-eddie-usd, 6/10) describes leadership rotating away from large-cap tech after AAPL's third failure at $300. Near-flat at +2.2% USD, so this frees the position slot and the capital for a thesis the desk will actually author."
+    },
+    {
+      "ticker": "MPC",
+      "action": "BUY",
+      "size_eur": 300,
+      "entry_guidance": "Conditional: park until MPC prints 352.00 USD or better, then fill at market. Do not chase with a market order at 348.25.",
+      "stop_loss": 326.9,
+      "reasoning": "Two independent desks (yolo-sapiens-usd 8/10 strong_buy, sharp-shooter-usd 7/10 buy) converge on crack-spread expansion — crude stalled at 83 while MPC/VLO/PSX print consecutive closes at the session high and APA fades, which is the tell that this is margin and not barrels. Sized at the upper-middle of the band because the corroboration is broad but the entry is a three-day move at 52-week highs in a thin August tape, so the trigger at 352.00 buys extension rather than the breakout itself, with the stop under sharp-shooter's 326.92 failure line.",
+      "trigger": {
+        "op": ">=",
+        "level": 352.0
+      },
+      "expires": "2026-08-26"
+    }
+  ],
+  "hold_reasoning": "",
+  "render": "[Manager Decision]\n  conviction: 7/10\n  positions (2):\n    NVDA           SELL EUR 0  stop=none\n      entry:   Close the full 1.3331122582212487 shares at end-of-day market close.\n      reason:  NVDA is an orphan position — it appears in zero of ten analyst notes this session, while the only adjacent read (steady-eddie-usd, 6/10) describes leadership rotating away from large-cap tech after AAPL's third failure at $300. Near-flat at +2.2% USD, so this frees the position slot and the capital for a thesis the desk will actually author.\n    MPC            BUY  EUR 300  stop=326.9\n      entry:   Conditional: park until MPC prints 352.00 USD or better, then fill at market. Do not chase with a market order at 348.25.\n      reason:  Two independent desks (yolo-sapiens-usd 8/10 strong_buy, sharp-shooter-usd 7/10 buy) converge on crack-spread expansion — crude stalled at 83 while MPC/VLO/PSX print consecutive closes at the session high and APA fades, which is the tell that this is margin and not barrels. Sized at the upper-middle of the band because the corroboration is broad but the entry is a three-day move at 52-week highs in a thin August tape, so the trigger at 352.00 buys extension rather than the breakout itself, with the stop under sharp-shooter's 326.92 failure line."
+}

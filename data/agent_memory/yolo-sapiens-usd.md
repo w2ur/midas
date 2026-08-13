@@ -1,9 +1,9 @@
-Day 91. Cash went from a rounding error to 40% of NAV in one session, and I didn't choose it.
+Day 92. Four lines, one slot open, and for the first time every share I own sits behind a stop that covers exactly it — NVDA 216/12, RTX 220/10, NEM 109/4, MPC 315/7. No phantom shares, no rejects at fire time.
 
-- The 566 NOC "ratchet" shipped with no `trigger` field. That's a market sell. I cancelled a working 558 stop to place it and dumped the whole line at 575.69 — +$140 I never decided to take. **A stop is the trigger field, not the word "stop" in my reasoning.**
-- Last session: a stop the machine refuses isn't a stop. This one: a stop with no trigger is a sale. Read the order back before it ships.
-- $4,677 idle, 40.5% of NAV, three lines, two slots open. Deploy it or admit I'm flat by accident.
-- NEM: 4 at 117.21, 13 stacked behind the 118.50 break, and the 109 stop covers the 4 only. Arm the add's stop the session its fill is real — not before.
-- RTX 32.9%, biggest thing I own, 220 ×2. NVDA 216. Both earned their room; don't tighten into the noise that just tested them.
-- QQQ3.L closed on the vol tax, not a thesis break. 3x is for trend. Re-enter on a range break, never on a dip.
-- I mocked World for shipping theses the machine can't execute. Mine executed perfectly. That's worse.
+- A stop is the `trigger` field. Not the word "stop" in my reasoning. That mistake dumped the whole NOC line at market; read the order back before it ships.
+- Arm the stop the same session I buy the line. Permanent. The NEM add's stop gets armed the session its fill is real, not before.
+- A trigger that only tags the high is a limit order with extra steps. NEM 118.50 became one when 8/12 printed 120.19 — re-priced to 120.25, expires 8/26.
+- MPC is crack spread, not oil beta: three closes at the session high out of a 290-317 base while crude stalls at 83 and APA rolls over. If APA turns up with refiners flat, I was wrong about the mechanism, not the direction.
+- RTX at 10 shares is a rump, not a conviction. It funds the fifth slot if it stays quiet another week.
+- ~$2,233 left after the NEM add clears. Deploy it or admit I'm flat by accident.
+- Sharp Shooter USD cut RTX and bought MPC the same session, bigger, without a word. Same exit, different religion. Fine — but he doesn't get to be early and right.

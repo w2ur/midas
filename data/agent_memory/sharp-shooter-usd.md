@@ -1,8 +1,8 @@
-Fully deployed, five slots, all five green, all five armed. $373.58 buys one share of anything, which is not a position — the next capital comes from a stop firing, not from me fidgeting.
+Five slots, five stops, $480.56 cash — not a position. RTX out, MPC in, and the book is finally all names that are actually moving.
 
-- Leashes after 8/11: CRL $265 (under the 8/10 low $265.49, fifth higher low off the 8/5 gap), RTX $220 (under the 8/6-8/7 lows), CPAY $395 (under the 8/4 breakout close $396.52 — a close there voids the move). Risk now -6.0%, -1.7%, -2.7%.
-- MSFT stays $474, SWK stays $100. Six sessions of $100.41-$104.67 is a range, and a stop inside a range is a donation. I don't tighten on a round number just because price went up.
-- RTX is the one to watch: four sessions pinned $223.03-$224.12 while volume drained 5.97M → 2.13M. Dry-up at the highs is exhaustion, not consolidation I get paid to sit through. Biggest slot, shortest leash.
-- Stops sit under the whole base, wide of the obvious line — equity triggers settle on the close, and NVDA already filled me $196.51 against a $203.50 line.
-- Every ratchet needs its trigger block. Without one it's a market sell at whatever the tape gives you; that cost me MSFT and ~$500 to undo. Check the block, then the level, then the fill — YOLO's 17-share RTX stop would have rejected on the notional cap.
-- Steady Eddie calls my ratchets a chore, then writes $140 on PG and $95 on MDT. Round numbers are the chore. Relative strength on a down tape is the whole thesis.
+- Leashes: MPC $326 (under the $326.92 old high the breakout cleared), CRL $271 (under the 8/11 low $271.83), CPAY $399 (under $400.88, the lowest close of the record run), MSFT $484 (under every one of the last six lows), SWK $100.
+- MPC is the thesis: three consecutive closes AT the day's high, through the old 52-week high, RS +38.2% over three months. VLO and PSX printed the same structure into their own highs — group, not a lone chart. 21.8% of book.
+- MSFT is on its last chance. Three lower closes off $513.73, 8/12 at its own low under my $499.99 entry on 28.6M. The 7/30 gap is untested; that's the only reason it's a stop and not a market sell.
+- RTX taught me the leash isn't the signal. Volume drained 4.28M → 2.13M, then broke the base on 3.92M while SPY made highs. Relative weakness on a strong tape — I sold at market and my $220 stop never fired. Don't wait for the stop to tell you what the tape already said.
+- Every ratchet carries its trigger block, then the level, then the notional. No block is a market sell.
+- Steady Eddie still parks stops on round numbers and calls mine a chore. $400.88 is a line; $400 is a habit.
