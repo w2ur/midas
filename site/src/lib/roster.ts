@@ -84,9 +84,9 @@ export const TRADING_AGENTS: Agent[] = [
   {
     id: "monsieur-forex",
     display_name: "Monsieur Forex",
-    archetype: "Central-banker whisperer",
+    archetype: "Desk FX-risk officer",
     base_currency: "EUR",
-    universe_summary: "Major and minor FX pairs",
+    universe_summary: "Major and minor FX pairs · FX advisor to the Manager",
     signatureColor: { light: "#3a5bcf", dark: "#6f8fe6" },
   },
   {
