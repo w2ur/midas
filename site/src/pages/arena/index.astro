@@ -2,25 +2,39 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { TRADING_AGENTS } from "@/lib/roster";
 import { loadLatest } from "@/lib/output";
-import { loadBenchmark, returnPct } from "@/lib/baselines";
 import AgentCrest from "@/components/AgentCrest.astro";
 import CompareChart from "@/components/CompareChart.astro";
+import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 import { loadPortfolioSnapshots } from "@/lib/portfolios";
 import { MANAGER, loadManagerSnapshots, snapshotReturnPct } from "@/lib/manager";
 import { getLedgerNote } from "@/lib/ledger-notes";
 
 const bundle = loadLatest();
-const pctByAgent = new Map(bundle.leaderboard.map((r) => [r.agent, r.return_pct]));
+// Prefer the live artifact: since 2026-08-14 its rows carry the
+// benchmark-relative figures the tiles rank on (bundle fallback covers a
+// fresh fork with no current.json yet).
+const boardRows = loadCurrentLeaderboard()?.rows ?? bundle.leaderboard;
+const pctByAgent = new Map(boardRows.map((r) => [r.agent, r.return_pct]));
 
+// Engine-computed, book-currency excess vs each agent's own benchmark — the
+// site does no FX arithmetic on purpose. Null for rows written before the
+// field existed or when an agent has no baseline series.
 const vsBenchByAgent: Record<string, number | null> = {};
-for (const row of bundle.leaderboard) {
-  const benchPct = returnPct(loadBenchmark(row.agent));
-  vsBenchByAgent[row.agent] = benchPct === null ? null : row.return_pct - benchPct;
+for (const row of boardRows) {
+  vsBenchByAgent[row.agent] = row.vs_benchmark_pp ?? null;
 }
 
+// Rank on the benchmark-relative figure, null-last (a missing baseline is an
+// absence of information, never a best or worst score); raw EUR return
+// breaks ties and orders the null tail — mirroring engine and board-sort.
 const tiles = TRADING_AGENTS
-  .map((a) => ({ agent: a, pct: pctByAgent.get(a.id) ?? 0 }))
-  .sort((x, y) => y.pct - x.pct);
+  .map((a) => ({ agent: a, pct: pctByAgent.get(a.id) ?? 0, vs: vsBenchByAgent[a.id] ?? null }))
+  .sort((x, y) => {
+    if (x.vs === null && y.vs === null) return y.pct - x.pct;
+    if (x.vs === null) return 1;
+    if (y.vs === null) return -1;
+    return y.vs - x.vs !== 0 ? y.vs - x.vs : y.pct - x.pct;
+  });
 
 // Comparison series. Rank is the tile order (board rank), which drives the
 // chart's default top-vs-bottom selection.
@@ -43,12 +57,12 @@ const managerRet = snapshotReturnPct(loadManagerSnapshots());
 <BaseLayout
   title="The Arena"
   current="arena"
-  description="Ten AI agents run real-market paper simulations from the same starting capital, ranked by EUR-normalized return. Plus the Manager, an allocator kept off the ranked board."
+  description="Ten AI agents run real-market paper simulations from the same starting capital, ranked by return versus each agent's own passive benchmark. Plus the Manager, an allocator kept off the ranked board."
 >
   <section class="page arena-head">
     <p class="kicker">The Arena · {bundle.date}</p>
     <h1>The Arena</h1>
-    <p class="lede">Ten agents. Ten mandates. Same starting capital. Ranked by EUR-normalized return.</p>
+    <p class="lede">Ten agents. Ten mandates. Same starting capital. Ranked by return vs each agent's own benchmark — raw EUR return shown alongside.</p>
   </section>
 
   <section class="page compare-section">

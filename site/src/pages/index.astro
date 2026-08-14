@@ -9,7 +9,7 @@ import { loadAllOrders, tickerSlug } from "@/lib/orders";
 import { isTradingAgent, getAgent } from "@/lib/roster";
 import { isCrestId } from "@/lib/crests";
 import { tickerName } from "@/lib/tickers";
-import { loadGlobalReference, loadBenchmark, loadCoinFlip, returnPct } from "@/lib/baselines";
+import { loadGlobalReference, returnPct } from "@/lib/baselines";
 import { currentDayNumber } from "@/lib/session";
 import { ossStats } from "@/lib/oss-stats";
 import { cadenceStats } from "@/lib/cadence";
@@ -25,16 +25,17 @@ const blogExcerpt = excerpt(latestBlog.body, 280);
 const globalRef = loadGlobalReference();
 const globalRefPct = returnPct(globalRef);
 
+// vs-benchmark / vs-coin-flip come from the engine's rows since 2026-08-14.
+// They are measured in the book's own currency there, which the old
+// site-side `return_pct - benchPct` never was: return_pct is EUR-normalised,
+// so on USD books that difference silently embedded the EURUSD move
+// (~2.4pp). No FX arithmetic in TypeScript — deliberate; rows written
+// before the field existed render "—" until the next engine write.
 const vsBenchByAgent: Record<string, number | null> = {};
-for (const row of bundle.leaderboard) {
-  const benchPct = returnPct(loadBenchmark(row.agent));
-  vsBenchByAgent[row.agent] = benchPct === null ? null : row.return_pct - benchPct;
-}
-
 const vsCoinflipByAgent: Record<string, number | null> = {};
-for (const row of bundle.leaderboard) {
-  const cfPct = returnPct(loadCoinFlip(row.agent));
-  vsCoinflipByAgent[row.agent] = cfPct === null ? null : row.return_pct - cfPct;
+for (const row of leaderboardRows) {
+  vsBenchByAgent[row.agent] = row.vs_benchmark_pp ?? null;
+  vsCoinflipByAgent[row.agent] = row.vs_coinflip_pp ?? null;
 }
 
 const recentTrades = loadAllOrders()
@@ -143,7 +144,7 @@ function fmtPrice(n: number | null, ccy: string | null): string {
 
       <div class="ro-leader">
         <div class="ro-leadL">
-          <div class="ro-lab">Leader</div>
+          <div class="ro-lab">{leader?.vs_benchmark_pp != null ? "Leader · vs benchmark" : "Leader"}</div>
           <div class="ro-name">
             {leader && isTradingAgent(leader.agent) && (
               <AgentCrest id={leader.agent} size={26} />
@@ -151,7 +152,13 @@ function fmtPrice(n: number | null, ccy: string | null): string {
             <span class="ro-name-text">{leader ? agentName(leader.agent) : "—"}</span>
           </div>
         </div>
-        <div class="ro-fig phosphor">{leader ? fmtPct(leader.return_pct) : "—"}</div>
+        <div class="ro-fig phosphor">
+          {leader
+            ? leader.vs_benchmark_pp != null
+              ? `${leader.vs_benchmark_pp > 0 ? "+" : ""}${leader.vs_benchmark_pp.toFixed(2)} pp`
+              : fmtPct(leader.return_pct)
+            : "—"}
+        </div>
       </div>
 
       <div class="ro-grid">
@@ -179,6 +186,7 @@ function fmtPrice(n: number | null, ccy: string | null): string {
       vsCoinflipByAgent={vsCoinflipByAgent}
       updatedAt={updatedAt}
       trigger={trigger}
+      initialSort="vsBench"
     />
   </section>
 

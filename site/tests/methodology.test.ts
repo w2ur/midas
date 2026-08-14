@@ -28,10 +28,11 @@ describe("methodology document split", () => {
 
   it("moves every changelog anchor and keeps the body anchor", () => {
     const doc = methodologyDoc();
-    // These thirteen ids are cited from shipped commit messages, from
+    // These fourteen ids are cited from shipped commit messages, from
     // src/lib/ledger-notes.ts, and from each other. Losing one is a broken
     // disclosure link, so the list is asserted explicitly rather than by count.
     expect(doc.changelogAnchors).toEqual([
+      "leaderboard-rerank-2026-08-14",
       "complete-bars-2026-08-12",
       "sentiment-collection-hour-2026-08-12",
       "close-basis-2026-08-07",
@@ -47,6 +48,10 @@ describe("methodology document split", () => {
       "lost-fill-2026-05-21",
     ]);
     expect(doc.bodyAnchors).toContain("open-source");
+    // Cited from the 2026-08-14 changelog entry; the changelog page repoints
+    // only ids present in bodyAnchors, so these must stay explicit <a id>s.
+    expect(doc.bodyAnchors).toContain("known-distortions");
+    expect(doc.bodyAnchors).toContain("the-noise-statement");
   });
 
   it("renders every moved anchor into the changelog page and none into the essay", () => {
@@ -56,7 +61,7 @@ describe("methodology document split", () => {
       expect(changelog.html).toContain(`id="${id}"`);
       expect(essay.htmlBefore + essay.htmlAfter).not.toContain(`id="${id}"`);
     }
-    expect(changelog.entryCount).toBe(13);
+    expect(changelog.entryCount).toBe(14);
   });
 
   it("does not print the changelog heading twice on the changelog page", () => {

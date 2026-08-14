@@ -224,3 +224,36 @@ def test_the_trigger_band_separates_the_incident_from_real_orders(
     """The band has to sit between the two populations, not merely above one."""
     ratio = level / price
     assert (ratio < TRIGGER_LEVEL_MIN or ratio > TRIGGER_LEVEL_MAX) is expected
+
+
+def test_every_live_agent_ranks_on_a_measured_vs_benchmark():
+    """The 2026-08-14 metric change, checked against the committed desk.
+
+    Ranking moved from raw EUR return to `vs_benchmark_pp`. The null-last
+    fallback exists for forks without baselines — on the live desk it must
+    never engage: every trading agent has a benchmark series, so every row
+    must carry a measured value. A None here means a baseline file went
+    missing or unreadable, and the board silently degraded to the old raw
+    ranking without anyone deciding that.
+
+    Also pins the decomposition this change was built on: the vs-benchmark
+    figure must be FX-free, i.e. differ from (EUR return - benchmark return)
+    by the translation leg on USD books.
+    """
+    from engine.leaderboard import build_leaderboard_rows
+    from scripts.daily_session import build_portfolio_summaries
+
+    summaries = build_portfolio_summaries()
+    assert len(summaries) == 10, "expected the full 10-agent roster on disk"
+    rows = build_leaderboard_rows(summaries, on=None)
+
+    unmeasured = [r["agent"] for r in rows if r["vs_benchmark_pp"] is None]
+    assert unmeasured == [], f"agents ranked without a benchmark: {unmeasured}"
+
+    by_agent = {r["agent"]: r for r in rows}
+    # Every USD book carries its translation leg; no EUR book does.
+    for agent_id, summary in summaries.items():
+        if summary["currency"] == "EUR":
+            assert "fx_translation_pp" not in by_agent[agent_id]
+        else:
+            assert "fx_translation_pp" in by_agent[agent_id]

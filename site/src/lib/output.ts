@@ -6,6 +6,21 @@ export type LeaderboardRow = {
   agent: string;
   return_pct: number;
   rank: number;
+  /**
+   * Book-currency return minus the agent's own benchmark return, in
+   * percentage points — FX-free by construction, and since 2026-08-14 the
+   * quantity `rank` is ordered by. Absent in artifacts written before that
+   * date; null when the agent has no baseline series (rows rank after the
+   * measured ones, by raw EUR return — same null-last rule as board-sort).
+   */
+  vs_benchmark_pp?: number | null;
+  /** Same measure against the agent's coin-flip control. */
+  vs_coinflip_pp?: number | null;
+  /**
+   * EUR value of the book's currency vs day one, in percentage points — the
+   * leaderboard tailwind a flat non-EUR book would show. Absent on EUR books.
+   */
+  fx_translation_pp?: number;
 };
 
 export type AgentPortfolio = {

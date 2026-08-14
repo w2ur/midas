@@ -12,9 +12,16 @@ interface Props {
   vsCoinflipByAgent?: Record<string, number | null>;
   updatedAt?: string;
   trigger?: string;
+  /**
+   * Which column the board arrives sorted by. The live board passes
+   * "vsBench" (the artifact's `rank` is ordered by it since 2026-08-14);
+   * archive views keep "return", matching their historical row order.
+   */
+  initialSort?: "return" | "vsBench" | "vsCoin";
 }
 
 const { rows, reference, showVsBench, vsBenchByAgent, showVsCoinflip, vsCoinflipByAgent, updatedAt, trigger } = Astro.props;
+const initialSort = Astro.props.initialSort ?? "return";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -84,20 +91,20 @@ const refW = refPct === null ? 0 : barWidth(refPct);
 
 <div class="board-sorts" data-board-sorts hidden>
   <span class="bs-lab">Sort</span>
-  <button type="button" class="bs-chip" data-chip-key="return" aria-pressed="true">Return</button>
-  {showVsBench && <button type="button" class="bs-chip" data-chip-key="vsBench" aria-pressed="false">vs Bench</button>}
-  {showVsCoinflip && <button type="button" class="bs-chip" data-chip-key="vsCoin" aria-pressed="false">vs Coin</button>}
+  <button type="button" class="bs-chip" data-chip-key="return" aria-pressed={String(initialSort === "return")}>Return</button>
+  {showVsBench && <button type="button" class="bs-chip" data-chip-key="vsBench" aria-pressed={String(initialSort === "vsBench")}>vs Bench</button>}
+  {showVsCoinflip && <button type="button" class="bs-chip" data-chip-key="vsCoin" aria-pressed={String(initialSort === "vsCoin")}>vs Coin</button>}
 </div>
 
-<div class="board" role="table" aria-label="End-of-session leaderboard" style={`--board-cols:${boardCols}`}>
+<div class="board" role="table" aria-label="End-of-session leaderboard" style={`--board-cols:${boardCols}`} data-initial-sort={initialSort}>
   <div class="lhead" role="row">
     <span role="columnheader">Rank</span>
     <span role="columnheader" aria-hidden="true"></span>
     <span role="columnheader">Agent</span>
-    <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort="descending">Return EUR</span>
+    <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort={initialSort === "return" ? "descending" : "none"}>Return EUR</span>
     <span role="columnheader" class="ta-c">P&amp;L</span>
-    {showVsBench && <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort="none">vs Bench</span>}
-    {showVsCoinflip && <span role="columnheader" class="ta-r" data-sort-key="vsCoin" aria-sort="none">vs Coin</span>}
+    {showVsBench && <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>}
+    {showVsCoinflip && <span role="columnheader" class="ta-r" data-sort-key="vsCoin" aria-sort={initialSort === "vsCoin" ? "descending" : "none"}>vs Coin</span>}
   </div>
 
   {rows.map((row) => {
@@ -207,7 +214,9 @@ const refW = refPct === null ? 0 : barWidth(refPct);
     const chipBar = board.parentElement?.querySelector<HTMLElement>("[data-board-sorts]") ?? null;
     const chips = chipBar ? Array.from(chipBar.querySelectorAll<HTMLElement>("[data-chip-key]")) : [];
 
-    let activeKey: SortKey = "return";
+    const declared = board.dataset.initialSort;
+    let activeKey: SortKey =
+      declared === "vsBench" || declared === "vsCoin" ? declared : "return";
     let activeDir: SortDir = "desc";
 
     function apply() {

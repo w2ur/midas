@@ -8,7 +8,8 @@ import { TRADING_AGENTS, type AgentId, getAgent } from "@/lib/roster";
 import { loadLatest, listDates as listOutputDates } from "@/lib/output";
 import { loadMemory, renderMemoryHtml } from "@/lib/memory";
 import { loadAllOrders } from "@/lib/orders";
-import { loadBenchmark, loadCoinFlip, returnPct, AGENT_BENCHMARK_LABELS } from "@/lib/baselines";
+import { loadBenchmark, loadCoinFlip, AGENT_BENCHMARK_LABELS } from "@/lib/baselines";
+import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 import { loadPortfolioSnapshots } from "@/lib/portfolios";
 import { currentDayNumber } from "@/lib/session";
 import { getLedgerNote } from "@/lib/ledger-notes";
@@ -31,20 +32,26 @@ const didRunToday = daily.commentary !== null;
 const outputDates = listOutputDates();
 const daysLive = outputDates.length;
 
-const pnlRow = bundle.leaderboard.find((r) => r.agent === agent.id);
-const pnl = pnlRow?.return_pct ?? 0;
+// Prefer the live artifact's row: since 2026-08-14 it carries the engine's
+// benchmark-relative figures, measured in the book's own currency. The old
+// site-side `pnl - benchReturnPct` subtracted a book-currency benchmark from
+// the EUR-normalised return, silently embedding the EURUSD move (~2.4pp) in
+// every USD dossier's "vs benchmark". No FX arithmetic in TypeScript.
+const boardRow =
+  loadCurrentLeaderboard()?.rows.find((r) => r.agent === agent.id) ??
+  bundle.leaderboard.find((r) => r.agent === agent.id);
+const pnl = boardRow?.return_pct ?? 0;
 const pnlCls = pnl > 0 ? "pos" : pnl < 0 ? "neg" : "";
 const pnlStr = (pnl > 0 ? "+" : "") + pnl.toFixed(2) + "%";
 
 const benchSeries = loadBenchmark(agent.id);
 const coinSeries = loadCoinFlip(agent.id);
 const agentSeries = loadPortfolioSnapshots(agent.id);
-const benchReturnPct = returnPct(benchSeries);
-const coinReturnPct = returnPct(coinSeries);
 
-// Delta in percentage points = agent return - reference return
-const vsBench = benchReturnPct !== null ? pnl - benchReturnPct : null;
-const vsCoin = coinReturnPct !== null ? pnl - coinReturnPct : null;
+const vsBench = boardRow?.vs_benchmark_pp ?? null;
+const vsCoin = boardRow?.vs_coinflip_pp ?? null;
+// EUR translation leg of the book's currency since day one — absent on EUR books.
+const fxTranslation = boardRow?.fx_translation_pp ?? null;
 
 function fmtDelta(v: number | null): string {
   if (v === null) return "—";
@@ -106,7 +113,9 @@ const ledgerNote = getLedgerNote(agent.id);
         </div>
         <div class="statcell">
           <dt>Starting capital</dt>
-          <dd class="val"><span class="unit">{startCcy}</span> 10,000</dd>
+          <dd class="val">
+            <span class="unit">EUR</span> 10,000{startCcy !== "EUR" && <span class="unit"> → {startCcy}, day one</span>}
+          </dd>
         </div>
         <div class="statcell">
           <dt>Days live</dt>
@@ -120,6 +129,12 @@ const ledgerNote = getLedgerNote(agent.id);
           <dt>vs coin flip</dt>
           <dd class={`val ${deltaCls(vsCoin)}`}>{fmtDelta(vsCoin)}</dd>
         </div>
+        {fxTranslation !== null && (
+          <div class="statcell">
+            <dt>FX translation ({startCcy}→EUR)</dt>
+            <dd class={`val ${deltaCls(fxTranslation)}`}>{fmtDelta(fxTranslation)}</dd>
+          </div>
+        )}
       </dl>
 
       {ledgerNote && (
