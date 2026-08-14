@@ -8,6 +8,8 @@ import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 import { loadPortfolioSnapshots } from "@/lib/portfolios";
 import { MANAGER, loadManagerSnapshots, snapshotReturnPct } from "@/lib/manager";
 import { getLedgerNote } from "@/lib/ledger-notes";
+import { AGENT_BENCHMARK_LABELS } from "@/lib/baselines";
+import { boardLayout } from "@/lib/board-sort";
 
 const bundle = loadLatest();
 // Prefer the live artifact: since 2026-08-14 its rows carry the
@@ -15,6 +17,7 @@ const bundle = loadLatest();
 // fresh fork with no current.json yet).
 const boardRows = loadCurrentLeaderboard()?.rows ?? bundle.leaderboard;
 const pctByAgent = new Map(boardRows.map((r) => [r.agent, r.return_pct]));
+const rowByAgent = new Map(boardRows.map((r) => [r.agent, r]));
 
 // Engine-computed, book-currency excess vs each agent's own benchmark — the
 // site does no FX arithmetic on purpose. Null for rows written before the
@@ -23,6 +26,14 @@ const vsBenchByAgent: Record<string, number | null> = {};
 for (const row of boardRows) {
   vsBenchByAgent[row.agent] = row.vs_benchmark_pp ?? null;
 }
+
+// Same rule as the leaderboard table: the tiles are ORDERED by the
+// benchmark-relative figure, so that figure has to be the one they lead
+// with. Showing the EUR return large above a "vs benchmark" whisper put the
+// worst-looking number on the first tile. Data-driven, so a fork whose
+// artifact predates the metric keeps the return-led tile it was published
+// with rather than showing an empty headline.
+const { leadIsExcess } = boardLayout(boardRows, true);
 
 // Rank on the benchmark-relative figure, null-last (a missing baseline is an
 // absence of information, never a best or worst score); raw EUR return
@@ -49,6 +60,14 @@ function fmtPct(n: number): string {
   return `${sign}${n.toFixed(2)}%`;
 }
 
+// A benchmark-relative figure is a difference of two percentages, so its unit
+// is percentage POINTS. It was rendered through fmtPct as "+6.62%", which
+// names a different quantity than the one published.
+function fmtPP(n: number): string {
+  const sign = n > 0 ? "+" : "";
+  return `${sign}${n.toFixed(2)} pp`;
+}
+
 // The Manager (allocator) is off the ranked leaderboard by design — different
 // capital, start date, and mandate. Surfaced below the grid as an unranked
 // reference card, never scored against the arena.
@@ -71,24 +90,40 @@ const managerRet = snapshotReturnPct(loadManagerSnapshots());
 
   <section class="arena-grid">
     {tiles.map(({ agent, pct }) => {
-      const cls = pct > 0 ? "pos" : pct < 0 ? "neg" : "";
       const vs = vsBenchByAgent[agent.id];
+      const row = rowByAgent.get(agent.id);
+      const local = row?.return_local_pct ?? null;
+      const ccy = row?.currency ?? null;
+      const bench = AGENT_BENCHMARK_LABELS[agent.id] ?? null;
       const ledgerNote = getLedgerNote(agent.id);
+      // The tile leads with whatever it is ranked by. A measured row leads on
+      // excess; one with no baseline series ranks null-last and falls back to
+      // its EUR return rather than heading a tile with "—".
+      const onExcess = leadIsExcess && vs != null;
+      const leadVal = onExcess ? (vs as number) : pct;
+      const cls = leadVal > 0 ? "pos" : leadVal < 0 ? "neg" : "";
+      // The book-currency return is only worth a second figure when it
+      // differs from the EUR one — i.e. on a book denominated outside EUR.
+      const showLocal = onExcess && local != null && ccy != null && ccy !== "EUR";
       return (
         <a class="arena-tile" href={`/arena/${agent.id}`} data-agent={agent.id}>
           <AgentCrest id={agent.id} size={40} />
           <span class="tile-name">{agent.display_name}</span>
           <span class="tile-arch">{agent.archetype} · {agent.base_currency}</span>
           <span class={`tile-ret ${cls}`}>
-            {fmtPct(pct)}
+            {onExcess ? fmtPP(leadVal) : fmtPct(leadVal)}
             {ledgerNote && (
               <span class="tile-flag" title={`${ledgerNote.label} — see dossier`}>†</span>
             )}
           </span>
-          {vs != null && (
+          {onExcess && (
             <span class="tile-vs">
-              <span class={`tile-vs-delta ${vs >= 0 ? "pos" : "neg"}`}>{fmtPct(vs)}</span>
-              <span class="tile-vs-label"> vs benchmark</span>
+              <span class="tile-vs-label">vs {bench ?? "benchmark"}</span>
+            </span>
+          )}
+          {onExcess && (
+            <span class="tile-sub">
+              {`${fmtPct(pct)} EUR`}{showLocal && ` · ${fmtPct(local as number)} ${ccy}`}
             </span>
           )}
         </a>
@@ -174,9 +209,16 @@ const managerRet = snapshotReturnPct(loadManagerSnapshots());
     font-size: var(--fs-xs);
     color: var(--ink-muted);
   }
-  .tile-vs-delta.pos { color: var(--pos); }
-  .tile-vs-delta.neg { color: var(--neg); }
   .tile-vs-label { color: var(--ink-muted); }
+  /* Raw EUR return (and the book-currency one where they differ), demoted
+     beneath the ranked figure rather than removed. */
+  .tile-sub {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    color: var(--ink-faint, var(--ink-muted));
+    margin-top: 0.15rem;
+  }
 
   /* Unranked reference card — clearly separated from the ranked grid. */
   .unranked { margin-top: var(--sp-7); padding-top: var(--sp-6); border-top: 1px solid var(--rule); }

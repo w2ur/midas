@@ -7,6 +7,13 @@ export type LeaderboardRow = {
   return_pct: number;
   rank: number;
   /**
+   * The book's denomination — the unit `return_local_pct` is measured in.
+   * Published by the engine (2026-08-14) rather than read off the site's
+   * roster, which answers "mixed" for `world`: that describes its holdings,
+   * not the currency its book is kept in. Absent in older artifacts.
+   */
+  currency?: string;
+  /**
    * Book-currency return minus the agent's own benchmark return, in
    * percentage points — FX-free by construction, and since 2026-08-14 the
    * quantity `rank` is ordered by. Absent in artifacts written before that
@@ -16,6 +23,14 @@ export type LeaderboardRow = {
   vs_benchmark_pp?: number | null;
   /** Same measure against the agent's coin-flip control. */
   vs_coinflip_pp?: number | null;
+  /**
+   * Book-currency return since inception, in percent — the figure the two
+   * `vs_*` fields are subtractions on, and the leg that closes the identity
+   * `(1 + return_pct) = (1 + return_local_pct) × (1 + fx_translation_pp)`.
+   * Equal to `return_pct` on EUR books. Absent in artifacts written before
+   * 2026-08-14; null when the book cannot be valued.
+   */
+  return_local_pct?: number | null;
   /**
    * EUR value of the book's currency vs day one, in percentage points — the
    * leaderboard tailwind a flat non-EUR book would show. Absent on EUR books.

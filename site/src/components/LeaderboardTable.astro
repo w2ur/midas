@@ -1,15 +1,15 @@
 ---
 import type { LeaderboardRow } from "@/lib/output";
 import { getAgent, isTradingAgent, type AgentId } from "@/lib/roster";
+import { AGENT_BENCHMARK_LABELS } from "@/lib/baselines";
+import { boardLayout } from "@/lib/board-sort";
 import AgentCrest from "@/components/AgentCrest.astro";
 
 interface Props {
   rows: LeaderboardRow[];
   reference?: { label: string; return_pct: number | null };
   showVsBench?: boolean;
-  vsBenchByAgent?: Record<string, number | null>;
   showVsCoinflip?: boolean;
-  vsCoinflipByAgent?: Record<string, number | null>;
   updatedAt?: string;
   trigger?: string;
   /**
@@ -24,7 +24,7 @@ interface Props {
   initialSort?: "return" | "vsBench" | "vsCoin" | "artifact";
 }
 
-const { rows, reference, showVsBench, vsBenchByAgent, showVsCoinflip, vsCoinflipByAgent, updatedAt, trigger } = Astro.props;
+const { rows, reference, showVsBench, showVsCoinflip, updatedAt, trigger } = Astro.props;
 const initialSort = Astro.props.initialSort ?? "artifact";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -67,25 +67,48 @@ const stampText = updatedAt
   ? `${isLive ? "Live" : "Session closed"} · ${fmtStampShort(updatedAt)}${trigger ? " · " + formatTrigger(trigger) : ""}`
   : null;
 
-// Diverging P&L bar: the largest absolute return maps to a half-width (50%) bar.
+// What the row leads with, and whether the decomposition pair renders —
+// derived from the rows themselves, unit-tested in lib/board-sort.
+const { leadIsExcess, showDecomp } = boardLayout(rows, Boolean(showVsBench));
+
+function leadValue(r: LeaderboardRow): number | null {
+  return leadIsExcess ? r.vs_benchmark_pp ?? null : r.return_pct;
+}
+
+// Diverging bar: the largest absolute lead value maps to a half-width (50%)
+// bar. The reference row only contributes when the lead is the raw return —
+// a passive benchmark has no excess over itself.
 const maxAbs = Math.max(
   0.01,
-  ...rows.map((r) => Math.abs(r.return_pct)),
-  reference && reference.return_pct !== null ? Math.abs(reference.return_pct) : 0,
+  ...rows.map((r) => Math.abs(leadValue(r) ?? 0)),
+  !leadIsExcess && reference && reference.return_pct !== null ? Math.abs(reference.return_pct) : 0,
 );
 function barWidth(pct: number): number {
   return Math.min(50, (Math.abs(pct) / maxAbs) * 50);
 }
 
-const hasDeltas = Boolean(showVsBench || showVsCoinflip);
+const hasDeltas = leadIsExcess || Boolean(showVsBench || showVsCoinflip);
 
-// Desktop ledger grid; the two vs-columns are conditional (archive view omits them).
-const trailing = [showVsBench ? "5rem" : "", showVsCoinflip ? "5rem" : ""].filter(Boolean).join(" ");
-const boardCols = `2.4rem 2rem minmax(0,1fr) 6.5rem minmax(4.5rem,1fr)${trailing ? " " + trailing : ""}`;
+// Desktop ledger grid. Two strings: the narrow one drops the decomposition
+// pair, which needs ~11rem the 48rem breakpoint does not have to give.
+const excessCols = `2.4rem 2rem minmax(0,1fr) 7rem minmax(4rem,1fr) 5.5rem${showVsCoinflip ? " 5rem" : ""}`;
+const excessColsWide = showDecomp
+  ? `2.4rem 2rem minmax(0,1fr) 7rem minmax(4rem,1fr) 5.5rem 6.5rem 4.5rem${showVsCoinflip ? " 5rem" : ""}`
+  : excessCols;
+const legacyTrailing = [showVsBench ? "5rem" : "", showVsCoinflip ? "5rem" : ""].filter(Boolean).join(" ");
+const legacyCols = `2.4rem 2rem minmax(0,1fr) 6.5rem minmax(4.5rem,1fr)${legacyTrailing ? " " + legacyTrailing : ""}`;
+const boardCols = leadIsExcess ? excessCols : legacyCols;
+const boardColsWide = leadIsExcess ? excessColsWide : legacyCols;
+
+function fmtPP(v: number | null | undefined): string {
+  if (v === null || v === undefined) return "—";
+  const s = v > 0 ? "+" : "";
+  return `${s}${v.toFixed(2)} pp`;
+}
 
 const refPct = reference?.return_pct ?? null;
 const refDir = refPct !== null && refPct < 0 ? "n" : "p";
-const refW = refPct === null ? 0 : barWidth(refPct);
+const refW = refPct === null || leadIsExcess ? 0 : barWidth(refPct);
 ---
 {stampText && (
   <p class={`board-stamp ${isLive ? "live" : ""}`.trim()}>
@@ -95,19 +118,38 @@ const refW = refPct === null ? 0 : barWidth(refPct);
 
 <div class="board-sorts" data-board-sorts hidden>
   <span class="bs-lab">Sort</span>
-  <button type="button" class="bs-chip" data-chip-key="return" aria-pressed={String(initialSort === "return")}>Return</button>
-  {showVsBench && <button type="button" class="bs-chip" data-chip-key="vsBench" aria-pressed={String(initialSort === "vsBench")}>vs Bench</button>}
-  {showVsCoinflip && <button type="button" class="bs-chip" data-chip-key="vsCoin" aria-pressed={String(initialSort === "vsCoin")}>vs Coin</button>}
+  <button type="button" class="bs-chip" data-chip-key="return" aria-pressed={initialSort === "return" ? "true" : "false"}>Return</button>
+  {showVsBench && <button type="button" class="bs-chip" data-chip-key="vsBench" aria-pressed={initialSort === "vsBench" ? "true" : "false"}>vs Bench</button>}
+  {showVsCoinflip && <button type="button" class="bs-chip" data-chip-key="vsCoin" aria-pressed={initialSort === "vsCoin" ? "true" : "false"}>vs Coin</button>}
 </div>
 
-<div class="board" role="table" aria-label="End-of-session leaderboard" style={`--board-cols:${boardCols}`} data-initial-sort={initialSort}>
+<div
+  class={`board ${leadIsExcess ? "lead-excess" : ""} ${showDecomp ? "has-decomp" : ""}`.trim()}
+  role="table"
+  aria-label="End-of-session leaderboard"
+  style={`--board-cols:${boardCols};--board-cols-wide:${boardColsWide}`}
+  data-initial-sort={initialSort}
+  data-lead-key={leadIsExcess ? "vsBench" : "return"}
+>
   <div class="lhead" role="row">
     <span role="columnheader">Rank</span>
     <span role="columnheader" aria-hidden="true"></span>
     <span role="columnheader">Agent</span>
-    <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort={initialSort === "return" ? "descending" : "none"}>Return EUR</span>
-    <span role="columnheader" class="ta-c">P&amp;L</span>
-    {showVsBench && <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>}
+    {leadIsExcess ? (
+      <>
+        <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>
+        <span role="columnheader" class="ta-c">Excess</span>
+        <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort={initialSort === "return" ? "descending" : "none"}>Ret EUR</span>
+        {showDecomp && <span role="columnheader" class="ta-r col-decomp">Ret local</span>}
+        {showDecomp && <span role="columnheader" class="ta-r col-decomp">FX</span>}
+      </>
+    ) : (
+      <>
+        <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort={initialSort === "return" ? "descending" : "none"}>Return EUR</span>
+        <span role="columnheader" class="ta-c">P&amp;L</span>
+        {showVsBench && <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>}
+      </>
+    )}
     {showVsCoinflip && <span role="columnheader" class="ta-r" data-sort-key="vsCoin" aria-sort={initialSort === "vsCoin" ? "descending" : "none"}>vs Coin</span>}
   </div>
 
@@ -115,11 +157,17 @@ const refW = refPct === null ? 0 : barWidth(refPct);
     const tradingAgent = isTradingAgent(row.agent) ? getAgent(row.agent) : null;
     const display = tradingAgent?.display_name ?? row.agent;
     const arch = tradingAgent?.archetype ?? "";
-    const retCls = row.return_pct > 0 ? "pos" : row.return_pct < 0 ? "neg" : "";
-    const dir = row.return_pct >= 0 ? "p" : "n";
-    const w = barWidth(row.return_pct);
-    const vs = vsBenchByAgent?.[row.agent];
-    const vcf = vsCoinflipByAgent?.[row.agent];
+    const vs = row.vs_benchmark_pp ?? null;
+    const vcf = row.vs_coinflip_pp ?? null;
+    const local = row.return_local_pct ?? null;
+    const fx = row.fx_translation_pp ?? null;
+    const benchLabel = AGENT_BENCHMARK_LABELS[row.agent] ?? null;
+    // The lead cell carries the row's headline figure; in excess mode a null
+    // (no baseline series) renders "—" and draws no bar, never a zero one.
+    const lead = leadValue(row);
+    const leadCls = lead === null ? "" : lead > 0 ? "pos" : lead < 0 ? "neg" : "";
+    const dir = (lead ?? 0) >= 0 ? "p" : "n";
+    const w = lead === null ? 0 : barWidth(lead);
     const isLeader = row.rank === 1;
     return (
       <div
@@ -142,15 +190,37 @@ const refW = refPct === null ? 0 : barWidth(refPct);
           </div>
         </div>
         <div class="l-fig" role="presentation">
-          <span class={`l-ret ${retCls}`.trim()} role="cell">{fmtPct(row.return_pct)}</span>
+          <div class="l-lead" role="cell">
+            <span class={`l-lead-fig ${leadCls}`.trim()}>
+              {leadIsExcess ? fmtPP(lead) : fmtPct(row.return_pct)}
+            </span>
+            {leadIsExcess && benchLabel && <span class="l-lead-sub">vs {benchLabel}</span>}
+          </div>
           <div class="l-bar" aria-hidden="true">
-            <span class={`fill ${dir}`} style={`width:${w.toFixed(2)}%`}></span>
+            {lead !== null && <span class={`fill ${dir}`} style={`width:${w.toFixed(2)}%`}></span>}
           </div>
         </div>
         {hasDeltas && (
           <div class="l-vs" role="presentation">
-            {showVsBench && (
-              <span class="l-bench" role="cell"><span class="k">vs bench</span> <span class={`v ${deltaCls(vs)}`.trim()}>{fmtDeltaShort(vs)}</span></span>
+            {leadIsExcess ? (
+              <>
+                <span class="l-ret2" role="cell"><span class="k">ret eur</span> <span class={`v ${deltaCls(row.return_pct)}`.trim()}>{fmtPct(row.return_pct)}</span></span>
+                {showDecomp && (
+                  <span class="l-local col-decomp" role="cell">
+                    <span class="k">ret local</span>{" "}
+                    <span class={`v ${deltaCls(local)}`.trim()}>
+                      {local === null ? "—" : `${fmtPct(local)} ${row.currency ?? ""}`.trim()}
+                    </span>
+                  </span>
+                )}
+                {showDecomp && (
+                  <span class="l-fx col-decomp" role="cell"><span class="k">fx</span> <span class={`v ${deltaCls(fx)}`.trim()}>{fmtDeltaShort(fx)}</span></span>
+                )}
+              </>
+            ) : (
+              showVsBench && (
+                <span class="l-bench" role="cell"><span class="k">vs bench</span> <span class={`v ${deltaCls(vs)}`.trim()}>{fmtDeltaShort(vs)}</span></span>
+              )
             )}
             {showVsCoinflip && (
               <span class="l-coin" role="cell"><span class="k">vs coin</span> <span class={`v ${deltaCls(vcf)}`.trim()}>{fmtDeltaShort(vcf)}</span></span>
@@ -172,14 +242,26 @@ const refW = refPct === null ? 0 : barWidth(refPct);
         </div>
       </div>
       <div class="l-fig" role="presentation">
-        <span class="l-ret" role="cell">{refPct === null ? "—" : fmtPct(refPct)}</span>
+        <div class="l-lead" role="cell">
+          {/* A passive reference has no excess over itself: in excess mode the
+              headline cell states that rather than borrowing its own return. */}
+          <span class="l-lead-fig">{leadIsExcess ? "ref" : refPct === null ? "—" : fmtPct(refPct)}</span>
+        </div>
         <div class="l-bar" aria-hidden="true">
-          {refPct !== null && <span class={`fill ${refDir}`} style={`width:${refW.toFixed(2)}%`}></span>}
+          {refPct !== null && !leadIsExcess && <span class={`fill ${refDir}`} style={`width:${refW.toFixed(2)}%`}></span>}
         </div>
       </div>
       {hasDeltas && (
         <div class="l-vs" role="presentation">
-          {showVsBench && <span class="l-bench" role="cell"><span class="k">vs bench</span> <span class="v ref-val">ref</span></span>}
+          {leadIsExcess ? (
+            <>
+              <span class="l-ret2" role="cell"><span class="k">ret eur</span> <span class="v ref-val">{refPct === null ? "—" : fmtPct(refPct)}</span></span>
+              {showDecomp && <span class="l-local col-decomp" role="cell"><span class="k">ret local</span> <span class="v ref-val">—</span></span>}
+              {showDecomp && <span class="l-fx col-decomp" role="cell"><span class="k">fx</span> <span class="v ref-val">—</span></span>}
+            </>
+          ) : (
+            showVsBench && <span class="l-bench" role="cell"><span class="k">vs bench</span> <span class="v ref-val">ref</span></span>
+          )}
           {showVsCoinflip && <span class="l-coin" role="cell"><span class="k">vs coin</span> <span class="v ref-val">ref</span></span>}
         </div>
       )}
@@ -243,6 +325,13 @@ const refW = refPct === null ? 0 : barWidth(refPct);
         if (rank) rank.textContent = String(i + 1);
         el.classList.toggle("leader", i === 0);
       });
+
+      // The #1 phosphor accents the LEAD figure, which is only the reason
+      // this row is on top while the board is sorted by the lead metric.
+      // Sorted by another column, it would highlight one number while a
+      // different one decided the order — the same self-contradiction the
+      // lead-metric change removed, reintroduced by a click.
+      board.classList.toggle("off-metric", activeKey !== board.dataset.leadKey);
 
       for (const h of headers) {
         const isActive = h.dataset.sortKey === activeKey;
@@ -395,18 +484,32 @@ const refW = refPct === null ? 0 : barWidth(refPct);
     text-overflow: ellipsis;
   }
 
-  /* line 2 — big RETURN + diverging P&L bar */
+  /* line 2 — big headline figure (excess, or return on legacy bundles) + bar */
   .l-fig { display: flex; align-items: center; gap: 0.75rem; }
-  .l-ret {
+  .l-lead { flex: none; min-width: 0; }
+  .l-lead-fig {
+    display: block;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-size: var(--fs-lg);
     font-weight: 500;
     white-space: nowrap;
-    flex: none;
+    line-height: 1.15;
   }
-  .l-ret.pos { color: var(--pos); }
-  .l-ret.neg { color: var(--neg); }
+  .l-lead-fig.pos { color: var(--pos); }
+  .l-lead-fig.neg { color: var(--neg); }
+  /* Names what the excess is measured against, so "vs Bench" is never an
+     unlabelled subtraction. Each agent has its own pre-registered benchmark. */
+  .l-lead-sub {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   .l-bar {
     position: relative;
@@ -428,9 +531,9 @@ const refW = refPct === null ? 0 : barWidth(refPct);
   .l-bar .fill.p { left: 50%; background: var(--pos); opacity: 0.85; }
   .l-bar .fill.n { right: 50%; background: var(--neg); opacity: 0.85; }
 
-  /* line 3 — vs-bench / vs-coin chips */
+  /* line 3 — secondary figures as chips (desktop unwraps them into columns) */
   .l-vs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-  .l-bench, .l-coin {
+  .l-bench, .l-coin, .l-ret2, .l-local, .l-fx {
     display: inline-flex;
     align-items: baseline;
     gap: 0.35rem;
@@ -444,8 +547,12 @@ const refW = refPct === null ? 0 : barWidth(refPct);
     padding: 0.2rem 0.5rem;
     white-space: nowrap;
   }
-  .l-bench .k, .l-coin .k { text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted); }
-  .l-bench .v, .l-coin .v { font-weight: 500; }
+  .l-bench .k, .l-coin .k, .l-ret2 .k, .l-local .k, .l-fx .k {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+  .l-bench .v, .l-coin .v, .l-ret2 .v, .l-local .v, .l-fx .v { font-weight: 500; }
   .v.pos { color: var(--pos); }
   .v.neg { color: var(--neg); }
 
@@ -455,15 +562,20 @@ const refW = refPct === null ? 0 : barWidth(refPct);
   }
   .lrow.leader::before { background: var(--accent); opacity: 1; box-shadow: var(--phosphor); }
   .lrow.leader .l-rank { color: var(--accent); }
-  .lrow.leader .l-ret { color: var(--accent); text-shadow: var(--phosphor); }
-  .lrow.leader .l-bar .fill.p { background: var(--accent); opacity: 1; box-shadow: var(--phosphor); }
+  /* The phosphor marks the RANKED figure — which is the excess, not the EUR
+     return, whenever the board is led by it. Suppressed under `.off-metric`
+     (set by the sort script when the reader orders on another column), where
+     the lead figure is no longer what put this row on top; the sign colours
+     underneath then apply as normal. */
+  .board:not(.off-metric) .lrow.leader .l-lead-fig { color: var(--accent); text-shadow: var(--phosphor); }
+  .board:not(.off-metric) .lrow.leader .l-bar .fill.p { background: var(--accent); opacity: 1; box-shadow: var(--phosphor); }
 
   /* ── reference footer row (MSCI World) ── */
   .lrow.ref { background: var(--bg-elev2); border-top: 1px solid var(--rule-strong); }
   .lrow.ref::before { background: var(--ref); opacity: 0.75; }
   .lrow.ref .l-rank,
   .lrow.ref .l-nm,
-  .lrow.ref .l-ret { color: var(--ref); }
+  .lrow.ref .l-lead-fig { color: var(--ref); }
   .lrow.ref .l-nm { font-size: var(--fs-sm); letter-spacing: 0.03em; text-transform: uppercase; }
   .lrow.ref .l-arch { color: var(--ink-muted); }
   .lrow.ref .l-chip { color: var(--ref); border-color: var(--ref); }
@@ -502,10 +614,10 @@ const refW = refPct === null ? 0 : barWidth(refPct);
     .l-id, .l-fig, .l-vs { display: contents; }
 
     .l-agent { flex: initial; }
-    .l-ret { flex: initial; text-align: right; }
+    .l-lead { flex: initial; text-align: right; }
     .l-bar { flex: initial; }
 
-    .l-bench, .l-coin {
+    .l-bench, .l-coin, .l-ret2, .l-local, .l-fx {
       display: block;
       background: none;
       border: 0;
@@ -515,7 +627,17 @@ const refW = refPct === null ? 0 : barWidth(refPct);
       color: var(--ink-muted);
       white-space: nowrap;
     }
-    .l-bench .k, .l-coin .k { display: none; }
+    .l-bench .k, .l-coin .k, .l-ret2 .k, .l-local .k, .l-fx .k { display: none; }
+
+    /* The decomposition pair needs ~11rem this breakpoint hasn't got; it
+       stays in the DOM as a chip only below the wide tier (see below). */
+    .board.has-decomp .col-decomp { display: none; }
+  }
+
+  /* ── WIDE ledger (>=64rem): the decomposition pair joins the grid ── */
+  @media (min-width: 64rem) {
+    .lhead, .lrow { grid-template-columns: var(--board-cols-wide); }
+    .board.has-decomp .col-decomp { display: block; }
   }
 
   /* ── Honesty disclaimer — the narrator's caveat, serif italic ── */
