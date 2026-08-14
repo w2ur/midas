@@ -1,0 +1,142 @@
+name: eu-close-probe
+
+# TEMPORARY DIAGNOSTIC — delete once the question below is answered.
+#
+# Question: at what hour, if any, is a European equity's DAILY CLOSE actually
+# usable from Yahoo?
+#
+# Why this exists. The OHLCV store has carried European closes one trading day
+# behind American ones since the desk started, and two attempts to fix it by
+# moving the fetch hour both failed because both were built on a guess about
+# the mechanism. What is now established, by measurement:
+#
+#   * 2026-08-11 20:47 UTC — SAP.DE returned a real price for 08-11, the SAME
+#     day, ~5 h after the 15:30 UTC bell.
+#   * 2026-08-10 23:24 UTC — the 22:30 fetch could not get 08-10 at all.
+#   * 2026-08-13 07:17 UTC — the 06:00 fetch got 08-12 as a row with a NULL
+#     close. Row served, price field empty. 380 European symbols in one run.
+#   * 2026-08-14 07:10 UTC — 08-12 now populated (175.96); 08-13 absent.
+#
+# So a European close appears to be: usable the same evening, then null or
+# absent for roughly a day, then usable again. Both the 22:30 and 06:00 fetches
+# sit inside that dead zone. THIS IS A HYPOTHESIS, not a finding — it rests on
+# a single evening observation, and two previous hypotheses about this same
+# behaviour were wrong. That is what this probe is for.
+#
+# It is READ-ONLY. It fetches nothing into the store, commits nothing, pushes
+# nothing. Results go to the job summary; collect them with:
+#   gh run list --workflow=eu-close-probe.yml --limit 20
+#   gh run view <id> --log
+#
+# It deliberately does NOT use .github/actions/push-with-retry, does not touch
+# data/, and cannot fail a session. A probe that can break the desk it measures
+# is not a probe.
+
+on:
+  schedule:
+    # Around the European close (15:30 UTC) and across the night, to bracket
+    # the transition in both directions. Weekdays only — no cash session to
+    # measure at a weekend.
+    - cron: "0 16 * * 1-5"   # ~30 min after the bell
+    - cron: "0 18 * * 1-5"
+    - cron: "0 20 * * 1-5"   # the hour the single evening observation came from
+    - cron: "0 22 * * 1-5"
+    - cron: "0 2 * * 2-6"    # overnight, next calendar day
+    - cron: "0 7 * * 2-6"    # the hour the 06:00 fetch actually runs, late
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eu-close-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Pinned to the root lockfile's version so the probe measures what the
+      # real fetch would see. If requirements.txt moves, move this with it.
+      - name: Install yfinance
+        run: pip install --quiet yfinance==1.5.1
+
+      - name: Probe
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          python - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import datetime as dt
+          import math
+          import os
+          import warnings
+
+          import yfinance as yf
+
+          warnings.filterwarnings("ignore")
+
+          # Spread across exchanges: a per-venue difference is exactly the kind
+          # of thing a single-symbol probe would miss. AAPL/MSFT are controls —
+          # if they ever go absent the run is measuring an outage, not Europe.
+          EUROPE = [
+              "SAP.DE", "SIE.DE", "ALV.DE",      # XETRA
+              "AI.PA", "OR.PA", "AIR.PA",        # Euronext Paris
+              "ASML.AS",                          # Euronext Amsterdam
+              "BP.L", "HSBA.L",                  # LSE
+              "ISP.MI",                           # Borsa Italiana
+              "SIKA.SW",                          # SIX
+          ]
+          CONTROLS = ["AAPL", "MSFT"]
+
+          now = dt.datetime.now(dt.timezone.utc)
+          # Five sessions back is enough to see the fill happen without making
+          # the request window itself a variable.
+          start = (now - dt.timedelta(days=7)).date()
+          end = (now + dt.timedelta(days=1)).date()
+          dates = [(now.date() - dt.timedelta(days=i)) for i in range(4)][::-1]
+
+          def state(v):
+              if v is None:
+                  return "absent"
+              if isinstance(v, float) and math.isnan(v):
+                  return "NULL"
+              return f"{float(v):.2f}"
+
+          print(f"## EU close probe — {now:%Y-%m-%d %H:%M} UTC")
+          print()
+          print(f"cron `{os.environ.get('SCHEDULE') or 'manual'}`")
+          print()
+          header = "| symbol | " + " | ".join(d.isoformat() for d in dates) + " |"
+          print(header)
+          print("|---" * (len(dates) + 1) + "|")
+
+          for sym in EUROPE + CONTROLS:
+              try:
+                  df = yf.download(
+                      sym, start=str(start), end=str(end),
+                      progress=False, auto_adjust=False, threads=False,
+                  )
+                  got = {}
+                  if df is not None and not df.empty:
+                      for ts, close in zip(df.index, df["Close"].squeeze()):
+                          got[ts.date().isoformat()] = close
+              except Exception as exc:  # a probe never fails the run
+                  print(f"| {sym} | error: {type(exc).__name__} |")
+                  continue
+              cells = " | ".join(state(got.get(d.isoformat())) for d in dates)
+              mark = "" if sym in EUROPE else " *(control)*"
+              print(f"| {sym}{mark} | {cells} |")
+
+          print()
+          print("`NULL` = Yahoo served the row with an empty price field.")
+          print("`absent` = no row for that date at all.")
+          PY
