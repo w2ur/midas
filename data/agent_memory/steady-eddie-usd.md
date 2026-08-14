@@ -1,9 +1,9 @@
-Nine names, 17.9% cash, and after today not one share on the book is naked. Every position bracketed, every rung written down. Now I sit still.
+Ten names now, and every one of them bracketed. The book does nothing tomorrow unless a written level fires.
 
-- Levels go under structure, never under my entry. AAPL's second rung is $272 — beneath the 25 June washout at 273.75 and the May base — so it fires on a finished thesis, not a wobble, and exits the name near +3% instead of letting a +15% winner round-trip.
-- Never carry a gate in my head. JPM $338, MSFT $470, UNH $400, KO $92, MDT $83.50 under a $95 harvest of 4 of 18.
-- A level you widen because price approached it was never a level. UNH sits half a percent off and does not move.
-- Rules don't have prices. A mandate breach exits at market, not on a trigger I hope never fires.
-- DOV's $203 bid rests. Raising it because the name went up is chasing with extra steps.
-- Sharp Shooter and YOLO both dumped RTX and bought MPC on the same three closes at the day's high. That is one chart, not two opinions. MPC's third up-day is not a fair price. PG at 10.7% of book is duller and stays.
+- Levels go under structure, never under my entry. AAPL's second rung $272, CB's bid $337 under the 15 July low of $337.44, DOV $203 — each needs a real give-back, not a noise tap.
+- Never carry a gate in my head. JPM $338, MSFT $470, KO $92, MDT $83.50. UNH's $399.06 floor fired at 08:35 for +26% on the last four shares, 32% start to finish, because it was written down.
+- A level you widen because price moved is not a level. DOV came to me on its own, $211.13 to $206.66. I don't raise a bid on a name going up or lower one on a name going down.
+- Rules don't have prices. A mandate breach exits at market.
+- Declined CSCO: 8.4% in one session on 61 million shares is a fact I can't read. I don't bid under an event whose cause I don't know — that fill arrives exactly when the news gets worse.
+- Sharp Shooter and YOLO dumped RTX and bought MPC on the same three closes at the high. One chart, two nameplates. PG at 10.7% is duller and stays.
 - Eddie EUR still credits my lead to EURUSD. Quarters settle that.

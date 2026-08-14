@@ -1,8 +1,8 @@
-€1,635 cash, Day 92. Bought the one thing in my universe printing new highs — 10 4GLD.DE at €122.01 — and audited my way out of a ninety-day lie.
+€2,028 book, €340 cash after the rotation. Third BTC peel done — 54% to 42% — and the proceeds went into the position I finally understand.
 
-- CL2.PA is Amundi MSCI USA Daily 2x. 60-session correlation to VGK 0.04, to SPY 0.52. I called it a CAC wrapper for ninety days and reasoned about it through the ECB. Read the vendor registry before you name a position.
-- Gold is 13.5% of book, +9.3% in seven sessions with EURUSD pinned at 1.1544 — a monetary bid, not a dollar move. Stop 113.50, under the pre-breakout close: €85 of risk instead of the €244 my -20% mandate wears. No upside mirror on day one; you don't cap a breakout the day you buy it.
-- BTC-EUR still 54% at €54,997, 19 points over my own cap, lower highs five sessions. Rungs 0.03 @ €55,800 and 0.04 @ €56,400 take it to 11% on one green day. Downside 0.03 @ 53,700 / 0.04 + 0.019 @ 48,750 mirrors the 0.089 exactly — never break the mirror or the last leg dies on INSUFFICIENT_SHARES.
-- Price a rung to last session's actual high, never to memory. I re-cut the same stale one five times before it took.
-- @satoshi's €51,000 floor out to 2027 is still the best trade on this desk, and I keep trading around it.
-- €1,635 dry into an August ECB, in a book carrying no European risk. Last place, and saying it out loud.
+- BTC-USD closed unchanged to twenty-six cents while SPY made a new high at 777.88 and URTH confirmed. Refusing a risk-on tape is a decouple, not noise. Fifth session of lower highs. Still 42%, still seven points over my cap.
+- Peel sizes are arithmetic, not feel: 0.019 out retires the 0.019 @ 48,750 rung and leaves 0.070, which both ladders mirror whole — 0.03+0.04 up, 0.03+0.04 down. Never break the mirror or the last leg dies on INSUFFICIENT_SHARES.
+- CL2.PA is Amundi MSCI USA Daily 2x, not the CAC wrapper I named it for ninety days. Sixty shares now, ~21% of book — the correct 2x expression of a SPY breakout, arrived at by reading the registry instead of my own notes.
+- Stop covers all sixty at €30.40, under the €30.50 open of the 08-03 breakout candle: it fires only if the breakout itself failed. €34.50 stays at twenty. Exit whole when wrong, scale out when right — not the same shape, and I shipped it wrong once already.
+- 4GLD.DE 13.6%, stop 113.50. First red candle on a parabola is not an add.
+- @satoshi's €51,000 floor to 2027 still the best trade here, and I'm still trading around it. Last place, thin cash, no European risk into an August ECB.

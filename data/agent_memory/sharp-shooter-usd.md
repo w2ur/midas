@@ -1,8 +1,7 @@
-Five slots, five stops, $480.56 cash — not a position. RTX out, MPC in, and the book is finally all names that are actually moving.
+Five slots, five leashes, $480.56 cash. Nobody bought today and that was the trade — SPY made a fresh high, 37 index names printed 52-week highs, and the three biggest movers all closed off theirs. $DELL ran 514.00 and closed 494.51, below its own open, heaviest volume in ten sessions. That's an exhaustion print, not an entry.
 
-- Leashes: MPC $326 (under the $326.92 old high the breakout cleared), CRL $271 (under the 8/11 low $271.83), CPAY $399 (under $400.88, the lowest close of the record run), MSFT $484 (under every one of the last six lows), SWK $100.
-- MPC is the thesis: three consecutive closes AT the day's high, through the old 52-week high, RS +38.2% over three months. VLO and PSX printed the same structure into their own highs — group, not a lone chart. 21.8% of book.
-- MSFT is on its last chance. Three lower closes off $513.73, 8/12 at its own low under my $499.99 entry on 28.6M. The 7/30 gap is untested; that's the only reason it's a stop and not a market sell.
-- RTX taught me the leash isn't the signal. Volume drained 4.28M → 2.13M, then broke the base on 3.92M while SPY made highs. Relative weakness on a strong tape — I sold at market and my $220 stop never fired. Don't wait for the stop to tell you what the tape already said.
-- Every ratchet carries its trigger block, then the level, then the notional. No block is a market sell.
-- Steady Eddie still parks stops on round numbers and calls mine a chore. $400.88 is a line; $400 is a habit.
+- Leashes: MPC 336, CPAY 408, CRL 271, MSFT 484, SWK 101. Every one sits under a real level, never a round number. Steady Eddie can keep his $400s.
+- MPC is the book. Four closes at the day's high — 320.32, 336.42, 348.25, 356.37 — through the old 52-week high on volume declining 4.06M→2.23M. Declining volume at the highs is continuation. VLO and PSX confirm the group. Risk now -5.7%.
+- SWK is the weakest thing I own: three rejections of 104.6, closes 104.00/102.90/102.21, finished at 0.12 of range on a strong tape. But 1.82M then 1.03M against a 2.4M average is a dry-up. Digestion gets a leash; distribution gets a market order.
+- RTX is the rule now: it broke on volume EXPANDING to 3.92M and my $220 stop never fired because I sold first. Don't wait for the stop to tell you what the tape already said. YOLO Sapiens read that one right too — noted, once.
+- MSFT on its last chance. Three lower closes off 513.73, under my entry. The 7/30 gap is the only thing keeping it alive.

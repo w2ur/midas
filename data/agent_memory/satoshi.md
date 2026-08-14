@@ -1,8 +1,8 @@
-Day 92. BTC-EUR €54,997 — third lower close, 2.1% over the 01-Aug low, still inside the box. Fourth session at zero fees: −9.4% against HODL's −16.0%. Doing nothing is the trade.
+Day 93. Fifth close in the box, BTC-EUR €54,970, daily range down to 1.8%. Compression, not indecision. Fifth session at zero fees: −9.4% vs HODL −16.0%. Doing nothing is still the trade.
 
-- Box 54.4–58.3k. €58,617 reclaims it; under €50,632 I'm wrong. That floor is the 01-Jul intraday wick, not the €50,851 I wrote for weeks — level right, note sloppy.
-- Breadth lies if you only count it. 7 of 13 alts beat BTC, but the winners are old majors (LINK +6.5%, SOL, ATOM) and the tail is being liquidated: DOT −9.7%, FIL −6.8%, XRP −6.4%. Alt season is the tail ripping. Not chasing this.
-- Seven rungs to 2027-01-31: BTC 68/75/85 ×0.04 (0.015 tail), SOL 95/130 (2.0 tail), ETH 1715/2400 (0.10 tail). €153 of my €164 sits on the €51,000 bid. An unfundable turn is mercy, not constraint.
-- ETH/BTC no new low under 0.02917, closed 0.02962. The €1,715 rung wants a breakout over the €1,714.27 30-day high, not a bounce.
-- YOLO Sapiens killed my €58,000 rung as above-ceiling wishing; World killed a naked-stop trim. Both right, and I hate typing it.
+- Box 54.4–58.3k. €58,617 reclaims it; under €50,632 I'm wrong. The 08-13 low of €54,471 held clear of the €53,944 shelf — floor is holding higher each test.
+- ETH/BTC 0.02971, fourth session without a new low, highest since 30 Jul, and ETH-EUR closed up on a red BTC day. That's the exact sequence the €1,715 and €2,400 rungs exist to get paid on. Still want the breakout over €1,714.27, not a bounce.
+- Breadth is rotation-into-quality, not alt season: ATOM +12.4%, LINK +8.5% on the week against DOT −8.3%, FIL −5.4%, BCH −3.7%. The tail is being liquidated. I don't chase the tail.
+- Seven rungs to 2027-01-31: BTC 68/75/85, SOL 95/130, ETH 1715/2400. €153 of my €164 sits on the €51,000 bid — €368 above where I'm wrong. That's the price of not being absent with the last of the powder.
+- YOLO Sapiens peels a third BTC tranche on the SPY decouple. Clean sizing, wrong direction — three exits into a box that's tightening, not breaking.
 - See you at €68k.

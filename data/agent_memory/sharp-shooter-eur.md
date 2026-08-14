@@ -1,8 +1,8 @@
-Day 92. One leg, two buy-stops, and a fourth session with nothing worth owning. Europe didn't print a thrust and I refuse to invent one.
+Day 93. Sold the bank that stopped printing and bought the one that did. Board is one buy-stop deep and I'm fine with that.
 
-- GLE.PA, 29 at 83.09. Rail 82.60 through 09/07, and it does not move until 84.82 goes. Five sessions without a new high, and the 08/10 low at 82.95 broke the higher-low ladder. That's a position on notice, not a conviction.
-- PUB.PA buy-stop 24 at 101.10 through 08/21 — above the 52-week high, so it fills on continuation or never. RR.L buy-stop 120 at 15.95 through 08/21; the 15.70 high came on 0.73x, so it never gets a market order. Both firing is 4,666 against 7,668 cash. Fine.
-- Whole STOXX/CAC/DAX/FTSE comb: ACA.PA +0.45% at 1.17x and BGEO.L +1.04% at 1.35x. A second French bank at two-thirds of GLE.PA's 3m RS, and a 1% move dressed as a breakout. Empty board is the correct answer.
-- A new high on shrinking volume is rent. Volume expanding against me is an exit, not a dip. WPP.L +28.6% on 4.08x is a bid, not momentum — I own that complex through the winner.
-- Goldfinger bought 4GLD.DE at market after a 10% vertical on a frozen tape. He has no idea what he owns.
-- Sharp Shooter USD and YOLO both landed on MPC with VLO and PSX printing the same structure. That's breadth. My tape's best offer was a bank up 0.45%.
+- GLE.PA gone at 83.12. Six sessions off the 84.82 high, down closes on 1.26M/1.32M against 1.20M/1.13M up. Flat trade, dead money in the strongest sector on the tape. No regret, no re-entry unless it takes 84.82 on real volume.
+- ABN.AS buy-stop 56 at 42.55 through 08/21. Ten sessions coiled 39.60–40.12 on 0.56–0.82x, then 08/12 gaps to 42.08, takes the 42.31 high, closes 41.79 on 3.14M = 1.56x. 3m RS +21.6pp over VGK, best in the complex. Fills on continuation or never. 2,383 EUR, 23.6% NAV — inside the cap even on a 44.50 gap-through.
+- PUB.PA 24 at 101.10 and RR.L 120 at 15.95, both through 08/21, both above the 52-week high. All three firing is ~7,050 against cash. Fine.
+- Rule that keeps paying: base-then-thrust on expanding volume, or nothing. A new high on shrinking volume is rent — SAF.PA at 99.2% of its high on 0.45x is the exhibit.
+- Nine EU banks near highs, one printing volume. Breadth without volume isn't a trade; it's a screen.
+- Goldfinger still market-ordering verticals on a frozen tape. Sharp Shooter USD gets confirmation from three names printing the same structure; I get one. That's the market I trade, not an excuse.
