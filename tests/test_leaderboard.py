@@ -1,6 +1,8 @@
 import math
 from datetime import date, datetime, timezone
 
+import pytest
+
 from engine.leaderboard import (
     annualized_sharpe,
     build_current_leaderboard_artifact,
@@ -167,7 +169,9 @@ def test_vs_benchmark_uses_local_returns_not_eur_translation(monkeypatch):
 
     monkeypatch.setattr(lb, "portfolio_mtm_eur", lambda summary, on: 11631.0)
     monkeypatch.setattr(lb, "mtm_base_currency", lambda summary, on: 13426.31)
-    monkeypatch.setattr(lb, "_initial_capital_base", lambda agent_id, currency: 11783.09)
+    monkeypatch.setattr(
+        lb, "_initial_capital_base", lambda agent_id, currency: 11783.09
+    )
     monkeypatch.setattr(lb, "_benchmark_return_pct", lambda agent_id, on: 8.78)
     monkeypatch.setattr(lb, "_coinflip_return_pct", lambda agent_id, on: None)
     monkeypatch.setattr(lb, "_fx_translation_pp", lambda currency, on: None)
@@ -258,7 +262,9 @@ def test_local_return_pct_converts_inception_capital(monkeypatch, midas_data_roo
     # USD book: inception capital is EUR 10k converted at day one, so the
     # local return is measured off ~$11,783 — not $10,000.
     monkeypatch.setattr(lb, "mtm_base_currency", lambda summary, on: 13426.31)
-    monkeypatch.setattr(lb, "_initial_capital_base", lambda agent_id, currency: 11783.09)
+    monkeypatch.setattr(
+        lb, "_initial_capital_base", lambda agent_id, currency: 11783.09
+    )
     got = lb._local_return_pct("usd-book", {"currency": "USD"}, date(2026, 8, 14))
     assert abs(got - 13.9456) < 0.001
 
@@ -266,7 +272,11 @@ def test_local_return_pct_converts_inception_capital(monkeypatch, midas_data_roo
     monkeypatch.setattr(lb, "mtm_base_currency", lambda summary, on: 10127.0)
     monkeypatch.setattr(lb, "_initial_capital_base", lambda agent_id, currency: 10000.0)
     assert (
-        abs(lb._local_return_pct("eur-book", {"currency": "EUR"}, date(2026, 8, 14)) - 1.27) < 1e-9
+        abs(
+            lb._local_return_pct("eur-book", {"currency": "EUR"}, date(2026, 8, 14))
+            - 1.27
+        )
+        < 1e-9
     )
 
 
@@ -330,10 +340,13 @@ def test_baseline_return_pct_survives_non_dict_rows(midas_data_root):
     assert lb._benchmark_return_pct("a", date(2026, 5, 23)) is None
 
 
+@pytest.mark.live_cast
 def test_initial_capital_base_uses_per_agent_spec(midas_data_root):
     # The Manager's roster entry declares initial_capital 2000; the traders
     # inherit the global 10000. A fork overriding one agent's capital must
     # not have that agent's local return measured off the global anchor.
+    # live_cast: hardcodes live roster ids — on the demo desk every agent
+    # inherits the global anchor and the override branch has no fixture.
     from engine import leaderboard as lb
 
     assert lb._initial_capital_base("the-manager", "EUR") == 2000.0
