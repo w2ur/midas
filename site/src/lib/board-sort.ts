@@ -56,6 +56,52 @@ export function orderRows(recs: SortRec[], key: SortKey, dir: SortDir): string[]
     .map((r) => r.agent);
 }
 
+/** The subset of a leaderboard row the layout decision reads. */
+export interface LayoutRec {
+  vs_benchmark_pp?: number | null;
+  fx_translation_pp?: number | null;
+}
+
+export interface BoardLayout {
+  /**
+   * True when the benchmark-relative excess is the row's headline figure —
+   * the number the bar scales and the #1 phosphor marks.
+   */
+  leadIsExcess: boolean;
+  /** True when the book-currency return and FX translation columns render. */
+  showDecomp: boolean;
+}
+
+/**
+ * Decide what the board leads with, from the data rather than from a caller's
+ * assertion.
+ *
+ * The board has ranked on `vs_benchmark_pp` since 2026-08-14 while still
+ * leading with the EUR return, so its #1 row read -9.43% above nine rows that
+ * looked better. The ranked quantity has to BE the headline or the board
+ * argues with itself — but only where that quantity exists: bundles published
+ * before that date carry no `vs_benchmark_pp`, and re-leading them on a metric
+ * that did not exist when they were published would restate history in the
+ * reader's eye. Same era-awareness as the `initialSort` "artifact" default and
+ * as `scripts.restate_bundles`.
+ *
+ * `some`, not `every`: one agent without a baseline series ranks null-last and
+ * renders "—", which is not a reason to demote the whole board.
+ *
+ * The decomposition pair says nothing on an all-EUR desk, where
+ * `return_local_pct` equals `return_pct` by construction and every FX cell is
+ * "—". It is keyed on the FX leg because that is exactly the condition under
+ * which the two returns differ.
+ */
+export function boardLayout(rows: LayoutRec[], showVsBench: boolean): BoardLayout {
+  const leadIsExcess =
+    showVsBench && rows.some((r) => r.vs_benchmark_pp !== null && r.vs_benchmark_pp !== undefined);
+  const showDecomp =
+    leadIsExcess &&
+    rows.some((r) => r.fx_translation_pp !== null && r.fx_translation_pp !== undefined);
+  return { leadIsExcess, showDecomp };
+}
+
 /** Read a numeric data attribute. Anything not finite reads back as null. */
 export function parseValue(raw: string | null | undefined): number | null {
   if (raw === null || raw === undefined) return null;
