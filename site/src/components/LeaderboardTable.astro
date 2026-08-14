@@ -14,14 +14,18 @@ interface Props {
   trigger?: string;
   /**
    * Which column the board arrives sorted by. The live board passes
-   * "vsBench" (the artifact's `rank` is ordered by it since 2026-08-14);
-   * archive views keep "return", matching their historical row order.
+   * "vsBench" (the artifact's `rank` is ordered by it since 2026-08-14).
+   * The default, "artifact", asserts nothing: rows render in the published
+   * artifact's own rank order, no column is marked sorted, and the client
+   * never reorders until the reader asks — archive pages hold bundles from
+   * both ranking eras, so any fixed column claim would be wrong for one of
+   * them, and a client-side re-sort would rewrite published ranks.
    */
-  initialSort?: "return" | "vsBench" | "vsCoin";
+  initialSort?: "return" | "vsBench" | "vsCoin" | "artifact";
 }
 
 const { rows, reference, showVsBench, vsBenchByAgent, showVsCoinflip, vsCoinflipByAgent, updatedAt, trigger } = Astro.props;
-const initialSort = Astro.props.initialSort ?? "return";
+const initialSort = Astro.props.initialSort ?? "artifact";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -215,11 +219,16 @@ const refW = refPct === null ? 0 : barWidth(refPct);
     const chips = chipBar ? Array.from(chipBar.querySelectorAll<HTMLElement>("[data-chip-key]")) : [];
 
     const declared = board.dataset.initialSort;
-    let activeKey: SortKey =
-      declared === "vsBench" || declared === "vsCoin" ? declared : "return";
+    // null = "artifact" mode: the server-rendered order IS the published
+    // ranking; nothing is reordered until the reader picks a column.
+    let activeKey: SortKey | null =
+      declared === "return" || declared === "vsBench" || declared === "vsCoin"
+        ? declared
+        : null;
     let activeDir: SortDir = "desc";
 
     function apply() {
+      if (activeKey === null) return;
       const order = orderRows(recs, activeKey, activeDir);
       for (const agent of order) {
         const el = byAgent.get(agent);

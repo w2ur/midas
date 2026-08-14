@@ -77,7 +77,7 @@ def _patch_baselines_absent(monkeypatch):
 
     monkeypatch.setattr(lb, "_benchmark_return_pct", lambda agent_id, on: None)
     monkeypatch.setattr(lb, "_coinflip_return_pct", lambda agent_id, on: None)
-    monkeypatch.setattr(lb, "_local_return_pct", lambda summary, on: None)
+    monkeypatch.setattr(lb, "_local_return_pct", lambda agent_id, summary, on: None)
     monkeypatch.setattr(lb, "_fx_translation_pp", lambda currency, on: None)
 
 
@@ -139,7 +139,7 @@ def test_build_leaderboard_rows_ranks_on_vs_benchmark_not_raw_return(monkeypatch
     monkeypatch.setattr(
         lb,
         "_local_return_pct",
-        lambda summary, on: {"a": 20.0, "b": 10.0}[summary["agent_id"]],
+        lambda agent_id, summary, on: {"a": 20.0, "b": 10.0}[agent_id],
     )
     monkeypatch.setattr(
         lb,
@@ -167,7 +167,7 @@ def test_vs_benchmark_uses_local_returns_not_eur_translation(monkeypatch):
 
     monkeypatch.setattr(lb, "portfolio_mtm_eur", lambda summary, on: 11631.0)
     monkeypatch.setattr(lb, "mtm_base_currency", lambda summary, on: 13426.31)
-    monkeypatch.setattr(lb, "_initial_capital_base", lambda currency: 11783.09)
+    monkeypatch.setattr(lb, "_initial_capital_base", lambda agent_id, currency: 11783.09)
     monkeypatch.setattr(lb, "_benchmark_return_pct", lambda agent_id, on: 8.78)
     monkeypatch.setattr(lb, "_coinflip_return_pct", lambda agent_id, on: None)
     monkeypatch.setattr(lb, "_fx_translation_pp", lambda currency, on: None)
@@ -194,7 +194,7 @@ def test_rows_without_benchmark_rank_after_rows_with_one(monkeypatch):
     monkeypatch.setattr(
         lb,
         "_local_return_pct",
-        lambda summary, on: {"lo": 1.0, "hi": None, "b": 5.0}[summary["agent_id"]],
+        lambda agent_id, summary, on: {"lo": 1.0, "hi": None, "b": 5.0}[agent_id],
     )
     monkeypatch.setattr(
         lb,
@@ -258,15 +258,15 @@ def test_local_return_pct_converts_inception_capital(monkeypatch, midas_data_roo
     # USD book: inception capital is EUR 10k converted at day one, so the
     # local return is measured off ~$11,783 — not $10,000.
     monkeypatch.setattr(lb, "mtm_base_currency", lambda summary, on: 13426.31)
-    monkeypatch.setattr(lb, "_initial_capital_base", lambda currency: 11783.09)
-    got = lb._local_return_pct({"currency": "USD"}, date(2026, 8, 14))
+    monkeypatch.setattr(lb, "_initial_capital_base", lambda agent_id, currency: 11783.09)
+    got = lb._local_return_pct("usd-book", {"currency": "USD"}, date(2026, 8, 14))
     assert abs(got - 13.9456) < 0.001
 
     # EUR book: no conversion involved.
     monkeypatch.setattr(lb, "mtm_base_currency", lambda summary, on: 10127.0)
-    monkeypatch.setattr(lb, "_initial_capital_base", lambda currency: 10000.0)
+    monkeypatch.setattr(lb, "_initial_capital_base", lambda agent_id, currency: 10000.0)
     assert (
-        abs(lb._local_return_pct({"currency": "EUR"}, date(2026, 8, 14)) - 1.27) < 1e-9
+        abs(lb._local_return_pct("eur-book", {"currency": "EUR"}, date(2026, 8, 14)) - 1.27) < 1e-9
     )
 
 
@@ -313,3 +313,45 @@ def test_build_current_leaderboard_artifact_shape(monkeypatch):
             }
         ],
     }
+
+
+def test_baseline_return_pct_survives_non_dict_rows(midas_data_root):
+    # "Returns None — never raises": a truncated/corrupt series that parses
+    # to a list of non-dicts must degrade, not crash the leaderboard write
+    # in the session, the watcher, and the weekend refresh.
+    import json as _json
+
+    from engine import leaderboard as lb
+    from engine.config import get_config
+
+    bdir = get_config().baselines_dir / "a"
+    bdir.mkdir(parents=True)
+    (bdir / "benchmark.json").write_text(_json.dumps(["junk", 3, None]))
+    assert lb._benchmark_return_pct("a", date(2026, 5, 23)) is None
+
+
+def test_initial_capital_base_uses_per_agent_spec(midas_data_root):
+    # The Manager's roster entry declares initial_capital 2000; the traders
+    # inherit the global 10000. A fork overriding one agent's capital must
+    # not have that agent's local return measured off the global anchor.
+    from engine import leaderboard as lb
+
+    assert lb._initial_capital_base("the-manager", "EUR") == 2000.0
+    assert lb._initial_capital_base("steady-eddie-eur", "EUR") == 10000.0
+    # Unknown agent (bundle-derived summary on a fork) → global anchor.
+    assert lb._initial_capital_base("no-such-agent", "EUR") == 10000.0
+
+
+def test_rank_leaderboard_rows_is_shared_and_era_tolerant():
+    # Public ranking helper used by restate_bundles: rows carrying
+    # vs_benchmark_pp rank on it; rows without the key (pre-2026-08-14
+    # bundles) fall back to raw return — missing key and null are the same.
+    from engine.leaderboard import rank_leaderboard_rows
+
+    rows = [
+        {"agent": "old", "return_pct": 9.0},
+        {"agent": "meas", "return_pct": 1.0, "vs_benchmark_pp": 2.0},
+    ]
+    ranked = rank_leaderboard_rows(rows)
+    assert [r["agent"] for r in ranked] == ["meas", "old"]
+    assert ranked[0]["rank"] == 1 and ranked[1]["rank"] == 2

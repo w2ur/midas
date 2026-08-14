@@ -29,7 +29,11 @@ const VALUE: Record<SortKey, (r: SortRec) => number | null> = {
  *
  * Nulls sort last in BOTH directions: a missing baseline is an absence of
  * information, and must never be rendered as the worst — or the best — score.
- * Ties break by agent id so the order never shuffles between renders.
+ * Among themselves, null rows order by raw EUR return (descending, whatever
+ * `dir` says) — the exact rule `engine.leaderboard.rank_leaderboard_rows`
+ * applies to its own null tail, so a client re-sort can never renumber rows
+ * the engine already ranked. Ties break by agent id so the order never
+ * shuffles between renders.
  *
  * The MSCI World reference row is not an agent and is never passed in; the
  * caller pins it to the bottom unconditionally.
@@ -40,7 +44,10 @@ export function orderRows(recs: SortRec[], key: SortKey, dir: SortDir): string[]
     .sort((a, b) => {
       const va = pick(a);
       const vb = pick(b);
-      if (va === null && vb === null) return a.agent.localeCompare(b.agent);
+      if (va === null && vb === null) {
+        if (a.return_pct !== b.return_pct) return b.return_pct - a.return_pct;
+        return a.agent.localeCompare(b.agent);
+      }
       if (va === null) return 1;
       if (vb === null) return -1;
       if (va !== vb) return dir === "desc" ? vb - va : va - vb;

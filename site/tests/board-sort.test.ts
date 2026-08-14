@@ -41,13 +41,22 @@ describe("orderRows", () => {
     expect(orderRows(RECS, "vsBench", "asc").at(-1)).toBe("world");
   });
 
-  it("orders multiple nulls among themselves by agent id", () => {
+  it("orders multiple nulls among themselves by raw return desc — the engine's null-tail rule", () => {
+    // Regression: review 2026-08-14. The null tail used to order
+    // alphabetically while engine rank_leaderboard_rows orders it by raw
+    // EUR return, so a client re-sort could renumber engine-ranked rows.
     const withNulls: SortRec[] = [
-      { agent: "zulu", return_pct: 0, vsBench: null, vsCoin: null },
-      { agent: "alpha", return_pct: 0, vsBench: null, vsCoin: null },
+      { agent: "aardvark", return_pct: -20, vsBench: null, vsCoin: null },
+      { agent: "zulu", return_pct: 10, vsBench: null, vsCoin: null },
       { agent: "mike", return_pct: 0, vsBench: 1, vsCoin: 1 },
     ];
-    expect(orderRows(withNulls, "vsBench", "desc")).toEqual(["mike", "alpha", "zulu"]);
+    expect(orderRows(withNulls, "vsBench", "desc")).toEqual(["mike", "zulu", "aardvark"]);
+    // Equal raw returns fall back to agent id, deterministically.
+    const tiedNulls: SortRec[] = [
+      { agent: "zulu", return_pct: 0, vsBench: null, vsCoin: null },
+      { agent: "alpha", return_pct: 0, vsBench: null, vsCoin: null },
+    ];
+    expect(orderRows(tiedNulls, "vsBench", "desc")).toEqual(["alpha", "zulu"]);
   });
 
   it("breaks ties deterministically by agent id", () => {
