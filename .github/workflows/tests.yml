@@ -117,3 +117,65 @@ jobs:
       - name: Run site test suite
         working-directory: site
         run: npm test
+
+  # Both suites above are unconditional, which is deliberate — but "unconditional"
+  # is a property of the file as it reads today, not a guarantee. Add a `paths`
+  # filter, an `if:`, or drop a job from a `needs:` list, and the run still ends
+  # green: Actions reports a skipped job as `skipped` and an absent one as
+  # nothing, and neither is a failure. The suites would then be
+  # green-by-never-executing — the same defect the `site-tests` comment above
+  # records, one level up.
+  #
+  # So this job asserts a NAMED list rather than aggregating whatever `needs`
+  # happens to contain. The shorter form is worse than no gate at all:
+  #
+  #   $ echo '{}' | jq -e 'all(.[]; .result == "success")'
+  #   true          # exit 0 — zero coverage reports success
+  #
+  # `all` over an empty collection is vacuously true. Keep the loop.
+  # If a suite is added to this workflow, add its job id to EXPECTED.
+  gate:
+    needs: [pytest, site-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aucune suite ne peut être verte par omission
+        env:
+          # Through the environment, not interpolated into the script body:
+          # ${{ }} inside `run:` is textual substitution into a shell.
+          NEEDS: ${{ toJSON(needs) }}
+          EXPECTED: '["pytest","site-tests"]'
+        run: |
+          set -uo pipefail
+          fail=0
+
+          if [ "$(jq -r 'length' <<<"$EXPECTED")" -eq 0 ]; then
+            echo "::error::aucune suite attendue — une porte sans attente est verte par omission"
+            exit 1
+          fi
+
+          echo "--- suites attendues ---"
+          while IFS= read -r job; do
+            res=$(jq -r --arg j "$job" '.[$j].result // "ABSENT"' <<<"$NEEDS")
+            if [ "$res" = "success" ]; then
+              printf '  ok        %-12s %s\n' "$job" "$res"
+            else
+              printf '  MANQUANT  %-12s %s\n' "$job" "$res"
+              echo "::error::$job était attendu et vaut '$res'"
+              fail=1
+            fi
+          done < <(jq -r '.[]' <<<"$EXPECTED")
+
+          while IFS= read -r job; do
+            res=$(jq -r --arg j "$job" '.[$j].result' <<<"$NEEDS")
+            case "$res" in
+              success|skipped) ;;
+              *) echo "::error::$job = $res"; fail=1 ;;
+            esac
+          done < <(jq -r 'keys[]' <<<"$NEEDS")
+
+          if [ "$fail" -eq 0 ]; then
+            echo "Porte verte : les deux suites ont tourné et sont passées."
+          fi
+          exit "$fail"

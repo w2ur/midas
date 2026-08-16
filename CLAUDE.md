@@ -33,8 +33,19 @@ pytest -q            # tests/ AND backtester/tests — both are in `testpaths`
 cd site && npm test  # the vitest suite; `npm test` is the authority on the count
 ```
 
-`.github/workflows/tests.yml` runs **two** jobs: `pytest` and `site-tests`.
-Neither is path-filtered per job — the site suite reads committed engine
+`.github/workflows/tests.yml` runs **two** suites — `pytest` and `site-tests` —
+behind a third job, `gate`, which is the one a branch protection rule would
+require. `gate` asserts a **named** list (`["pytest","site-tests"]`) rather than
+aggregating whatever `needs` happens to hold, because Actions reports a skipped
+job as `skipped` and an absent one as nothing, and neither is a failure. The
+short form is worse than no gate: `jq 'all(.[]; .result=="success")'` over an
+empty set returns `true`, so a suite dropped from `needs:` would report success
+on zero coverage. **Add a suite here and you must add its job id to `EXPECTED`.**
+Note the gate is advisory on this repo — branch protection needs GitHub Pro on a
+private repo (measured: `gh api repos/w2ur/midas/branches/main/protection` → 403),
+so it shows as a red X, not a blocked merge button.
+
+Neither suite is path-filtered per job — the site suite reads committed engine
 artifacts (the OHLCV store, `data/ticker_currencies.json`, METHODOLOGY.md
 anchors), so "site tests only matter when `site/**` changes" is false. Both had
 coverage that existed but never executed: the site suite had no CI job at all
