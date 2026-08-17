@@ -42,12 +42,16 @@ on:
     # five-week European staleness, measured rather than hypothesised. AAPL and
     # MSFT stayed populated throughout, so the withdrawal is European-specific;
     # LSE withdraws later than XETRA/Euronext, and SIKA.SW (SIX) never withdrew.
-    - cron: "0 16 * * 1-5"   # ~30 min after the bell
-    - cron: "0 18 * * 1-5"
-    - cron: "0 20 * * 1-5"   # the hour the single evening observation came from
-    - cron: "0 22 * * 1-5"
-    - cron: "0 2 * * 2-6"    # overnight, next calendar day
-    - cron: "0 7 * * 2-6"    # the hour the 06:00 fetch actually runs, late
+    # Phase 1's crons are RETIRED now that it is answered — they cost 25 runs
+    # a week to keep re-confirming a settled result, and this repo is on a
+    # GitHub Actions budget (the whole schedule was cut from 672 runs/week to
+    # ~242 on 2026-08-17). `0 18` survives as phase 2's POSITIVE CONTROL, not
+    # as a leftover: without a sample known to precede the withdrawal, a NULL
+    # at 20:30 cannot be told apart from a close that never appeared that day
+    # at all — which is the same "a check that cannot fail" trap the rest of
+    # this repo is built against. Retired: `0 16 * * 1-5`, `0 2 * * 2-6`,
+    # `0 7 * * 2-6`.
+    - cron: "0 18 * * 1-5"   # positive control: populated well before the edge
     #
     # Phase 2 (2026-08-17, OPEN) — where exactly, between 20:18 and 22:23, is
     # the European close withdrawn? It matters because AAPL's same-day close was
@@ -62,10 +66,13 @@ on:
     # merely scatters the samples across the window we want covered. That turns
     # the scheduler's worst property into sampling coverage, at ~2 runner-minutes
     # per sample instead of the ~135 a 15-minute loop over the same window costs.
-    # (`0 22 * * 1-5` already sits in phase 1 above and covers the far edge.)
     - cron: "30 20 * * 1-5"
     - cron: "0 21 * * 1-5"
     - cron: "30 21 * * 1-5"
+    # The far edge, measured NULL on 08-14. Both ends of the bracket have to
+    # survive the trim: three populated samples with no known-NULL sample
+    # after them cannot distinguish a withdrawal at 21:45 from one at 23:00.
+    - cron: "0 22 * * 1-5"
   workflow_dispatch:
 
 permissions:
