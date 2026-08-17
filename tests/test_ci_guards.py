@@ -1121,3 +1121,65 @@ class TestBacktesterImageShipsCurrencyLayers:
             "expected the map-less root to mis-resolve PHAG.L; got "
             f"{degraded_currency}/{degraded_scale}"
         )
+
+
+class TestAdjudicationLedgerIsCommitted:
+    """The corporate-action ledger must leave the runner.
+
+    It is what stops `apply_split` running twice on one action, and it is the
+    disclosure artifact for a path that can move a published share count. A
+    ledger that exists only for the life of a job would let every run believe
+    nothing had ever been adjudicated — the double-apply the file exists to
+    prevent, arriving nightly.
+    """
+
+    LEDGER = "data/market/corporate_actions.jsonl"
+    WORKFLOWS = ["fetch-ohlcv.yml", "resweep-held-tickers.yml"]
+
+    def _push_paths(self, workflow: str) -> str:
+        spec = yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / workflow).read_text(encoding="utf-8")
+        )
+        steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+        pushes = [
+            s for s in steps if str(s.get("uses", "")).endswith("actions/push-with-retry")
+        ]
+        assert pushes, f"{workflow} has no push-with-retry step"
+        return " ".join(str(s["with"]["paths"]) for s in pushes)
+
+    @pytest.mark.parametrize("workflow", WORKFLOWS)
+    def test_whatever_can_apply_a_split_also_stages_the_holdings(self, workflow):
+        """Both split paths mutate data/portfolios/ — so both must commit it.
+
+        `_apply_split_to_holders` writes portfolio.json. Adjudication can only
+        fire from the nightly fetch (quarantine is off on a resweep), and that
+        workflow staged the ledger but NOT the holdings: the share correction
+        would die with the runner while the ledger row saying it was applied
+        landed on main. The next run finds the key in `already`, skips the
+        apply, and the book keeps half its shares against a post-split price,
+        permanently. Same class as METHODOLOGY #lost-fill-2026-05-21, where a
+        `git add` pathspec omitted data/portfolios.
+
+        Second-order: unstaged worktree changes also break the retry, since
+        `git pull --rebase` refuses to run with them and the step is under
+        `set -euo pipefail`.
+        """
+        assert "data/portfolios/" in self._push_paths(workflow), (
+            f"{workflow} can call apply_split but does not stage data/portfolios/"
+        )
+
+    @pytest.mark.parametrize("workflow", WORKFLOWS)
+    def test_the_ledger_is_in_the_push_paths(self, workflow):
+        spec = yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / workflow).read_text(encoding="utf-8")
+        )
+        steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+        pushes = [
+            s for s in steps if str(s.get("uses", "")).endswith("actions/push-with-retry")
+        ]
+        assert pushes, f"{workflow} has no push-with-retry step"
+        paths = " ".join(str(s["with"]["paths"]) for s in pushes)
+        assert self.LEDGER in paths, (
+            f"{workflow} does not stage {self.LEDGER}; an adjudication would be "
+            "forgotten and re-applied on the next run"
+        )

@@ -134,7 +134,7 @@ jobs:
         if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' }}
         uses: ./.github/actions/push-with-retry
         with:
-          paths: data/market/ohlcv/ data/portfolios/
+          paths: data/market/ohlcv/ data/market/corporate_actions.jsonl data/portfolios/
           message: "[data] ${{ steps.today.outputs.date }} held-ticker resweep"
 
       - name: Report outcome

@@ -221,7 +221,7 @@ jobs:
       # half-written store after a mid-loop crash. The run still fails; the
       # data still lands.
       #
-      # data/tickers.json is staged here too: `save_registry` rewrites it on
+      # data/portfolios/ data/tickers.json is staged here too: `save_registry` rewrites it on
       # every run and NO workflow was staging it, so the nightly refresh was
       # discarded every night and the file has moved only by hand (three
       # commits, ever). It is currency-resolution layer 2 — a ticker newly
@@ -232,7 +232,7 @@ jobs:
         if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' }}
         uses: ./.github/actions/push-with-retry
         with:
-          paths: data/market/ohlcv/ data/market/quarantine/ data/tickers.json
+          paths: data/market/ohlcv/ data/market/quarantine/ data/market/corporate_actions.jsonl data/portfolios/ data/tickers.json
           message: "[data] ${{ steps.today.outputs.date }} OHLCV update"
 
       - name: Report outcome

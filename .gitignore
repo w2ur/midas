@@ -70,3 +70,7 @@ Thumbs.db
 *.bak
 *.dump
 *.sql
+
+# uv writes this when resolving; requirements.txt is this project's lockfile
+# (see CLAUDE.md) and a second one would be ambiguous about which CI installs.
+uv.lock
