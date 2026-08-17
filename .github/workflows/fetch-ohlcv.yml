@@ -162,6 +162,21 @@ jobs:
             CRYPTO_ONLY=true
           fi
 
+          # Published so the alert step can carry the mode in its title.
+          # `failure-issue` keys idempotency on the title, deliberately — a job
+          # failing five days running is one fact. But this workflow's two
+          # modes are two facts about two datasets, and sharing one title
+          # collided them: the full-universe runs that quarantined MNST, BYND
+          # and JMAT.L opened issue #37, and the Sunday CRYPTO-ONLY run closed
+          # it on 2026-08-16 as "Recovered" without fetching a single one of
+          # those equities. Emitted AFTER the manual override, so it names the
+          # run that actually happened rather than the one the cron implied.
+          if [[ "$CRYPTO_ONLY" == "true" ]]; then
+            echo "mode=crypto-only" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=full universe" >> "$GITHUB_OUTPUT"
+          fi
+
           FLAGS=(--history-days "$HISTORY_DAYS")
           if [[ "$CRYPTO_ONLY" == "true" ]]; then
             echo "Crypto-only run (schedule='${SCHEDULE}', manual=${MANUAL_CRYPTO_ONLY})."
@@ -225,7 +240,12 @@ jobs:
         uses: ./.github/actions/failure-issue
         with:
           outcome: ${{ job.status }}
-          title: "fetch-ohlcv: the price store was not updated"
+          # The mode is part of the cause. Without it a crypto-only success
+          # closes a full-universe failure — see the `mode` output above.
+          # The fallback matters because `if: always()` fires this step even
+          # when the fetch step never ran, where the output is the empty
+          # string and the title would otherwise end in an unnamed "()".
+          title: "fetch-ohlcv: the price store was not updated (${{ steps.fetch.outputs.mode || 'mode unresolved' }})"
           body: |
             A scheduled `fetch-ohlcv` run failed. The trading session has no
             outbound HTTP: it prices entirely from the committed store, so a

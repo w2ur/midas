@@ -673,6 +673,81 @@ class TestFetchOhlcvScheduleSelectsTheMode:
         )
 
 
+class TestFetchOhlcvAlertsPerMode:
+    """`fetch-ohlcv` has two modes, so it needs two alert identities.
+
+    `failure-issue` keys idempotency on the TITLE — deliberately, since a job
+    failing five days running is one fact. But this workflow runs a full
+    universe Tue-Sat and a ~35-symbol crypto subset Sun-Mon, and those are
+    different facts about different data. With one shared title they collided:
+    issue #37 was opened by the full-universe runs that quarantined MNST, BYND
+    and JMAT.L on 08-13/14/15, and then CLOSED on 2026-08-16 — "Recovered: a
+    later run of this job succeeded" — by the Sunday CRYPTO-ONLY run, which
+    does not fetch a single one of those equities and could not have recovered
+    anything. The next full run re-filed it. An alert that reports recovery on
+    evidence incapable of observing the failure is worse than no alert: it is
+    the alert-fatigue machine `failure-issue` was written to replace, rebuilt
+    one layer up in the caller.
+
+    The fix belongs in the caller, not the action: the action's contract
+    ("title identifies the cause; must be stable across recurrences") was
+    already right, and `fetch-ohlcv` was passing one title for two causes.
+    """
+
+    WORKFLOW = REPO_ROOT / ".github" / "workflows" / "fetch-ohlcv.yml"
+
+    def _steps(self) -> list[dict]:
+        spec = yaml.safe_load(self.WORKFLOW.read_text(encoding="utf-8"))
+        return [s for job in spec["jobs"].values() for s in job["steps"]]
+
+    def _fetch_step(self) -> dict:
+        fetch = [s for s in self._steps() if s.get("id") == "fetch"]
+        assert len(fetch) == 1, "fetch-ohlcv has no single `fetch` step"
+        return fetch[0]
+
+    def _alert_step(self) -> dict:
+        alerts = [
+            s
+            for s in self._steps()
+            if str(s.get("uses", "")).endswith("actions/failure-issue")
+        ]
+        assert len(alerts) == 1, "fetch-ohlcv has no single failure-issue step"
+        return alerts[0]
+
+    def test_the_fetch_step_publishes_the_mode_it_ran(self):
+        """The alert cannot distinguish what the step never reports."""
+        run = self._fetch_step()["run"]
+        executed = "\n".join(
+            line for line in run.splitlines() if not line.lstrip().startswith("#")
+        )
+        assert "mode=" in executed and "GITHUB_OUTPUT" in executed, (
+            "the fetch step does not emit a `mode` output, so the alert has "
+            "nothing to key on"
+        )
+
+    def test_the_alert_title_varies_with_the_mode(self):
+        """A constant title is what let a crypto-only success close issue #37."""
+        title = self._alert_step()["with"]["title"]
+        assert "steps.fetch.outputs.mode" in title, (
+            f"failure-issue title {title!r} is constant across both modes — a "
+            "crypto-only success will close a full-universe failure again"
+        )
+
+    def test_the_title_survives_a_run_that_never_resolved_a_mode(self):
+        """A failure before the fetch step must not render an empty identity.
+
+        `if: always()` means the alert runs even when checkout died and
+        `steps.fetch.outputs.mode` is the empty string. Without a fallback the
+        title ends in `()`, which is a third, unnamed bucket that reads as a
+        typo rather than as a cause.
+        """
+        title = self._alert_step()["with"]["title"]
+        assert "||" in title, (
+            f"failure-issue title {title!r} has no fallback for an unresolved "
+            "mode"
+        )
+
+
 class TestPushGateMatchesExitCodes:
     """Both callers of fetch_ohlcv.py must gate their push on its exit code.
 
