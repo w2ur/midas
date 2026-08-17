@@ -1,0 +1,25 @@
+# ---------------------------------------------------------------------------
+# requirements-watcher.in — the crypto trigger watcher's dependency set.
+#
+# Why this file exists: check-triggers-crypto.yml runs scripts/check_triggers.py
+# --crypto-only hourly, 24/7. Installing the full requirements.txt for it took
+# 48s of an 87s job whose actual work is ~6s — and GitHub bills every job rounded
+# UP to a whole minute, so that overhead was doubling the bill for every run.
+# The full lockfile carries matplotlib, scikit-learn, numba, plotly, streamlit,
+# fastapi, bt and pytest; the crypto path imports none of them.
+#
+# These four are the measured minimum: import scripts.check_triggers fails
+# without any of them (yfinance and pandas arrive transitively through
+# engine.corporate_actions and engine.quotes, not from the watcher directly).
+#
+# Same discipline as requirements.in → requirements.txt: this is the loose
+# source, requirements-watcher.txt is the pinned lockfile, and every pin in it
+# MUST equal the root lockfile's. tests/test_ci_guards.py enforces that — a
+# watcher running different versions from the desk is a silent divergence on
+# the money path.
+# ---------------------------------------------------------------------------
+
+ccxt>=4.0
+PyYAML>=6.0
+pandas>=2.0,!=3.0.4
+yfinance>=0.2.30

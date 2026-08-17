@@ -933,6 +933,12 @@ class TestRegressionCitations:
 _ROOT = Path(__file__).resolve().parents[1]
 _PIN = re.compile(r"^([A-Za-z0-9._-]+)==(.+)$")
 
+# Every lockfile DERIVED from the root one by narrowing. Each may drop packages;
+# none may re-resolve a version. `requirements-watcher.txt` joined on 2026-08-17
+# — check-triggers-crypto.yml installs it hourly on the money path, so a version
+# skew there is a watcher firing trades against a stack the desk never tested.
+_DERIVED_LOCKFILES = ("backtester/requirements.txt", "requirements-watcher.txt")
+
 
 def _normalise(name: str) -> str:
     """PEP 503 normalisation — `curl_cffi` and `curl-cffi` are one package."""
@@ -962,34 +968,36 @@ def _unpinned_requirement_lines(path: Path) -> list[str]:
 
 
 class TestBacktesterLockfileMirror:
-    def test_every_backtester_pin_matches_the_root_lockfile(self):
+    @pytest.mark.parametrize("derived", _DERIVED_LOCKFILES)
+    def test_every_derived_pin_matches_the_root_lockfile(self, derived):
         """The narrowing may drop packages; it may never re-resolve versions."""
         root = _pins(_ROOT / "requirements.txt")
-        service = _pins(_ROOT / "backtester" / "requirements.txt")
-        assert service, "backtester/requirements.txt has no pins — parser broke"
+        service = _pins(_ROOT / derived)
+        assert service, f"{derived} has no pins — parser broke"
         drift = {
             name: (version, root[name])
             for name, version in service.items()
             if name in root and root[name] != version
         }
         assert drift == {}, (
-            "backtester/requirements.txt must copy the root lockfile's versions "
+            f"{derived} must copy the root lockfile's versions "
             f"verbatim; these differ (service, root): {drift}"
         )
 
-    def test_backtester_introduces_no_package_the_root_lockfile_lacks(self):
+    @pytest.mark.parametrize("derived", _DERIVED_LOCKFILES)
+    def test_derived_introduces_no_package_the_root_lockfile_lacks(self, derived):
         """A service-only package would be installed at a version CI never ran."""
         root = _pins(_ROOT / "requirements.txt")
-        service = _pins(_ROOT / "backtester" / "requirements.txt")
+        service = _pins(_ROOT / derived)
         orphans = sorted(set(service) - set(root))
         assert orphans == [], (
-            "these are pinned for the service but absent from the root "
+            f"these are pinned for {derived} but absent from the root "
             f"lockfile, so nothing tests them: {orphans}"
         )
 
     def test_every_requirement_is_an_exact_pin(self):
         """The 2026-08-05 defect's shape: a requirement present but unpinned."""
-        for name in ("requirements.txt", "backtester/requirements.txt"):
+        for name in ("requirements.txt", *_DERIVED_LOCKFILES):
             loose = _unpinned_requirement_lines(_ROOT / name)
             assert loose == [], f"{name} has non-`==` requirement lines: {loose}"
 

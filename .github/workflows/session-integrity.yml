@@ -239,7 +239,8 @@ jobs:
             fi
           fi
           # current.json is DERIVED, self-healing state — the watcher refreshes it
-          # every 15 min (try/except, never fatal), the weekend refresh rewrites it,
+          # (hourly for crypto, daily otherwise; try/except, never fatal), the
+          # weekend refresh rewrites it,
           # and the next session rebuilds it. The cloud orchestrator often lands the
           # session as two commits — main artifacts first, then a "… — leaderboard"
           # commit carrying current.json — which made this a per-commit FALSE failure

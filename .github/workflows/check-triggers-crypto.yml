@@ -1,0 +1,89 @@
+name: check-triggers-crypto
+
+# Hourly, 24/7 pass over CRYPTO pending orders only
+# (scripts/check_triggers.py --crypto-only).
+#
+# Why this is split from check-triggers.yml (2026-08-17):
+#
+# Crypto is the only asset class whose trigger evaluation can change intraday.
+# engine.triggers.get_current_price fetches crypto live from ccxt/Coinbase and
+# reads everything else from the committed OHLCV store, which fetch-ohlcv.yml
+# refreshes once a day — so an hourly sweep of an equity trigger re-reads
+# byte-identical data. Crypto also trades nights and weekends, so this one
+# cannot be narrowed to market hours the way an equity sweep could.
+#
+# Why hourly and not */15, which is what the single combined workflow ran:
+# GitHub bills every job rounded UP to a whole minute, and this repo is
+# PRIVATE — the old workflow's header comment asserted "Midas is a public repo
+# → unlimited Actions minutes, so a 15-min cadence is free", which was never
+# true (the repo has been private since it was created; the PUBLIC repo is the
+# midas-core mirror). That one belief cost 923 of the 2,000 monthly minutes in
+# the 2026-08 cycle, ~46% of the quota, to do ~44 minutes of actual work.
+# At */15 even a perfectly optimised job bills 96 min/day ≈ 2,900/month, so no
+# amount of setup-trimming makes a sub-hourly cadence fit. Hourly is the
+# cadence the billing model actually permits.
+#
+# If sub-hourly crypto granularity is ever wanted back, the answer is NOT a
+# faster cron here — it is moving this watcher to Cloudflare Workers Cron,
+# where a 6-second task has no per-run minimum.
+
+on:
+  schedule:
+    # Hour 20 is skipped: it falls inside the watcher's own 19:55-21:00 UTC
+    # blackout (scripts/check_triggers.py), so that run can only ever exit
+    # early — while still paying a full billed minute for the setup.
+    #
+    # Hour 21 is deliberately NOT skipped even though it is inside the blackout
+    # today. BLACKOUT_END tracks the daily session start and has already moved
+    # three times (20:30 → 21:00 → 21:30 → 21:00); hour 20 is inside the window
+    # for every value it has ever held, hour 21 is not. Encoding the movable
+    # edge here would create a second place that has to change whenever the
+    # session moves, which is exactly the coupling BLACKOUT_END warns about.
+    # The script's own check remains the single source of truth.
+    - cron: "0 0-19,21-23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write # needed to commit fills back to main
+
+concurrency:
+  # Shared with check-triggers.yml on purpose: both commit fills to main, and
+  # the daily full sweep is a superset of this one. Serialising them is what
+  # stops the two racing each other into a rejected push.
+  group: check-triggers
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        # requirements-watcher.txt, not requirements.txt: the full lockfile is
+        # 120 packages and took 48s of an 87s job, which is what pushed each run
+        # over the 60s mark and made it bill 2 minutes instead of 1. Its pins are
+        # a strict subset of the root lockfile's, enforced by tests/test_ci_guards.py.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-watcher.txt
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run watcher (crypto only)
+        run: python scripts/check_triggers.py --crypto-only

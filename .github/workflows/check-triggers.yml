@@ -1,21 +1,46 @@
 name: check-triggers
 
-# Runs scripts/check_triggers.py every 15 minutes to evaluate pending
-# conditional orders against live prices. The script blacks itself out
-# during 19:55-21:00 UTC to avoid commit-races with the daily session.
-# The end was 20:30 until 2026-08-07; measured session tails (commit
-# 20:09-20:39, auto-merge to 20:45) ran past it. See BLACKOUT_END in
-# scripts/check_triggers.py for the measurements and the caveat.
+# Runs scripts/check_triggers.py once a day over ALL pending conditional
+# orders. The script blacks itself out during 19:55-21:00 UTC to avoid
+# commit-races with the daily session. The end was 20:30 until 2026-08-07;
+# measured session tails (commit 20:09-20:39, auto-merge to 20:45) ran past
+# it. See BLACKOUT_END in scripts/check_triggers.py for the measurements and
+# the caveat.
 #
-# Midas is a public repo → unlimited GitHub Actions minutes, so a 15-min
-# cadence is free. GitHub's cron has known slippage at sub-hourly cadence
-# (5-20 min delays under load) — that's acceptable for trim/stop semantics
-# at our scale; if we ever need sub-minute reliability we'd graduate to
-# Cloudflare Workers Cron.
+# THIS RAN */15, 24/7, UNTIL 2026-08-17, on a header comment that read
+# "Midas is a public repo → unlimited GitHub Actions minutes, so a 15-min
+# cadence is free". Midas has been PRIVATE since it was created on
+# 2026-04-15 — the public repo is the midas-core mirror — so the premise was
+# false when it was written, a month after the repo existed. Measured cost of
+# that belief in the 2026-08 cycle: 441 runs, 923 billed minutes, 46% of the
+# account's entire 2,000-minute monthly quota, to perform ~44 minutes of
+# actual work. The remaining 93% was setup: 26s checkout (.git is 836 MB),
+# 7s setup-python, 48s installing all 120 pinned packages, for a script whose
+# run step takes 6 seconds.
+#
+# Daily is the correct cadence for THIS workflow because non-crypto triggers
+# cannot change more often than that: engine.triggers.get_current_price reads
+# them from the committed OHLCV store via latest_close_on_or_before, and
+# fetch-ohlcv.yml refreshes that store once a day. Crypto is the only class
+# that moves intraday (live ccxt fetch, 24/7) and it now has its own hourly
+# workflow, check-triggers-crypto.yml. This one remains the full sweep — it is
+# a superset, and it is the SOLE owner of expiry, which is date-based and so
+# only ever needs evaluating once a day.
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # 13:00 UTC, not 06:30. This wants to run after fetch-ohlcv.yml (cron
+    # 0 6 * * *) has landed the day's closes, but GitHub's scheduler is never
+    # on time: measured across this repo, runs typically land 40 min to 2 h 45
+    # late with a tail past 5 h. A 30-minute gap would routinely lose the race
+    # and evaluate yesterday's store. 13:00 clears the documented tail and
+    # still sits well before the 19:55 blackout.
+    #
+    # Losing that race is not a correctness failure — the sweep would read the
+    # previous close, which is what it read all of the previous day anyway, and
+    # the next day's run picks the new one up. It is a freshness cost, which is
+    # why this is a cron with slack rather than a workflow_run dependency.
+    - cron: "0 13 * * *"
   workflow_dispatch:
 
 permissions:

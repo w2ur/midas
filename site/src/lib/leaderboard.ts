@@ -15,7 +15,8 @@ const CURRENT_PATH = path.join(DATA_DIR, "leaderboard", "current.json");
  * Live leaderboard artifact. Written by three update paths:
  *   - Weekday session (every Mon-Fri 20:00 UTC)
  *   - Weekend valuation refresh (Sat/Sun 20:00 UTC)
- *   - Trigger watcher when a conditional order fires (every 15 min)
+ *   - Trigger watcher when a conditional order fires (hourly for crypto,
+ *     daily for equity/FX — see .github/workflows/check-triggers*.yml)
  *
  * Returns null when the file doesn't exist (initial-deploy fallback path
  * before the first session/refresh has written it).

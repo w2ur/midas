@@ -1,0 +1,48 @@
+# ---------------------------------------------------------------------------
+# requirements-watcher.txt — PINNED LOCKFILE (do not hand-edit versions here).
+#
+# Generated as a strict SUBSET of requirements.txt: same package, same version.
+# Source of truth for the constraints is requirements-watcher.in.
+# Regenerate with: pip-compile --strip-extras -o requirements-watcher.txt requirements-watcher.in
+# then reconcile every pin against requirements.txt (test_ci_guards enforces it).
+#
+# ccxt's optional accelerators (aiohttp-fast-zlib, orjson, zlib-ng) are
+# deliberately excluded: they are absent from the root lockfile, so the desk
+# does not run them either, and this env must not diverge upward.
+# ---------------------------------------------------------------------------
+aiohappyeyeballs==2.6.2
+aiohttp==3.14.1
+aiosignal==1.4.0
+attrs==26.1.0
+beautifulsoup4==4.15.0
+ccxt==4.5.61
+certifi==2026.6.17
+cffi==2.0.0
+charset_normalizer==3.4.7
+coincurve==21.0.0
+cryptography==49.0.0
+curl_cffi==0.15.0
+frozenlist==1.8.0
+idna==3.18
+lxml==6.1.1
+multidict==6.7.1
+multitasking==0.0.13
+numpy==2.2.6
+pandas==3.0.3
+peewee==4.1.1
+platformdirs==4.10.0
+propcache==0.5.2
+protobuf==7.35.1
+pycparser==3.0
+python-dateutil==2.9.0.post0
+pytz==2026.2
+pyyaml==6.0.3
+requests==2.34.2
+six==1.17.0
+soupsieve==2.8.4
+typing-extensions==4.15.0
+urllib3==2.7.0
+uvloop==0.22.1
+websockets==16.0
+yarl==1.24.2
+yfinance==1.5.1
