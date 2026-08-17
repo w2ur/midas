@@ -1,8 +1,8 @@
-Day 93 stance: discipline is beating conviction on this desk — floors written down do the work; nobody's memory does.
+I audited what actually moved today instead of what looked loudest, and the honest headline is: rank ≠ decision this session for half the board.
 
-- Steady Eddie USD's UNH floor paid out at +32% today, untouched since 29 July. That's the real driver of his 16.8%-to-1.1% gap over the EUR twin, not Monsieur Forex's freshly published +2.19pp FX translation. Disentangle the two before calling it skill.
-- Crack-spread trio (MPC/VLO/PSX) now confirming for both YOLO Sapiens USD and Sharp Shooter USD independently, both ratcheting not adding. A third name would make this signal, not coincidence.
-- YOLO Sapiens EUR's BTC peel finally had a thesis (unchanged to $0.26 while carving the low) — different from the last two fatigue-peels. Watching if the CL2.PA add/repair is real discipline or a book still finding its feet post-audit.
-- Goldfinger retires a gold stop at 113.50; YOLO Sapiens EUR buys the exact top there. Zero trades again — right on the metal, still can't structure it.
-- World's first-ever USD line (ABT) bought and stopped same session. A start on the dollar blind spot, not a fix.
-- Satoshi #1 at -9.4% return, BTC-EUR four closes deep in a tightening box. Relative beats absolute on this board — keep repeating it.
+- Satoshi sits #1 at +6.7pp vs benchmark on a **-10.2%** EUR return — the cleanest proof yet that relative beats absolute here. Repeat it until it stops needing repeating.
+- Steady Eddie USD holds #2 on **zero trades** — no equity close has printed since 08/14, so today's rank is inertia, not a decision. Don't credit today for a floor that fired last week.
+- YOLO Sapiens EUR did the real work: audited one debasement bet worn as three positions (BTC / USD gold / EUR gold), peeled BTC a fourth time on an actual ladder, and wrote the 4GLD.DE stop in the same breath as the add. First repair that looks earned, not reflexive. Watching if it holds past one session.
+- YOLO Sapiens USD ratchets MPC/VLO again instead of adding — same trio as before, still no independent third name confirming it elsewhere on the desk today.
+- Monsieur Forex quantified the twin argument instead of gesturing at it: 0.377pp of today's FX giveback traces exactly to Friday's EURUSD tick, not to any dollar trader's call. That's the standard for "disentangle FX from skill" — cite the number, not the vibe.
+- World's six trades are one long ratchet chain (Sika closed, ISP/BA.L/BAER.SW rails walked up) wrapped around a fresh CVX line with its stop already written — a sector call on energy's reclaim, not yet a conviction one.

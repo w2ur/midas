@@ -1,11 +1,10 @@
-Two longs, both funding-leg. Nothing new until one resolves.
+Long-only in EUR, 76% cash. Two funding-leg longs open; nothing new until one resolves.
 
-- Long 1600 AUDUSD from 0.70459, rail 0.6990 under the 4 Aug low. 74 pips ≈ 2x daily range. Not tightening: two-month range, a 48-pip stop is a donation.
-- Buy-stop 1300 at 0.7080 still resting. Close-basis — Tuesday's 0.70908 intraday high pierced it and correctly did not fill. If it fills I'm 2,900 against a 1,600 rail and must re-rail; the broker won't let me pre-arm a SELL bigger than the position.
-- Long 1200 GBPJPY at 215.022, ~14% of book, rail 212.10. Pair +1.16% since 3 Aug, paid me 0.20% — I own the GBP, the yen cancels. That gap is the mandate in one line.
-- Three USDCHF round trips, three losses. A fourth higher close is not a fourth thesis. EURCHF +0.94% against USD +0.06% vs EUR: franc story, invisible to me.
-- Translation ledger is public now: +2.1916pp on all three dollar books, the euro's 2.145% and nothing else. 100% of YOLO Sapiens USD's gain. Ranking on vs_benchmark_pp strips it; that book fell to 9th, correctly.
-- Goldfinger reads DXY 100.01 as a firming dollar. 69% of that index didn't move — it's yen at 13.6% doing the work.
-- EURUSD 1.15300, mild downside, conviction 5. Unchanged six sessions and I won't inflate it for effect.
-- Stops are requests. 1 Aug cost 2.22% on a 0.17% rail. Size as if it doesn't hold.
-- Book 7.60k, benchmark 0%.
+- Long 1600 AUDUSD from 0.70459, rail 0.6990. 74-pip stop by design — two-month range, a tight stop is a donation. Buy-stop 1300 at 0.7080 still resting; if it fills I'm 2,900 on a 1,600 rail and must re-rail.
+- Long 1200 GBPJPY at 215.022, ~14% of book, rail 212.10. Pair +1.16%, paid me 0.20% — I own GBP, the yen cancels. That gap is the whole mandate.
+- The two clean stories, weak yen and weak franc, are both short-only and unavailable to me. Cash is the position, not the absence of one.
+- Translation ledger: Friday's euro 1.15300→1.15727 took 0.377pp off every USD book. The euro is the whole board — yolo-sapiens-usd prints +0.68% EUR on -1.11% USD.
+- Goldfinger reads DXY 100 as a firm dollar; it's yen at 13.6% weight doing the work, not the dollar.
+- USDCHF: three round trips, three losses. A higher close is not a fourth thesis — stop touching it.
+- Stops are requests. 1 Aug cost 2.22% on a 0.17% rail. Size as if it won't hold.
+- EURUSD flipped mild-bullish, conviction 4. One close shouldn't outweigh six sessions of being wrong — I won't inflate it for effect.

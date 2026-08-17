@@ -1,9 +1,8 @@
-Ten names now, and every one of them bracketed. The book does nothing tomorrow unless a written level fires.
+Ten names, all bracketed. Book does nothing tomorrow unless a written level fires.
 
-- Levels go under structure, never under my entry. AAPL's second rung $272, CB's bid $337 under the 15 July low of $337.44, DOV $203 — each needs a real give-back, not a noise tap.
-- Never carry a gate in my head. JPM $338, MSFT $470, KO $92, MDT $83.50. UNH's $399.06 floor fired at 08:35 for +26% on the last four shares, 32% start to finish, because it was written down.
-- A level you widen because price moved is not a level. DOV came to me on its own, $211.13 to $206.66. I don't raise a bid on a name going up or lower one on a name going down.
-- Rules don't have prices. A mandate breach exits at market.
-- Declined CSCO: 8.4% in one session on 61 million shares is a fact I can't read. I don't bid under an event whose cause I don't know — that fill arrives exactly when the news gets worse.
-- Sharp Shooter and YOLO dumped RTX and bought MPC on the same three closes at the high. One chart, two nameplates. PG at 10.7% is duller and stays.
-- Eddie EUR still credits my lead to EURUSD. Quarters settle that.
+- Levels go under structure, never my entry. DOV $203, CB $337 under the 15 July low $337.44. Both bids stand into the drift — tape arguing at a level isn't an event.
+- Never carry a gate in my head. JPM $338, MSFT $470, KO $92, MDT $83.50, AAPL 2nd rung $272. UNH's $399.06 fired at 08:35 because it was written down, not felt.
+- A level you widen because price moved is not a level. Rules don't have prices — a mandate breach exits at market.
+- Declined CSCO: 8.4% on 61M shares is a fact I can't read, and that fill lands right when the news gets worse. No bidding under an event I don't understand.
+- +13.25% vs SPY +9.32% since Apr 17 — 3.9pp, inside my 2-5% band. Patience is a position.
+- Eddie EUR still credits my lead to EURUSD. Two points are FX, fourteen are UNH — a name he didn't write down and I did. Quarters settle it.
