@@ -59,6 +59,17 @@ jobs:
         with:
           # Full history is needed so `git tag` can operate on the correct commit.
           fetch-depth: 0
+          # Blobs are fetched lazily. Full history and all tags are still here —
+          # which is what the HEAD-date label, the previous-tag lookup and
+          # --verify's detached-worktree re-derivation actually need. The
+          # fetch-depth:0 checkout measured 143s of a 208s job on 2026-08-18.
+          #
+          # This is a MEASURED BET, kept in its own commit so it can be reverted
+          # alone: --verify walks a tag's whole tree, and those lazy blob fetches
+          # could cost more than the checkout saves. Keep only if the WHOLE job
+          # got faster — compare `Checkout repo` AND `Verify the previous
+          # attestation` against the 143s/3s baseline above.
+          filter: blob:none
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # No dependency install, deliberately: scripts/attest_ledger.py imports
