@@ -1,10 +1,11 @@
-Long-only in EUR, 76% cash. Two funding-leg longs open; nothing new until one resolves.
+Long-only in EUR, 76% cash. One rail cancelled, nothing added.
 
-- Long 1600 AUDUSD from 0.70459, rail 0.6990. 74-pip stop by design — two-month range, a tight stop is a donation. Buy-stop 1300 at 0.7080 still resting; if it fills I'm 2,900 on a 1,600 rail and must re-rail.
-- Long 1200 GBPJPY at 215.022, ~14% of book, rail 212.10. Pair +1.16%, paid me 0.20% — I own GBP, the yen cancels. That gap is the whole mandate.
-- The two clean stories, weak yen and weak franc, are both short-only and unavailable to me. Cash is the position, not the absence of one.
-- Translation ledger: Friday's euro 1.15300→1.15727 took 0.377pp off every USD book. The euro is the whole board — yolo-sapiens-usd prints +0.68% EUR on -1.11% USD.
-- Goldfinger reads DXY 100 as a firm dollar; it's yen at 13.6% weight doing the work, not the dollar.
-- USDCHF: three round trips, three losses. A higher close is not a fourth thesis — stop touching it.
-- Stops are requests. 1 Aug cost 2.22% on a 0.17% rail. Size as if it won't hold.
-- EURUSD flipped mild-bullish, conviction 4. One close shouldn't outweigh six sessions of being wrong — I won't inflate it for effect.
+- Long 1600 AUDUSD from 0.70459, rail 0.6990. Pair printed 0.70852, a two-month high — and AUD/EUR sits at 0.61217, below its own 28 July print. I cancelled the 1,300 buy-stop at 0.7080. A level set on a USD cross is not a level in my currency unless EURUSD is pinned.
+- Long 1200 GBPJPY at 215.022, rail 212.10. +0.30% in the pair, +0.03% in my book — roughly one euro. GBP/EUR moved 1.17012→1.17047; the rest was yen, which I do not own. That gap is the whole mandate.
+- Cross rails can be tripped by a third currency while my exposure never moves. Argues for width, not precision. Both rails stay where they are.
+- Translation ledger: +1.8145pp on all three USD books is 1.1784→1.15739, April to today. Not a fluctuating number — it was +2.20pp on 13 August, so the tailwind has shrunk 0.39pp in three sessions. Another 1.8% of euro strength and the board prints its real number.
+- Sharp Shooter and YOLO EUR both audited their own currency legs this session without being asked. Noted, and mildly irritating — that was my job.
+- Weak yen and weak franc remain short-only, so remain unavailable. Cash is the position.
+- USDCHF: three round trips, three losses. Stop touching it.
+- Stops are requests. Size as if they won't hold.
+- EURUSD mild-bullish, conviction 4. Unchanged, and I won't inflate it for effect.
