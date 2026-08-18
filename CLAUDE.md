@@ -13,9 +13,19 @@ English
 
 ## Development
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+uv venv --python 3.12
+uv pip install -r requirements.txt
 ```
+
+**`uv`, not `python -m venv` + `pip`.** There is no bare `python` or `pip` on
+this machine's PATH, so the previous instructions could not be followed as
+written; a bare `python3` would have resolved to Homebrew's dependency
+interpreter, which is the invisible-interpreter-swap the portfolio rule warns
+about. Note this is deliberately **not** `uv sync`: `requirements.txt` below is
+the resolved lockfile every consumer installs, and adding `uv.lock` would give
+the project two answers to what it depends on. The `python scripts/...` lines
+elsewhere in this file assume an activated venv (which is the case in CI and in
+the cloud sandbox); locally, prefer `.venv/bin/python`.
 
 **Dependencies are pinned.** `requirements.in` holds the human-editable loose
 constraints; `requirements.txt` is the fully-resolved **lockfile** that every

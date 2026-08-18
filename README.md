@@ -32,9 +32,17 @@ Deterministic strategies are backtested against years of historical data. Analyt
 ## Quick Start
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+uv venv --python 3.12
+uv pip install -r requirements.txt
 ```
+
+`uv`, not `python -m venv` + `pip`: this machine has no bare `python` or `pip`
+on PATH at all, so the old incantation was broken rather than merely
+old-fashioned. Deliberately **not** `uv sync`: `requirements.txt` is the
+resolved lockfile that six workflows, the backtester Dockerfile and the cloud
+sandbox all install, and a second lockfile would be a second answer to what
+this project depends on. Run things with `.venv/bin/python` or activate the
+venv first — the `python scripts/...` lines below assume it is active.
 
 ## Run Backtests
 
