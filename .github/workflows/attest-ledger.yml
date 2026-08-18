@@ -61,16 +61,18 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # No dependency install, deliberately: scripts/attest_ledger.py imports
+      # stdlib only, and the workflow's other tool (jq) is preinstalled on the
+      # runner image. Installing the 120-package lockfile cost 46s a night to
+      # import nothing from it. Verified 2026-08-18 by running all three
+      # invocations used below (--verify, --json, --render-from) against an
+      # interpreter with an empty site-packages. `cache: "pip"` goes with it —
+      # there is no install left to cache. setup-python stays: pinning 3.12
+      # rather than floating with the runner image is free.
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
 
       - name: Configure git identity
         run: |
