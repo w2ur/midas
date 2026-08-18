@@ -40,7 +40,7 @@ aggregating whatever `needs` happens to hold, because Actions reports a skipped
 job as `skipped` and an absent one as nothing, and neither is a failure. The
 short form is worse than no gate: `jq 'all(.[]; .result=="success")'` over an
 empty set returns `true`, so a suite dropped from `needs:` would report success
-on zero coverage. **Add a suite here and you must add its job id to `EXPECTED`.**
+on zero coverage. **Add a suite here and you must add its job id to `EXPECTED`** — mechanical since 2026-08-18, `tests/test_ci_guards.TestTestsGateCoversEverySuite` asserts `EXPECTED`, `needs` and the set of declared jobs are the same set, in both directions. It was a manual discipline until then, which is the green-by-omission hole the gate exists to close, one level up. The third suite is `watcher-env`: it builds an env from `requirements-watcher.txt` and imports `scripts.check_triggers`, because only the *pins* of that narrowed lockfile were guarded and nothing proved the 36-package set could import the money-path script it exists to run.
 Note the gate is advisory on this repo — branch protection needs GitHub Pro on a
 private repo (measured: `gh api repos/w2ur/midas/branches/main/protection` → 403),
 so it shows as a red X, not a blocked merge button.

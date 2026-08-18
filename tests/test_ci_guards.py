@@ -17,6 +17,7 @@ green by never running, or by having no consumer:
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import tomllib
@@ -1355,3 +1356,54 @@ class TestCryptoWatcherIsDispatchOnly:
             "that trigger the dispatch POST 404s and crypto conditionals "
             "silently degrade to the daily 13:00 sweep"
         )
+
+
+class TestTestsGateCoversEverySuite:
+    """`gate`'s EXPECTED list must name every suite in tests.yml.
+
+    The gate exists because Actions cannot tell "passed" from "never ran": a
+    job excluded by `if:` reports `skipped`, one dropped from `needs:` reports
+    nothing, and `jq 'all(.[]; .result=="success")'` over an empty set returns
+    true — so the obvious aggregating job reports success on zero coverage.
+    Naming the expected checks up front is the fix.
+
+    But the naming was itself a manual discipline: CLAUDE.md said "add a suite
+    here and you must add its job id to EXPECTED", and nothing enforced it. A
+    suite added without its EXPECTED entry is guarded by the same "green by
+    omission" hole the gate was built to close, one level up. This makes the
+    mandate mechanical.
+    """
+
+    WORKFLOW = REPO_ROOT / ".github" / "workflows" / "tests.yml"
+
+    def _spec(self) -> dict:
+        return yaml.safe_load(self.WORKFLOW.read_text(encoding="utf-8"))
+
+    def _gate_expected(self) -> set[str]:
+        gate = self._spec()["jobs"]["gate"]
+        envs = [s["env"]["EXPECTED"] for s in gate["steps"] if "EXPECTED" in s.get("env", {})]
+        assert len(envs) == 1, "gate does not declare exactly one EXPECTED list"
+        parsed = json.loads(envs[0])
+        assert parsed, "EXPECTED is empty — the gate would pass on zero coverage"
+        return set(parsed)
+
+    def test_expected_names_every_other_job(self):
+        spec = self._spec()
+        suites = set(spec["jobs"]) - {"gate"}
+        assert self._gate_expected() == suites, (
+            "tests.yml's gate EXPECTED list disagrees with the jobs that exist; "
+            "a suite missing from it is green by omission, which is the exact "
+            "hole the gate was built to close"
+        )
+
+    def test_gate_needs_every_job_it_expects(self):
+        """EXPECTED without `needs` is worse than useless: the gate would race
+        the suites and read their results before they finish."""
+        needs = set(self._spec()["jobs"]["gate"].get("needs") or [])
+        assert needs == self._gate_expected(), (
+            f"gate needs {sorted(needs)} but expects {sorted(self._gate_expected())}"
+        )
+
+    def test_the_gate_always_runs(self):
+        """`if: always()` — a gate skipped because a suite failed reports nothing."""
+        assert self._spec()["jobs"]["gate"].get("if") == "always()"

@@ -118,6 +118,51 @@ jobs:
         working-directory: site
         run: npm test
 
+  # The watcher runs on a NARROWED lockfile (requirements-watcher.txt, 36
+  # packages against the root's 120) because installing the full one pushed
+  # each run past GitHub's 60-second billing edge. Only the pins were guarded —
+  # tests/test_ci_guards.py checks they mirror the root lockfile's versions —
+  # and nothing proved the narrowed set could actually IMPORT the script it
+  # exists to run. A new transitive import anywhere under engine.* would have
+  # surfaced as an ImportError in production, on a dispatched money-path run.
+  #
+  # Drill (2026-08-18): removing pyyaml from a slim env makes this fail with
+  # ModuleNotFoundError at engine/config.py:19. It is not a guard that cannot
+  # fail.
+  watcher-env:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Restore watcher venv
+        id: venv-cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          # Same key as check-triggers{,-crypto}.yml — the three share one
+          # cache, so this job usually also warms the one the watchers restore.
+          key: watcher-venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('requirements-watcher.txt') }}
+
+      - name: Build watcher venv (cache miss only)
+        if: steps.venv-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -r requirements-watcher.txt
+
+      - name: The watcher env can import the watcher
+        run: .venv/bin/python -c "import scripts.check_triggers"
+
   # Both suites above are unconditional, which is deliberate — but "unconditional"
   # is a property of the file as it reads today, not a guarantee. Add a `paths`
   # filter, an `if:`, or drop a job from a `needs:` list, and the run still ends
@@ -134,8 +179,10 @@ jobs:
   #
   # `all` over an empty collection is vacuously true. Keep the loop.
   # If a suite is added to this workflow, add its job id to EXPECTED.
+  # `watcher-env` is in the list for that reason: it is a suite of one assertion,
+  # but a suite that can be dropped silently is exactly what EXPECTED refuses.
   gate:
-    needs: [pytest, site-tests]
+    needs: [pytest, site-tests, watcher-env]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -145,7 +192,7 @@ jobs:
           # Through the environment, not interpolated into the script body:
           # ${{ }} inside `run:` is textual substitution into a shell.
           NEEDS: ${{ toJSON(needs) }}
-          EXPECTED: '["pytest","site-tests"]'
+          EXPECTED: '["pytest","site-tests","watcher-env"]'
         run: |
           set -uo pipefail
           fail=0
