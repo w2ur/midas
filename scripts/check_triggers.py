@@ -289,7 +289,17 @@ def _process_channel(
         # If f is None the order was already in the inbox (idempotency skip);
         # process_fired_order cleans up the zombie pending file and commits that.
         def _commit(order_id: str, on: date, paths: list[str]) -> None:
-            if not _git_add_commit(order_id, on, paths):
+            # The RAISE path counts as well. `_git_add_commit` runs git-add and
+            # git-commit under check=True, and process_fired_order swallows any
+            # exception so the batch continues — so a failed commit used to be
+            # invisible here while a failed push was not. That case is strictly
+            # worse: the fill is on disk with no commit at all.
+            try:
+                ok = _git_add_commit(order_id, on, paths)
+            except Exception:
+                summary["push_failures"] += 1
+                raise
+            if not ok:
                 summary["push_failures"] += 1
 
         process_fired_order(
@@ -455,18 +465,27 @@ def commit_and_push() -> bool:
             str(_PROJECT_ROOT / "data" / "leaderboard"),
         ]
     )
-    subprocess.run(["git", "add", *data_dirs], cwd=_PROJECT_ROOT, check=True)
-    diff = subprocess.run(
-        ["git", "diff", "--cached", "--quiet"],
-        cwd=_PROJECT_ROOT,
-    )
-    if diff.returncode == 0:
-        logger.info("No trigger changes to commit.")
-        return True
-    msg = (
-        f"chore(triggers): execute fired/expired conditions {date.today().isoformat()}"
-    )
-    subprocess.run(["git", "commit", "-m", msg], cwd=_PROJECT_ROOT, check=True)
+    # A failing git-add or git-commit is reported, not raised: main() decides
+    # the run's verdict last, and a traceback here would kill the process
+    # before it got there — losing the distinction between "nothing landed"
+    # and "the batch finished with one stranded commit".
+    try:
+        subprocess.run(["git", "add", *data_dirs], cwd=_PROJECT_ROOT, check=True)
+        diff = subprocess.run(
+            ["git", "diff", "--cached", "--quiet"],
+            cwd=_PROJECT_ROOT,
+        )
+        if diff.returncode == 0:
+            logger.info("No trigger changes to commit.")
+            return True
+        msg = (
+            f"chore(triggers): execute fired/expired conditions "
+            f"{date.today().isoformat()}"
+        )
+        subprocess.run(["git", "commit", "-m", msg], cwd=_PROJECT_ROOT, check=True)
+    except subprocess.CalledProcessError as exc:
+        logger.error("Tail commit failed (%s); nothing was pushed.", exc)
+        return False
     result = subprocess.run(
         ["git", "push", "origin", "HEAD:main"],
         cwd=_PROJECT_ROOT,
@@ -496,6 +515,36 @@ def commit_and_push() -> bool:
         return False
     logger.info("Committed + pushed tail after rebase (leaderboard/expired).")
     return True
+
+
+def _nothing_is_stranded() -> bool:
+    """True when every local commit is already on origin/main.
+
+    A push pushes the whole branch, so a later order's successful push carries
+    an earlier order's rejected commit with it. Trusting the failure counter
+    alone therefore files "commits could not be pushed" when nothing is
+    stranded — noise on the one alert channel that has to stay trustworthy.
+
+    So the verdict is taken from the published state rather than from a proxy
+    for it, the same reasoning as the baseline-freshness guard: a count of past
+    failures cannot answer "is anything stranded now", and the remote can.
+
+    Fails CLOSED — any error here reports the failure rather than clearing it.
+    """
+    try:
+        fetched = subprocess.run(
+            ["git", "fetch", "origin", "main"], cwd=_PROJECT_ROOT
+        )
+        if fetched.returncode != 0:
+            return False
+        ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", "HEAD", "FETCH_HEAD"],
+            cwd=_PROJECT_ROOT,
+        )
+        return ancestor.returncode == 0
+    except Exception as exc:  # pragma: no cover — defensive
+        logger.warning("Could not check whether commits are stranded: %s", exc)
+        return False
 
 
 def main() -> None:
@@ -543,13 +592,27 @@ def main() -> None:
         if not commit_and_push():
             push_failed = True
 
-    if push_failed:
+    if push_failed and _nothing_is_stranded():
+        # A later order's push carried the earlier failure's commit to main.
+        logger.info(
+            "A push failed earlier, but every local commit is now on "
+            "origin/main — nothing is stranded."
+        )
+        push_failed = False
+
+    # `errors` is execute_triggered_order raising on a FIRED trigger: the worst
+    # failure on this path, and it exited 0. The pending file survives and the
+    # order is retried, so nothing is lost — but a broker that refuses an order
+    # by crashing, hourly and forever, is exactly what has to reach a human.
+    if push_failed or summary["errors"] > 0:
         # A warning inside a green run reached nobody. Both watchers route
         # failure through .github/actions/failure-issue, and a non-zero exit is
         # what that consumer reads.
         logger.error(
-            "One or more commits could not be pushed; they are stranded on this "
-            "runner. Exiting 1 so the failure is reported."
+            "Watcher run did not fully succeed (stranded commits: %s, order "
+            "errors: %d). Exiting 1 so the failure is reported.",
+            push_failed,
+            summary["errors"],
         )
         sys.exit(1)
 

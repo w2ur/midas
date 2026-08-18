@@ -505,7 +505,7 @@ class TestFailedPushExitsNonZero:
     blackout run and a no-op run both stay green.
     """
 
-    def _fake_git(self, monkeypatch, *, push_rc: int):
+    def _fake_git(self, monkeypatch, *, push_rc: int, is_ancestor_rc: int | None = None):
         """Intercept EVERY git call the watcher makes.
 
         Not just push: the fixtures live under a tmp MIDAS_DATA_DIR, so a real
@@ -529,7 +529,15 @@ class TestFailedPushExitsNonZero:
                 return sp.CompletedProcess(cmd, 1)  # something is staged
             if cmd[1] in {"push", "pull"}:
                 return sp.CompletedProcess(cmd, push_rc)
-            return sp.CompletedProcess(cmd, 0)  # add, commit, rebase --abort
+            if cmd[1] == "merge-base":
+                # Models reality rather than answering 0 to everything: HEAD is
+                # an ancestor of origin/main exactly when a push landed. The
+                # default keeps the two in step; pass is_ancestor_rc to model
+                # the self-healed case, where an earlier failure's commit was
+                # carried to main by a later order's successful push.
+                rc = push_rc if is_ancestor_rc is None else is_ancestor_rc
+                return sp.CompletedProcess(cmd, rc)
+            return sp.CompletedProcess(cmd, 0)  # add, commit, fetch, rebase
 
         # Replace the module's OWN `subprocess` reference, not `subprocess.run`
         # itself: the latter is global and would also intercept
@@ -538,7 +546,11 @@ class TestFailedPushExitsNonZero:
         monkeypatch.setattr(
             check_triggers,
             "subprocess",
-            types.SimpleNamespace(run=fake, CompletedProcess=sp.CompletedProcess),
+            types.SimpleNamespace(
+                run=fake,
+                CompletedProcess=sp.CompletedProcess,
+                CalledProcessError=sp.CalledProcessError,
+            ),
         )
         return seen
 
@@ -642,3 +654,75 @@ class TestFailedPushExitsNonZero:
         self._always_fail_push(monkeypatch)
         now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
         self._run_main(monkeypatch, pm, now)()
+
+    def test_a_self_healed_push_does_not_cry_wolf(self, broker_env, monkeypatch) -> None:
+        """A push pushes the whole branch, so a later order's successful push
+        carries an earlier order's rejected commit. Reporting "stranded" then
+        is noise on the one alert channel that has to stay trustworthy.
+
+        The verdict is taken from the published state, not from the counter:
+        every local commit is on origin/main, so nothing is stranded.
+        """
+        _order, pm = self._fireable(broker_env, monkeypatch)
+        self._fake_git(monkeypatch, push_rc=1, is_ancestor_rc=0)
+        now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        self._run_main(monkeypatch, pm, now)()  # must not raise SystemExit
+
+    def test_a_failed_commit_is_not_silent(self, broker_env, monkeypatch) -> None:
+        """`_git_add_commit` runs git-add and git-commit under check=True, and
+        process_fired_order swallows the exception so the batch continues. That
+        left a failed COMMIT invisible while a failed push was not — and it is
+        the worse case: the fill is on disk with no commit at all."""
+        import subprocess as sp
+        import types
+
+        from scripts import check_triggers
+
+        _order, pm = self._fireable(broker_env, monkeypatch)
+
+        def fake(cmd, *a, **kw):
+            if cmd[1] == "diff":
+                return sp.CompletedProcess(cmd, 1)
+            # ONLY the per-order commit fails. The tail commit_and_push must
+            # succeed, or it would set the failure flag by itself and this test
+            # would pass with the per-order counting removed — which is exactly
+            # what happened on the first attempt.
+            if cmd[1] == "commit" and "execute ord_" in " ".join(cmd):
+                raise sp.CalledProcessError(1, cmd)
+            if cmd[1] == "merge-base":
+                return sp.CompletedProcess(cmd, 1)
+            return sp.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr(
+            check_triggers,
+            "subprocess",
+            types.SimpleNamespace(
+                run=fake,
+                CompletedProcess=sp.CompletedProcess,
+                CalledProcessError=sp.CalledProcessError,
+            ),
+        )
+        now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        with pytest.raises(SystemExit) as exc:
+            self._run_main(monkeypatch, pm, now)()
+        assert exc.value.code == 1
+
+    def test_an_order_that_raises_turns_the_run_red(
+        self, broker_env, monkeypatch
+    ) -> None:
+        """`errors` is execute_triggered_order raising on a FIRED trigger — the
+        worst failure on this path, and it used to exit 0 while the Worker
+        re-dispatched the same order every hour."""
+        from scripts import check_triggers
+
+        _order, pm = self._fireable(broker_env, monkeypatch)
+        self._fake_git(monkeypatch, push_rc=0)
+
+        def boom(*a, **kw):
+            raise RuntimeError("broker exploded")
+
+        monkeypatch.setattr(check_triggers, "execute_triggered_order", boom)
+        now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        with pytest.raises(SystemExit) as exc:
+            self._run_main(monkeypatch, pm, now)()
+        assert exc.value.code == 1

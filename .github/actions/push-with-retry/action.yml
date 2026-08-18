@@ -115,10 +115,17 @@ runs:
           #
           # Ask before deepening: `--unshallow` is a hard error on a complete
           # clone, and a caller may legitimately check out at full depth.
+          # The `||` fallback is the one the pre-2026-08-18 line carried, kept
+          # for its original reason: under `set -euo pipefail` a transient fetch
+          # failure would otherwise kill the step immediately, skipping the
+          # remaining attempts AND the explicit "this commit is lost with the
+          # runner" error below — reporting a lost commit as a generic step
+          # failure. The is-shallow test is what makes the `--unshallow` safe;
+          # the fallback is what makes a flaky network survivable.
           if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
-            git fetch --unshallow origin main
+            git fetch --unshallow origin main || git fetch origin main || true
           else
-            git fetch origin main
+            git fetch origin main || true
           fi
           git pull --rebase origin main
         done
