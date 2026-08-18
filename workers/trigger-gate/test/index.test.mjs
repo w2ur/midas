@@ -95,6 +95,19 @@ test("every pair failing is systemic, and is escalated", async () => {
   assert.deepEqual(calls.issuesCreated, ["trigger-gate worker failing"]);
 });
 
+test("a lone dead pair is quiet, not an hourly page", async () => {
+  // At exactly one pending pair, "all pairs failed" collapses into "any pair
+  // failed", so the systemic check would fire on a permanently dead symbol and
+  // comment on the issue every hour until the order expired — the exact
+  // alert-fatigue the escalation was written to avoid. With one pair there is
+  // no evidence separating a dead symbol from an outage, so it stays quiet and
+  // the daily sweep (a different price source) owns it.
+  const calls = stubFetch({ orders: [dead], prices: {}, deadPairs: ["MATIC-EUR"] });
+  await worker.scheduled({}, ENV, {});
+  assert.deepEqual(calls.issuesCreated, []);
+  assert.equal(calls.dispatches, 0);
+});
+
 test("no dispatch when nothing is at its level", async () => {
   const calls = stubFetch({ orders: [btc], prices: { "BTC-EUR": 50 } });
   await worker.scheduled({}, ENV, {});

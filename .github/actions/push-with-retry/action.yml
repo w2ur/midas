@@ -115,19 +115,27 @@ runs:
           #
           # Ask before deepening: `--unshallow` is a hard error on a complete
           # clone, and a caller may legitimately check out at full depth.
-          # The `||` fallback is the one the pre-2026-08-18 line carried, kept
-          # for its original reason: under `set -euo pipefail` a transient fetch
-          # failure would otherwise kill the step immediately, skipping the
-          # remaining attempts AND the explicit "this commit is lost with the
-          # runner" error below — reporting a lost commit as a generic step
-          # failure. The is-shallow test is what makes the `--unshallow` safe;
-          # the fallback is what makes a flaky network survivable.
+          # Nothing in this branch may die under `set -euo pipefail`, or the
+          # step ends right here — skipping the remaining attempts AND the
+          # explicit "this commit is lost with the runner" error below, so a
+          # lost commit gets reported as a generic step failure instead.
+          #
+          # The fetch fallback alone was NOT enough for that, which is the
+          # trap: if `--unshallow` fails transiently, the fallback fetch
+          # succeeds SHALLOWLY, and the rebase on a still-shallow clone is then
+          # what `set -e` kills. So the rebase is guarded too, and a failed one
+          # is aborted and retried rather than being fatal — matching what
+          # scripts/check_triggers._git_add_commit already does.
           if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
             git fetch --unshallow origin main || git fetch origin main || true
           else
             git fetch origin main || true
           fi
-          git pull --rebase origin main
+          if ! git pull --rebase origin main; then
+            echo "Rebase failed on attempt ${attempt}; aborting it and retrying."
+            git rebase --abort 2>/dev/null || true
+            continue
+          fi
         done
 
         echo "::error::Push to main failed after ${INPUT_ATTEMPTS} attempts. This commit is lost with the runner." >&2

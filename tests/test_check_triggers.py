@@ -726,3 +726,75 @@ class TestFailedPushExitsNonZero:
         with pytest.raises(SystemExit) as exc:
             self._run_main(monkeypatch, pm, now)()
         assert exc.value.code == 1
+
+    def test_a_systemic_commit_failure_is_not_masked_by_the_ancestor_check(
+        self, broker_env, monkeypatch
+    ) -> None:
+        """Regression: 2026-08-18 — the self-heal check masked the failure it
+        sat next to.
+
+        `_nothing_is_stranded` asked "is anything committed-but-unpushed". When
+        git-commit fails outright NOTHING is committed, so HEAD is trivially an
+        ancestor of origin/main, the flag was cleared and the run exited 0 —
+        while the fill sat on disk, in no commit, and died with the runner.
+
+        `merge-base` answers 0 here on purpose: that is the TRUTHFUL answer
+        when nothing was committed, and the previous test's stub hard-coded 1,
+        which is why it could not see this.
+        """
+        import subprocess as sp
+        import types
+
+        from scripts import check_triggers
+
+        _order, pm = self._fireable(broker_env, monkeypatch)
+
+        def fake(cmd, *a, **kw):
+            if cmd[1] == "diff":
+                return sp.CompletedProcess(cmd, 1)
+            if cmd[1] == "commit":
+                raise sp.CalledProcessError(1, cmd)
+            if cmd[1] == "merge-base":
+                return sp.CompletedProcess(cmd, 0)  # truthful: nothing committed
+            if cmd[1] == "status":
+                return sp.CompletedProcess(cmd, 0, stdout="")
+            return sp.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr(
+            check_triggers,
+            "subprocess",
+            types.SimpleNamespace(
+                run=fake,
+                CompletedProcess=sp.CompletedProcess,
+                CalledProcessError=sp.CalledProcessError,
+            ),
+        )
+        now = datetime(2026, 5, 17, 14, 30, tzinfo=timezone.utc)
+        with pytest.raises(SystemExit) as exc:
+            self._run_main(monkeypatch, pm, now)()
+        assert exc.value.code == 1
+
+    def test_uncommitted_watcher_paths_mean_something_is_stranded(
+        self, broker_env, monkeypatch
+    ) -> None:
+        """The second lock: "unpushed" is only half of "stranded".
+
+        Even with the commit-failure counter cleared, a dirty worktree under
+        the paths the watcher writes must refuse to report all-clear.
+        """
+        import subprocess as sp
+        import types
+
+        from scripts import check_triggers
+
+        def fake(cmd, *a, **kw):
+            if cmd[1] == "status":
+                return sp.CompletedProcess(cmd, 0, stdout=" M data/orders/inbox/x.jsonl\n")
+            return sp.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr(
+            check_triggers,
+            "subprocess",
+            types.SimpleNamespace(run=fake, CompletedProcess=sp.CompletedProcess),
+        )
+        assert check_triggers._nothing_is_stranded() is False

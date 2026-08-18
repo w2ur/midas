@@ -80,6 +80,15 @@ BLACKOUT_END = time(21, 0)
 # paths is a list of absolute path strings to git-add before committing.
 Committer = Callable[[str, date, list[str]], None]
 
+# Outcomes of a commit-and-push attempt. A COMMIT failure and a PUSH failure are
+# different facts and must not be collapsed: a stranded *commit* is recoverable
+# (the next successful push carries it), whereas a failed commit means the
+# mutation is on disk and in NOTHING — it dies with the runner. Only the former
+# may ever be cleared by the published-state check.
+COMMIT_OK = "ok"
+COMMIT_FAILED = "commit-failed"
+PUSH_FAILED = "push-failed"
+
 
 def in_blackout(now: datetime) -> bool:
     """True if `now` (UTC) is inside the daily-session blackout window."""
@@ -295,11 +304,13 @@ def _process_channel(
             # invisible here while a failed push was not. That case is strictly
             # worse: the fill is on disk with no commit at all.
             try:
-                ok = _git_add_commit(order_id, on, paths)
+                pushed = _git_add_commit(order_id, on, paths)
             except Exception:
-                summary["push_failures"] += 1
+                # git-add / git-commit run under check=True, so this is a
+                # COMMIT failure: nothing was created to be carried later.
+                summary["commit_failures"] += 1
                 raise
-            if not ok:
+            if not pushed:
                 summary["push_failures"] += 1
 
         process_fired_order(
@@ -359,6 +370,10 @@ def run(
         # nobody knowing — hence main()'s non-zero exit. See the class docstring
         # of tests/test_check_triggers.TestFailedPushExitsNonZero.
         "push_failures": 0,
+        # Distinct from push_failures on purpose: a commit that could not be
+        # created leaves the mutation on disk and in nothing at all, so it can
+        # never be cleared by the published-state check below.
+        "commit_failures": 0,
     }
     if in_blackout(now):
         summary["blacked_out"] = True
@@ -437,11 +452,12 @@ def refresh_leaderboard_artifact(trigger: str, on: date) -> None:
         logger.warning("Leaderboard refresh failed (non-fatal): %s", exc)
 
 
-def commit_and_push() -> bool:
+def commit_and_push() -> str:
     """Commit any remaining data/orders/ and data/leaderboard/ changes and push.
 
-    Returns True when there was nothing to push or the push landed, False when
-    the commit is stranded locally — same contract as _git_add_commit.
+    Returns COMMIT_OK when there was nothing to do or the push landed,
+    COMMIT_FAILED when no commit could be created at all, PUSH_FAILED when the
+    commit exists locally but did not reach main.
 
     Called at end of run for: expired-order sweeps (batched, recoverable) and
     the leaderboard artifact. Per-fire commits for triggered orders are handled
@@ -477,22 +493,25 @@ def commit_and_push() -> bool:
         )
         if diff.returncode == 0:
             logger.info("No trigger changes to commit.")
-            return True
+            return COMMIT_OK
         msg = (
             f"chore(triggers): execute fired/expired conditions "
             f"{date.today().isoformat()}"
         )
         subprocess.run(["git", "commit", "-m", msg], cwd=_PROJECT_ROOT, check=True)
     except subprocess.CalledProcessError as exc:
-        logger.error("Tail commit failed (%s); nothing was pushed.", exc)
-        return False
+        logger.error(
+            "Tail commit failed (%s); the mutation is on disk and in no commit.",
+            exc,
+        )
+        return COMMIT_FAILED
     result = subprocess.run(
         ["git", "push", "origin", "HEAD:main"],
         cwd=_PROJECT_ROOT,
     )
     if result.returncode == 0:
         logger.info("Committed + pushed tail (leaderboard/expired).")
-        return True
+        return COMMIT_OK
 
     logger.warning("Tail push failed; retrying after git pull --rebase.")
     rebase = subprocess.run(
@@ -502,7 +521,7 @@ def commit_and_push() -> bool:
     if rebase.returncode != 0:
         subprocess.run(["git", "rebase", "--abort"], cwd=_PROJECT_ROOT)
         logger.warning("Tail rebase failed; aborted, commit stays local.")
-        return False
+        return PUSH_FAILED
     retry = subprocess.run(
         ["git", "push", "origin", "HEAD:main"],
         cwd=_PROJECT_ROOT,
@@ -512,9 +531,9 @@ def commit_and_push() -> bool:
             "Tail retry push also failed; commit exists locally and will be "
             "carried by the next successful push attempt."
         )
-        return False
+        return PUSH_FAILED
     logger.info("Committed + pushed tail after rebase (leaderboard/expired).")
-    return True
+    return COMMIT_OK
 
 
 def _nothing_is_stranded() -> bool:
@@ -529,9 +548,41 @@ def _nothing_is_stranded() -> bool:
     for it, the same reasoning as the baseline-freshness guard: a count of past
     failures cannot answer "is anything stranded now", and the remote can.
 
+    Two conditions, because "unpushed" is only half of "stranded":
+
+    1. nothing the watcher writes is still uncommitted in the worktree, and
+    2. every local commit is already on origin/main.
+
+    Condition 1 is what stops this from MASKING the failure it sits next to. If
+    git-commit is broken outright, nothing gets committed, HEAD is trivially an
+    ancestor of origin/main, and an unqualified ancestor test would report all
+    clear on a run whose fill exists only on the runner's disk. The caller also
+    keeps commit failures in their own counter, which this cannot clear; this
+    is the second lock on the same door.
+
     Fails CLOSED — any error here reports the failure rather than clearing it.
     """
     try:
+        dirty = subprocess.run(
+            [
+                "git",
+                "status",
+                "--porcelain",
+                "--",
+                str(_PROJECT_ROOT / "data" / "orders"),
+                str(_PROJECT_ROOT / "data" / "portfolios"),
+                str(_PROJECT_ROOT / "data" / "leaderboard"),
+            ],
+            cwd=_PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        if dirty.returncode != 0 or (dirty.stdout or "").strip():
+            logger.warning(
+                "Watcher-written paths are still uncommitted: %s",
+                (dirty.stdout or "").strip()[:300] or "could not read git status",
+            )
+            return False
         fetched = subprocess.run(
             ["git", "fetch", "origin", "main"], cwd=_PROJECT_ROOT
         )
@@ -586,13 +637,19 @@ def main() -> None:
     # failed push would strand the orders behind it unevaluated, which is a
     # worse failure than the one being reported.
     push_failed = summary["push_failures"] > 0
+    commit_failed = summary["commit_failures"] > 0
     if summary["fired"] > 0 or summary["expired"] > 0:
         if summary["fired"] > 0:
             refresh_leaderboard_artifact(trigger="trigger-fire", on=now.date())
-        if not commit_and_push():
+        outcome = commit_and_push()
+        if outcome == COMMIT_FAILED:
+            commit_failed = True
+        elif outcome == PUSH_FAILED:
             push_failed = True
 
-    if push_failed and _nothing_is_stranded():
+    # ONLY a push failure may be cleared, and only by the published state. A
+    # commit failure means there is no commit for a later push to carry.
+    if push_failed and not commit_failed and _nothing_is_stranded():
         # A later order's push carried the earlier failure's commit to main.
         logger.info(
             "A push failed earlier, but every local commit is now on "
@@ -604,13 +661,15 @@ def main() -> None:
     # failure on this path, and it exited 0. The pending file survives and the
     # order is retried, so nothing is lost — but a broker that refuses an order
     # by crashing, hourly and forever, is exactly what has to reach a human.
-    if push_failed or summary["errors"] > 0:
+    if push_failed or commit_failed or summary["errors"] > 0:
         # A warning inside a green run reached nobody. Both watchers route
         # failure through .github/actions/failure-issue, and a non-zero exit is
         # what that consumer reads.
         logger.error(
-            "Watcher run did not fully succeed (stranded commits: %s, order "
-            "errors: %d). Exiting 1 so the failure is reported.",
+            "Watcher run did not fully succeed (uncommitted: %s, stranded "
+            "commits: %s, order errors: %d). Exiting 1 so the failure is "
+            "reported.",
+            commit_failed,
             push_failed,
             summary["errors"],
         )

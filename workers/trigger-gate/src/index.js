@@ -183,7 +183,9 @@ export default {
       const candidates = gateable(await pendingOrders(env), today);
       if (candidates.length === 0) {
         console.log("no live crypto pending orders — no dispatch");
-        await closeFailureIssue(env).catch(() => {});
+        await closeFailureIssue(env).catch((e) =>
+        console.error("could not close the failure issue:", String(e)),
+      );
         return;
       }
 
@@ -209,9 +211,15 @@ export default {
       if (priceFailures.length > 0) {
         console.log(`could not price ${priceFailures.length}/${pairs.length}: ${priceFailures.join("; ")}`);
       }
-      if (priceFailures.length === pairs.length) {
-        // Every pair failed: that is the exchange or the network, not a dead
-        // symbol, and it means the gate priced nothing at all.
+      // Escalate only when MORE THAN ONE pair exists and all of them failed.
+      // At exactly one pending pair the "all failed" test collapses into "any
+      // failed", so a single permanently dead symbol — the MATIC case this
+      // guard was written around — would page hourly until the order expired,
+      // which is precisely what the comment above says must not happen. With
+      // one pair there is no evidence that distinguishes a dead symbol from an
+      // exchange outage, so the safe reading is the quiet one: degrade to the
+      // daily sweep, which prices from a different source entirely.
+      if (pairs.length > 1 && priceFailures.length === pairs.length) {
         throw new Error(`no pair could be priced (${pairs.length}): ${priceFailures.join("; ")}`);
       }
 
@@ -222,7 +230,9 @@ export default {
         console.log(
           `${candidates.length} live crypto order(s), none at level — no dispatch`,
         );
-        await closeFailureIssue(env).catch(() => {});
+        await closeFailureIssue(env).catch((e) =>
+        console.error("could not close the failure issue:", String(e)),
+      );
         return;
       }
 
@@ -233,7 +243,9 @@ export default {
       console.log(
         `dispatched ${WORKFLOW_FILE}: ${hits.map((o) => o.order_id).join(", ")}`,
       );
-      await closeFailureIssue(env).catch(() => {});
+      await closeFailureIssue(env).catch((e) =>
+        console.error("could not close the failure issue:", String(e)),
+      );
     } catch (err) {
       // Report first, then rethrow so the invocation also shows as failed in
       // Cloudflare's cron event history.
