@@ -163,8 +163,13 @@ def process_fired_order(
         )
 
 
-def _git_add_commit(order_id: str, today: date, paths: list[str]) -> None:
+def _git_add_commit(order_id: str, today: date, paths: list[str]) -> bool:
     """git-add the given paths, then commit with a per-order message.
+
+    Returns True when there was nothing to push or the push landed, False when
+    the commit is stranded locally. The caller turns a False into a non-zero
+    exit — see main(). Processing never stops here: the remaining orders in the
+    batch must still be evaluated.
 
     Skips the commit if there are no staged changes (defensive — the pending
     file may already be absent if a prior run cleaned it up).
@@ -182,7 +187,7 @@ def _git_add_commit(order_id: str, today: date, paths: list[str]) -> None:
     )
     if diff.returncode == 0:
         logger.info("Nothing staged for %s — skipped commit.", order_id)
-        return
+        return True
 
     msg = f"chore(triggers): execute {order_id} {today.isoformat()}"
     subprocess.run(["git", "commit", "-m", msg], cwd=_PROJECT_ROOT, check=True)
@@ -193,7 +198,7 @@ def _git_add_commit(order_id: str, today: date, paths: list[str]) -> None:
     )
     if result.returncode == 0:
         logger.info("Committed + pushed %s.", order_id)
-        return
+        return True
 
     # Push failed — attempt a rebase-based retry once.
     logger.warning("Push failed for %s; retrying after git pull --rebase.", order_id)
@@ -204,7 +209,7 @@ def _git_add_commit(order_id: str, today: date, paths: list[str]) -> None:
     if rebase.returncode != 0:
         subprocess.run(["git", "rebase", "--abort"], cwd=_PROJECT_ROOT)
         logger.warning("Rebase failed for %s; aborted, commit stays local.", order_id)
-        return
+        return False
     retry = subprocess.run(
         ["git", "push", "origin", "HEAD:main"],
         cwd=_PROJECT_ROOT,
@@ -215,6 +220,8 @@ def _git_add_commit(order_id: str, today: date, paths: list[str]) -> None:
             "carried by the next successful push attempt.",
             order_id,
         )
+        return False
+    return True
 
 
 def _process_channel(
@@ -281,11 +288,15 @@ def _process_channel(
         # Per-fire durability: commit immediately after this order's mutation set.
         # If f is None the order was already in the inbox (idempotency skip);
         # process_fired_order cleans up the zombie pending file and commits that.
+        def _commit(order_id: str, on: date, paths: list[str]) -> None:
+            if not _git_add_commit(order_id, on, paths):
+                summary["push_failures"] += 1
+
         process_fired_order(
             order,
             f,
             today,
-            _git_add_commit,
+            _commit,
             inbox_dir=inbox_dir,
             pending_dir=pending_dir,
         )
@@ -331,6 +342,13 @@ def run(
         "expired": 0,
         "carried": 0,
         "errors": 0,
+        # Per-fire commits whose push (and its rebase-retry) failed. The fill is
+        # on disk and in a local commit that dies with the runner; the pending
+        # file still exists on origin, so the next evaluation legitimately
+        # re-fires it and the system self-heals. What does NOT self-heal is
+        # nobody knowing — hence main()'s non-zero exit. See the class docstring
+        # of tests/test_check_triggers.TestFailedPushExitsNonZero.
+        "push_failures": 0,
     }
     if in_blackout(now):
         summary["blacked_out"] = True
@@ -409,8 +427,11 @@ def refresh_leaderboard_artifact(trigger: str, on: date) -> None:
         logger.warning("Leaderboard refresh failed (non-fatal): %s", exc)
 
 
-def commit_and_push() -> None:
+def commit_and_push() -> bool:
     """Commit any remaining data/orders/ and data/leaderboard/ changes and push.
+
+    Returns True when there was nothing to push or the push landed, False when
+    the commit is stranded locally — same contract as _git_add_commit.
 
     Called at end of run for: expired-order sweeps (batched, recoverable) and
     the leaderboard artifact. Per-fire commits for triggered orders are handled
@@ -441,7 +462,7 @@ def commit_and_push() -> None:
     )
     if diff.returncode == 0:
         logger.info("No trigger changes to commit.")
-        return
+        return True
     msg = (
         f"chore(triggers): execute fired/expired conditions {date.today().isoformat()}"
     )
@@ -452,7 +473,7 @@ def commit_and_push() -> None:
     )
     if result.returncode == 0:
         logger.info("Committed + pushed tail (leaderboard/expired).")
-        return
+        return True
 
     logger.warning("Tail push failed; retrying after git pull --rebase.")
     rebase = subprocess.run(
@@ -462,7 +483,7 @@ def commit_and_push() -> None:
     if rebase.returncode != 0:
         subprocess.run(["git", "rebase", "--abort"], cwd=_PROJECT_ROOT)
         logger.warning("Tail rebase failed; aborted, commit stays local.")
-        return
+        return False
     retry = subprocess.run(
         ["git", "push", "origin", "HEAD:main"],
         cwd=_PROJECT_ROOT,
@@ -472,8 +493,9 @@ def commit_and_push() -> None:
             "Tail retry push also failed; commit exists locally and will be "
             "carried by the next successful push attempt."
         )
-    else:
-        logger.info("Committed + pushed tail after rebase (leaderboard/expired).")
+        return False
+    logger.info("Committed + pushed tail after rebase (leaderboard/expired).")
+    return True
 
 
 def main() -> None:
@@ -509,11 +531,27 @@ def main() -> None:
         return
     if summary["blacked_out"]:
         return
-    if summary["fired"] == 0 and summary["expired"] == 0:
-        return
-    if summary["fired"] > 0:
-        refresh_leaderboard_artifact(trigger="trigger-fire", on=now.date())
-    commit_and_push()
+
+    # Every order has already been evaluated and every push already attempted;
+    # the exit code is decided last, on purpose. Aborting mid-batch on the first
+    # failed push would strand the orders behind it unevaluated, which is a
+    # worse failure than the one being reported.
+    push_failed = summary["push_failures"] > 0
+    if summary["fired"] > 0 or summary["expired"] > 0:
+        if summary["fired"] > 0:
+            refresh_leaderboard_artifact(trigger="trigger-fire", on=now.date())
+        if not commit_and_push():
+            push_failed = True
+
+    if push_failed:
+        # A warning inside a green run reached nobody. Both watchers route
+        # failure through .github/actions/failure-issue, and a non-zero exit is
+        # what that consumer reads.
+        logger.error(
+            "One or more commits could not be pushed; they are stranded on this "
+            "runner. Exiting 1 so the failure is reported."
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
