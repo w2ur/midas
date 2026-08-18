@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -141,7 +142,11 @@ def test_json_digest_and_verify_agree_on_the_same_tree(attested_repo):
     from_json = json.loads(
         subprocess.run(
             [
-                "python",
+                # sys.executable, not "python": there is no bare `python` on the
+                # owner's uv-managed Mac, so this test was green only on the CI
+                # runner — an environment-dependent green, which is the shape
+                # this repo's guards exist to refuse.
+                sys.executable,
                 str(
                     Path(__file__).resolve().parents[1] / "scripts" / "attest_ledger.py"
                 ),
