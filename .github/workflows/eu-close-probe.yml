@@ -33,7 +33,15 @@ name: eu-close-probe
 # is not a probe.
 
 on:
-  schedule:
+  # PAUSED 2026-08-18: August's Actions quota is nearly exhausted (~268 min
+  # left of 2,000; the meter resets 00:00 UTC on Sep 1). At ~5 runs a weekday
+  # this probe costs ~108 min/month, which is real money against that ceiling
+  # and buys an answer that keeps until September. Phase 2 (locate the
+  # withdrawal edge between 20:18 and 22:23) resumes by uncommenting the five
+  # crons below on/after 2026-09-01. The 18:00 positive control comes back WITH
+  # them — a probe without its control proves nothing, which is the whole
+  # reason it survived the 08-17 trim.
+  # schedule:   (uncomment this key together with the five crons below)
     # Phase 1 (2026-08-14, ANSWERED) — bracket the transition in both
     # directions. Result, on 08-14 and confirmed on 08-17: a European close is
     # POPULATED same-day from ~17:00 to at least 20:18 UTC, NULL by 22:23, still
@@ -51,7 +59,7 @@ on:
     # at all — which is the same "a check that cannot fail" trap the rest of
     # this repo is built against. Retired: `0 16 * * 1-5`, `0 2 * * 2-6`,
     # `0 7 * * 2-6`.
-    - cron: "0 18 * * 1-5"   # positive control: populated well before the edge
+    # - cron: "0 18 * * 1-5"   # positive control: populated well before the edge
     #
     # Phase 2 (2026-08-17, OPEN) — where exactly, between 20:18 and 22:23, is
     # the European close withdrawn? It matters because AAPL's same-day close was
@@ -66,13 +74,13 @@ on:
     # merely scatters the samples across the window we want covered. That turns
     # the scheduler's worst property into sampling coverage, at ~2 runner-minutes
     # per sample instead of the ~135 a 15-minute loop over the same window costs.
-    - cron: "30 20 * * 1-5"
-    - cron: "0 21 * * 1-5"
-    - cron: "30 21 * * 1-5"
+    # - cron: "30 20 * * 1-5"
+    # - cron: "0 21 * * 1-5"
+    # - cron: "30 21 * * 1-5"
     # The far edge, measured NULL on 08-14. Both ends of the bracket have to
     # survive the trim: three populated samples with no known-NULL sample
     # after them cannot distinguish a withdrawal at 21:45 from one at 23:00.
-    - cron: "0 22 * * 1-5"
+    # - cron: "0 22 * * 1-5"
   workflow_dispatch:
 
 permissions:
