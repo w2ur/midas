@@ -246,7 +246,49 @@ ALERTING_WORKFLOWS = [
     # commit with no issue filed and nothing to read but the X. Its three jobs
     # guard published data — the least visible place for silence to sit.
     "session-integrity.yml",
+    # Added 2026-08-18. These four had no consumer at all, which is a W2.10
+    # violation on the money path: `check-triggers` is the daily conditional
+    # sweep and — since the crypto watcher became dispatch-only — the only
+    # scheduled one; `attest-ledger` is the tamper-evidence job, where silence
+    # means no claim either way; `refresh-leaderboard` writes the public
+    # weekend artifact. All four granted `contents: write` only, and a
+    # `permissions:` block is exhaustive, so the issue POST would have 403'd
+    # and the wiring would have been decorative.
+    "check-triggers.yml",
+    "check-triggers-crypto.yml",
+    "attest-ledger.yml",
+    "refresh-leaderboard.yml",
 ]
+
+
+def test_every_alerting_workflow_has_its_own_issue_identity():
+    """Idempotency is keyed on the TITLE, so two causes must not share one.
+
+    This is issue #37's lesson generalised across workflows rather than across
+    one workflow's two modes: `failure-issue` closes an open issue whose title
+    matches on the next SUCCESS, so if two workflows filed under one title, a
+    green run of the healthy one would close the sick one's issue and the alert
+    would disappear while the failure continued.
+    """
+    titles = {}
+    for name in ALERTING_WORKFLOWS:
+        workflow = yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / name).read_text()
+        )
+        for job in workflow["jobs"].values():
+            for step in job["steps"]:
+                if step.get("uses") != "./.github/actions/failure-issue":
+                    continue
+                title = step["with"]["title"]
+                assert title, f"{name} files an issue with no title"
+                assert title not in titles, (
+                    f"{name} and {titles[title]} both file under {title!r}; a "
+                    "success in one would close the other's open issue"
+                )
+                titles[title] = name
+    assert len(titles) >= len(ALERTING_WORKFLOWS), (
+        "fewer titles than alerting workflows — the collector missed some"
+    )
 
 
 def _failure_issue_script() -> str:

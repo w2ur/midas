@@ -42,6 +42,7 @@ on:
 
 permissions:
   contents: write # needed to commit fills back to main
+  issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
 concurrency:
   # Shared with check-triggers.yml on purpose: both commit fills to main, and
@@ -98,3 +99,23 @@ jobs:
 
       - name: Run watcher (crypto only)
         run: .venv/bin/python scripts/check_triggers.py --crypto-only
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "check-triggers-crypto: a dispatched crypto sweep did not complete"
+          body: |
+            A `check-triggers-crypto` run failed. This workflow is dispatch-only
+            — something fired it, which means the `workers/trigger-gate/` Worker
+            judged a pending crypto trigger to be at or near its level. So this
+            is a failure on a run that had a REASON to run, not a routine tick.
+
+            A distinct identity from the daily `check-triggers` sweep on
+            purpose: the two share a script but not a cause, and the repo
+            already learned with fetch-ohlcv's two modes that one title for two
+            causes lets a success on one close the other's issue.
+
+            Degradation: the affected orders are picked up by the daily 13:00
+            UTC sweep, which evaluates every asset class.

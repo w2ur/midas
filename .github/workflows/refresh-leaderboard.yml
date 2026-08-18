@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
 concurrency:
   group: refresh-leaderboard
@@ -53,3 +54,24 @@ jobs:
 
       - name: Run weekend refresh
         run: python scripts/refresh_leaderboard.py
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "refresh-leaderboard: the weekend valuation refresh did not complete"
+          body: |
+            A scheduled weekend `refresh-leaderboard` run failed.
+
+            This job's entire purpose is to write `data/leaderboard/current.json`
+            and the weekend snapshot/baseline points — which is why
+            `session-integrity` treats a missing `current.json` as a HARD
+            failure on a weekend-refresh commit rather than the warning it is
+            on a session commit.
+
+            Consequence to expect: the public leaderboard keeps serving the last
+            good artifact, with a stale `updated_at`. Snapshots are keyed on the
+            market date and are immutable, so a late re-run writes the missed
+            weekend point only if no later session has already published that
+            date.

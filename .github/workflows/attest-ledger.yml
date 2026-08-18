@@ -43,6 +43,7 @@ on:
 
 permissions:
   contents: write  # needed to push an annotated tag
+  issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
 concurrency:
   group: attest-ledger
@@ -168,3 +169,25 @@ jobs:
 
           echo "Pushed tag: ${TAG_NAME}"
           echo "Digest root: ${{ steps.digest.outputs.digest_root }}"
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "attest-ledger: the daily ledger attestation did not complete"
+          body: |
+            The nightly `attest-ledger` run failed, so either today's
+            `attest/*` tag was not cut or `--verify` refused the previous one.
+
+            **Read the failing step before anything else.** These are two very
+            different facts:
+
+            * a failure in *Verify the previous attestation still re-derives*
+              means a published tag's digest no longer re-derives from that
+              tag's own tree — i.e. the ledger it attests has been altered.
+              That is the tamper-evidence assertion doing its job, and it is
+              the reason this workflow stopped being 55 green runs that
+              asserted nothing.
+            * a failure anywhere else is a missing attestation: no tamper
+              claim either way for that day.

@@ -45,6 +45,7 @@ on:
 
 permissions:
   contents: write  # needed to commit fills/expiries back to main
+  issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
 concurrency:
   group: check-triggers
@@ -97,3 +98,26 @@ jobs:
 
       - name: Run watcher
         run: .venv/bin/python scripts/check_triggers.py
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "check-triggers: the daily conditional-order sweep did not complete"
+          body: |
+            The daily 13:00 UTC `check-triggers` sweep failed.
+
+            This is the money path, and since 2026-08-18 it is also the ONLY
+            scheduled evaluation of conditional orders: the crypto watcher is
+            dispatch-only, fired by the `workers/trigger-gate/` Cloudflare
+            Worker. So a failure here is not a degraded cadence, it is no
+            cadence — pending orders are neither fired nor expired until this
+            runs again.
+
+            **Expiry is this job's alone.** The crypto pass filters non-crypto
+            orders out in `run()` precisely so it can never retire one early,
+            which means an order that should have expired today simply did not.
+
+            Check whether any pending order's trigger was hit while this was
+            broken; the watcher is idempotent per inbox, so a re-run is safe.
