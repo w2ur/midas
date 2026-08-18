@@ -163,6 +163,28 @@ jobs:
       - name: The watcher env can import the watcher
         run: .venv/bin/python -c "import scripts.check_triggers"
 
+  # The Cloudflare gate's own tests. Nothing else ran them: `site-tests` is
+  # vitest scoped to site/, and the Python parity guard only covers `isLive`
+  # and the two Set literals. So `shouldDispatch`, TOLERANCE's one-sidedness
+  # and `gateable` had tests but no execution — inverting the tolerance band
+  # (1 - TOLERANCE <-> 1 + TOLERANCE) would turn every gate decision into a
+  # systematic under-dispatch and merge green.
+  worker-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # No install step: the gate is dependency-free by design and its tests
+      # use node:test, so there is no lockfile to cache and nothing to fetch.
+      - name: Run the trigger-gate test suite
+        run: node --test 'workers/trigger-gate/test/*.test.mjs'
+
   # Both suites above are unconditional, which is deliberate — but "unconditional"
   # is a property of the file as it reads today, not a guarantee. Add a `paths`
   # filter, an `if:`, or drop a job from a `needs:` list, and the run still ends
@@ -182,7 +204,7 @@ jobs:
   # `watcher-env` is in the list for that reason: it is a suite of one assertion,
   # but a suite that can be dropped silently is exactly what EXPECTED refuses.
   gate:
-    needs: [pytest, site-tests, watcher-env]
+    needs: [pytest, site-tests, watcher-env, worker-tests]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -192,7 +214,7 @@ jobs:
           # Through the environment, not interpolated into the script body:
           # ${{ }} inside `run:` is textual substitution into a shell.
           NEEDS: ${{ toJSON(needs) }}
-          EXPECTED: '["pytest","site-tests","watcher-env"]'
+          EXPECTED: '["pytest","site-tests","watcher-env","worker-tests"]'
         run: |
           set -uo pipefail
           fail=0

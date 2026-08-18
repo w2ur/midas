@@ -119,16 +119,28 @@ export async function spotPrice(pair) {
  * credential and cannot report. The degradation (daily sweep) is safe but
  * silent, which is why the PAT's renewal date belongs in a calendar.
  */
+/**
+ * The open issue with our exact title, or null.
+ *
+ * Listed and exact-matched rather than searched: `/search/issues` is a
+ * relevance query that will happily rank a different issue first, which is the
+ * same reason .github/actions/failure-issue does an exact-title match instead
+ * of `gh issue list --search`.
+ */
+async function openFailureIssue(env) {
+  const issues = await (
+    await gh(env, `/repos/${REPO}/issues?state=open&per_page=100`)
+  ).json();
+  return issues.find((i) => i.title === ISSUE_TITLE && !i.pull_request) ?? null;
+}
+
 async function fileFailureIssue(env, err) {
-  const q = encodeURIComponent(
-    `repo:${REPO} is:issue is:open in:title "${ISSUE_TITLE}"`,
-  );
-  const found = await (await gh(env, `/search/issues?q=${q}`)).json();
+  const existing = await openFailureIssue(env);
   const body = `Cron invocation failed at ${new Date().toISOString()}:\n\n\`\`\`\n${String(
     err,
   ).slice(0, 1500)}\n\`\`\`\n\nCrypto conditional orders are degraded to the daily 13:00 UTC \`check-triggers\` sweep until this is fixed. That sweep evaluates every asset class and owns expiry, so nothing is lost — only intraday granularity.`;
-  if (found.total_count > 0) {
-    await gh(env, `/repos/${REPO}/issues/${found.items[0].number}/comments`, {
+  if (existing) {
+    await gh(env, `/repos/${REPO}/issues/${existing.number}/comments`, {
       method: "POST",
       body: JSON.stringify({ body }),
     });
@@ -140,6 +152,30 @@ async function fileFailureIssue(env, err) {
   }
 }
 
+/**
+ * Close the failure issue once an invocation completes cleanly.
+ *
+ * .github/actions/failure-issue closes on the next success for a stated
+ * reason — "an issue tracker nobody trusts to be current is the same dead end
+ * as an unread email" — and this mirror was file-or-comment only, so a fixed
+ * cause left an open issue and the next real failure read as a continuation
+ * of a stale one. Best-effort: never let the bookkeeping fail a good run.
+ */
+async function closeFailureIssue(env) {
+  const existing = await openFailureIssue(env);
+  if (!existing) return;
+  await gh(env, `/repos/${REPO}/issues/${existing.number}/comments`, {
+    method: "POST",
+    body: JSON.stringify({
+      body: `Recovered at ${new Date().toISOString()} — a cron invocation completed cleanly. Closing.`,
+    }),
+  });
+  await gh(env, `/repos/${REPO}/issues/${existing.number}`, {
+    method: "PATCH",
+    body: JSON.stringify({ state: "closed" }),
+  });
+}
+
 export default {
   async scheduled(event, env, ctx) {
     try {
@@ -147,19 +183,46 @@ export default {
       const candidates = gateable(await pendingOrders(env), today);
       if (candidates.length === 0) {
         console.log("no live crypto pending orders — no dispatch");
+        await closeFailureIssue(env).catch(() => {});
         return;
       }
 
+      // Price each pair in ISOLATION. A throw here used to abort the whole
+      // invocation, so one pair Coinbase does not serve suppressed the gate for
+      // every other order until that order expired — a systematic
+      // under-dispatch, the one error direction this gate must never make.
+      // engine.triggers.get_current_price does the same thing: it catches
+      // everything and returns None for that ticker alone.
+      const pairs = [...new Set(candidates.map((o) => o.ticker))];
       const prices = {};
-      for (const pair of new Set(candidates.map((o) => o.ticker))) {
-        prices[pair] = await spotPrice(pair);
+      const priceFailures = [];
+      for (const pair of pairs) {
+        try {
+          prices[pair] = await spotPrice(pair);
+        } catch (err) {
+          // A permanently dead symbol is normal (MATIC-USD has served nothing
+          // since 2025-03-24) and must not page anyone hourly. Only a TOTAL
+          // failure is systemic, and that is escalated below.
+          priceFailures.push(`${pair}: ${String(err).slice(0, 120)}`);
+        }
+      }
+      if (priceFailures.length > 0) {
+        console.log(`could not price ${priceFailures.length}/${pairs.length}: ${priceFailures.join("; ")}`);
+      }
+      if (priceFailures.length === pairs.length) {
+        // Every pair failed: that is the exchange or the network, not a dead
+        // symbol, and it means the gate priced nothing at all.
+        throw new Error(`no pair could be priced (${pairs.length}): ${priceFailures.join("; ")}`);
       }
 
+      // A pair that did not price is `undefined` here, which shouldDispatch
+      // rejects on its Number.isFinite check — carried to the daily sweep.
       const hits = candidates.filter((o) => shouldDispatch(o, prices[o.ticker]));
       if (hits.length === 0) {
         console.log(
           `${candidates.length} live crypto order(s), none at level — no dispatch`,
         );
+        await closeFailureIssue(env).catch(() => {});
         return;
       }
 
@@ -170,6 +233,7 @@ export default {
       console.log(
         `dispatched ${WORKFLOW_FILE}: ${hits.map((o) => o.order_id).join(", ")}`,
       );
+      await closeFailureIssue(env).catch(() => {});
     } catch (err) {
       // Report first, then rethrow so the invocation also shows as failed in
       // Cloudflare's cron event history.
