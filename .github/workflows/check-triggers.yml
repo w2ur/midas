@@ -63,15 +63,32 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: "pip"
 
-      - name: Install dependencies
+      - name: Restore watcher venv
+        id: venv-cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          # Same key as check-triggers-crypto.yml and tests.yml's watcher-env
+          # job — the three deliberately share one cache. See the crypto twin
+          # for why the interpreter patch version is part of the key.
+          key: watcher-venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('requirements-watcher.txt') }}
+
+      - name: Build watcher venv (cache miss only)
+        # requirements-watcher.txt, not requirements.txt: this runs the SAME
+        # script the crypto twin already runs from the 36-package slim lockfile,
+        # while installing the 120-package full one cost 49s of a 91s job — two
+        # billed minutes for a job whose work is seconds. Pins are a strict
+        # subset of the root lockfile's, enforced by tests/test_ci_guards.py,
+        # and tests.yml's watcher-env job proves this env can import the script.
+        if: steps.venv-cache.outputs.cache-hit != 'true'
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m venv .venv
+          .venv/bin/pip install -r requirements-watcher.txt
 
       - name: Configure git identity
         run: |
@@ -79,4 +96,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Run watcher
-        run: python scripts/check_triggers.py
+        run: .venv/bin/python scripts/check_triggers.py
