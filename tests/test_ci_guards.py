@@ -1183,3 +1183,40 @@ class TestAdjudicationLedgerIsCommitted:
             f"{workflow} does not stage {self.LEDGER}; an adjudication would be "
             "forgotten and re-applied on the next run"
         )
+
+
+class TestCryptoWatcherIsDispatchOnly:
+    """The hourly crypto cron must stay retired (2026-08-18).
+
+    The whole quota fix rests on it: at 23 runs/day, 6 of the first 8 runs
+    measured 58-71s — astride GitHub's round-up-to-the-minute billing edge —
+    which projected ~1,150-1,200 of the account's 2,000 monthly minutes to do
+    a few minutes of work. Hourly evaluation moved to the Cloudflare Worker at
+    `workers/trigger-gate/`, which dispatches this workflow only on a hit.
+
+    Asserted in BOTH directions, like the fetch-ohlcv schedule guard above:
+    "no cron" alone would pass a workflow that lost its `workflow_dispatch`
+    trigger too and became unreachable — which is not a cheaper watcher, it is
+    no watcher, and the Worker's dispatch POST would 404 with nothing on the
+    GitHub side to notice.
+    """
+
+    WORKFLOW = REPO_ROOT / ".github" / "workflows" / "check-triggers-crypto.yml"
+
+    def _triggers(self) -> dict:
+        spec = yaml.safe_load(self.WORKFLOW.read_text(encoding="utf-8"))
+        # PyYAML resolves the bare key `on` to boolean True (YAML 1.1).
+        return spec[True] if True in spec else spec["on"]
+
+    def test_no_schedule_trigger(self):
+        assert "schedule" not in self._triggers(), (
+            "check-triggers-crypto has a cron again; hourly evaluation belongs "
+            "to workers/trigger-gate/, which dispatches this workflow on a hit"
+        )
+
+    def test_workflow_dispatch_is_the_way_in(self):
+        assert "workflow_dispatch" in self._triggers(), (
+            "the Worker gate fires this workflow via workflow_dispatch; without "
+            "that trigger the dispatch POST 404s and crypto conditionals "
+            "silently degrade to the daily 13:00 sweep"
+        )

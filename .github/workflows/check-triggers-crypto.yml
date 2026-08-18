@@ -1,7 +1,8 @@
 name: check-triggers-crypto
 
-# Hourly, 24/7 pass over CRYPTO pending orders only
-# (scripts/check_triggers.py --crypto-only).
+# Pass over CRYPTO pending orders only (scripts/check_triggers.py --crypto-only),
+# fired on demand by the Cloudflare Worker gate — hourly evaluation, but a run
+# here only when a trigger is actually at its level.
 #
 # Why this is split from check-triggers.yml (2026-08-17):
 #
@@ -23,24 +24,20 @@ name: check-triggers-crypto
 # amount of setup-trimming makes a sub-hourly cadence fit. Hourly is the
 # cadence the billing model actually permits.
 #
-# If sub-hourly crypto granularity is ever wanted back, the answer is NOT a
-# faster cron here — it is moving this watcher to Cloudflare Workers Cron,
-# where a 6-second task has no per-run minimum.
+# That answer arrived on 2026-08-18: the hourly cron here was retired too, and
+# hourly evaluation moved to a Cloudflare Workers Cron gate (workers/trigger-gate/)
+# which does the reading and the price comparison off GitHub's meter and fires
+# this workflow only on a hit. See the `on:` block below.
 
 on:
-  schedule:
-    # Hour 20 is skipped: it falls inside the watcher's own 19:55-21:00 UTC
-    # blackout (scripts/check_triggers.py), so that run can only ever exit
-    # early — while still paying a full billed minute for the setup.
-    #
-    # Hour 21 is deliberately NOT skipped even though it is inside the blackout
-    # today. BLACKOUT_END tracks the daily session start and has already moved
-    # three times (20:30 → 21:00 → 21:30 → 21:00); hour 20 is inside the window
-    # for every value it has ever held, hour 21 is not. Encoding the movable
-    # edge here would create a second place that has to change whenever the
-    # session moves, which is exactly the coupling BLACKOUT_END warns about.
-    # The script's own check remains the single source of truth.
-    - cron: "0 0-19,21-23 * * *"
+  # Dispatch-only since 2026-08-18. The hourly cron was removed: at 23 runs/day
+  # x ~2 billed min (6 of the first 8 runs measured 58-71s, astride GitHub's
+  # round-up-to-the-minute edge) it projected ~1,150-1,200 of the account's
+  # 2,000 monthly minutes. Hourly evaluation now lives in the Cloudflare Worker
+  # at workers/trigger-gate/, which fires this workflow_dispatch only when a
+  # pending crypto trigger is at/near its level. If the Worker dies, crypto
+  # conditionals degrade to the daily 13:00 UTC check-triggers sweep, which
+  # evaluates every asset class and is the sole owner of expiry.
   workflow_dispatch:
 
 permissions:
