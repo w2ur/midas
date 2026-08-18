@@ -20,6 +20,11 @@ data/factor-research.json
 .env
 .env.*
 !.env.example
+# wrangler's local secret file for workers/trigger-gate — it holds a real
+# GitHub PAT during the end-to-end drill. `.env*` does not cover this name.
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
 .DS_Store
 .superpowers/
 *.db

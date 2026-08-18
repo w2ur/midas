@@ -1,0 +1,20 @@
+name = "midas-trigger-gate"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# Scheduled-only Worker: there is no fetch handler, so publish no route either.
+# Zero inbound surface is the point — the only credential here is a GitHub PAT.
+workers_dev = false
+
+[triggers]
+# Mirrors the GitHub cron this replaced, hour-20 skip included.
+#
+# Hour 20 falls inside the watcher's own 19:55-21:00 UTC blackout
+# (scripts/check_triggers.py), so a run then can only exit early. Hour 21 is
+# deliberately NOT skipped even though it is inside the blackout today:
+# BLACKOUT_END tracks the daily session start and has already moved three times
+# (20:30 -> 21:00 -> 21:30 -> 21:00). Hour 20 is inside the window for every
+# value it has ever held; hour 21 is not. Encoding the movable edge here would
+# create a second place to update whenever the session moves — the script's own
+# check stays the single source of truth.
+crons = ["0 0-19,21-23 * * *"]

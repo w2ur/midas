@@ -307,6 +307,10 @@ def test_cast_tests_reclaimed_into_manifest():
         # Drives scripts/prompt_hash.py against docs/triggers/, both live-desk
         # RemoteTrigger infrastructure that core does not carry.
         "test_prompt_hash.py",
+        # Reads workers/trigger-gate/, the Cloudflare dispatch-gate: live-desk
+        # quota infrastructure keyed to this repo's workflow file and allocator
+        # channels, neither of which core has.
+        "test_trigger_gate_parity.py",
     }
     # All reclaimed tests now ship in the code manifest.
     manifest_names = {p.name for p in sync_core.code_manifest()}
