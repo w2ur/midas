@@ -48,8 +48,27 @@ on:
     # NULL at 02:51 and 07:22, and RESTORED by the next afternoon. The 22:30 and
     # 06:00 fetch hours both sat inside the withdrawal window — that is the
     # five-week European staleness, measured rather than hypothesised. AAPL and
-    # MSFT stayed populated throughout, so the withdrawal is European-specific;
-    # LSE withdraws later than XETRA/Euronext, and SIKA.SW (SIX) never withdrew.
+    # MSFT stayed populated throughout; LSE withdraws later than XETRA/Euronext,
+    # and SIKA.SW (SIX) never withdrew.
+    #
+    # **"So the withdrawal is European-specific" was the conclusion drawn from
+    # that, and it is WRONG — retracted 2026-08-18.** Those samples were of the
+    # SAME DAY's close, taken the same evening. The withdrawal that matters is
+    # the NEXT MORNING's, and it takes the US with it: measured 07:28 UTC on
+    # 2026-08-18, `yf.download` served Monday 08-17 as a row with a NaN close
+    # for AAPL and URTH alike, and the 06:00 fetch that morning logged
+    # `dropped 1 row(s) with no close - 2026-08-17` for US and European names
+    # side by side (ADBE, ADI, ADP next to ADS.DE, ADYEN.AS). 952 of the store's
+    # 1,150 symbols were still sitting on Friday 08-14.
+    #
+    # So the 06:00 relocation did not escape the dead zone, it only changed
+    # which side of it the fetch lands on, and the store runs a trading day
+    # behind for EVERY cash equity rather than just the European ones. Phase 2's
+    # question is therefore worth more than "where is the edge": the answer
+    # names the hour at which one fetch could capture both regions' previous
+    # closes. Note it can also be asked for free from a laptop — the probe above
+    # is three lines of yfinance — which is how this retraction was measured
+    # while the workflow itself was paused.
     # Phase 1's crons are RETIRED now that it is answered — they cost 25 runs
     # a week to keep re-confirming a settled result, and this repo is on a
     # GitHub Actions budget (the whole schedule was cut from 672 runs/week to
