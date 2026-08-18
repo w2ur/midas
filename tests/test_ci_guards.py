@@ -530,6 +530,99 @@ def test_the_absent_path_check_can_actually_fail(pushable_repo, tmp_path):
     assert "did not match any files" in add.stderr
 
 
+@pytest.fixture
+def shallow_pushable_repo(tmp_path):
+    """A SHALLOW clone with a real local `origin` — what the runners get.
+
+    Every caller checks out at `fetch-depth: 1`, so the shallow case is the
+    only one that runs in production. The plain `pushable_repo` fixture clones
+    at full depth and therefore cannot see the deepening at all.
+    """
+    remote = tmp_path / "remote.git"
+    subprocess.run(
+        ["git", "init", "--bare", "-b", "main", str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    seed = tmp_path / "seed"
+    subprocess.run(
+        ["git", "clone", str(remote), str(seed)], check=True, capture_output=True
+    )
+    _git(seed, "config", "user.email", "test@example.com")
+    _git(seed, "config", "user.name", "test")
+    (seed / "data").mkdir()
+    (seed / "data" / "store").mkdir()
+    for n in range(3):  # >1 commit, so depth 1 is genuinely shallow
+        (seed / "data" / "store" / "AAPL.jsonl").write_text('{"date": "%d"}\n' % n)
+        _git(seed, "add", "-A")
+        _git(seed, "commit", "-m", f"seed {n}")
+    _git(seed, "push", "-u", "origin", "main")
+
+    repo = tmp_path / "shallow"
+    subprocess.run(
+        ["git", "clone", "--depth", "1", f"file://{remote}", str(repo)],
+        check=True,
+        capture_output=True,
+    )
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "test")
+    assert _git(repo, "rev-parse", "--is-shallow-repository").strip() == "true"
+    return repo, remote, seed
+
+
+def test_a_clean_push_never_deepens_the_clone(shallow_pushable_repo, tmp_path):
+    """The unshallow belongs to the retry path, and only to it.
+
+    `git fetch --unshallow` measured ~110-127s and ~836 MB on this repo
+    (2026-08-18) and ran up front on EVERY committing run of all four
+    scheduled writers, to prepare for a rebase that nearly never happens —
+    ~110 billed minutes a month against a 2,000-minute cap.
+
+    Asserted behaviourally rather than by grepping the script for `--unshallow`:
+    a grep would pass on a script that still deepened, as long as it did so
+    under a different spelling.
+    """
+    repo, _remote, _seed = shallow_pushable_repo
+    (repo / "data" / "store" / "MSFT.jsonl").write_text('{"date": "x"}\n')
+
+    result = _run_push(repo, tmp_path, "data/store/")
+
+    assert result.returncode == 0, result.stderr
+    assert _git(repo, "rev-parse", "--is-shallow-repository").strip() == "true", (
+        "a clean push deepened the clone — the unshallow is back before the "
+        "first push attempt"
+    )
+
+
+def test_a_rejected_push_deepens_then_rebases_and_succeeds(
+    shallow_pushable_repo, tmp_path
+):
+    """The retry path must still work from depth 1 — that is what it is for.
+
+    A shallow clone cannot rebase onto a fetched main, so if the deepening is
+    moved without being reinstated here, a collision stops being a retry and
+    becomes a lost commit — the exact failure this action exists to prevent.
+    """
+    repo, _remote, seed = shallow_pushable_repo
+
+    # Another writer lands first, exactly as a colliding scheduled job would.
+    (seed / "data" / "store" / "OTHER.jsonl").write_text('{"date": "y"}\n')
+    _git(seed, "add", "-A")
+    _git(seed, "commit", "-m", "the other writer")
+    _git(seed, "push", "origin", "main")
+
+    (repo / "data" / "store" / "MSFT.jsonl").write_text('{"date": "x"}\n')
+    result = _run_push(repo, tmp_path, "data/store/")
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Push rejected" in result.stdout, "the collision did not happen"
+    assert _git(repo, "rev-parse", "--is-shallow-repository").strip() == "false", (
+        "the retry path did not deepen; a shallow clone cannot rebase"
+    )
+    landed = _git(repo, "log", "--format=%s", "origin/main")
+    assert "[data] test commit" in landed and "the other writer" in landed
+
+
 def test_every_push_with_retry_caller_names_paths_that_can_be_checked():
     """Every caller's paths must be a plain space-separated list.
 

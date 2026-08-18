@@ -94,11 +94,6 @@ runs:
         git add -- "${present[@]}"
         git commit -m "$INPUT_MESSAGE"
 
-        # A shallow checkout cannot rebase onto a fetched main. Deepen once,
-        # up front, rather than discovering it on the retry path — where the
-        # failure would look like a rebase conflict instead of a missing base.
-        git fetch --unshallow origin main 2>/dev/null || git fetch origin main
-
         for attempt in $(seq 1 "$INPUT_ATTEMPTS"); do
           if git push origin HEAD:main; then
             echo "Pushed on attempt ${attempt}."
@@ -109,6 +104,22 @@ runs:
             break
           fi
           echo "Push rejected (attempt ${attempt}/${INPUT_ATTEMPTS}) — another writer landed first; rebasing."
+
+          # A shallow checkout cannot rebase onto a fetched main, so it has to
+          # be deepened — but only HERE, on the path that actually needs it.
+          # Deepening cost ~110-127s and ~836 MB on this repo (measured
+          # 2026-08-18) and used to run unconditionally, before the first push
+          # attempt, on every committing run of all four scheduled writers. The
+          # first push succeeds on nearly all of them, so that was ~110 billed
+          # minutes a month spent preparing for a path almost never taken.
+          #
+          # Ask before deepening: `--unshallow` is a hard error on a complete
+          # clone, and a caller may legitimately check out at full depth.
+          if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
+            git fetch --unshallow origin main
+          else
+            git fetch origin main
+          fi
           git pull --rebase origin main
         done
 
