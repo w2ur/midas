@@ -58,9 +58,18 @@ runs:
         # Exact-title match, not the fuzzy search ranking: `gh issue list
         # --search` is a relevance query and will happily return a different
         # issue whose title merely scores well.
+        #
+        # AND author-scoped, since 2026-08-19: this repository is public, so
+        # anyone can open an issue with any title. Without the author filter a
+        # stranger's issue captures every subsequent alert for that cause as a
+        # comment, and session-watchdog would auto-close it. Filtering in jq
+        # rather than with `--author` keeps the predicate visible next to the
+        # title match.
         existing=$(gh issue list --state open --search "in:title \"$TITLE\"" \
-                     --json number,title \
-                     --jq ".[] | select(.title == \"$TITLE\") | .number" \
+                     --json number,title,author \
+                     --jq ".[] | select(.title == \"$TITLE\")
+                              | select(.author.login == \"app/github-actions\")
+                              | .number" \
                    2>/dev/null | head -n1) || existing=""
 
         if [[ "$OUTCOME" == "success" ]]; then
