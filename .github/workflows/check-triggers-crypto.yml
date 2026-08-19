@@ -14,15 +14,21 @@ name: check-triggers-crypto
 # cannot be narrowed to market hours the way an equity sweep could.
 #
 # Why hourly and not */15, which is what the single combined workflow ran:
-# GitHub bills every job rounded UP to a whole minute, and this repo is
-# PRIVATE — the old workflow's header comment asserted "Midas is a public repo
-# → unlimited Actions minutes, so a 15-min cadence is free", which was never
-# true (the repo has been private since it was created; the PUBLIC repo is the
-# midas-core mirror). That one belief cost 923 of the 2,000 monthly minutes in
-# the 2026-08 cycle, ~46% of the quota, to do ~44 minutes of actual work.
+# GitHub bills every job rounded UP to a whole minute, and this repo was
+# PRIVATE when the split was made — the old workflow's header comment asserted
+# "Midas is a public repo → unlimited Actions minutes, so a 15-min cadence is
+# free", which was not true then (the repo was private from creation until
+# 2026-08-19; the only public repo was the midas-core mirror). That one belief
+# cost 923 of the 2,000 monthly minutes in the 2026-08 cycle, ~46% of the
+# quota, to do ~44 minutes of actual work.
 # At */15 even a perfectly optimised job bills 96 min/day ≈ 2,900/month, so no
 # amount of setup-trimming makes a sub-hourly cadence fit. Hourly is the
 # cadence the billing model actually permits.
+#
+# NOTE (2026-08-19): the repo is now public and Actions minutes are free, so
+# the billing constraint above no longer binds and the cadence deserves a fresh
+# decision on its merits. Nothing is changed here on that basis alone — the
+# Worker gate also exists to avoid pointless runs, which is still worth having.
 #
 # That answer arrived on 2026-08-18: the hourly cron here was retired too, and
 # hourly evaluation moved to a Cloudflare Workers Cron gate (workers/trigger-gate/)

@@ -9,14 +9,19 @@ name: check-triggers
 #
 # THIS RAN */15, 24/7, UNTIL 2026-08-17, on a header comment that read
 # "Midas is a public repo → unlimited GitHub Actions minutes, so a 15-min
-# cadence is free". Midas has been PRIVATE since it was created on
-# 2026-04-15 — the public repo is the midas-core mirror — so the premise was
-# false when it was written, a month after the repo existed. Measured cost of
+# cadence is free". Midas was PRIVATE from its creation on 2026-04-15 until
+# 2026-08-19 — the only public repo was the midas-core mirror — so the premise
+# was false when it was written, a month after the repo existed. Measured cost of
 # that belief in the 2026-08 cycle: 441 runs, 923 billed minutes, 46% of the
 # account's entire 2,000-minute monthly quota, to perform ~44 minutes of
 # actual work. The remaining 93% was setup: 26s checkout (.git is 836 MB),
 # 7s setup-python, 48s installing all 120 pinned packages, for a script whose
 # run step takes 6 seconds.
+#
+# NOTE (2026-08-19): the repo is now public, so Actions minutes are free and
+# the billing premise behind this cadence no longer holds. The cadence is
+# deliberately left unchanged here — revisiting it is its own decision, and a
+# daily full sweep is still the right shape for prices that move once a day.
 #
 # Daily is the correct cadence for THIS workflow because non-crypto triggers
 # cannot change more often than that: engine.triggers.get_current_price reads
