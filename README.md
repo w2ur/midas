@@ -113,6 +113,11 @@ Per-agent safety rails live in `roster.yaml` (enforced by the broker); `data/age
 
 **Every read path takes the raw `close`, never `adj_close`.** Both fields are stored, but nothing prices off the dividend-adjusted one. The paper broker credits no dividend cash, so valuing a position on a dividend-*reinvested* series would credit the book with a return it never received; and Yahoo re-bases `adj_close` across a symbol's whole history after every payout, which cannot sit under the append-only contract the published record depends on. `tests/test_price_basis.py` pins every reader, plus a source-level check against a new one reintroducing the old idiom.
 
+## Licence
+
+Source code is MIT (`LICENSE`). Market data under `data/market/` and the
+narrative content are **not** covered — see [`NOTICE.md`](./NOTICE.md).
+
 ---
 
 Made with care by [William](https://william.revah.paris)
