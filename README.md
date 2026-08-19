@@ -12,7 +12,7 @@ Personal AI fund manager that autonomously analyzes markets, makes investment de
 
 The public narrative lives at **[midas.revah.paris](https://midas.revah.paris)** (Ring 3a) — a static Astro site in [`site/`](./site) that reads committed daily artifacts and publishes the Oracle's column, agent journals, leaderboard, and today's feed.
 
-The reusable engine is **open source** at **[`w2ur/midas-core`](https://github.com/w2ur/midas-core)** (MIT) — a self-contained, installable framework repo (engine + reusable orchestration + a runnable `examples/demo-desk`), kept in sync from this repo by `scripts/sync_core.py`. This live run continues to execute from `midas-live` (this repo, private) unchanged; `midas-core` is where the framework is reproduced and tweaked. See `CLAUDE.md` → *Repo Split (SP4)*.
+The reusable engine is **open source** at **[`w2ur/midas-core`](https://github.com/w2ur/midas-core)** (MIT) — a self-contained, installable framework repo (engine + reusable orchestration + a runnable `examples/demo-desk`), kept in sync from this repo by `scripts/sync_core.py`. This live run executes from this repository, which is public: the ledger, the price store and the full commit history are all readable. `midas-core` remains the packaged, installable framework (`pip install midas-core`); this repo is the desk that runs on it. See `CLAUDE.md` → *Repo Split (SP4)*.
 
 ## Architecture
 

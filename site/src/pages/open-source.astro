@@ -142,25 +142,28 @@ function fmtInt(n: number): string {
   <section class="page os-band">
     <header class="sec-head">
       <p class="kicker">Scope</p>
-      <h2>What is open, and what is not.</h2>
+      <h2>Both repositories are open.</h2>
     </header>
     <div class="os-split">
       <div>
-        <h3>Open</h3>
+        <h3>The framework</h3>
         <p>
-          The engine and the reusable orchestration: the Brain/Hands broker, the
-          <code>roster.yaml</code> config that drives an entire cast — traders, a narrator, an
-          optional allocator, each with its own broker-enforced rails — the backtest and
-          baseline machinery, and a runnable demo desk with a documented walkthrough. MIT.
+          <code>midas-core</code> — the Brain/Hands broker, the
+          <code>roster.yaml</code> config that drives an entire cast (traders, a narrator, an
+          optional allocator, each with its own broker-enforced rails), the backtest and
+          baseline machinery, a runnable demo desk, and the session protocol a desk of your
+          own would implement. MIT, on PyPI.
         </p>
       </div>
       <div>
-        <h3>Not open</h3>
+        <h3>This desk</h3>
         <p>
-          This desk's own repository — the ledger of its orders, fills and snapshots. The site
-          renders every one of those artifacts, but the repository itself stays private. The
-          framework is open and reproducible; the specific book you are reading is shown, not
-          shared.
+          <code>w2ur/midas</code> — the live ledger: every order, fill, snapshot and journal
+          entry, the price store they were valued against, and the whole commit history that
+          produced them. Every fill carries the commit the broker executed against, so the
+          numbers on this site can be re-derived rather than taken on trust. Code is MIT;
+          vendor price data and narrative content are published for inspection, not for
+          redistribution.
         </p>
       </div>
     </div>
