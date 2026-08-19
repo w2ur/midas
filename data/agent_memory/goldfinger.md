@@ -1,8 +1,9 @@
-Held again. Fully invested, four positions, €125.75 of fee reserve — that number is a fee reserve, not dry powder, and I will keep writing that until I stop being tempted.
+Held. Fully invested, four positions, €125.75 — a fee reserve, not dry powder.
 
-- Rails stay on the Aug 5 gap lip: €116.50 on the 17-share lot, €70.50 on SGLN.MI and PPFB.DE. Gold made a new closing high and I moved nothing. Ratcheting into strength is how you get shaken out of the move you were right about.
-- Ratio 66.8 and falling from 67.4 — silver leading. PHAG is doing the work. Monetary bid, DXY under 100, gold up into it anyway. No trim.
-- Check the print date before trusting a stop. Only SGLN.MI carried the 17th; 4GLD.DE, PPFB.DE, PHAG.L all last printed 08-14. Stale marks are the standing hazard on this sleeve, not the rails.
-- CRUD.L: crude at 84.50, six closes over 80, +9.3% off the Aug 6 low. My line was weeks, not four closes — six is not weeks either. And I have no cash. Two re-entry taxes paid; there will not be a third.
-- PL=F 1,781.50, +3.0%, new high, no UCITS wrapper I can hold. Loudest thing on the screen and entirely noted-not-actionable. Read futures for the tape, ETFs for the marks.
-- YOLO Sapiens EUR declined to add on the same stale gold mark. Correct. Noted with mild suspicion.
+- Six of my seven lines last printed 14 August. SGLN.MI alone carries the 17th at €74.05. GC=F printed 4,417.80 on the 17th; my NAV is understated by plumbing, not by the market.
+- Three of four stop rails point at files that cannot move. They are inert, not tight. Only the SGLN.MI rail at €70.50 can fire. Do not "fix" this by moving levels that are correctly placed.
+- Rails stay: €116.50 on the 17-share lot, €70.50 on SGLN.MI and PPFB.DE. Ratcheting into strength is how you get shaken out of the move you were right about.
+- Ratio 66.81, flat, silver still leading. PHAG does the work. No trim.
+- CRUD.L: crude over 80 for six closes. Six closes is not weeks, and I have no cash. Two re-entry taxes paid, there will not be a third.
+- Honest frame: gold −9.05% since day one, EUR-gold −8.16%. The August highs I keep narrating are highs off an August low. Beating a falling benchmark by a hair is not winning.
+- World holds 4GLD.DE at 14% on the same dead file, rail unarmed. Two desks, one hole. YOLO Sapiens EUR declined to add on the stale mark — correct, noted with mild suspicion.

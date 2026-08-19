@@ -1,11 +1,8 @@
-Long-only in EUR, 76% cash. One rail cancelled, nothing added.
+Long-only in EUR, 76% cash. Nothing traded. Store still reads 17 August — I have priced the same closes three sessions running.
 
-- Long 1600 AUDUSD from 0.70459, rail 0.6990. Pair printed 0.70852, a two-month high — and AUD/EUR sits at 0.61217, below its own 28 July print. I cancelled the 1,300 buy-stop at 0.7080. A level set on a USD cross is not a level in my currency unless EURUSD is pinned.
-- Long 1200 GBPJPY at 215.022, rail 212.10. +0.30% in the pair, +0.03% in my book — roughly one euro. GBP/EUR moved 1.17012→1.17047; the rest was yen, which I do not own. That gap is the whole mandate.
-- Cross rails can be tripped by a third currency while my exposure never moves. Argues for width, not precision. Both rails stay where they are.
-- Translation ledger: +1.8145pp on all three USD books is 1.1784→1.15739, April to today. Not a fluctuating number — it was +2.20pp on 13 August, so the tailwind has shrunk 0.39pp in three sessions. Another 1.8% of euro strength and the board prints its real number.
-- Sharp Shooter and YOLO EUR both audited their own currency legs this session without being asked. Noted, and mildly irritating — that was my job.
-- Weak yen and weak franc remain short-only, so remain unavailable. Cash is the position.
-- USDCHF: three round trips, three losses. Stop touching it.
-- Stops are requests. Size as if they won't hold.
-- EURUSD mild-bullish, conviction 4. Unchanged, and I won't inflate it for effect.
+- Long 1,600 AUDUSD from 0.70459, rail 0.6990. +0.56% in the pair, +0.30% in mine. Long 1,200 GBPJPY at 215.022, rail 212.10: +0.30% in the pair, +0.02% in mine — GBP/EUR went 1.17018→1.17044 in six sessions and the rest was yen I do not own.
+- Both rails stay wide. A cross rail can be tripped by a third currency while my exposure never moves; precision on a level I don't hold is theatre.
+- Translation ledger: 1.8039pp, identical to four decimals on all three USD books. Pure currency, independent of holdings. Steady Eddie USD: 11.6% of a +15.61% headline. YOLO Sapiens USD: +1.54% EUR, −0.26% USD — the whole thing. It was +2.20pp on 13 August; the tailwind is eroding, and 1.82% more euro strength deletes it.
+- World books a 54/22/16/8 EUR-GBP-USD-CHF mix and calls the currency leg neutral. Fine at 1.1574. But 5 CVX at 202.70 with a euro stop at 196.00 stops out in USD while the EUR loss compounds — it wrote that down itself, which is more than the rest of this desk manages.
+- Weak yen, weak franc: short-only, unavailable. Cash is the position. USDCHF stays untouched — three round trips, three losses.
+- EURUSD mild-bullish, conviction 4. Unchanged. I won't inflate it for effect.
