@@ -25,7 +25,7 @@ is specific to one harness. What *is* here is every step it calls, in
    within a session. This is a property of the experiment, not of the code —
    nothing in core enforces it. If your driver runs the trading round as one
    conversation, every agent is reading every other agent's thesis and the
-   roster stops being ten independent books.
+   roster stops being a set of independent books.
 3. **A clock and a working tree.** The session pins one date and one ledger base
    at the start and re-validates both before writing. The driver owns the
    working tree: core never clones, never checks out, and never chooses a branch.
@@ -243,10 +243,32 @@ three drift apart.
 
 Four steps, all opt-in. A roster with no `role: allocator` entry runs each of
 them as a clean skip, and a desk that wants several allocators gives each one a
-distinct channel prefix. Every one of them sources its channel directories, book
-identity, prose and gates from the resolved allocator spec rather than from
-module constants, so renaming a channel or retuning a risk budget is a
-`roster.yaml` edit and nothing more.
+distinct channel prefix.
+
+**Three of the four are roster-driven; the deterministic baseline is not.**
+`step_resolve_manager_outcomes`, `step_build_manager_prompt` and
+`step_apply_manager_decision` source their channel directories, book identity,
+prose and gates from the resolved allocator spec, so renaming a channel or
+retuning a risk budget is a `roster.yaml` edit and nothing more.
+`step_build_baseline_manager` takes exactly one thing from that spec — whether
+the baseline is enabled. Everything else about the control book is a module
+constant in `engine/baseline_manager.py`: `STRATEGY_ID`,
+`INITIAL_CAPITAL_EUR`, `POSITION_SIZE_EUR` and `MAX_POSITIONS`, with the book's
+currency a string literal at the call site. **Read that before you rely on the
+comparison.** A desk that sets a different `initial_capital` and a different
+home currency in `roster.yaml` still gets a euro-denominated control book at the
+constant's capital, so every "did the allocator beat the rules-only baseline?"
+answer carries an uncontrolled FX leg and a size mismatch — and nothing errors,
+because both books value correctly on their own terms. Either edit the
+constants to match your desk, or disable the baseline and bring your own
+control.
+
+**A multi-allocator desk must thread `allocator_id` through all four calls.**
+Omitted, the resolver defaults to the first allocator in the roster, so the
+second one's steps silently operate on the first one's channels and book. The
+control book is worse than that: its id is the same module constant for every
+allocator, so two allocators share one baseline portfolio no matter what you
+pass, and each rebalance overwrites the other's.
 
 The allocator reads the trading agents' research notes and runs its own book on
 its own channels. Those channels are isolated from the public ones on purpose:
@@ -254,6 +276,13 @@ its orders never enter the public outbox and its fills never enter the public
 inbox, so the narrative layer cannot accidentally join them. This phase runs
 after fills and snapshots — so the books it reads are current — and before the
 narrative phase, so nothing downstream can see it.
+
+One consequence of that ordering: phase 3 has already snapshotted every book on
+disk by the time this phase mutates the allocator's and the control's, so their
+**valuation series lag the trades in them by one session**. The books are
+correct; the curves are a day behind. Compare an allocator against its control
+on the same lagged basis, never against a trader curve that was snapshotted
+after its own fills.
 
 ### Resolve past decisions — `step_resolve_manager_outcomes`
 
@@ -270,8 +299,10 @@ came from. Marker-idempotent.
 
 Runs a rules-only rebalance of a benchmark book from the same research notes the
 allocator gets — the control the model-driven allocator has to beat. **Reads:**
-agent research notes, the price store. **Writes:** the benchmark book's
-portfolio and trade ledger. **On failure: warns per trade** rather than aborting
+agent research notes, the price store, and `alloc.baseline_enabled` — but *not*
+the rest of the allocator spec: the book's id, initial capital, currency,
+position size and position cap are the module constants named above. **Writes:**
+the benchmark book's portfolio and trade ledger. **On failure: warns per trade** rather than aborting
 the batch. It rebalances only on the first weekday of the month, or on the very
 first run when the book does not yet exist; on every other day it deliberately
 does nothing, while snapshots still accrue for it.
@@ -309,14 +340,40 @@ allocator outbox is not an error.
 ### Leaderboard — `step_build_leaderboard`
 
 Ranks the books from the portfolio summaries built in phase 3. **Reads:** the
-summaries and the price store. **Writes:** nothing — it returns rows.
-**On failure: returns an empty list** when no book has a computable
-mark-to-market, rather than inventing one.
-**Ordering:** before anything that narrates standings. Never hand-roll this from
-the snapshot series: the first persisted snapshot is not inception for a book
-seeded with non-cash positions, so differencing the series understates exactly
-those agents. The helper anchors to the configured inception capital, which is
-what every other consumer of a return figure does.
+summaries, the price store, each agent's `initial_capital` from the roster, and
+— this is the input most easily missed — each agent's **committed baseline
+series**, both the passive benchmark and the coin flip. **Writes:** nothing; it
+returns rows.
+
+**The board does not rank on return.** It ranks on the book's own-currency
+return minus its benchmark's, which is FX-free by construction, with the raw
+converted return kept alongside as a column. A row that has **no benchmark
+series** cannot produce that figure, so it sorts null-last, on raw return
+instead. The consequence for anyone standing a desk up: **before your first
+baseline backfill you have no series at all, so every row falls into the
+null-last branch and the whole board is silently ranked on a different metric
+than the one it will use tomorrow.** It does not warn, and the columns look
+identical. Backfill baselines before you read a first board.
+
+**On failure: it drops, at two grains.** A single book that cannot be valued —
+a missing price, an unresolvable currency, no inception anchor — is dropped from
+the board rather than published at zero, so a *short* board is the symptom to
+watch for; and if no book at all can be valued the result is an empty list,
+rather than an invented one.
+
+**Ordering:** before anything that narrates standings — which puts it *before*
+the baseline refresh in phase 7, not after. That is the live behaviour and it
+has a visible consequence: the benchmark delta published on a given day is
+measured against a baseline series that is one session stale. Do not reorder to
+"fix" it; the two curves are dated from the price index either way, and moving
+the refresh earlier would rank today's books against a benchmark window that
+the day's fills have not yet been snapshotted into. Just know which day's
+benchmark the number is against.
+Never hand-roll this from the snapshot series: the first persisted snapshot is
+not inception for a book seeded with non-cash positions, so differencing the
+series understates exactly those agents. The helper anchors to each agent's
+configured inception capital, which is what every other consumer of a return
+figure does.
 
 ### Load journals — `step_load_memories`
 
@@ -401,8 +458,12 @@ snapshots just appended. Marker-idempotent.
 ### Tax shadow — `step_build_tax_shadow`
 
 Recomputes a per-agent after-tax shadow ledger from the committed trade history.
-**Reads:** each book's trades. **Writes:** the shadow ledgers. Reporting only —
+**Reads:** each book's trades, and the tax rate from the roster's
+`globals.jurisdiction` block. **Writes:** the shadow ledgers. Reporting only —
 it never mutates portfolio cash, and it is cheap enough to always run.
+**A roster with no `jurisdiction` block gets a rate of zero**, which is the
+neutral default for a desk that has not declared one — so the ledger is labelled
+after-tax while applying no tax. Declare the block or read the output as gross.
 **Ordering:** after baselines. Marker-idempotent.
 
 ### Live leaderboard — `step_write_current_leaderboard`
@@ -458,8 +519,9 @@ across currencies must convert first.
 ## Cadences
 
 A session and a valuation-only refresh are different categories. A refresh
-composes a strict subset — market data, snapshots, baselines, leaderboard — and
-runs no agents. Journals, posts and narrative belong to sessions only. Both
+composes a strict subset — market data, snapshots, baselines, tax shadow,
+leaderboard — and runs no agents. That is every unconditional artifact of
+phase 7, which is what "unconditional, every cadence" means above. Journals, posts and narrative belong to sessions only. Both
 categories call the *same* step functions; a cadence is a choice of subset, never
 a second implementation.
 
