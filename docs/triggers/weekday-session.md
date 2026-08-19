@@ -72,6 +72,24 @@ That restores the 2026-07-31 failure mode in full. Repair the image instead.
 
 ---
 
+## Relationship to the generic protocol
+
+`docs/session-protocol.md` is the harness-agnostic contract: every step, in
+order, with the invariants a driver must honour. It ships to `midas-core`.
+
+This document is the **Claude Code / RemoteTrigger wrapper around it** — the
+parts that do not generalise: dispatch rather than impersonation, the model per
+role, sandbox realignment, the pre-baked venv, the prompt hash, and the dispatch
+budget. Where the two describe the same step, the protocol is the contract and
+this is how this desk satisfies it.
+
+Change the step sequence in the protocol first, then here. The prompt block
+below is hashed (`scripts/prompt_hash.py`); editing it requires regenerating
+`weekday-session.sha256` **and** re-pasting the prompt into the RemoteTrigger
+configuration, which is an owner action.
+
+---
+
 ## Trigger prompt
 
 ```
