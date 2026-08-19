@@ -68,9 +68,16 @@ jobs:
           # issue — silence dressed up as an alert, the exact failure being
           # fixed here. On a lookup failure we treat it as "none open" and file;
           # a duplicate issue is a far cheaper mistake than a missed session.
+          #
+          # AND author-scoped, since 2026-08-19: this repository is public, so
+          # anyone can open an issue with any title. This lookup feeds `gh issue
+          # close`, so an unscoped match would let a stranger's issue be closed by
+          # the bot and a real miss go unreported.
           existing=$(gh issue list --state open --search "in:title \"$title\"" \
-                       --json number,title \
-                       --jq ".[] | select(.title == \"$title\") | .number" \
+                       --json number,title,author \
+                       --jq ".[] | select(.title == \"$title\")
+                                | select(.author.login == \"app/github-actions\")
+                                | .number" \
                      2>/dev/null | head -n1) || existing=""
 
           echo "Looking for weekday session commit for $yesterday..."
