@@ -175,6 +175,12 @@ REGENERATED_DATA_GLOBS = [
 
 TOP_LEVEL = ["pyproject.toml", "requirements.in", "requirements.txt"]
 
+#: Documentation that is part of the framework contract rather than of this
+#: desk's operation. `docs/triggers/` deliberately stays live-only: it is the
+#: Claude-Code/RemoteTrigger harness wrapper, and its prompt block is hashed
+#: against a config that lives outside any repository.
+CORE_DOCS = ["docs/session-protocol.md"]
+
 
 def _rel_sorted(paths):
     return sorted(set(paths), key=str)
@@ -197,6 +203,8 @@ def code_manifest(root: Path = LIVE_ROOT) -> list[Path]:
         if p.name not in LIVE_ONLY_TESTS:
             files.append(p.relative_to(root))
     for name in TOP_LEVEL:
+        files.append(Path(name))
+    for name in CORE_DOCS:
         files.append(Path(name))
     return _rel_sorted(files)
 

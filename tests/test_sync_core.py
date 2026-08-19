@@ -426,6 +426,18 @@ def test_the_vendor_registry_is_seeded_but_not_byte_guarded(tmp_path):
     assert sync_core.check(core) == [registry], "a missing seed is still drift"
 
 
+def test_the_session_protocol_ships_to_core():
+    """Core's whole gap was the orchestration contract; it must be mirrored.
+
+    In code_manifest (not the regenerated tier) so core-drift-guard byte-compares
+    it — a doc that drifts from live's is worse than no doc, because a forker
+    would implement a contract we no longer honour.
+    """
+    doc = Path("docs/session-protocol.md")
+    assert doc in sync_core.code_manifest()
+    assert doc not in sync_core.regenerated_manifest()
+
+
 def test_no_synced_test_imports_a_live_only_script():
     """A test that ships to core must not import a script that does not.
 
