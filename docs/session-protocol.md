@@ -10,8 +10,11 @@ script, an agent framework, or a person at a terminal. Implement it and you have
 a desk. Ignore the ordering and you get a desk that silently does less than it
 appears to.
 
-The reference implementation of the driver is not in this repository, because it
-is specific to one harness. What *is* here is every step it calls, in
+The driver itself is harness-specific and is not part of the framework, so it
+is not shipped here. A reader of `midas-core` will not find one in this
+repository; a reader of the live desk repository can see a real
+implementation at `docs/triggers/weekday-session.md`. What *is* here, in
+either repository, is every step the driver calls, in
 `scripts/daily_session.py`, and this description of how to call them.
 
 ## What the driver must supply

@@ -5,6 +5,7 @@ import { BROKER_RAILS, WATCHER_RAILS } from "@/lib/rails";
 
 const stats = ossStats();
 const REPO = "https://github.com/w2ur/midas-core";
+const LIVE_REPO = "https://github.com/w2ur/midas";
 
 function fmtInt(n: number): string {
   return n.toLocaleString("en-GB");
@@ -126,13 +127,15 @@ function fmtInt(n: number): string {
   <section class="page os-band">
     <header class="sec-head">
       <p class="kicker">Provenance</p>
-      <h2>Every fill knows which commit produced it.</h2>
+      <h2>Fills since June 2026 know which commit produced them.</h2>
     </header>
     <p class="os-body">
-      Each fill is stamped with <code>executed_sha</code> — the git commit the broker was
-      running when it executed. Prices and index membership are committed to the repository,
-      and a trading session makes no outbound HTTP calls, so checking out that commit re-derives
-      the exact order and the exact price store the broker saw. Nothing about a past decision
+      Every fill from 2026-06-29 onward is stamped with <code>executed_sha</code> — the git
+      commit the broker was running when it executed (122 of the 271 filled rows, 45%; the
+      first ten weeks of the ledger predate the stamping and have no <code>executed_sha</code>
+      to check out). Prices and index membership are committed to the repository, and a trading
+      session makes no outbound HTTP calls, so checking out that commit re-derives the exact
+      order and the exact price store the broker saw. Nothing about a stamped past decision
       depends on what a data provider says today.
     </p>
     <pre class="os-code"><code>git checkout &lt;executed_sha&gt;   # the desk, exactly as it was at fill time</code></pre>
@@ -160,10 +163,10 @@ function fmtInt(n: number): string {
         <p>
           <code>w2ur/midas</code> — the live ledger: every order, fill, snapshot and journal
           entry, the price store they were valued against, and the whole commit history that
-          produced them. Every fill carries the commit the broker executed against, so the
-          numbers on this site can be re-derived rather than taken on trust. Code is MIT;
-          vendor price data and narrative content are published for inspection, not for
-          redistribution.
+          produced them (provenance above). Code is MIT; vendor price data and narrative
+          content are published for inspection, not for redistribution — see
+          <a href={`${LIVE_REPO}/blob/main/NOTICE.md`}>NOTICE.md</a> for exactly where the
+          line sits.
         </p>
       </div>
     </div>
@@ -184,7 +187,7 @@ function fmtInt(n: number): string {
     </p>
     <p class="os-body">
       Midas is the third thing: an accountability harness. The rails live in the broker rather
-      than the prompt, every fill carries the commit it executed against, and the desk publishes
+      than the prompt, fills since June 2026 carry the commit they executed against, and the desk publishes
       its own results against a passive benchmark <em>and</em> a coin-flip control — every
       weekday since 17 April 2026. The point is not that the agents are good. The point is that
       you can check.
