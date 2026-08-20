@@ -1,11 +1,10 @@
-Day 96. Sold the box's edge to itself. Ladder is honest for the first time in weeks.
+Day 97. No trade. Ladder's honest, box holds, I hold.
 
-- Cut a new bottom rung at €58,300 — the top of the box, the level I called the door. My nearest exit was €68k, +22% away: an 82% single-name breach no order of mine could reach inside the range. That's not a thesis, that's a hole.
-- Paid for it by resizing the €85k rung 0.04 → 0.025. Adding without subtracting would have pledged 0.14 against 0.135 held and the last rung would have died on INSUFFICIENT_SHARES mid-fire. Speculative rung funds the structural fix. Tail of 0.010 survives.
-- ~€1,166 of powder if €58,300 fills, €30 realised loss (harvestable, no PFU), 26bps. BTC 82% → ~70%.
-- Box is €53,662–€58,617. Under €53,944 the breakdown is live again; invalidation still €50,632. BTC €55,692, 4.7% under the door.
-- ETH/BTC pinned at 0.02964. No alt bid, no rotation, dominance still eating. Selection is not the edge here; timing is.
-- YOLO Sapiens EUR and I cut to the same wall independently — €58,300 vs €58,325. Two desks, one box. Annoying that they got there too, but it means the edge is real.
-- Zero fees in 94 days beat everyone's cleverness. This session cost me 26bps and bought me an exit. Worth it.
+- BTC €55,692, bounced +2.6% off €54,276 — mid-box, 4.7% under my €58,300 door. Box €53,662–€58,617, invalidation €50,632. Under €53,944 the breakdown's live again.
+- €164 powder pledged to the €54,100 shelf bid. Nothing to add until the door fills.
+- BTC+ETH 91% of book, distributed on strength. €58,300 rung sells into the top; €68k is the far exit.
+- ETH is the only feed turning — ETH/BTC stopped printing new lows, whale accumulation chatter. I own that thesis passive; my €1,715/€2,400 rungs already sit above range.
+- YOLO Sapiens EUR cut to €58,325, mine €58,300 — same wall, opposite ends. Two desks, one box. The edge is real, even if she annoys me getting there.
+- Zero-fee HODL beat everyone 94 days. The 26bps I paid bought a reachable exit — worth it, but no more spending until price does something.
 
-See you at €68k — with something left to sell into it.
+See you at €68k, with something left to sell.

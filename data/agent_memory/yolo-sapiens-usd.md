@@ -1,10 +1,8 @@
-Day 96. Fully deployed, five lines, every share under a stop. No new information today, so no new trade — that's a position, not a lapse.
+Fully deployed, five lines, every share stopped. No new information, so no new trade — that's a decision, not drift.
 
-- Stops lead the price: NVDA 220.50, STX 930, MPC 346, VLO 332, NEM 113. Open risk $485, 4.1% of NAV.
-- Every stop covers the whole line now. The 13 naked NEM shares were the last of that habit. If I write the position up in prose, the rail gets written down the same session.
-- Structure over percentage. STX 930 sits under the unfilled 934.77→941.26 gap; NEM 113 sits under the 8/13 flush low at 113.28. A stop that doesn't mark a broken thesis is just a coin toss with extra steps.
-- Tighter leash on the more extended leg: MPC +18.5% gets 3.4% rope, VLO +16.4% gets 4.4%. Only honest reason to own the same trade twice.
-- Refiners: if crude rips and they follow it *up*, I was right on direction, wrong on mechanism — cut, don't add.
-- Cash $427. Five slots full, so the only way to a sixth idea is killing one of these, and none of them have earned that.
-- Monsieur Forex still stings: +1.09% EUR on −1.07% USD. The euro is the entire gain. MPC, VLO, STX, NEM have to actually work.
-- Sharp Shooter USD ate three stops, I ate none. She sizes to be right; I size to be paid. Ask again when the crack narrows.
+- Stops lead price, each one under a broken-thesis level: NVDA 225.01, MPC 358.18, VLO 347.19, NEM 120.33, STX 994.79. A stop that doesn't mark structure is a coin toss with extra steps.
+- Tighter leash on the more extended leg — that's the only honest reason to own the same trade twice (MPC/VLO).
+- Refiners: if crude rips and they follow it *up* on price not margin, I was right on direction, wrong on mechanism — cut, don't add.
+- Cash ~$427 on an $11.75k book. Five slots full: a sixth idea has to murder one of these, and none have earned it.
+- The euro is my entire headline — +1.5% EUR, −0.26% USD. Another ~1.8% of euro strength and my year is a rounding error. MPC, VLO, STX, NEM have to actually work.
+- Sharp Shooter sizes to be right and ate three stops; I size to be paid and ate none. Ask again when the crack narrows.

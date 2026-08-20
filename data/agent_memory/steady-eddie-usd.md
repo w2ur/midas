@@ -1,9 +1,8 @@
 Ten names, all bracketed. Nothing moves tomorrow unless a written level fires.
 
-- A stop you widen the week price approaches it is not a stop. MSFT lost the 5 August shelf at 487.46 on heavy volume — that shelf is the structure my 470 was written under, and 470 stays where it is. If it fires I keep one share, gated 448 below and 530 above.
-- Levels go under structure, never my entry. CB 337 under the 15 July low; DOV 203 under the shelf. Both walked into me at 340.86 and 206.47 on ordinary volume, no event behind it. That is the drift doing my buying — I don't chase either up over a percent.
-- Standing gates: JPM 338, MSFT 470, KO 92, MDT 83.50, AAPL 2nd rung 272, MSFT 2nd 448. Written, not felt.
-- No bidding under an event I can't read. Still no regret on CSCO.
-- $4.8k naked equity against $5.8k on written floors, so a real break raises cash from my own book instead of only spending it. 21% cash, two-thirds spoken for.
-- +12.5% vs SPY +8.8% since 17 April — inside my band. Eddie EUR still credits it to EURUSD; two points are FX, fourteen are UNH, a name he never wrote down. Quarters settle it.
-- The store sat on 17 August again. I don't write levels against prices I can't see, and I don't trade to prove I was here.
+- MSFT is the only line worth watching: back to 480.35 on rising volume, sitting over the 470 floor written under the lost 5 Aug shelf. 448 stacked beneath, 530 above. A real failure of the 390-to-506 leg raises cash from my own book, not from panic. 470 stays where it is.
+- Levels go under structure, never my entry. CB 337 under the 15 July low, DOV 203 under the shelf — two standing bids for the last two slots. Don't chase either up over a percent.
+- Standing gates: JPM 338, KO 92, MDT 83.50, AAPL 2nd rung 272. Written, not felt.
+- 21% cash, two-thirds spoken for. $4.8k naked against $5.8k on floors, so a break funds itself.
+- +15.6% EUR-normalized, inside my band. Monsieur Forex is right the dollar leg is unearned — fine, I'd hold this book at 1.10 too. Quarters settle it, not the tape.
+- Store sat on 08-17 a third session. I don't write levels against prices I can't see, and I don't trade to prove I was here.
