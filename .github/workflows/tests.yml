@@ -12,29 +12,34 @@ name: tests
 # actually holds. The cron workflows and session-integrity do run on main, but
 # neither runs pytest.
 #
-# `paths-ignore`, not `paths`, deliberately: an allowlist silently stops
-# covering any code directory added later, which is the same bypass-by-omission
-# class this trigger exists to close. Everything not listed below runs the
-# suite. The list is kept as short as the coupling allows:
-#   data/**  — the daily session's only footprint, so a session commit never
-#              triggers a run (the sandbox auto-merge path inherits this).
-#              Accepted risk: data/universes/*.json is read by the resolvers,
-#              so a refresh-universes commit is unverified here.
-#   docs/**  — no code or test reads it (verified, not assumed).
-#   *.md     — root-level only. `*` does not cross `/`, so .claude/agents/*.md
-#              stays covered: test_persona_dispatch reads those personas.
-# site/** is deliberately NOT ignored: tests/test_reason_codes.py reads
-# site/src/lib/rails.ts and asserts it matches REJECTION_REASON_CODES, so a
-# site-only edit can fail pytest.
+# THERE IS NO `paths-ignore`, and its removal on 2026-08-21 is deliberate.
+# It carried three entries and every one of them had become false:
+#   data/**  — the site suite reads the committed ledger. On 2026-08-21T10:02Z
+#              two pending satoshi triggers fired, took its fill count from 7
+#              to 9, and broke two exact pins in site/tests/cadence.test.ts.
+#              Those commits touched only data/, so no run fired and `main` sat
+#              red with nothing reporting it — the same invisible-red incident
+#              as 2026-08-07, which the pins-to-floors change was supposed to
+#              have ended. Two pins had survived that conversion.
+#   docs/**  — tests/test_session_protocol.py and tests/test_sync_core.py both
+#              read docs/. The old comment said "no code or test reads it
+#              (verified, not assumed)", which was true when written and was
+#              falsified by the very guard added to protect the protocol doc:
+#              a doc-only edit skipped the test that exists to catch it.
+#   *.md     — six test files read a root-level .md (METHODOLOGY.md via
+#              site/tests/methodology.test.ts and engine/disclosure.py's anchor
+#              check, README.md via the demo walkthrough), so editing the
+#              changelog skipped the tests that guard the changelog.
+# The filter existed to save metered Actions minutes. The repo went public on
+# 2026-08-21 and standard runners are unmetered for public repos, so the only
+# thing that ever justified the risk is gone. Prefer running the suite on
+# everything over re-deriving which directory is coupled to which test — the
+# coupling changed three times without anyone noticing, which is the argument.
 
 on:
   pull_request:
   push:
     branches: [main]
-    paths-ignore:
-      - 'data/**'
-      - 'docs/**'
-      - '*.md'
 
 permissions:
   contents: read
