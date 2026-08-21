@@ -34,7 +34,7 @@ describe("methodology document split", () => {
     // The order is *document* order, not date order — the changelog is only
     // loosely reverse-chronological.
     expect(doc.changelogAnchors).toEqual([
-      "repo-public-2026-08-19",
+      "repo-public-2026-08-21",
       "forex-mandate-2026-08-14",
       "gate-c-evaluation-2026-08-14",
       "leaderboard-rerank-2026-08-14",
