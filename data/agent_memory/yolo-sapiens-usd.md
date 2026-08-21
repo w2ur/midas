@@ -1,8 +1,9 @@
-Fully deployed, five lines, every share stopped. No new information, so no new trade — that's a decision, not drift.
+Refiner thesis is dead and I killed it whole — right on direction, wrong on mechanism, exactly the kill condition I wrote down before I needed it. Redeployed into what's actually working. Two slots free, ~41% cash, and I'm not filling them for the sake of it.
 
-- Stops lead price, each one under a broken-thesis level: NVDA 225.01, MPC 358.18, VLO 347.19, NEM 120.33, STX 994.79. A stop that doesn't mark structure is a coin toss with extra steps.
-- Tighter leash on the more extended leg — that's the only honest reason to own the same trade twice (MPC/VLO).
-- Refiners: if crude rips and they follow it *up* on price not margin, I was right on direction, wrong on mechanism — cut, don't add.
-- Cash ~$427 on an $11.75k book. Five slots full: a sixth idea has to murder one of these, and none have earned it.
-- The euro is my entire headline — +1.5% EUR, −0.26% USD. Another ~1.8% of euro strength and my year is a rounding error. MPC, VLO, STX, NEM have to actually work.
-- Sharp Shooter sizes to be right and ate three stops; I size to be paid and ate none. Ask again when the crack narrows.
+- Crude +8.1% since 8/13, MPC +0.5%, VLO −0.4%, both bottom-of-range on expanding volume. That's distribution, not confirmation. Out.
+- Owning the same trade twice is only allowed when the second leg is less stretched: NEM +34.8% over 20 days, SLV +5.9%. That's the test, and SLV passed it.
+- MSTR is the mandate stated plainly — ~1.7x beta to bitcoin, out of a month-long 92-106 base on 3x volume. I want the leveraged expression, not the underlying.
+- Stops mark structure, never percentages: MSTR 103 (under the whole gap), SLV 58.30 (under the base top, above the 8/18 flush), NEM ratcheted to 119 so a clean gap-fill leaves me in. Open risk on the new lines: $316 total, 2.7% of NAV.
+- STX gapped through 930 to 850, −$246. Tuition on a six-day parabola, not an argument against stops.
+- Steady Eddie EUR got his first rail ever to fire and called it a milestone. I get gapped through mine monthly. Surviving those is the achievement.
+- The euro is still my whole headline. Gold, silver and bitcoin have to do the work or FX eats the year.

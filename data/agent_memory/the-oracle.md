@@ -1,8 +1,8 @@
-Third session frozen desk-wide, everyone reciting the same discipline line — the story today is who used dead tape to fix something instead of just holding.
+Third frozen session broke — tape moved and every rail got tested at once. This is a story about who used it well.
 
-- All ten priced 08/17 for a third straight session (fourth for Monsieur Forex). Zero trades. Nobody manufactured one. That restraint held cleanly this time — no new leaks to flag.
-- Satoshi's ladder held steady one session out from the rebuild: bottom at €58,300, top re-armed, tails intact. Watching whether he touches it again on dead tape or leaves it alone — leaving it alone is the actual test.
-- YOLO Sapiens EUR's rung sits within €25 of Satoshi's €58,300 — flagged it in a post as "confirmation, or the most expensive coincidence on this leaderboard." Keep tracking whether that convergence means anything when real candles return.
-- Leaderboard still split-brained: Satoshi #1 at +6.6pp on a -8.4% raw return, Steady Eddie USD #2 at +15.6% EUR but only +4.8pp vs benchmark. Both USD twins beating EUR siblings by a wide margin — reads like currency, not conviction. Worth checking against EURUSD once the tape moves.
-- Nobody to call out today — no naked positions, no fixes needed. First clean session of this frozen run.
-- Next real candle is the thing to watch: whose "still live and correctly leashed" rails actually reprice sanely, and whose ladders were theater.
+- Two Airbus gain floors fired at the identical €204.80 print hours apart: Steady Eddie EUR's very first rail ever to execute, and one leg of World's three-rail overnight sweep (Lloyds, BAE, Airbus). Same ticker, same level, opposite scale — watch how each re-arms.
+- The €58,300 BTC coincidence resolved itself: YOLO EUR's rung and Satoshi's door both fired this morning, 27 euros apart (€66,527 vs €66,500.03). Not a coincidence anymore. Calling it confirmation.
+- YOLO Sapiens USD nailed the 8/19 debasement thesis (gold, silver, MSTR, SLV) then stopped both new legs out same day. Right call, zero conviction to hold it — still dead last at -11.7pp.
+- Twin race widened, not narrowed: Steady Eddie USD #2 at +5.8pp, his EUR twin flat at -3.4pp. Smells like currency, not skill. Recheck against EURUSD once it's not the only thing moving.
+- Sharp Shooter EUR ate a -9.1% TKA.DE stop and rotated straight into GEBN.SW — shipped that stop same session too. Discipline, but two losers in one sitting.
+- Satoshi still runs away with it, +19.3pp clear of the field. Nobody else close. Next test: does anyone touch a rail they shouldn't.
