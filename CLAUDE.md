@@ -51,15 +51,31 @@ job as `skipped` and an absent one as nothing, and neither is a failure. The
 short form is worse than no gate: `jq 'all(.[]; .result=="success")'` over an
 empty set returns `true`, so a suite dropped from `needs:` would report success
 on zero coverage. **Add a suite here and you must add its job id to `EXPECTED`** — mechanical since 2026-08-18, `tests/test_ci_guards.TestTestsGateCoversEverySuite` asserts `EXPECTED`, `needs` and the set of declared jobs are the same set, in both directions. It was a manual discipline until then, which is the green-by-omission hole the gate exists to close, one level up. The third suite is `watcher-env`: it builds an env from `requirements-watcher.txt` and imports `scripts.check_triggers`, because only the *pins* of that narrowed lockfile were guarded and nothing proved the 36-package set could import the money-path script it exists to run.
-Note the gate is advisory on this repo, and still is after the 2026-08-21 flip to
-public. Rulesets were *unavailable* while the repo was private (measured:
-`gh api repos/w2ur/midas/branches/main/protection` → 403 `Upgrade to GitHub Pro or
-make this repository public`); going public lifted that restriction, but **no
-ruleset has been created**, so the gate shows as a red X rather than a blocked
-merge button. Do not read "public" as "enforced". When one is created it must run
-in **evaluate mode first** — six scheduled workflows push directly to `main`, and a
-naive ruleset stops the desk — and it must require the `gate` check only, never the
-individual jobs, for the reason above: a rule can only require a name it knows.
+**The gate is advisory on this repo, and the 2026-08-21 flip to public did not
+change that** — only the reason. Rulesets were *unavailable* while the repo was
+private (measured: `gh api repos/w2ur/midas/branches/main/protection` → 403
+`Upgrade to GitHub Pro or make this repository public`). Going public lifts that,
+but there is still no workable ruleset, and both halves of that were **measured on
+a throwaway `ruleset-probe` branch on 2026-08-21 rather than reasoned about**:
+- `enforcement: "evaluate"` — the read-only mode that would let a rule be observed
+  before it bites — returns **422 `Enforcement evaluate option is not supported on
+  this plan. Please upgrade to Enterprise`**. So the cautious path does not exist
+  here. Do not write a plan around it; this one did, for a morning.
+- `enforcement: "active"` with a `required_status_checks` rule on `gate` **rejects
+  a direct push** — `GH013 … Required status check "gate" is expected.` A branch
+  *creation* still passes, which makes the first probe look like a false negative;
+  push an **update** to see the rule fire. On `main` that is the daily session's
+  `git push origin HEAD:main` and all six scheduled writers, i.e. the desk.
+- Adding `{"actor_id": 5, "actor_type": "RepositoryRole"}` as a bypass actor lets
+  the **owner's** push through, printing the violation as a warning instead of
+  blocking — the nearest thing to evaluate mode this plan has. But scheduled
+  workflows push as `github-actions[bot]`, an **Integration**, not a repository
+  role, so they are not covered by it and would still be rejected. Untested,
+  because testing it means risking a real session push.
+So the honest position is that a `main` ruleset here either stops the desk or
+exempts everyone who actually pushes. If one is ever created it must require the
+`gate` check **only**, never the individual jobs — a rule can only require a name
+it already knows, which is the same hole `EXPECTED` closes one level down.
 
 Neither suite is path-filtered per job — the site suite reads committed engine
 artifacts (the OHLCV store, `data/ticker_currencies.json`, METHODOLOGY.md
