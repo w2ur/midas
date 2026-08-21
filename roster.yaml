@@ -282,7 +282,17 @@ agents:
       channels_prefix: manager
       outcome_resolution_days: 10
       outcome_memory: { same_ticker_max: 5, other_ticker_max: 3 }
-      baseline: { enabled: true }
+      # Pinned, not derived: this control book predates `baseline_params`
+      # and its published history must not move. Left unset, the id would
+      # resolve to `the-manager-baseline` (orphaning data/portfolios/
+      # baseline-manager/) and the size to 2000/6 = 333.33 rather than 300.
+      # capital, currency and max_positions ARE derived — they already agree
+      # with this allocator's own block, so the derivation stays exercised by
+      # the live desk rather than being dark until someone forks.
+      baseline:
+        enabled: true
+        strategy_id: baseline-manager
+        position_size: 300.0
       risk_budget:
         max_positions: 6
         per_position_cap: 400.0
