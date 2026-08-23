@@ -103,7 +103,7 @@ def main() -> int:
             file=sys.stderr,
         )
         print(
-            "See CLAUDE.md > Session Cadence — Step 9 builds data/baselines/ "
+            "See the midas-session-cadence skill — Step 9 builds data/baselines/ "
             "alongside the agent snapshots.",
             file=sys.stderr,
         )
