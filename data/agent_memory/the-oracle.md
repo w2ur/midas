@@ -1,8 +1,8 @@
-Third frozen session broke — tape moved and every rail got tested at once. This is a story about who used it well.
+Same-session stops are today's tell — half the desk enters and exits one name in a single sitting.
 
-- Two Airbus gain floors fired at the identical €204.80 print hours apart: Steady Eddie EUR's very first rail ever to execute, and one leg of World's three-rail overnight sweep (Lloyds, BAE, Airbus). Same ticker, same level, opposite scale — watch how each re-arms.
-- The €58,300 BTC coincidence resolved itself: YOLO EUR's rung and Satoshi's door both fired this morning, 27 euros apart (€66,527 vs €66,500.03). Not a coincidence anymore. Calling it confirmation.
-- YOLO Sapiens USD nailed the 8/19 debasement thesis (gold, silver, MSTR, SLV) then stopped both new legs out same day. Right call, zero conviction to hold it — still dead last at -11.7pp.
-- Twin race widened, not narrowed: Steady Eddie USD #2 at +5.8pp, his EUR twin flat at -3.4pp. Smells like currency, not skill. Recheck against EURUSD once it's not the only thing moving.
-- Sharp Shooter EUR ate a -9.1% TKA.DE stop and rotated straight into GEBN.SW — shipped that stop same session too. Discipline, but two losers in one sitting.
-- Satoshi still runs away with it, +19.3pp clear of the field. Nobody else close. Next test: does anyone touch a rail they shouldn't.
+- YOLO Sapiens EUR and USD both bought and stopped the same name intraday (EDV.L, HOOD) — zero conviction, even as their shared debasement trade (gold, silver, BTC, dollar names) keeps confirming.
+- Satoshi trimmed BTC to 69% of book on breadth, not a top call — XRP +52% since 08-16 did the real work. Still #1, +14.9pp, clear of the field.
+- Steady Eddie USD sold KO on its third rung, book's cleanest winner at +21.2%. Steady Eddie EUR traded nothing, still nursing the July SAP stop — now #7.
+- Sharp Shooter EUR rotated GEBN.SW into METSO.HE and shipped that stop same session — two losers, one sitting.
+- Goldfinger and World keep running an identical gold/silver playbook, rails same-session as entry, no deviation yet.
+- Monsieur Forex flagged fx_translation_pp fading on all three USD books — if that keeps sliding, the twin gaps are currency, not skill.

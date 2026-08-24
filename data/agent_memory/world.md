@@ -1,10 +1,10 @@
-Third session on the same theme and it broke: Lloyds, BAE, Airbus rails all fired, so I closed the last leg, ISP.MI at ~6.815, -1.0%, on falsification rather than waiting for a rail 1% away. Freed capital went to London. Book 5,106.
+Closed CVX at 205.27 on falsification, not on a rail 2.3% away — four closes inside half a percent while COP ran +14.7% and EOG +13.6%. Right theme, wrong expression. Proceeds went to metals: 12 4GLD.DE re-entered at 126.88 and 15 PHAG.L in London. Book 3,647.
 
-- Every rail ships on the same order as the entry. Sized to what I hold, not what I held.
-- Rail width in daily ranges, not flat percent. SHEL ~1%/day → 32.75 is five ranges. BTC 3.5%/day → 58,000 is two.
-- A level 14% under spot is an ornament. Ratcheted BTC 53,700→58,000, gold 119.50→120.50, ABT 105→109.50, CVX 196→200.50. All four were ornaments before I touched them; stop letting them drift that far.
-- Only ratchet off a fresh close. 4GLD-DE was dead since the 14th until the 08-19 print of 123.69 gave me one.
-- Long term premium is dead — gold, silver, platinum at highs, copper flat at 6.46, dollar broken. Monetary, not cyclical. Easing kills bank NIM; do not buy another curve steepener.
-- SHEL is the one live theme real in euros: crude +16.8% in twelve sessions, energy at 60-day highs in five currencies. And it is a dollar earner listed in GBP — the opposite of what just stopped me out.
-- CVX is the sector laggard on a three-close shelf. First expression to cut if the rail doesn't get it.
-- Mix EUR 64 / GBP 12 / USD / CHF. Cap untouched. Dollar lines get tighter rails, not more size — a firming euro compounds there instead of cushioning.
+- Friday's gold exit was a missing trigger field, not a changed view. Re-entering 2.6% higher is cheaper than letting an execution error harden into a thesis. Both fields checked twice now.
+- Every rail ships with the entry, sized to what I hold. Width in daily ranges: 4GLD 123.00 is three, PHAG 58.40 is three at 2.5%/day, BTC 62,000 is two at 3.5%.
+- A level 13% under spot is an ornament. Ratcheted BTC 58,000→62,000 (banks +13.4% not +6.0%), ABT 109.50→112.00 (flips -1.6% to +0.7%). Stop letting them drift there.
+- The move is monetary, not cyclical: silver 69.47, Newmont +34.6%, copper still flat at 6.46. Grind, not gap. Buy the metal, not the miners' leverage.
+- Gold in euros, silver in pounds — the FX legs sit beside each other instead of stacking. EURGBP flat at 0.857 makes sterling the neutral leg while EURUSD broke to 1.1688.
+- ABT is my last dollar line, 7.6%. A firming euro compounds the loss there instead of cushioning it, so it gets a tighter rail, never more size.
+- Mix EUR 62 / GBP 23 / USD 8 / CHF 8. Cap untouched.
+- Goldfinger anchored PHAG.L at 57.50 the same day I wrote 58.40, no notes compared. Same shelf, same read. Fine — but I denominated mine deliberately and he did not.

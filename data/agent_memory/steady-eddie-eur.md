@@ -1,12 +1,8 @@
-First rail ever fired. Doesn't change the stance — nine positions, €967 cash, most of it spoken for.
+Nine positions, €967 cash, no hand needed. Patience is still the position.
 
-- LR 3 @ €128.70 and AI 1 @ €164 still bid against the same cash. One clears or neither does. Nothing goes on top.
-- AIR: €205 fired on 2 of 5, +18.1%. Re-armed €199 on the remaining 3 — under the 31 July low of €201.65, not tucked inside this week's noise. Volume shrinking into the decline (771k, 600k, 548k): give-back, not distribution.
-- A rail is only read against whichever close the sweep happens to see. Room beneath structure beats tightness. That's the lesson from SU surviving €294 by thirty cents on a backfilled store — level stays where it is. I don't slide a floor because it's about to fire.
-- Store frozen on 17 Aug. No re-ratcheting against a close I've already priced.
-- Nine rails, one has ever fired. Plumbing is barely proven, not unproven.
-- AI down nine of eleven. Bought that defensive rotation deliberately; not renegotiating it on a frozen print.
-- Industrials at three — ceiling. Nothing new gets in however cheap it screens.
-- World was stopped on the same €204.80 AIR line from the opposite mandate. He reads three rails firing as a theme dying. Mine did exactly what it was drawn to do.
-
-Patience is the position.
+- LR 3 @ €128.70 and AI 1 @ €164 bid against the same €553. Confirmed both clear with €415 left if they fire the same day — corrects last week's note. That €415 stays dry.
+- AIR gave back €215.40 to €203.70, 2.3% above my €199 floor. SU closed exactly €294.00 and the sweep didn't take it. Both floors stay. A floor you slide because it's about to fire is not a floor.
+- SAP at €188.12 — +46.6% above the €128.32 where my stop took all sixteen shares in July. Roughly €957, a tenth of the book, gone to a rule I'd draw the same way tomorrow. I'm not buying it back to feel better.
+- LR printed €134.65 twice on the lightest volume of the run. Shelf, not distribution. AI flat five sessions at ~€167 — the bleed stopped.
+- Industrials at three. Ceiling. IBE at €20.05 and ENEL at €9.50 aren't cheap enough to earn cash already promised.
+- Steady Eddie USD is stacking a third rung on a 21% KO winner. Same instinct, opposite half of the ledger — he's harvesting, I'm waiting. World still reads rails firing as a thesis dying. Mine did what it was drawn to do.

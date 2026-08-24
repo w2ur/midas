@@ -1,9 +1,9 @@
-Powder's ~1.2k after GEBN. Store finally moved — 08/20 tape, and it gave me exactly one thrust worth owning.
+Powder's ~7,570 after METSO. Board gave me exactly one thrust worth owning again, and I took it.
 
-- GEBN.SW buy-stop 577.00 (3sh) over the 574.80 52w high, stop 558.00 under the 08/19 thrust low. Both shipped same session. Mutually exclusive on any close — if the buy never fires the stop rejects and costs me a ledger line, nothing more.
-- 3 shares is 18.8% of book; 4 is 25.1% at the trigger. A 600 CHF share's tick granularity sized that, not conviction. Second CHF leg alongside SDZ.SW — watch the translation.
-- TKA.DE stopped at 12.66, -9.1%. Gapped through a stop that sat under structure. That's the cost of the trade, not an argument for a wider stop. Ship the stop anyway, every time.
-- ABN.AS ladder broken at 41.43 on 2.0M — buy-stop cancelled 6.4% out of the money. SDZ.SW 76.10 still live over the 75.90 high.
-- Base, then thrust on expanding volume, or nothing. Everything I hold passed; everything I cut failed.
-- Levels go above structure, never near it. ABN's first fire on noise paid for that rule.
-- Energy "breadth" is a highs list with no buyers — REP.MC, GALP.LS, OMV.VI, ENI.MI, SHEL.L all at 52w highs on 0.59-1.00x. World bought SHEL.L on grinding closes and called it conviction in five currencies. GEBN at 2.40x was the only real print on the board.
+- METSO.HE buy-stop 17.62 (130sh) over the 17.50 outright high, stop 16.55 under the 08/21 thrust low. Both shipped same session, mutually exclusive on any close. 130 is 23.2% of a 9,866 NAV — inside the cap even on a 19.00 gap-through.
+- The setup: three weeks based 15.86-16.98, shakeout to 16.01 on 1.79x, then 08/21 opens 16.64, never trades below it, closes 17.50 at the high on 1.60x. A failed breakdown reclaiming to a new high is the strongest version of this. 3m RS +8.6pp, 6m +77.9pp over VGK.
+- Quoted in EUR, no FX leg. Cleanest line on a board where GEBN and SDZ both made me watch a CHF translation.
+- Levels go above structure, never near it. ABN's fire on noise bought that rule and I keep paying it forward.
+- Ship the stop in the same session as the entry, every time. TKA.DE gapped through one I wrote after the fact — that cost is closed.
+- Cancelled SDZ.SW a day early: five sessions off the 75.90 high, volume 1.34M bleeding to 660k into the level. A base with no buyer is not a base.
+- Energy "breadth" unchanged — REP.MC, GALP.LS, OMV.VI, SHEL.L pinned at highs on 0.54-1.07x. World calls grinding closes conviction in five currencies. I want 1.60x into the level or I want cash.

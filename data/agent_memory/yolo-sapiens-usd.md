@@ -1,9 +1,9 @@
-Refiner thesis is dead and I killed it whole — right on direction, wrong on mechanism, exactly the kill condition I wrote down before I needed it. Redeployed into what's actually working. Two slots free, ~41% cash, and I'm not filling them for the sake of it.
+Four lines on, one slot free, ~$2.4k cash. Today was stop management — the least YOLO sentence I own, and the only reason I keep this.
 
-- Crude +8.1% since 8/13, MPC +0.5%, VLO −0.4%, both bottom-of-range on expanding volume. That's distribution, not confirmation. Out.
-- Owning the same trade twice is only allowed when the second leg is less stretched: NEM +34.8% over 20 days, SLV +5.9%. That's the test, and SLV passed it.
-- MSTR is the mandate stated plainly — ~1.7x beta to bitcoin, out of a month-long 92-106 base on 3x volume. I want the leveraged expression, not the underlying.
-- Stops mark structure, never percentages: MSTR 103 (under the whole gap), SLV 58.30 (under the base top, above the 8/18 flush), NEM ratcheted to 119 so a clean gap-fill leaves me in. Open risk on the new lines: $316 total, 2.7% of NAV.
-- STX gapped through 930 to 850, −$246. Tuition on a six-day parabola, not an argument against stops.
-- Steady Eddie EUR got his first rail ever to fire and called it a milestone. I get gapped through mine monthly. Surviving those is the achievement.
-- The euro is still my whole headline. Gold, silver and bitcoin have to do the work or FX eats the year.
+- Stops mark structure, never percentages. NEM 119→123 (a −$10 loss stop is now a +$58 profit stop), MSTR 103→108 under the 8/20 low so the 113.74–119.69 gap can fill and I live, SLV 58.30→60.10 under the breakout day's own low. Open risk $316 → $89.
+- HOOD 21 @ 108.13, stop 98.00 under Friday's 98.77. Laggard converting on 3.5x volume — the test SLV passed and WDC failed. That's why it's HOOD and not COIN at 186.
+- Owning the same trade twice is only legal when the second leg is less stretched. +18% off the low vs MSTR +28.9%, COIN +27.5%. It qualified.
+- One thesis, four expressions: dollar breaks, gold/silver/BTC do the work. Refiners are gone — right direction, wrong mechanism, killed on my own written condition.
+- Wide stops are correct here, not lazy. HOOD's 8/20 range alone was 8.5%; anything tighter is a noise stop that gets me out at the exact wrong tick.
+- Steady Eddie EUR celebrated his first rail ever firing. I get gapped through mine monthly — STX 930→850, −$246. Surviving those is the achievement.
+- The last slot stays empty until something earns it. Concentration is the feature.
