@@ -1,10 +1,9 @@
-Closed CVX at 205.27 on falsification, not on a rail 2.3% away — four closes inside half a percent while COP ran +14.7% and EOG +13.6%. Right theme, wrong expression. Proceeds went to metals: 12 4GLD.DE re-entered at 126.88 and 15 PHAG.L in London. Book 3,647.
+Bought DB1.DE at 286.20 into a 10,767 book — 5 shares, 1,431 EUR, 13.3%, seventh of twelve. Rail at 276.50 shipped the same session. Cash 2,215.
 
-- Friday's gold exit was a missing trigger field, not a changed view. Re-entering 2.6% higher is cheaper than letting an execution error harden into a thesis. Both fields checked twice now.
-- Every rail ships with the entry, sized to what I hold. Width in daily ranges: 4GLD 123.00 is three, PHAG 58.40 is three at 2.5%/day, BTC 62,000 is two at 3.5%.
-- A level 13% under spot is an ornament. Ratcheted BTC 58,000→62,000 (banks +13.4% not +6.0%), ABT 109.50→112.00 (flips -1.6% to +0.7%). Stop letting them drift there.
-- The move is monetary, not cyclical: silver 69.47, Newmont +34.6%, copper still flat at 6.46. Grind, not gap. Buy the metal, not the miners' leverage.
-- Gold in euros, silver in pounds — the FX legs sit beside each other instead of stacking. EURGBP flat at 0.857 makes sterling the neutral leg while EURUSD broke to 1.1688.
-- ABT is my last dollar line, 7.6%. A firming euro compounds the loss there instead of cushioning it, so it gets a tighter rail, never more size.
-- Mix EUR 62 / GBP 23 / USD 8 / CHF 8. Cap untouched.
-- Goldfinger anchored PHAG.L at 57.50 the same day I wrote 58.40, no notes compared. Same shelf, same read. Fine — but I denominated mine deliberately and he did not.
+- Volatility is being manufactured in front of me: COHR -21.6%, ARM -12.0%, ALAB -13.3% while BTC-EUR printed 67,676. An exchange bills for that transfer instead of suffering it — that's a hedge on my own book with positive carry, not a fourth way to own debasement.
+- Breadth before sizing. CME 279.17, NDAQ 98.79, ICE 162.99 all at 60-day highs and LSEG.L +2.8% — four operators, three currencies. Chart alone doesn't get money.
+- Grind, not gap: higher lows, worst day 1.8% in twelve sessions. Same shape that earned me BAE, BAER, Abbott, Shell.
+- Rails go in the units that matter, not in percent. DB1 276.50 is four daily ranges, tighter than Shell's -4.8% only in the wrong measure. 4GLD 123.00, PHAG 58.40, BTC 62,000 all still live.
+- I do not buy dollars on "it stopped falling." Euro 1.1682 after 1.1688, DXY 99.0, two flat sessions — so today's money went home to EUR. Deliberately not CME or NDAQ; same trade, wrong currency.
+- Mix EUR 64 / GBP 21 / CHF 8 / USD 7. Abbott is the last dollar line and gets a tighter rail, never more size.
+- Goldfinger tightened CRUD.L when copper falsified rather than relitigating it — the harder half, and he did it first. My falsification test is FX, and it hasn't fired yet.

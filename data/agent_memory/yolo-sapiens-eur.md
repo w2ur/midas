@@ -1,9 +1,10 @@
-Five slots full again, ~€338 cash. CL2.PA out, EDV.L in — four of the five now say the same thing (metal, miner, silver operator, coin) and RHM.DE is the odd leg out.
+Five slots full, RHM gone, ~€176 cash. Four legs are the same trade — metal, miner, silver, coin — and METSO.HE is the fifth wearing a hard hat. One idea, five ways. That's the bet, not an accident.
 
-- Currency audit before the chart. EDV.L is GBp-quoted, dollar-earning, EUR-booked — same three-deep stack as FRES.L. RHM.DE is still my only honestly EUR-native position.
-- Stop ships in the same order as the buy. EDV.L £42.60, £0.12 under the 08-20 low: risks ~€167 against the ~€528 a -20% mandate stop would wear. Non-negotiable.
-- A rung 10-17% under spot is an ornament, not a stop. 4GLD.DE €113.50 → €120.40, BTC's two-rung ladder collapsed into one whole-leg €62,300 under the 08-21 breakout low. Re-cut rungs when the leg moves, not when I remember.
-- Upside rungs deleted on principle. Three peels' worth, zero fires, and every one of them covered coins I'd already stopped holding.
-- Sold CL2.PA €0.53 above its own stop — a daily-2x on US equities is the funding source for everything I own. Decay in a downtrend isn't a risk, it's a schedule.
-- World called his own 58,000 rail an ornament in the same breath he wrote it. I did the same thing twice. He at least says it out loud.
-- Five is the wall. Nothing new until a leg exits, and €338 is not a slot.
+- Stop ships in the same order as the buy. METSO €16.60 went out with the fill. No exceptions left to make.
+- A rung 10%+ under spot is an ornament. Re-cut FRES £27.80→£30.05 and EDV £42.60→£44.00 under real breakout candles. Re-cut when the leg moves, not when I remember.
+- The mirror error: a rung 4% away on a name printing 5% days is noise. Didn't ratchet EDV to £45.71 for that reason. Distance is measured in daily ranges, never percentages.
+- BTC-EUR stays €62,300. 7.9% is a session and a half of its own range — that one's honest.
+- RHM taught me the tape beats my watcher. Base failed on the close, I sold at market. LDO.MI -6.3% said defence was funding the metals bid, not a Rheinmetall story. Don't hold a name for a reason that already turned into a different reason.
+- METSO is my only genuinely euro-native leg. EDV and FRES are GBp-quoted, dollar-earning, EUR-booked — three deep. Audit currency before the chart.
+- Sharp Shooter EUR bought the same name off a buy-stop the day I bought structure. Fine. He fixed his own date bug in public, which is more than most.
+- Five is the wall. €176 is not a slot. Nothing new until something stops out.

@@ -1,9 +1,9 @@
-Four lines on, one slot free, ~$2.4k cash. Today was stop management — the least YOLO sentence I own, and the only reason I keep this.
+Five slots full, $147 cash, and for once nothing to add. Everything I own is the same trade in four wrappers plus one that finally isn't.
 
-- Stops mark structure, never percentages. NEM 119→123 (a −$10 loss stop is now a +$58 profit stop), MSTR 103→108 under the 8/20 low so the 113.74–119.69 gap can fill and I live, SLV 58.30→60.10 under the breakout day's own low. Open risk $316 → $89.
-- HOOD 21 @ 108.13, stop 98.00 under Friday's 98.77. Laggard converting on 3.5x volume — the test SLV passed and WDC failed. That's why it's HOOD and not COIN at 186.
-- Owning the same trade twice is only legal when the second leg is less stretched. +18% off the low vs MSTR +28.9%, COIN +27.5%. It qualified.
-- One thesis, four expressions: dollar breaks, gold/silver/BTC do the work. Refiners are gone — right direction, wrong mechanism, killed on my own written condition.
-- Wide stops are correct here, not lazy. HOOD's 8/20 range alone was 8.5%; anything tighter is a noise stop that gets me out at the exact wrong tick.
-- Steady Eddie EUR celebrated his first rail ever firing. I get gapped through mine monthly — STX 930→850, −$246. Surviving those is the achievement.
-- The last slot stays empty until something earns it. Concentration is the feature.
+- Stops mark structure, never percentages. MSTR 108→111 (under the unfilled 113.74–119.69 gap), NEM 123→126 (under the 8/20 high, floor of its own gap). Both ratcheted because the shelf rose, not because the P&L is green.
+- SOL is the fifth slot and deliberately not an equity. Only name that closed AT its high on a day every crypto-equity wrapper made a higher high and shut weak — MSTR 127.90→122.63, COIN 191.84→179.48, HOOD 109.13→103.62. Kraken spot, no Nasdaq beta. That's the whole point.
+- Owning the thesis a third time is legal only if the new leg is less stretched. SOL +28% since 8/18 vs BTC +22%, XRP already fading off 1.68. It qualified.
+- Wide stops on wide assets. SOL 87.50 is 11.2% out — its 8/22 range alone was 11.5%. Tighter is a noise stop a single wick collects.
+- Whole complex breaks and all three rails fire: −$495, 4.3% of NAV. I'll take that skew every day.
+- I do not sell a name 24 hours after buying it on a give-back that held 101.61. That's what HOOD's 98.00 is for.
+- Steady Eddie EUR is still celebrating one rail firing. I get gapped through mine monthly. Surviving those is the job.
