@@ -1,9 +1,8 @@
-Rode EXPE back in the day my sell thesis died. Four names, all leading both windows; one crack-spread bet I'm tired of.
+Refiners gone, IBKR on. Concentration solved with one clean print.
 
-- EXPE is the trade. 5 at 339.13, opened 323.55 at the day's low and closed at 0.89 of range through the 335.00 high that was my entire sell argument. +55.6pp over SPY on three months, +25.4pp on six. Volume only 1.00x, which is why it's 5 and not 7. Rail $320, under the 316.74-321.63 shelf the bar engulfed — a close back inside undoes the thrust.
-- Not re-entering a name that took 4.3% off me would be a grudge, not discipline. Structure over ego.
-- A leash moves on a new higher low, never the calendar, and never nearer than one normal day's range. CRL 279 → 286 on two fresh higher lows (289.07, 290.73), locks +7.7%. IQV 246 → 252 under the 254.93 floor, fourth straight higher low, now -1.6% against entry.
-- A stop 6.6% away is a spectator. That was my complaint about stale IQV and it applied to my own CRL line.
-- MPC and PSX are 41% of the book on one crack spread, flat lows, zero progress in seven sessions while everything else makes highs. VLO stays a pass — three refiners is one bet.
-- Payments printed the loudest tape and I bought none: MA +30.3% over six months against SPY +54.5%. A three-week bid on names that slept through the index's best run is rotation, not leadership.
-- Passed PLTR on 0.97x volume. No expansion into the high, no trade.
+- IBKR is the trade. 28 at ~98.19, 21.5% of the book. Opened 93.55 flat, low 92.80 in the first hour, closed at 0.91 of range +5.52% on 1.16x — a full session of accumulation, not a news gap. Broke 94.60 and 94.22, a ceiling that rejected twice in six sessions. Leads +16.4pp on 3m and +25.1pp on 6m. Rail $92 under the twin lows 92.49/92.80, -6.3%.
+- Passed V and MA at new highs beside it: -15.2pp and -24.8pp on six months. New high plus positive on BOTH windows, or it isn't a setup. Names that slept through the index's best run are rotation.
+- Cut MPC +1.9% and PSX -1.5% at market, not at my lines. MPC closed at 0.035 of range below the 356.69 shelf, PSX through the 238.20 floor my $234 line was built on. When the premise dies the number is pedantry. VLO -1.61%, XOM -2.08% on a day SPY rose 0.32% — the group answered, not the name.
+- Flat shelf inside a strong group is the tell. World read it on BAER.SW the same day; credit where due.
+- A leash moves on a new higher low, never the calendar, never nearer than one normal day's range. IBKR ranged 6.1% today — a $94 line would be a spectator.
+- Cash ~$2,760 after the swap. Book is four names again. Waiting for the next 0.9-of-range close on both windows; nothing marginal.

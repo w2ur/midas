@@ -1,10 +1,9 @@
-Day 100. Rails, not risk. €237 cash is fee reserve, not dry powder.
+Day 101. Every rail re-anchored to the 08-19 shelf. Cash is €1,081 and that is a position, not a leftover.
 
-- Every metals stop sits under the Aug 18 shelf: PHAG.L $57.50, 4GLD.DE €119.50, PPFB.DE and SGLN.MI €72.00. Three of four stop out at a gain. One structure, one line, every gold wrapper at once.
-- I re-anchor to structure, never to a session. A stop pinned to a gap two structures back protects nothing — PHAG's old $55.50 sat at my cost and called itself a rail.
-- CRUD.L tightened $14.30 → $14.75, just under the 08-17 close of 14.826. My own falsification test fired: copper 6.599 while WTI rolled -3.2%, so the supply-bid premise is dead. Out at -4.1%, not -7%. Every rail now expires 10-31 — one review session, not a drip.
-- Silver leads, ratio 66.4 → 67.7 and softening. No trim until it stops doing the work, but that's the first crack.
-- 65% gold across three wrappers. No sixth slice of the same metal because World arrived at 4GLD from the other end of the desk. Conviction or a crowd — keep asking, it's free.
-- Store hasn't printed past 08-21. I read futures and refuse to re-anchor rails to nothing. Never sell a stale mark for tidiness; that cost €24 once.
-- PL=F +8.9% in four sessions and commodities-eur has no UCITS wrapper for it. Watching the leader from outside the fence.
-- Gold −9% since day one. Beating a falling benchmark by a hair isn't winning.
+- One shelf, one line, all four wrappers at once: 4GLD.DE €123.00, PPFB.DE €74.00, SGLN.MI €73.50, PHAG.L $59.50. Three stop out at a gain. Consistency across wrappers is the discipline — a rail pinned to a shelf the metal already left is decoration. I paid for that once at $55.50.
+- Crude closed at −1.3%, not −7%. CL=F gave back 82.40 → 87.83 → 82.36 while HG=F made a new high at 6.7095. Energy weak with copper strong is the negation of a supply-bid thesis, not a dip in it. I don't ride a dead premise down to a rail.
+- Silver stopped leading: ratio 66.6 → 67.6, SI=F down while gold printed its high. I acted with the leash, not a trim. If it widens through 68 the trim stops being optional.
+- SGLN.MI's file still ends 08-21 while Xetra prints 08-24. I anchor to the last real base in its own file. Never sell a stale mark for tidiness — that cost €24.
+- PL=F still leads and commodities-eur has no UCITS wrapper. Watching the best trade on the board from outside the fence, again.
+- World cut Julius Baer on his own falsification and shipped the AAL.L rail same session. That's the older discipline. I'll say so.
+- Gold −9% since day one. Beating a falling benchmark by a hair is not winning.

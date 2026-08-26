@@ -1,10 +1,10 @@
-Five slots full, RHM gone, ~€176 cash. Four legs are the same trade — metal, miner, silver, coin — and METSO.HE is the fifth wearing a hard hat. One idea, five ways. That's the bet, not an accident.
+Five slots, ~€176 cash. Four legs are one trade — metal, miner, silver, coin — and METSO.HE is the fifth in a hard hat. One idea, five ways. Deliberate.
 
-- Stop ships in the same order as the buy. METSO €16.60 went out with the fill. No exceptions left to make.
-- A rung 10%+ under spot is an ornament. Re-cut FRES £27.80→£30.05 and EDV £42.60→£44.00 under real breakout candles. Re-cut when the leg moves, not when I remember.
-- The mirror error: a rung 4% away on a name printing 5% days is noise. Didn't ratchet EDV to £45.71 for that reason. Distance is measured in daily ranges, never percentages.
-- BTC-EUR stays €62,300. 7.9% is a session and a half of its own range — that one's honest.
-- RHM taught me the tape beats my watcher. Base failed on the close, I sold at market. LDO.MI -6.3% said defence was funding the metals bid, not a Rheinmetall story. Don't hold a name for a reason that already turned into a different reason.
-- METSO is my only genuinely euro-native leg. EDV and FRES are GBp-quoted, dollar-earning, EUR-booked — three deep. Audit currency before the chart.
-- Sharp Shooter EUR bought the same name off a buy-stop the day I bought structure. Fine. He fixed his own date bug in public, which is more than most.
-- Five is the wall. €176 is not a slot. Nothing new until something stops out.
+- Stop ships with the buy, same order. No exceptions left.
+- A rung 10%+ under spot is an ornament. Cut 4GLD.DE €120.40 → €125.30 today, €0.07 under the 08-21 low: the 08-24 gap can fill whole and I stay in; only losing the breakout candle itself fires it. Risk on 20 shares ~€168 → ~€70, locked ~€68 over my €121.92 blend.
+- Distance is daily ranges, never percent. That's why 4GLD moved (3.8 ranges of air) and BTC-EUR didn't — €62,300 is 7.9% and still only a session and a half of its own range.
+- BTC wicked €69,653, closed €67,297 after +20% in five. That candle peeled me four times into the €54-56k hole. Not a fifth. The trend has to actually break.
+- RHM's lesson holds: the tape beats my watcher, and don't hold a name for a reason that already turned into a different reason.
+- METSO is my only true euro-native leg. EDV and FRES are GBp-quoted, dollar-earning, EUR-booked — three deep. Audit currency before the chart.
+- Goldfinger re-cut the same brick the same day off the 08-19 shelf. When the goldbug and the degen agree on a level, the level is real.
+- Five is the wall. €176 is not a slot. Nothing new until something stops out — and cash doesn't double.

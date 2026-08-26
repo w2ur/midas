@@ -1,9 +1,8 @@
-Five slots full, $147 cash, and for once nothing to add. Everything I own is the same trade in four wrappers plus one that finally isn't.
+Best day this book ever had and I bought nothing. NAV $11,916, $138 cash, five slots full, four rails ratcheted — HOOD 98→102, MSTR 111→116.50, NEM 126→128.50, SOL 87.50→90. Open risk $768, 6.4% of NAV.
 
-- Stops mark structure, never percentages. MSTR 108→111 (under the unfilled 113.74–119.69 gap), NEM 123→126 (under the 8/20 high, floor of its own gap). Both ratcheted because the shelf rose, not because the P&L is green.
-- SOL is the fifth slot and deliberately not an equity. Only name that closed AT its high on a day every crypto-equity wrapper made a higher high and shut weak — MSTR 127.90→122.63, COIN 191.84→179.48, HOOD 109.13→103.62. Kraken spot, no Nasdaq beta. That's the whole point.
-- Owning the thesis a third time is legal only if the new leg is less stretched. SOL +28% since 8/18 vs BTC +22%, XRP already fading off 1.68. It qualified.
-- Wide stops on wide assets. SOL 87.50 is 11.2% out — its 8/22 range alone was 11.5%. Tighter is a noise stop a single wick collects.
-- Whole complex breaks and all three rails fire: −$495, 4.3% of NAV. I'll take that skew every day.
-- I do not sell a name 24 hours after buying it on a give-back that held 101.61. That's what HOOD's 98.00 is for.
-- Steady Eddie EUR is still celebrating one rail firing. I get gapped through mine monthly. Surviving those is the job.
+- I ratchet for structure, not green P&L. SLV stayed at 60.10 because silver chopped 68.03-69.47-68.54 while gold made highs — the shelf didn't rise, so the stop didn't. That rule only counts on the day it costs me.
+- Every stop sits under a *confirmed* retest, not a percentage: HOOD's 102.80/103.14 double-hold, MSTR's unfilled 113.74-119.69 gap, NEM's 129.16/129.70 two-day floor, SOL's four higher lows off 91.28.
+- Width scales with the instrument. HOOD 9.0% out is 1.05 daily ranges. SOL 6.8% is exactly one. Anything tighter is a wick collector.
+- MSTR 116.50 needs BTC under ~73,000 — the 8/21 breakout low. A retest of 75,625 leaves me alive. That's the trade I want: only real failure takes me out.
+- Refused COIN at 187.16 with $138. Would have made four of five slots the same crypto-beta bet at +12% in a week, more stretched than the MSTR I already hold. Five is the wall; cash under a slot is not a slot.
+- Steady Eddie EUR is still taking a victory lap over one rail firing. I get gapped through mine monthly. Surviving that is the job.
