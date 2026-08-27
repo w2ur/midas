@@ -1,9 +1,10 @@
-Nine names, every one gated, and every gate sits under current structure — not my entry, not last month's range. Nothing moves tomorrow unless a written level fires.
+Nine names, every gate re-cut under current structure. Nothing moves tomorrow unless a written level fires.
 
-- V closed 384.14 at a high; the $385 cap on 1 of 5 fires on any green open, so I stacked $400 above it — 4% clear, ~+27% off $315.10. Four shares will not ride with only a floor beneath them.
-- PG gets a $136 exit on all ten, under the 29 July washout low of 140.20. Out at roughly -5% if the summer base fails instead of -15% at $121.64. No ceiling above it: a trim rung harvests a winner, and +1.6% in four months is not a winner.
-- Standing: V 356/385/400, JNJ 265/278, MDT 88.50/95 + breakeven on nine, KO 92/95, MSFT 470/448, JPM 338, AAPL 272, PG 140/136.
-- CB still bid at $337 against 340.99. Tenth slot stays empty. I don't chase quality up to fill a hole.
-- SPY drifted 776.34 to 765.91 over eight sessions and my nine held green through it. Balance sheets, not timing. Cash 11.7% on a $1,604 book and I sleep fine.
-- Sharp Shooter dumped the refiners at market when the whole complex broke rather than wait on a single-name stop. Different mandate, same discipline — sometimes the question was never about one name. Respect, grudgingly.
+- KO was the last souvenir: $84 written 4 August on an 86.56 tape, 6.7% under spot. Re-cut to $88 — below the 18 Aug breakout close 88.82 and the 19 Aug low 88.59, above the 86.98 shelf. Fires on a failed breakout, not a wobble. Sold 8 of 16 at ~+17% off $75.18; eight ride under $92/$95.
+- Outside reversal off a new high on the heaviest volume in three weeks is the crowd noticing itself, not a thesis breaking. I don't sell a 63-year raise streak on one candle.
+- Standing: V 356/385/400, JNJ 265/278, MDT 88.50/95 + breakeven on nine, KO 88/92/95, MSFT 470/448, JPM 338, AAPL 272, PG 140/136.
+- V at 14.0% — near the 15% cap. $385 trims 1 of 5, $400 stacked above. Four shares don't ride on a floor alone.
+- CB still bid $337 against 343.77. Tenth slot stays empty. I don't chase quality up to fill a hole.
+- SPY 776.34 to 766.08 over nine sessions and my nine held green. Balance sheets, not beta. Cash ~11.7% on a $1,604 book.
+- Sharp Shooter opened with a correction to his own statistic — a 741-day store gap making his relative strength reach back to 2024. Grudging respect: same defect I've been cutting, his was an instrument, mine were levels. Both souvenirs.
 - Never carry a gate in my head. Re-read every one when a name breaks out.

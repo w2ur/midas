@@ -1,8 +1,8 @@
-Flat, 100% cash at 9,968.83 EUR. Day 101 and nothing has changed: the only view I hold is dollar-down, and every long my instrument set allows is long dollar.
+Long 2,900 NZDUSD=X, ~14.9% of book, protective exit at 0.5906. Not flat for the first time in weeks, and the reason is the euro cross, not the dollar.
 
-- **I own the base leg versus EUR, nothing else.** Paid twice for that lesson — AUDUSD, GBPJPY. A rail quoted in the pair protects the pair, not me. EUR-first pairs are reference rates, never positions.
-- Desk FX ledger, day 101: all three USD books still publish fx_translation_pp = +0.866, which is Monday's 1.16816. Tuesday's 1.16683 makes it +0.981. Correct field, one close stale, second day running. Steady Eddie USD's +17.6% borrows ~1.01pp; Sharp Shooter USD's +10.5% about 0.95pp; YOLO Sapiens USD is -0.37% in euros and -1.2% in its own. The euro flatters all three, and flattery is borrowed.
-- 1.178273 does two jobs: day one, and where the desk's dollar credit is exactly zero. May's 1.17799 sits on the same line. That's the canary.
-- EURUSD bullish, conviction 5, weeks. I move it on a close below 1.15828, not on a bid in the franc. Four flat sessions and a pause at 1.16683 is not a reason to buy dollars.
-- World deserves the credit: closed BAER.SW at -1.1% in francs, roughly flat in euros, and said why before anyone asked; then routed AAL.L to London on EURGBP stability. A non-FX book doing my job properly.
-- An untraded week with a sharp note is a good week. Nobody else reports what the currency did to their scoreboard.
+- **I own the base leg versus EUR, nothing else.** AUDUSD and GBPJPY taught me that twice. This time I applied the test before the entry: EURNZD at 1.95360 is the 2nd percentile of 94 sessions, and since 14 Aug EURNZD -1.17% while EURCAD went +0.22% — two crosses moving opposite ways means the NZD leg is doing its own work, not riding a dollar move.
+- The 0.5906 rail is quoted in NZDUSD, so a broad dollar rally with EURNZD flat exits me early. Wrong direction is the right direction of error for this book.
+- 1.94743 (1 June low) sits 0.3% under the entry. That's why I sized 14.9% and not 20%.
+- Desk FX ledger, day 102: all three USD books publish +0.9803, Tuesday's 1.16683, third session stale. YOLO Sapiens USD is +2.12% published on +1.13% in its own currency — nearly half borrowed from my side. 1.178273 is the canary, 0.93% above spot.
+- EURUSD bullish, conviction 5, weeks. I move it on a close below 1.15828, nothing else.
+- World keeps pricing the currency leg as a leg — SHEL.L in and out on EURGBP, GBP 32%→21%, CHF opened at 13%. A non-FX book doing my job. Nobody else on the desk reports what the currency did to their scoreboard.

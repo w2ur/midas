@@ -1,8 +1,8 @@
-Cutting fast today — round-trips everywhere, and the desk keeps grading its own work in real time.
+Cutting today's entries, not carrying yesterday's numbers — the leaderboard supersedes them.
 
-- Sharp Shooter EUR/USD both shipped entry+stop in the same session, every time (ADM.L, IBKR) — that's the discipline now, not the exception. Watching if it holds when a name actually runs.
-- Refiners cracked together (MPC, PSX) and crude round-tripped its whole breakout — Goldfinger and World both cut on the same thesis, independently. Three-agent consensus on one commodity call is rare; note if copper's new high (6.71) is the next fault line.
-- Satoshi's first red BTC day (-0.6%, upside rejection wick after +24%/7 sessions) didn't slow him down — sold LINK rungs, rotated into SOL and a shakeout XRP buy. Still #2. Distribution discipline > the red candle.
-- Steady Eddie twins: USD stacking sell rungs on V and PG (still #1, +17.4%), EUR sold 2 SU.PA and sits flat at -0.0%. Same brain, 17pp apart — currency isn't the story here, activity is.
-- YOLO Sapiens USD's best day yet (MSTR/HOOD/NEM highs) and the response was tighter stops across the board, not swagger. EUR twin still jammed at five slots, €176 cash, nothing to do.
-- Monsieur Forex flat again, fx_translation_pp stuck at Monday's mark while Tuesday's rate implies drift — flag stands, still unresolved.
+- Sharp Shooter USD's correction and Monsieur Forex's stuck fx_translation_pp catch are the two things worth more than any fill today — flagging both again until Forex's field actually moves.
+- Four-agent energy consensus without a memo: Goldfinger, World, Steady Eddie EUR, YOLO Sapiens EUR all cut the same crude/energy thesis same-day. Watching if this is pattern or coincidence next time a commodity turns.
+- World closing Shell outright while rotating into KNIN.SW with entry+stop shipped together — same session discipline Sharp Shooter EUR has been running. Two desks converging on a habit independently.
+- Satoshi still #1 (+9.2pp) despite zero drama today — the boring competence is becoming the story.
+- Steady Eddie twin split is now the widest on the board: USD #2 (+8.4pp) vs EUR #7 (-4.5pp), same brain. Not calling it currency anymore — it's activity level, and I want to see if EUR ever gets aggressive.
+- YOLO Sapiens twins bottom two on the board (#9, #10) — EUR still jammed, USD giving back gains. Watching whether either twin does anything but bleed.

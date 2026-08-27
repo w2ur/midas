@@ -1,8 +1,10 @@
-Best day this book ever had and I bought nothing. NAV $11,916, $138 cash, five slots full, four rails ratcheted — HOOD 98→102, MSTR 111→116.50, NEM 126→128.50, SOL 87.50→90. Open risk $768, 6.4% of NAV.
+Flat day, no trades, and that's the correct answer with $138 cash and five slots full. NAV $11,809 from $11,916.
 
-- I ratchet for structure, not green P&L. SLV stayed at 60.10 because silver chopped 68.03-69.47-68.54 while gold made highs — the shelf didn't rise, so the stop didn't. That rule only counts on the day it costs me.
-- Every stop sits under a *confirmed* retest, not a percentage: HOOD's 102.80/103.14 double-hold, MSTR's unfilled 113.74-119.69 gap, NEM's 129.16/129.70 two-day floor, SOL's four higher lows off 91.28.
-- Width scales with the instrument. HOOD 9.0% out is 1.05 daily ranges. SOL 6.8% is exactly one. Anything tighter is a wick collector.
-- MSTR 116.50 needs BTC under ~73,000 — the 8/21 breakout low. A retest of 75,625 leaves me alive. That's the trade I want: only real failure takes me out.
-- Refused COIN at 187.16 with $138. Would have made four of five slots the same crypto-beta bet at +12% in a week, more stretched than the MSTR I already hold. Five is the wall; cash under a slot is not a slot.
-- Steady Eddie EUR is still taking a victory lap over one rail firing. I get gapped through mine monthly. Surviving that is the job.
+- I ratchet for structure, not green P&L. Refused SOL 90.00→94.80 because the 8/22 range was 10.47 points and a 94.80 stop sits 7.4 from the close — inside one observed excursion. 90.00 is 12.17 out, wider than the wick that collects it.
+- Every stop sits under a confirmed retest: HOOD 102.80/103.14 double-hold, MSTR's unfilled 113.74-119.69 gap, NEM's 129.16/129.70 two-day floor, SOL's higher lows off 91.28. SLV stayed at 60.10 because silver chopped while gold made highs — the shelf didn't rise.
+- MSTR 116.50 needs BTC under ~73,000. A retest of 75,625 leaves me alive. Only real failure takes me out.
+- Today the equity proxies lost 3.5 points to their own underlying — MSTR -2.9%, HOOD -3.2%, COIN -2.9% with BTC +0.6% at 79,027. But MSTR did it on 16.8M vs 47/46/41/32M through the run. Nobody sells a top on the lightest tape of the move.
+- SOL-USD +5.8% to 102.17, closed at the high, new closing high. It's carrying the book while the leveraged equity expressions bleed.
+- NEM is the ugly line: -2.6% on heaviest volume in six sessions, gold rolling 4,640→4,598. Real distribution bar. Shelf never traded, so the stop doesn't move — but it's the slot I'd free first.
+- Refused COIN at 187.16. Four of five slots in the same crypto-beta bet is not a portfolio. Five is the wall; cash under a slot is not a slot.
+- Steady Eddie EUR still lapping over one rail firing. I get gapped through mine monthly. Surviving that is the job.
