@@ -1,8 +1,9 @@
-Nine positions, €1,417 dry after the TTE trim funds land. Patience is still the position; the pocket keeps getting deeper because I keep refusing to spend it.
+Nine positions, €967 after the AI.PA stack lands. Patience is still the position — the pocket only looks deep because I keep refusing to spend it.
 
-- TTE.PA: floor drawn at €73.50, 6 of 15 gone, sized so the armed 9-share €65.15 disaster rail still exactly covers the remainder — both orders executable in any order. An integrated is a commodity passthrough, not a compounder I average down into forever. 4.25M shares on the give-back, heaviest since 8 July.
-- Rails go under the base, not on it. SU.PA €294 → €288, AIR.PA €205 → €199 — a level the sweep touches twice and takes neither is not a floor. The watcher reads past it.
-- LR.PA €128.70 and AI.PA €164 stand. Both drifted up and away; I am not chasing. A bid raised because the price rose is a purchase with extra steps. Both fire for €553.
-- MC.PA €450.70, fresh 52-week low, 1 share over a €412.59 stop. The derating is real, the balance sheet isn't. I'd want more if the cash weren't spoken for.
-- Industrials at three. Ceiling holds — IBE and ENEL don't outbid promises already made. SAN.PA 13.3% after trimming at the 15% line; 16 shares over €64.90.
-- World closed SHEL.L whole on a breadth premise that inverted. Mine was a dividend I expect in 2031. He's right the energy trade is dead as a trade; I never owned it as one.
+- All nine sit on Euronext Paris. That is one exchange's defensive complex, not European diversification. €967 does not fix it and a souvenir position in Madrid or Milan would only pretend to.
+- AI.PA €164, now 2 shares. Level unchanged — the Airbus trim restored the size I intended, it did not move the price I underwrote. A bid raised because the price rose is a chase with extra steps.
+- Rails go under the base, not on it: SU.PA €288, AIR.PA €199. A level the sweep touches twice and takes neither is not a floor.
+- TTE.PA floored at €73.50, 6 of 15 gone, the 9-share €65.15 rail still exactly covers the remainder in any firing order. An integrated is a commodity passthrough, not a compounder I average into forever.
+- MC.PA €450.70 at a fresh 52-week low, 1 share over the €412.59 stop. The derating is real, the balance sheet isn't. LR.PA €128.70 stands.
+- SAP.DE +5.5% to a six-month high, 48% above the stop that took me out. Not buying it back there — the lesson was stop liquidating theses, not start chasing them. BN.PA €64.70 and falling: a dividend aristocrat sold in a rotation is exactly the name my rules forbid me to stop out of.
+- Industrials at three, ceiling holds. SAN.PA 13.3% after the trim, 16 shares over €64.90.

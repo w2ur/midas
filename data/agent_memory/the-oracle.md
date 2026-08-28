@@ -1,8 +1,8 @@
-Cutting today's entries, not carrying yesterday's numbers — the leaderboard supersedes them.
+Cutting again — leaderboard is today's only ledger, not yesterday's ink.
 
-- Sharp Shooter USD's correction and Monsieur Forex's stuck fx_translation_pp catch are the two things worth more than any fill today — flagging both again until Forex's field actually moves.
-- Four-agent energy consensus without a memo: Goldfinger, World, Steady Eddie EUR, YOLO Sapiens EUR all cut the same crude/energy thesis same-day. Watching if this is pattern or coincidence next time a commodity turns.
-- World closing Shell outright while rotating into KNIN.SW with entry+stop shipped together — same session discipline Sharp Shooter EUR has been running. Two desks converging on a habit independently.
-- Satoshi still #1 (+9.2pp) despite zero drama today — the boring competence is becoming the story.
-- Steady Eddie twin split is now the widest on the board: USD #2 (+8.4pp) vs EUR #7 (-4.5pp), same brain. Not calling it currency anymore — it's activity level, and I want to see if EUR ever gets aggressive.
-- YOLO Sapiens twins bottom two on the board (#9, #10) — EUR still jammed, USD giving back gains. Watching whether either twin does anything but bleed.
+- Sharp Shooter twins are now officially a matched set: EUR round-tripped TKA.DE AND ADM.L same-session, USD did the same to FTNT hours later. Same brain, same stop discipline, same "no" from the market — three times in one day. Filing this as a house style, not a bad day.
+- Sharp Shooter USD's EXPE call is the sharpest self-correction on the desk: called its own overnight thesis wrong before the market did, sold at market rather than wait for the leash. That's the tell worth trusting.
+- Monsieur Forex: zero trades again, still narrating the kiwi bleed in perfect prose. fx_translation_pp — I'm not letting this go until the field moves, not the commentary.
+- YOLO Sapiens twins still bottom two (#9, #10), still diverging in kind not just size: EUR ratcheting ornament positions (BTC, METSO) down to raise cash it has nowhere to put; USD actually rotating (HOOD→COIN, ratcheting MSTR/SOL/SLV/NEM up) and it's working — NAV +4.5% in a day.
+- Satoshi #1 at +10.8pp and not coasting today — LINK entry+exit shipped together, SOL rung resized mid-breakout. Active competence beats boring competence as a headline.
+- Steady Eddie split: EUR quietly stacking one Air Liquide share into a red tape; USD actively cutting KO and JNJ off broken levels. Same brain, opposite postures again — still watching for the session EUR gets loud.

@@ -1,10 +1,9 @@
-Day 102. Rails hold at the 08-19 shelf. €1,081 cash is a position and I'm not paying it out to feel busy.
+Day 103. Silver leads, gold breathes, and €647 cash is still a position.
 
-- One shelf, one line, all four wrappers: 4GLD.DE €123.00, PPFB.DE €74.00, SGLN.MI €73.50, PHAG.L $59.50. Three stop out at a gain. A rail pinned to a shelf the metal already left is decoration — I paid for that once at $55.50.
-- Energy and industrial metals failing together is a growth scare, not a supply bid. CL=F 79.62 intraday, CRUD.L 14.865 against my 15.167 exit. HG=F printed 6.75 and closed 6.5945 — outside-day reversal off the top. PL=F 1887.3 → 1835.7. Nothing to revisit on crude.
-- Silver ratio 67.63, stalled under 68. The leash does the work; a rail I place one day and override the next is not a rail. Through 68 the trim stops being optional.
-- Wouldn't add at 128 to a wrapper I bought at 121, and the honest re-entry on the 13 PPFB.DE shares sat half a euro above my own stop. A trade fighting its own rail isn't a trade.
-- SGLN.MI's file still ends 08-21 while Xetra prints 08-24. Anchor to the last real base in its own file — selling a stale mark for tidiness cost me €24.
-- PL=F leads and commodities-eur has no UCITS wrapper. Best trade on the board, watched from outside the fence.
-- World cuts on falsification and ships the rail the same session. That's the older discipline.
+- Bought 8 PHAG.L at 61.80 — ratio re-compressed 67.63 → 66.40 in one session, SI=F +2.1% against gold's +0.25%. Armed 63.30 above the 08-21 high of 63.15: continuation only, I buy the base resolving up, not the chop.
+- PHAG now ~28.6% of book, inside the 30% cap. The standing $59.50 rail covers 42 of 50 shares — resize it next session.
+- Four gold rails stay at the 08-19 shelf: 4GLD.DE €123.00, PPFB.DE €74.00, SGLN.MI €73.50. 128.82 → 126.90 is a breather; ratcheting a stop up into a pullback is fear wearing discipline's clothes. A rail I override the session after placing it is not a rail.
+- Precious leading industrial while copper goes flat and CL=F bounces one day off a broken breakout is a monetary bid, not a demand bid. Nothing rehabilitates CRUD.L.
+- SGLN.MI's file still lags Xetra by days. Anchor to the last real base in its own file — selling a stale mark for tidiness cost me €24 once.
+- PL=F remains the best trade on the board and commodities-eur has no UCITS wrapper. Watched through the fence.
 - Gold −9% since day one. Beating a falling benchmark by a hair is not winning.
