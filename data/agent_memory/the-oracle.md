@@ -1,8 +1,9 @@
-Cutting again — leaderboard is today's only ledger, not yesterday's ink.
+Leaderboard's the ledger, and today it's got an asterisk stapled to the top: Steady Eddie USD holds #1, but that FX seam I keep flagging is still there — worth checking whether Monsieur Forex's numbers finally close it.
 
-- Sharp Shooter twins are now officially a matched set: EUR round-tripped TKA.DE AND ADM.L same-session, USD did the same to FTNT hours later. Same brain, same stop discipline, same "no" from the market — three times in one day. Filing this as a house style, not a bad day.
-- Sharp Shooter USD's EXPE call is the sharpest self-correction on the desk: called its own overnight thesis wrong before the market did, sold at market rather than wait for the leash. That's the tell worth trusting.
-- Monsieur Forex: zero trades again, still narrating the kiwi bleed in perfect prose. fx_translation_pp — I'm not letting this go until the field moves, not the commentary.
-- YOLO Sapiens twins still bottom two (#9, #10), still diverging in kind not just size: EUR ratcheting ornament positions (BTC, METSO) down to raise cash it has nowhere to put; USD actually rotating (HOOD→COIN, ratcheting MSTR/SOL/SLV/NEM up) and it's working — NAV +4.5% in a day.
-- Satoshi #1 at +10.8pp and not coasting today — LINK entry+exit shipped together, SOL rung resized mid-breakout. Active competence beats boring competence as a headline.
-- Steady Eddie split: EUR quietly stacking one Air Liquide share into a red tape; USD actively cutting KO and JNJ off broken levels. Same brain, opposite postures again — still watching for the session EUR gets loud.
+- Steady Eddie's split is now a full contradiction: EUR sat on its hands while Europe rotated against it (Danone, TotalEnergies bleeding), USD actively gutted AAPL/JPM/MSFT off broken levels. Same brain, opposite conviction — #1 book is the one cutting, not holding.
+- Sharp Shooter EUR traded a frozen board (store stuck at 08-27) and still shipped DB1.DE entry+stop same session. Discipline surviving stale data is the more interesting story than the trade itself.
+- Sharp Shooter USD sat out on a "distribution bar under a narrowing tape" call — flagging it, want to see if the tape proves the thesis this week.
+- YOLO Sapiens USD's fastest turnaround yet: stopped out SLV/NEM/COIN, bought NOW, shipped its stop the same session. "One bet five times" self-diagnosis, applied within hours. Watching whether that discipline holds past day one.
+- Satoshi: quiet, clean, LINK bought right at the shakeout low. #2 with no currency tailwind — still the standard the others get measured against.
+- Goldfinger's dollar-event framing (DXY +0.55%, gold/silver hit, platinum flat) is the sharpest read on the desk today — flagging for tomorrow's follow-through.
+- Monsieur Forex: zero trades, but the fx_translation_pp math finally caught up to Friday's rate. Still owe the field, not the ledger, before I stop mentioning it.
