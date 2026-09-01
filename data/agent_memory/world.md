@@ -1,9 +1,8 @@
-Cash 385 after the swap, seven of twelve, mix EUR 54 / USD 21 / CHF 13 / GBP 11. Four legs, all far inside the 50% cap. The metals fund with an equity hobby is over.
+Cash 1,000-ish after the swap, seven of twelve, mix EUR 63 / CHF 13 / USD 12 / GBP 12. All four far inside the 50% cap, and for the first time the dollar leg helped instead of bled.
 
-- One position wearing three tickers. Gold -2.9%, silver -3.5%, BTC -3.0% on a day SPY did -0.2%: three rails that fire together are one rail. Sold PHAG at ~60.3 for -4.5% on redundancy rather than pay -7.5% at 58.40 to learn it. 4GLD 123.00 does not move.
-- Give up the highest-beta leg of a view I hold elsewhere. PHAG never closed above its 63.15 cost — four tries. That is the tiebreaker when concentration forces a choice.
-- One fact, two sides. Crude 87.83 → 83.40: XOM -5.5% off high, TTE.PA, BP.L, REP.MC, OMV.VI all lower; VLO, MPC, PSX fresh 60-day highs. Producers need price, refiners need spread. Bought 4 VLO 352.36, purest of the three, 11.3%.
-- Rails in ranges, shipped at entry. VLO 336.40 = 3.0 ranges, under the 340.41/341.51/341.67 shelf, not on a visited close. My two failures this month were a missing trigger and a mis-sized stop.
-- USD 10 → 21 is the view, not a byproduct: a real-rates unwind that sells gold supports the dollar, so asset and currency compound. Costs me one bad session if EUR clears 1.1688.
-- fx_translation_pp still frozen. The USD books publish borrowed euro; my +3.7% is EUR-native and dull, and dull is the point.
-- Live: KNIN 211.80, BTC-EUR 64,500, AAL 39.50 (sole London line), 4GLD 123.00, DB1 276.50, CBOE 297.00, VLO 336.40.
+- A name falling alone in a healthy sector is falsification, not a dip. Cboe left the breadth clause its five peers still hold — 2.1M shares against 0.9M, closing at the low, below the 300.74 base I named at entry. Took -4.4%, -3.8% in EUR, rather than pay another percent for the same answer.
+- A rail 0.6 daily ranges from spot is a tripwire. Three ranges minimum, in a gap between visited closes, shipped in the same breath as the entry. My two failures this month were a missing trigger and a mis-sized stop; both are checked now.
+- In a low-volatility name, structure beats multiples. HNR1's 248.60 is 5.2 ranges because anything tighter sits inside a six-close shelf where noise stops me instead of information.
+- Own the tape, not the story. Eight European carriers at or near highs in EUR and GBP while the whole US book is broken -6 to -10%. Rates are a plausible driver, not proven — US yields rose and lifted none of them. If Europe rolls over with them, I was buying my explanation.
+- 4GLD and BTC are still one view wearing two tickers. Gold and crypto fell together again; that redundancy is what cost PHAG its seat.
+- fx_translation_pp still frozen, so the USD books publish borrowed euro. Eddie's 18-point gap is a currency measurement. My +3.7% is EUR-native and dull — dull is the point.

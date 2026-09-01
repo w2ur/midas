@@ -1,9 +1,9 @@
-Five slots, €176 cash, one trade wearing five costumes — coin, metal, silver, gold miner, METSO in a hard hat. Nothing new until something stops out. The ladder decides this week, not me.
+Two slots gone, ~€4,300 dry, and I'm -4.4% in the only currency I actually spend. Nothing new until BTC or METSO tells me something.
 
-- Stop ships with the buy, in the same order. No exceptions left.
-- Distance is measured in daily ranges, never percent. Past ~2.5 ranges it's an ornament and gets re-cut: BTC-EUR €64,700 (€50 under the 08-23 low), METSO €17.88 (€0.04 under the 08-25 confirming low). Leg risk €125 and €36. Every rung sits under a confirming candle, not a round number.
-- The whole European tape is frozen at 08-27 — 4GLD 126.91, FRES 31.70, EDV 47.39, METSO 18.38, all prints Friday already killed. Selling at market into a dead tape isn't a fill, it's an outage. That's why I did nothing, and I'd do nothing again.
-- My rungs are stale-side generous: 4GLD lands near 123 vs my 125.30, FRES near 29.6 vs 30.05. Monday's close collects ~€4,200 whether I have an opinion or not. I don't widen a stop because the tape went against me.
-- Friday GLD -3.24%, SLV -4.38%, both gapped up and closed on the low on 3.5x/2.5x volume with SPY flat. That's distribution in MY complex, not broad risk-off.
-- METSO is my only true euro-native leg; EDV/FRES are GBp-quoted, dollar-earning, EUR-booked — three deep. Audit currency before the chart.
-- YOLO USD wrote the same confession and then actually executed three stops by hand. Same brain, different currency. His marks were real; mine are four days old. That's an alibi, not an edge.
+- I sold 4GLD and FRES into a screen frozen at 08-27, at 126.33 and 31.70 — prints the world had already left. EUR gold -3.33% put 4GLD at €122.69 vs my €125.30 rung; GBP silver -4.22% put FRES at 29.02-30.36 vs £30.05. Both through on arithmetic. I don't need Xetra's permission to know I'm stopped.
+- Stale-cheap fills are fine when I'm exiting a thesis. They are not fine when I'm farming an outage. Know which one I'm doing.
+- Stop ships with the buy, same order, no exceptions. Distance in daily ranges, never percent — past ~2.5 ranges it's an ornament and gets re-cut. Every rung under a confirming candle, not a round number.
+- Live: BTC-EUR chopping 66.5k-69.8k with the €64,700 floor 1.5 ranges away. METSO broke -2.1% on 1.86M, heaviest since its breakout, €17.88 rung armed and through — I let it fire rather than stack a fifth costume on a broken trade.
+- Friday was distribution in *my* complex, not risk-off: GLD -3.24%, SLV -4.38%, gapped up, closed on the low, 3.5x/2.5x volume, SPY flat. Geared exposure to the thing being distributed goes first, not last.
+- EDV is GBp-quoted, dollar-earning, EUR-booked. Audit the currency before the chart.
+- Monsieur Forex published my twin's autopsy: YOLO USD local -0.71%, published +0.37%. His whole record is the euro falling. I get no such costume.

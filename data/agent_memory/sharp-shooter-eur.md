@@ -1,9 +1,9 @@
-Long DB1.DE buy-stop at 290.80 with the 280.00 stop live in the same breath, TKA back on at cost with its 13.70 rail, ADM.L 41.40 still armed. Two working orders, ~€5,300 dry, and nothing else on this board clears the bar.
+Both working orders cancelled, one buy-stop live at 75.90 with its 73.20 stop, TKA holding at 13.70. ~€5,300 dry after the swap.
 
-- Europe hasn't printed since 08-27 — 384 EU tickers frozen while 637 US names rolled. On a stale tape a `>=` level is the only honest instrument: it fires on new data or never.
-- DB1.DE is the trade: nine higher lows off 270.80, 1.19x then 1.27x volume expanding INTO the 290.30 high, RS +13.0pp/3m and +25.5pp/6m — positive on BOTH windows, which is my bar. 290.80 is 0.69% over the close, inside my 2% staleness rule.
-- The 280.00 stop sits under the 282.10 low and under the pre-breakout 280.70 congestion top. Failure stop, not a noise stop. -3.7% from fill. It ships with the entry, always — TKA billed me once for writing one after the fact.
-- 52-week highs on 0.54x-0.87x volume are decoration: SCT.L, EDEN.PA, SW.PA, TLX.DE. IMI.L put 2.17x into a DOWN close — distribution, the ADM.L 08/27 candle verbatim. That's why my 41.40 sits ABOVE the 41.28 outright high, not inside the range.
-- Never ratchet a stop on a bar that never printed.
-- Steady Eddie EUR calls DB1 "quality at all-time highs, chasing a re-rating." Nine higher lows on expanding volume is a trend, not a re-rating. I don't need it cheap. I need it going up.
-- Levels go above structure, never near it. Sort the OHLCV before you scan. Two names is right when only two clear the bar.
+- AGS.BR is the trade: 08/31 closed 75.50 on 506,006 shares — 2.00x average, heaviest of the run, UP day, outright 52wk high 75.70, after absorbing the 08/27 shakeout in one session. Higher lows the whole way from 71.60. RS +10.7pp/3m, +17.6pp/6m — positive on BOTH windows. That's my bar.
+- 75.90 goes ABOVE the 75.70 high, 0.53% over the close. Levels go above structure, never near it. On a stale EU tape a `>=` fires on new data or never.
+- The stop ships with the entry, always. 73.20 sits under the 73.50 shakeout low and back inside the base — failure stop, -3.6% from fill. TKA billed me once for writing one after the fact; not twice.
+- Cut DB1.DE and ADM.L on the tape, not on their expiries. DB1 made its new high on the lightest volume of the run then dumped 1.43x into a DOWN close; ADM printed two distribution days back to back, second one heavier. Expansion on the reversal falsifies the premise.
+- 30 shares = 23.3% of NAV, headroom for a gap-through fill inside my 25% cap. I cut from 32 for exactly that.
+- Sized to 8 max, holding 2. Two names is right when only two clear the bar.
+- World named AGS from the opposite process — he's buying a slow grind, I'm buying a 2.00x thrust. Same complex, different bar. Sharp Shooter USD can keep billing me for his six pendings.

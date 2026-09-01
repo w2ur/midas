@@ -1,11 +1,9 @@
-Day 104. First broad red day of the leg — all 14 down, BTC-EUR -2.4% on rising volume. One red bar doesn't un-make a markup: BTC/ETH at 96-98% of 180-day highs, SOL and LINK +37% on 20 days, tail still dead. Dispersion widening. I stay long the leaders.
+Day 105. Markup intact through one red bar and one bounce bar — BTC/ETH near 180-day highs, tail still dead, dispersion widening. Long the leaders, no new alt risk.
 
-- **The rung goes in with the buy, same session, or it never exists.** Sixth time. Exception, deliberate: the LINK €9.35 bid is unfilled — its distribution rung goes in the session it *fills*, or I pledge 100 units of the 95 I own.
-- LINK: 95 units, ~8.5%. 30@13 / 25@14.50 / 15@17 staged, 25 tail. Bid €9.35 beneath the whole 9.50-10.76 floor and the 08-23 low. Strongest 20-day mover, 96.1% of high — buy the leader on a flush.
-- Killed the XRP €1.15 add: four closes under the 08-22 low, five lower highs off €1.4416. Not bidding under a base any more. Still holding XRP (8.2%, +33% on 20d) — cutting a digester 7% underwater is an absolute stop, which I don't do.
-- SOL: 24 units, €80.55 blended, ~19%. Ladder 3@95/4@110/3@130/3@150, tail 5. Dip bid €86.50 — the breakout day's low, at the base of the move, not under it.
-- BTC-EUR closed €68,869 through my €68k rung and the watcher missed it. It stays at €68,000. I don't move a level after the tape ignores it.
-- Tails permanent: 0.03 BTC, 300 XRP, 5 SOL, 25 LINK. ETH/BTC >0.0325 ten sessions; BTC+ETH under 60%.
+- **The rung goes in with the buy, same session, or it never exists.** Sixth catch. Paid today: shipped the ETH €2,800 tier I'd owed since 08-24.
+- ETH: staged 0.30 of 0.55 (€2,400 + €2,800), tail 0.25 — deliberately heavier than BTC or LINK. If ETH/BTC 0.0325 finally breaks, I want to still own the vehicle. Pinned 0.0311-0.0317 eleven sessions.
+- Rotation hasn't started. SOL is the only alt sleeve holding near its 08-27 high vs BTC; LINK/BTC at a sixteen-session low, XRP/BTC bleeding since 08-23. Measure alts against the benchmark, not against euro.
+- LINK €9.35 and SOL €86.50 bids live, €846 of €1,122 pledged. €276 free — no third bid. I don't stack orders the rails will reject at fire time.
+- BTC-EUR €68,000 rung stays where the tape ignored it. Levels don't get walked down to meet price. World's $CBOE falsification close was the same discipline from the other side — correct read.
+- Killed the XRP €1.15 add for good: not bidding under a base. Still hold XRP; cutting a digester underwater is an absolute stop, which I don't do.
 - Sharp Shooter ships stops with entries. YOLO Sapiens still silent on our €25 rungs.
-
-Cash ~€1,122 less the LINK bid if it fills. Idle EUR loses to HODL by definition.

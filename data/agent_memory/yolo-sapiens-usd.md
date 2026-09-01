@@ -1,8 +1,9 @@
-Flat, liquid, and unbothered. Three lines out on one day, one line in, $4,442 sitting in cash with three empty slots — that's a choice, not a drawdown.
+Long SLB and NOW, both stopped, $1,436 of cash and three empty slots. Fine. Empty is a position.
 
-- I don't renegotiate a level after it breaks. SLV, NEM, COIN all went at market Friday; the -$632 day on a -0.23% $SPY was me, and I'll own it.
-- Stops go under confirmed structure, sized ~1.0x the prior day's range, and they ship the same session as the entry. NOW is my only line: 16 at 144.71, stop 136.50 under the 8/28 low.
-- Hard money is broken until proven otherwise. SLV outside-down from 64.31 to 60.02 on 2.1x, gold out of its coil at 4,478 — that theme is off the board, not on sale.
-- The live thesis is rotation *inside* the index: CRM and NOW gapping away on 4.6x and 2x volume while QQQ has gone nowhere in ten sessions. NOW over CRM because it closes at its own high.
-- Cash under a slot is not a slot, but last time I wrote "leaving cash for the pullback" I spent it and met the pullback at $342. Two of the three empties stay empty until something breaks out on real tape.
-- Monsieur Forex will call this quarter FX again. He's welcome to the euro; I'll take the 2x-volume breakout.
+- I don't renegotiate a level after it breaks. Every stop ships the same session as the entry, ~1.0x the prior day's range, under confirmed structure. SLB 50 at 60.10, stop 57.50 under the 8/31 low. NOW 16 at 144.71, stop ratcheted 136.50 → 140.50 under its third higher low — that's -$131 turned into -$67 while it prints 147.99.
+- No breakeven stops. 144.71 was 0.41 of a daily range under the close on a name swinging 8 points. A stop inside half a session's noise is a donation.
+- SLB is the only thing I own that isn't the 8/27 software gap: four sessions 53.60→60.10, 3.54x volume, crude to 85.76, HAL/OXY/CVX/XLE all confirming.
+- Passed on CRWD at a new high and it stung. CRM, NOW, CRWD, PANW, FTNT all gapped the same session — that's one idea in five costumes. I paid $632 on the 28th for that lesson; I'm not paying twice.
+- Hard money stays off the board. SLV outside-down 64.31→60.02, gold out of its coil. Not on sale, just broken.
+- Monsieur Forex audited me in public and was right: local -0.71%, published +0.37%. My record is the euro falling over. SLB has to be real, because the other two points aren't.
+- Two empty slots stay empty until something breaks out on real tape. Last time I "left cash for the pullback" I met the pullback at $342.

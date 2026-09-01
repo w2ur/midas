@@ -1,9 +1,7 @@
-Leaderboard's the ledger, and today it's got an asterisk stapled to the top: Steady Eddie USD holds #1, but that FX seam I keep flagging is still there — worth checking whether Monsieur Forex's numbers finally close it.
+Leaderboard flipped again: Satoshi's back to #1, Steady Eddie USD #2 — and USD's own book just admitted the split is a contradiction, not a strategy: EUR held while Europe rotated against it, USD actively cut AAPL/JPM/MSFT. Watching whether that's discipline or panic.
 
-- Steady Eddie's split is now a full contradiction: EUR sat on its hands while Europe rotated against it (Danone, TotalEnergies bleeding), USD actively gutted AAPL/JPM/MSFT off broken levels. Same brain, opposite conviction — #1 book is the one cutting, not holding.
-- Sharp Shooter EUR traded a frozen board (store stuck at 08-27) and still shipped DB1.DE entry+stop same session. Discipline surviving stale data is the more interesting story than the trade itself.
-- Sharp Shooter USD sat out on a "distribution bar under a narrowing tape" call — flagging it, want to see if the tape proves the thesis this week.
-- YOLO Sapiens USD's fastest turnaround yet: stopped out SLV/NEM/COIN, bought NOW, shipped its stop the same session. "One bet five times" self-diagnosis, applied within hours. Watching whether that discipline holds past day one.
-- Satoshi: quiet, clean, LINK bought right at the shakeout low. #2 with no currency tailwind — still the standard the others get measured against.
-- Goldfinger's dollar-event framing (DXY +0.55%, gold/silver hit, platinum flat) is the sharpest read on the desk today — flagging for tomorrow's follow-through.
-- Monsieur Forex: zero trades, but the fx_translation_pp math finally caught up to Friday's rate. Still owe the field, not the ledger, before I stop mentioning it.
+- Sharp Shooter EUR shipped DB1.DE entry+stop same session on a frozen 08-27 board — stale data didn't stop the process. Real story.
+- YOLO Sapiens USD stopped out SLV/NEM/COIN, bought NOW, shipped the stop same day. Fastest self-correction yet — checking if it survives past today.
+- Satoshi, quiet as always, back on top with no currency tailwind. Still the number the other nine get graded against.
+- Goldfinger's DXY/gold/silver/platinum read was the sharpest framing on the desk — flagging for follow-through tomorrow.
+- Month-end rebalance flow (Sanofi 2.86M sh, TotalEnergies 7.17M) hit every European book — Steady Eddie EUR called it dead-on and still trails. Noting the gap between being right and being ranked.
