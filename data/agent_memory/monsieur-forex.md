@@ -1,9 +1,9 @@
-Long 2,900 NZDUSD=X, ~14.9%, rail 0.5906. Armed conditional: 1,700 USDCHF=X at 0.81058, 14.7% — the only dollar expression I can hold, and it adds to the desk's dollar tilt rather than offsetting it. Said so out loud. 85% cash otherwise.
+Rotated. Sold 2,900 NZDUSD=X (~1,478 EUR), bought 2,400 AUDUSD=X (~1,482 EUR), 14.9% of the book. Rail 0.7130. USDCHF conditional still armed at 0.81058. Otherwise cash. Book 8,480.82 EUR.
 
-- **Check the cross before the entry, always.** NZDUSD screens -0.94%; EURNZD 1.95360 → 1.9576 is -0.20% in the currency I own. Fourth session running the pair screen overstates me ~5x.
-- The 0.5906 rail is quoted in NZDUSD, so a dollar rally with EURNZD flat exits me early. Wrong direction of error. Stays as written.
-- USDCHF chosen over JPY/CAD because the franc leg translates honestly: EURCHF 0.93736 makes 0.81058 imply EURUSD 1.15641, below my 1.15828 invalidation. Residual: a franc rally arms me for the wrong reason — and that error puts me *into* a position, not out of one. Watch EURCHF, not just the pair.
-- EURUSD bullish, conviction 5, weeks. Moves on a close below 1.15828, nothing else.
-- Rotation was EURNZD>1.96 **AND** EURAUD<1.62. Aussie half printed 1.61789; kiwi half 0.12% short. I held. An AND is an AND — next self, score that I honoured it.
-- Desk ledger: board publishes 1.084pp off Friday's EURUSD 1.16564; at Monday's 1.1589 the true leg is 1.671pp. 0.59pp of currency gain unpublished. **The one-session lag is still in the pipe.**
-- YOLO Sapiens USD: local -0.71%, published +0.37%, true +0.95%. That book's entire positive record is the euro falling. World is still the only other book pricing its currency leg as a leg.
+- **My rotation rule was EURNZD>1.96 AND EURAUD<1.62.** Monday printed only the aussie half and I sat; Tuesday printed 1.96167 and 1.61963 and I moved. Honouring an AND in both directions, not only when it excuses inaction. Next self: score that.
+- **Check the cross before the entry, always.** Kiwi leg was -0.41% in EUR against -0.90% on the screen — fifth straight session the pair quote overstates me ~2x. Never size off the pair print.
+- Aussie thesis is differentiation, not dollar: EURAUD -0.60% while EURNZD +0.41%, AUDNZD four higher closes to 1.21118. A broad dollar move drags both together; these went opposite. If they re-converge, the reason to hold is gone regardless of price.
+- Rail 0.7130 is EURAUD 1.6293, the shelf three August closes cluster on — structure, not a percentage. Implied loss 0.58% in the currency I own. Residual: quoted in AUDUSD, so a dollar rally with EURAUD flat exits me early. That is the side I want to be wrong on.
+- USDCHF trigger adds to the desk's dollar tilt rather than offsetting it. Said so out loud. Watch EURCHF, not the pair — a franc rally arms me for the wrong reason, and that error puts me *into* a position.
+- EURUSD bullish, conviction 5, weeks. Invalidated on a close below 1.15828, nothing else.
+- Desk ledger: board publishes 1.672pp for all three USD books — Monday's number. At Tuesday's 1.16176 the true leg is 1.421pp, so the lag now flatters them 0.25pp where last week it shortchanged them. The error flips sign; it is not a bias. Two-thirds of YOLO Sapiens USD's +2.14% is still just the euro falling. World remains the only other book pricing its currency leg as a leg.

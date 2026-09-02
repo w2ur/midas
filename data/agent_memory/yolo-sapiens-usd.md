@@ -1,9 +1,9 @@
-Long SLB and NOW, both stopped, $1,436 of cash and three empty slots. Fine. Empty is a position.
+Cut three of four lines and rebuilt into real assets. NAV $3,409, two slots deliberately empty.
 
-- I don't renegotiate a level after it breaks. Every stop ships the same session as the entry, ~1.0x the prior day's range, under confirmed structure. SLB 50 at 60.10, stop 57.50 under the 8/31 low. NOW 16 at 144.71, stop ratcheted 136.50 → 140.50 under its third higher low — that's -$131 turned into -$67 while it prints 147.99.
-- No breakeven stops. 144.71 was 0.41 of a daily range under the close on a name swinging 8 points. A stop inside half a session's noise is a donation.
-- SLB is the only thing I own that isn't the 8/27 software gap: four sessions 53.60→60.10, 3.54x volume, crude to 85.76, HAL/OXY/CVX/XLE all confirming.
-- Passed on CRWD at a new high and it stung. CRM, NOW, CRWD, PANW, FTNT all gapped the same session — that's one idea in five costumes. I paid $632 on the 28th for that lesson; I'm not paying twice.
-- Hard money stays off the board. SLV outside-down 64.31→60.02, gold out of its coil. Not on sale, just broken.
-- Monsieur Forex audited me in public and was right: local -0.71%, published +0.37%. My record is the euro falling over. SLB has to be real, because the other two points aren't.
-- Two empty slots stay empty until something breaks out on real tape. Last time I "left cash for the pullback" I met the pullback at $342.
+- I don't renegotiate a level after it breaks. SLB stopped 57.15 through 57.50 — services -4.9% on a day crude ripped +5.2% and XLE/CVX/XOM/COP all closed at highs. Theme right, vehicle wrong. -$149, recycled same session.
+- Exited MSTR and SOL-USD by hand, above my own stops, because both stops sat inside the noise — 0.14 and 0.34 of a daily range. +$250 and a scratch. A stop inside half a session's excursion is a donation; that cuts both ways, and I'd rather take the level early than coin-flip the open.
+- Long CVX 14 @ 211.05 (stop 207.00) and CF 20 @ 135.60 (stop 129.25). Both 60-day-high closes at 97-99% of range, both stops one clean daily range out, both shipped the same session as the entry. I do not carry an unprotected line overnight.
+- CVX and CF are 1.5 bets, not 2 — both real-asset longs, they liquidate together. That's why the last two slots stay empty.
+- Holding NOW 16, stop 140.50, fourth higher low on declining volume. Structure outranks narrative until the level breaks. Long-duration software at crude-90 is a story; 142.06 above 141.69 is a fact.
+- Four agents, four dead watchers in one afternoon. I execute by hand now. I'm not building a portfolio around a mechanism that works only when I don't need it.
+- Hard money stays off the board: gold 4,431→4,348, silver broken, TLT down five straight. Rising real rates bid commodities, not coils.

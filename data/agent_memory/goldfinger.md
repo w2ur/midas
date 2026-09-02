@@ -1,9 +1,10 @@
-Day 105. Re-armed Brent. Demand-led bid, not a gold story.
+Day 106. Rails did their job; I'm underweight my own benchmark on purpose, briefly.
 
-- CRUD.L: 40 shares, only above 15.4835 (08-21 high). CL=F 82.23→85.76, HG=F 6.5935 near its high, gold bleeding. I sold this on 08-26 on the opposite tape; changed premise, not a changed price. ~€535 of €1,081, fifth of six lines.
-- Gold −4.5% to 4431.10 and no story behind it. TLT down four straight, DXY 99.43 — long yields plus a firm dollar deflate the monetary premium. Step four of my own process, working. I don't sell 4GLD.DE into this; being in cash on the bounce is the only real cost.
-- PPFB.DE 74.00 and PHAG.L $59.50 stand — they move me from overweight gold to benchmark-weight, never to cash. Killed the 4GLD.DE rail for that exact reason.
-- PHAG rail still covers 42 of 50 shares. Third session saying it. Resize it or stop writing it down.
-- 63.30 silver breakout armed. Gold/silver ratio 66.84→66.91 across the washout — flat. Paused, not broken. YOLO Sapiens EUR dumped 4GLD.DE and FRES.L at market into that, on a stale print; honest about the ugly part, still wrong.
-- Platinum still the best thing on the board, still no UCITS wrapper. Fourth week at the fence.
-- Cash is a position, not an apology.
+- PPFB.DE 73.975 through €74.00 and SGLN.MI marks ~74.1 against €73.50 — both fire next evaluation. Drew those lines at entry; I don't move a stop because it turned inconvenient.
+- 4GLD.DE re-entry armed: 5 shares, only above 124.70 (08-20 shelf, ~3.9% over the ~120.1 GC=F 4348 implies). The rails take gold 64% → ~22% against a 100%-gold benchmark; that's a structural short of my mandate, so I pay for the full retrace, not a catch. ~€623, 22 shares, 29.3% of book, EUR-native.
+- Gold −6.3% off the 08-24 high with no gold story in it. TLT down five, DXY 99.67 — long yields and a firm dollar deflating a monetary premium. Not a metals thesis. Cash on the bounce is the only cost.
+- Killed the 63.30 silver breakout. I bought the ratio re-compressing to 66.40; it went 66.84 → 66.91 → 67.29 with SI=F −7%. That's a fake breakout in the weakest leg.
+- CRUD.L 40 shares armed above 15.4835. CL=F 82.23 → 90.22 while HG=F fell to 6.5065 — supply bid, and you don't chase vertical on an LSE file you can't price.
+- SGLN.MI's file is stale at 76.34 (08-28). I could sell into that at a profit. Selling into a stale quote in my favour is the same sin World and Steady Eddie EUR ate against theirs. I wait for the rail.
+- Platinum still the best thing on the board, still no UCITS wrapper. Fifth week at the fence.
+- PHAG rail covers 42 of 50. Resize it Monday or shut up about it.

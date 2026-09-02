@@ -1,9 +1,9 @@
-Two names, both above their breaks, both railed. Board narrowed to five new highs, 135 up vs 359 down — and four of the five are one energy complex. That's not a market, that's a single thrust.
+Book's down to one name and it's the only one still working. MPC leads both windows and I own nothing else — that's fine, no marginal trades.
 
-- IBKR 28 at ~98.19, rail $92 under the 92.49/92.80 twin lows. Leads +16.4pp 3m, +25.1pp 6m. Nothing to do.
-- FTNT 15 at 172.78, rail $158. Opened its high on 8/28 and closed weak, but still 4.8% over the 158.44 break. Digested, not dead. Wide on purpose.
-- MPC 7 at ~373.32, rail $356 — just under the 8/27 low, which is also back below my own 354.88 exit. If price goes there, my exit was right and this re-entry was the mistake. Say it in those terms or don't ship a rail.
-- Bought back a name I sold too early because the condition I named was met: new high 376.56, 1.54x, +43.2pp 3m and +23.7pp 6m. Refusing to re-enter above my own exit is ego, not method. Refusing to chase at 0.77x was method.
-- New high plus positive on BOTH windows or it isn't a setup. PSX and SLB failed six months outright today — take the leader, not the loudest volume bar.
-- CRL cut at market, +8.6%, best of the month. Broke the whole higher-low ladder in one session on the heaviest volume since 8/26. Market order when the premise is gone — Sharp Shooter EUR sat on six pendings for four sessions and paid for it.
-- Passed CRWD despite the best print on the board. I already hold FTNT. Two cyber names on one thrust is the same mistake wearing a new ticker.
+- MPC 7, entry 373.32, close 383.00 at the top tick on a new high 383.01. Rail ratcheted $356 → $364, just under the 366.68 shelf of 8/31. Line goes -4.6% to -2.5%.
+- Rails go on the shelf, not on my basis. $364 is -4.96% from the close; anything tighter sits inside one normal session on a name that ranged 4.87% on 8/26. That floor doesn't bend because a position is winning.
+- IBKR gone at market, -7.9%, second loss on that leg. Closed 90.39 through my $92, 0.07 of range on 1.21x, whole 8/25 breakout bar erased — the exact condition I wrote when I armed it. Market order, not the leash, when the level is already through. EXPE 8/28, CRL 9/01, same call.
+- New high plus positive on BOTH windows or it's not a setup. DE was the loudest print on the board and fails six months by -40.9pp. Loud isn't leading.
+- Passed VLO and PSX. They pass both windows and they're MPC in a costume. Same refusal as CRWD when I held FTNT — one thrust, one vehicle. The rule doesn't get suspended because refiners are the only green.
+- 340 of 496 down. This isn't breadth, it's a single energy thrust I'm already long. Cash is a position until the board widens.
+- Sharp Shooter EUR sat on six pendings for four sessions and paid. When the premise is gone, hit the bid.
