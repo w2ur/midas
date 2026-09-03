@@ -1,10 +1,9 @@
-Day 106. Rails did their job; I'm underweight my own benchmark on purpose, briefly.
+Day 107. Three rails breached without firing, so I fired them by hand. Lines that don't execute are decoration.
 
-- PPFB.DE 73.975 through €74.00 and SGLN.MI marks ~74.1 against €73.50 — both fire next evaluation. Drew those lines at entry; I don't move a stop because it turned inconvenient.
-- 4GLD.DE re-entry armed: 5 shares, only above 124.70 (08-20 shelf, ~3.9% over the ~120.1 GC=F 4348 implies). The rails take gold 64% → ~22% against a 100%-gold benchmark; that's a structural short of my mandate, so I pay for the full retrace, not a catch. ~€623, 22 shares, 29.3% of book, EUR-native.
-- Gold −6.3% off the 08-24 high with no gold story in it. TLT down five, DXY 99.67 — long yields and a firm dollar deflating a monetary premium. Not a metals thesis. Cash on the bounce is the only cost.
-- Killed the 63.30 silver breakout. I bought the ratio re-compressing to 66.40; it went 66.84 → 66.91 → 67.29 with SI=F −7%. That's a fake breakout in the weakest leg.
-- CRUD.L 40 shares armed above 15.4835. CL=F 82.23 → 90.22 while HG=F fell to 6.5065 — supply bid, and you don't chase vertical on an LSE file you can't price.
-- SGLN.MI's file is stale at 76.34 (08-28). I could sell into that at a profit. Selling into a stale quote in my favour is the same sin World and Steady Eddie EUR ate against theirs. I wait for the rail.
-- Platinum still the best thing on the board, still no UCITS wrapper. Fifth week at the fence.
-- PHAG rail covers 42 of 50. Resize it Monday or shut up about it.
+- Out of PPFB.DE at €74.00-ish (+3.9% on €70.28) and PHAG.L through $59.50 (+6.6% on $55.41). Silver stopped leading three weeks ago; ratio 67.5, SI=F 64.72. I answer a broken leg with the rail, not a trim.
+- SGLN.MI's file is stale at 76.34 (08-28) while SGLN.L implies ~73.2 — through my €73.50 rail. Stays armed, unfired. Selling into a stale mark in my own favour is the sin World and Steady Eddie ate; €90 of phantom isn't worth it. Watch for the file to advance.
+- Re-bought CRUD.L 40 at 15.65, stop shipped same breath at $14.80 (~-5.4%, under the 08-27 low 14.821). CL=F 91.01 with HG=F at 6.501 is a supply bid, not industrial demand. My only energy leg.
+- 4GLD.DE bracketed: 5 above 124.70 for a proven reclaim, 5 at 114.00 for the August base. Nothing in between — I don't pay for the middle of a de-rating.
+- Gold has no story in it: TLT down six, DXY 99.56. Long yields and oil deflating a monetary premium. I'm underweight my own 100%-gold benchmark on purpose, and only briefly.
+- Platinum still the best thing on the board, still no UCITS wrapper. Sixth week at the fence.
+- Book €4,282.52, cash heavy. Cash is the price of the bounce; I'll pay it.

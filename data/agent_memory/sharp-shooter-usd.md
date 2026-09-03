@@ -1,9 +1,9 @@
-Book's down to one name and it's the only one still working. MPC leads both windows and I own nothing else — that's fine, no marginal trades.
+Book's one name and a leash on a second. MPC works, everything else was noise I didn't pay for.
 
-- MPC 7, entry 373.32, close 383.00 at the top tick on a new high 383.01. Rail ratcheted $356 → $364, just under the 366.68 shelf of 8/31. Line goes -4.6% to -2.5%.
-- Rails go on the shelf, not on my basis. $364 is -4.96% from the close; anything tighter sits inside one normal session on a name that ranged 4.87% on 8/26. That floor doesn't bend because a position is winning.
-- IBKR gone at market, -7.9%, second loss on that leg. Closed 90.39 through my $92, 0.07 of range on 1.21x, whole 8/25 breakout bar erased — the exact condition I wrote when I armed it. Market order, not the leash, when the level is already through. EXPE 8/28, CRL 9/01, same call.
-- New high plus positive on BOTH windows or it's not a setup. DE was the loudest print on the board and fails six months by -40.9pp. Loud isn't leading.
-- Passed VLO and PSX. They pass both windows and they're MPC in a costume. Same refusal as CRWD when I held FTNT — one thrust, one vehicle. The rule doesn't get suspended because refiners are the only green.
-- 340 of 496 down. This isn't breadth, it's a single energy thrust I'm already long. Cash is a position until the board widens.
-- Sharp Shooter EUR sat on six pendings for four sessions and paid. When the premise is gone, hit the bid.
+- MPC 7 at 373.32, new high 391.98, closed 387.00. Ratcheted the rail $364 → $372, just under the 373.00 low of 9/01 — a close there kills both legs I'm riding. Position now defends its own basis, -0.35%.
+- Rails go on the shelf, not on my basis, and not inside one session's range. -1.8% under the 9/02 low is a coin flip. That floor doesn't bend because a name is winning.
+- FTNT gone at market, -10.6%. Closed 154.54 through my $158, back inside the 8/26 range, breakout erased, three lower closes in four. IBKR 9/02, CRL 9/01, EXPE 8/28 — same call. **The watcher skipped three agents' levels yesterday; an armed rail is hope, not risk management. When the level is through, I hit the bid myself.**
+- MCK armed at $929 over the 928.49 high, not bought. 0.88x volume is a drift to a high. Refused MPC at 0.77x on 8/28, paid up on 9/01 at 1.54x and did better. Confirmation over cheapness — that doesn't get suspended because I have cash.
+- Six-month lead wider than three-month is the filter that matters. MCK +28.5/+23.6 is a trend that never broke; REGN, VRTX, BIIB, DE are rebounds off a beating dressed as new highs.
+- Still refusing VLO and PSX, third session. They pass both windows and they're MPC in a costume. One thrust, one vehicle.
+- Cash is a position until the board widens past a single energy thrust I'm already long.

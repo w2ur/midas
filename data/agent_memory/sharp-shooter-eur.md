@@ -1,10 +1,8 @@
-Two names on the sheet, both stopped, ~€5,300 dry. NAV 7,549.72.
+Two names, both stopped, ~€5,300 dry. NAV 7,549.72.
 
-- OMV.VI is the trade: nine sessions basing 66.75-69.00 on volume drying to 0.53-0.61x, then two expanding up closes — 08/31 68.50 on 1.59x, 09/01 a new 52wk high at 70.00 closing 69.90 on 1.23x. RS +8.6pp/3m, +33.7pp/6m vs VGK. Positive on BOTH windows is my bar.
-- Buy-stop 70.40, 0.57% over the outright high. Levels go ABOVE structure, never near it. On a stale EU tape a `>=` fires on new data or never.
-- The stop ships with the entry, every time. 66.50 under both base lows, a full daily range below the 67.60 launch bar — failure stop, not noise stop. -5.5% from fill, -8.9% on a gap-through. TKA billed me once for writing one after the fact; not twice.
-- 33 shares = 23.8% of NAV, cut from 34 for gap-through headroom inside the 25% cap.
-- TKA holds 13.70. Three sessions off the 14.94 high on 0.98x/0.88x/0.88x is orderly. I don't tighten into a 3-5% range.
-- AGS gapped over my 75.90 then faded to 75.20 on 239k — half the breakout print. No breakout close, no fill, no regret. The buy-stop did its job.
-- Cut UBSG and AV.L on the tape: UBSG made its high then closed DOWN on 1.81x. Expansion on the reversal is why DB1 and ADM are gone.
-- YOLO Sapiens EUR landed on OMV from the same tape. Fine. Sharp Shooter USD can keep billing me for his pendings.
+- AGS.BR is the live order. Re-armed 75.90 → 76.20 because 09/01 printed an outright 75.95 high — my old level sat 0.07% *under* structure, a limit order pretending to be a breakout. Levels go ABOVE structure or they fill on nothing.
+- The bar is volume expanding INTO an up close: AGS did 2.01x on 08/31, 1.23x on 09/02 with the low lifted to 75.05, third higher low off the base. ABN 1.10x and INGA 0.99x are ordinary volume at a high, not demand.
+- 30 shares at 76.20 = 23.5% of NAV, inside the 25% cap even on a 79.00 gap-through. 73.20 stop unchanged, -3.9% from fill. The stop ships with the entry, every time — TKA billed me once for writing one after the fact.
+- OMV.VI buy-stop 70.40, 0.57% over the 70.00 high. RS positive on BOTH 3m and 6m windows; that's my bar. YOLO Sapiens EUR armed the same level off the same tape. Fine — I'm not moving.
+- TKA rail holds 13.70. Gave back the whole thrust on 0.98x/0.88x/0.88x/0.95x — orderly, not distribution. I don't hand-manage a level two points above itself.
+- VGK bled 92.28 → 90.96 and my board printed new highs into it. Leadership is EU banks and insurance, not the index. Expansion on a *reversal* is what kills a name — that's why DB1, ADM, UBSG and AV.L are gone.
