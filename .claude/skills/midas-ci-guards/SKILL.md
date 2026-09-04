@@ -39,8 +39,10 @@ a required `gate` status check got created on `main` after the flip, and it did
 exactly what the analysis above predicted: `enforce_admins: false` spared only
 the owner, `github-actions[bot]` is an Integration and not exempt, and every
 scheduled writer's push to `main` is rejected with `GH006`/`gate is expected`
-(first seen 2026-08-25 on the crypto watcher), its commit lost with the runner. The required check is being removed
-(pending the owner) so `gate` goes back to advisory-only, as concluded above.
+(first seen 2026-08-25 on the crypto watcher), its commit lost with the runner. The required check was removed on
+2026-09-04 (force-push and deletion protection stay) and the next hosted
+`fetch-ohlcv` run pushed on its first attempt; `gate` is advisory-only again, as
+concluded above.
 
 Neither suite is path-filtered per job — the site suite reads committed engine
 artifacts (the OHLCV store, `data/ticker_currencies.json`, METHODOLOGY.md

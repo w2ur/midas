@@ -54,9 +54,10 @@ false` spared only the owner — `github-actions[bot]` is an Integration, not an
 admin, and every scheduled writer's push to `main` is rejected with `GH006`/`Required
 status check "gate" is expected` (first seen 2026-08-25 on the crypto watcher; a
 run with nothing to push still passes), the commit lost with the runner. The
-required check is being removed (`gh api -X DELETE
-repos/w2ur/midas/branches/main/protection/required_status_checks`, pending the
-owner) so `gate` goes back to advisory-only.
+required check was removed on 2026-09-04 (`gh api -X DELETE
+repos/w2ur/midas/branches/main/protection/required_status_checks`; force-push
+and deletion protection stay) and the next hosted `fetch-ohlcv` run pushed on
+its first attempt. `gate` is advisory-only again.
 
 Warnings are errors, with three named third-party exceptions in `pyproject.toml`. Hypothesis settings live in one profile (`tests/conftest.py`, `midas`).
 
