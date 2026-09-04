@@ -51,8 +51,9 @@ require. `gate` asserts a **named** list (`["pytest","site-tests"]`) rather than
 **2026-09-04 addendum.** Classic branch protection with a required `gate` status
 check got created on `main` after the 2026-08-21 flip to public. `enforce_admins:
 false` spared only the owner — `github-actions[bot]` is an Integration, not an
-admin, and every scheduled writer's push has failed `GH006`/`Required status
-check "gate" is expected` since 2026-08-25, its commit lost with the runner. The
+admin, and every scheduled writer's push to `main` is rejected with `GH006`/`Required
+status check "gate" is expected` (first seen 2026-08-25 on the crypto watcher; a
+run with nothing to push still passes), the commit lost with the runner. The
 required check is being removed (`gh api -X DELETE
 repos/w2ur/midas/branches/main/protection/required_status_checks`, pending the
 owner) so `gate` goes back to advisory-only.

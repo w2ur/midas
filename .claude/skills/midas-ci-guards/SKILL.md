@@ -7,8 +7,9 @@ description: The CI gate and the guard discipline behind it — why the aggregat
 
 Moved out of `CLAUDE.md` on 2026-08-23. Nothing was cut in the move.
 
-**The gate is advisory on this repo, and the 2026-08-21 flip to public did not
-change that** — only the reason. Rulesets were *unavailable* while the repo was
+**The gate is advisory on this repo BY DECISION, and the 2026-08-21 flip to public
+did not change that decision** — only the reason (a required check WAS in force
+from late August until its removal; see the 2026-09-04 addendum below). Rulesets were *unavailable* while the repo was
 private (measured: `gh api repos/w2ur/midas/branches/main/protection` → 403
 `Upgrade to GitHub Pro or make this repository public`). Going public lifts that,
 but there is still no workable ruleset, and both halves of that were **measured on
@@ -37,8 +38,8 @@ it already knows, which is the same hole `EXPECTED` closes one level down.
 a required `gate` status check got created on `main` after the flip, and it did
 exactly what the analysis above predicted: `enforce_admins: false` spared only
 the owner, `github-actions[bot]` is an Integration and not exempt, and every
-scheduled writer's push has been failing `GH006`/`gate is expected` since
-2026-08-25, its commit lost with the runner. The required check is being removed
+scheduled writer's push to `main` is rejected with `GH006`/`gate is expected`
+(first seen 2026-08-25 on the crypto watcher), its commit lost with the runner. The required check is being removed
 (pending the owner) so `gate` goes back to advisory-only, as concluded above.
 
 Neither suite is path-filtered per job — the site suite reads committed engine
