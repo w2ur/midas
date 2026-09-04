@@ -33,6 +33,14 @@ exempts everyone who actually pushes. If one is ever created it must require the
 `gate` check **only**, never the individual jobs — a rule can only require a name
 it already knows, which is the same hole `EXPECTED` closes one level down.
 
+**2026-09-04 addendum.** Not a ruleset this time — classic branch protection with
+a required `gate` status check got created on `main` after the flip, and it did
+exactly what the analysis above predicted: `enforce_admins: false` spared only
+the owner, `github-actions[bot]` is an Integration and not exempt, and every
+scheduled writer's push has been failing `GH006`/`gate is expected` since
+2026-08-25, its commit lost with the runner. The required check is being removed
+(pending the owner) so `gate` goes back to advisory-only, as concluded above.
+
 Neither suite is path-filtered per job — the site suite reads committed engine
 artifacts (the OHLCV store, `data/ticker_currencies.json`, METHODOLOGY.md
 anchors), so "site tests only matter when `site/**` changes" is false. Both had

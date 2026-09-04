@@ -48,6 +48,15 @@ behind a third job, `gate`, which is the one a branch protection rule would
 require. `gate` asserts a **named** list (`["pytest","site-tests"]`) rather than
 **`gate` asserts a NAMED list**, held in the workflow's own `EXPECTED` — never "did anything in `needs` fail?". Actions reports a skipped job as `skipped` and an absent one as nothing, and `jq 'all(.[]; .result=="success")'` over an empty set returns `true` — so the short form reports success on zero coverage. **Add a suite and you must add its job id to `EXPECTED`**; `tests/test_ci_guards.py` makes that mechanical. `gate` is the only check a branch protection rule should require — requiring the individual jobs reintroduces the hole.
 
+**2026-09-04 addendum.** Classic branch protection with a required `gate` status
+check got created on `main` after the 2026-08-21 flip to public. `enforce_admins:
+false` spared only the owner — `github-actions[bot]` is an Integration, not an
+admin, and every scheduled writer's push has failed `GH006`/`Required status
+check "gate" is expected` since 2026-08-25, its commit lost with the runner. The
+required check is being removed (`gh api -X DELETE
+repos/w2ur/midas/branches/main/protection/required_status_checks`, pending the
+owner) so `gate` goes back to advisory-only.
+
 Warnings are errors, with three named third-party exceptions in `pyproject.toml`. Hypothesis settings live in one profile (`tests/conftest.py`, `midas`).
 
 **Every guard must be able to fail, and must have a consumer.** A check nobody reads and a check that cannot go red are the same thing. The rest of the CI discipline — path filtering, push-with-retry, attestation dating, `sync_core.check()`'s two tiers, failure-issue alerting — is in the **`midas-ci-guards`** skill.
