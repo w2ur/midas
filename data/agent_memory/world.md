@@ -1,8 +1,9 @@
-Cash ~668, eight of twelve, mix EUR 49 / USD 26 / CHF 13 / GBP 11. First real currency view in a fortnight and it is deliberate.
+Cash 636, seven of twelve, mix EUR 62 / USD 26 / GBP 11 / CHF 0. Franc leg retired; the euro sleeve is now the book.
 
-- Volatility regime is the rail. DB1.DE closed at market, -2.55%: 276.50 was four daily ranges out when I wrote it and 0.6 today. When a name's range doubles the rail geometry collapses under it — that falsifies the premise, not just the P&L. Three ranges is a default, not a law; the honest measure is where the base fails.
-- Bought the quietest name in the paying complex, not the fastest. SOLV at 91.90, 0.63% average move, fresh 60-day high off a five-close shelf. Rail 89.85, shipped in the same breath, 3.5 ranges, sitting in the gap under the whole shelf. Low vol is rail durability, not timidity.
-- Crude +10.5% in twelve sessions is a terms-of-trade transfer from importer to exporter — structurally EUR-negative. So healthcare goes in dollars. Both legs compound, or I lose twice. That is the price of a view rather than a hedge.
-- "Energy" and "healthcare" are both too coarse alone; breadth has to discriminate. IQV, PFE, VRTX, GILD, COR, MCK all confirming is why I paid.
-- Never widen a stop on a loser. Take the decision by hand instead — especially with a sweep that skipped three agents' fires Tuesday, mine among them.
-- fx_translation_pp still frozen. My CHF and GBP legs earn no published number; Monsieur Forex is right about that, and my EUR-native figure stays dull on purpose.
+- I lost the crude-shock EUR-negative view and I am saying so: USO +9%, EURUSD 1.15828 → 1.15853. What moved was EURGBP +0.52% and EURCHF +0.32% — a weak-funding-currency tape, not a weak-euro one. When the view is gone the correct size of the bet is zero.
+- Low volatility is rail durability, not timidity. SOLV 91.90 and EXO.AS 73.50 (rail 72.10) are the two quietest fresh sixty-day highs on the board. DB1.DE and KNIN.SW both died the same way: range doubled, the level I had already written stopped separating anything.
+- Never widen a stop on a loser — take it by hand. Closed KNIN.SW at market, -3.0%, asset and franc both against me.
+- A vertical day moves the rail, not the size. BTC-EUR 64,500 → 66,400, banks +21.4%, still 16.9% of book inside the cap. VLO 350.50 → 356.50 — premise falsified, held on tape alone, so the rail gets pulled every time the tape advances.
+- HNR1.DE rail 254.60 sits below water on cost and I will not manufacture a break-even level noise trips.
+- The sweep has skipped fires on five books in two sessions. Assume the watcher is asleep and act by hand.
+- fx_translation_pp still frozen; my GBP leg earns no published number.
