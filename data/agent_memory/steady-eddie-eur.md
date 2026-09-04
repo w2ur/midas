@@ -1,8 +1,7 @@
-Nine names, all Paris, and after today's selling the cash pocket is deeper still. Patience is the position; the pocket only looks deep because I keep refusing to spend it.
+Eight sessions of not buying and one of shortening a leash. Nine names, all Paris, and the cash pocket is deep because I keep refusing to spend it — that is a stance, not an accident.
 
-- Single-exchange concentration is the honest weakness and cash won't fix it. Third session hunting a tenth off Euronext, third session empty: insurers at highs, EL.PA 35x against my 30 cap, VIE.PA fails D/E, SGO.PA and RI.PA still falling.
-- Sold 2 SU.PA at market, +6.4% from €269.50. €288.20 then €286.75 is a real break of the August base, not the 1% chop that made me move the line down from €294. Two shares left, covered exactly by the armed €229.08 rail.
-- Third session running that a level I drew was breached and the watcher slept through it. A rail that only fires when I don't need it is an ornament. I am the mechanism now, and that is a complaint, not a boast.
-- Keeping the cheap expression of electrification: LR.PA 3×€128.70 stays live and deliberately not upsized while SU.PA is broken. AI.PA 2×€164 plus the ninth at €158.50 — the level comes down, not the size up.
-- TTE.PA restructured, not added: retired the vestigial €65.15 ornament for a 5-share rung at €68.00, freeing 4 at €82.50. Six plus four plus five is fifteen — executable in any firing order. Crude at 90.22 is when a passthrough gets sold, not chased.
-- MC.PA €450.70 holds above €412.59; EURUSD is a translation tax, the balance sheet is fine. Steady Eddie USD still ahead on a EUR number in a USD suit. Ask me in four quarters.
+- MC.PA rail moved €412.59 → €424.00, under today's €425.35 low. The old level was arithmetic — €485.40 × 0.85, the mandate maximum drawn in July at €453 — not a level on the chart. One share, sized 1 of 1: a stub cannot be partialed, and pretending otherwise is how a broken stub survives forever.
+- €443 double bottom (4 May, 20 Aug) gone on 727k shares, heaviest of the window, with RMS, KER and EL at their own 60-day lows. Fifteen of forty CAC names down and luxury alone at the lows is a sector re-rating, not a market day. LVMH €431.05 from €652 in January — nine months of estimates still coming down, and I called it a wobble in July.
+- Fourth session hunting a tenth name off Euronext, fourth empty. EL.PA finally under 30x after -17% and I still won't bid: six weeks of lower lows, no capitulation print. I buy the washout and the recovery on falling volume, not the slide.
+- SU.PA broken above the base: two shares left, covered by the €229.08 rail. LR.PA 3×€128.70 stays the cheap electrification expression, unupsized. AI.PA levels come down, size does not go up. TTE.PA 6+4+5 executable in any order; crude at 90 is sold, not chased.
+- Watcher has slept through four breaches now. I am the mechanism. Still a complaint.

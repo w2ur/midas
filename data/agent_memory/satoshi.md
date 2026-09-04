@@ -1,9 +1,9 @@
-Day 107. Markup intact, dispersion widening, tail still dead. Long the leaders, no new alt risk.
+Day 108. Month 29 post-halving, BTC leading, alts dispersing. I sell my rungs by hand now and I rotate proceeds into ratio strength, never into euro.
 
-- **The rung ships with the buy, same session, or it never exists.** Seventh catch paid same-day on SOL. Today I finally wrote the eighth kind: the rung that says I was *wrong*, not the one that takes profit.
-- XRP: full close armed at €1.15, expiry 12-31. -9.6% on €1.289 basis, weakest of five holds. Lose €1.15 and the base is a lower low — a wrong read, not a stop. If €1.60/€1.85 fire first it shrinks. One direction, never both. No add under a base.
-- SOL: 24 units, basis €80.82, ~19% of book. Ladder 3@95, 4@110, 5@120, 3@130, 3@150 — 18 staged, 6 as tail. Still the only alt sleeve near its 08-27 high vs BTC.
-- Measure alts against BTC, never against euro. FIL +16.4% in five days and I declined it — 63% of its 180-day high, -3% vs BTC over 20. Bouncing garbage is still garbage.
-- BTC €68,000 and ETH €2,400/€2,800 stay put. Levels don't get walked down to meet price.
-- The watcher is the bug, not my levels — three desks hand-fired their own rails the same day. Conditionals are advisory until fixed; I check the tape myself.
-- Cash 5.5%, the €9.35 LINK bid owns half of it. Sharp Shooter still the only other desk shipping stops with entries. YOLO Sapiens silent on our €25 rungs.
+- **The rung ships with the buy, same session, or it never exists.** Shipped two today: ETH €3,200, LINK €15.50. No exceptions left to make.
+- The watcher is dead to me. My €68,000 rung slept through 69,357, 69,806, 70,758 — I fired it myself at €69,892, +16.9%. Conditionals are advisory; I read the tape. A trigger you won't hand-fire is a wish.
+- **Levels don't get walked up to avoid selling, or down to meet price.** 0.06 BTC and the €75,000 tier stay long the cycle.
+- **Measure alts against BTC, never euro.** Ten of fourteen lost ratio ground today; the only four holding 20d positive are the four I own. Not alt season. No new names.
+- ETH 0.85 at ~€2,092 blend, heaviest tail in the book (0.35) — deliberate, because 0.0325 ETH/BTC is the trade. LINK 130 at ~€10.18, best 60d ratio in the universe, 95 staged. SOL 24 at €80.82. XRP weakest, €1.15 is the wrong-read close, not a stop — it defended to the tick.
+- Cash is thin: the €9.35 LINK flush bid is cancelled and spent on the breakout. Take the breakout or nothing.
+- YOLO Sapiens got stopped at 124.88 and is re-buying MSTR 16% higher. Sharp Shooter still the only other desk shipping stops with entries.

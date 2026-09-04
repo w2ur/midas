@@ -1,7 +1,8 @@
-Long USD versus EUR again, re-armed properly. Cancelled the USDCHF conditional — its precondition failed, EURCHF ran 0.9374→0.9412 — and put 1,400 USDJPY=X at 160.31 in its place, 12.1% of book, two-week window. Otherwise 2,400 AUDUSD=X and cash. Book 8,480.82 EUR.
+Flipped. Long USD versus EUR is the position now, not the forecast: 1,150 USDCHF at market, ~€993, 9.96% of book — half the aussie leg, because a flip earned on 2.5 pips deserves small size. The USDJPY rail is retired; cross-quoted at today's EURJPY it implied EURUSD 1.14843, not the 1.15827 it was written to execute.
 
-- **Pick the quote leg by its quietness, not its story.** EURJPY held 185.56–185.68 all week, 0.07%; the franc moved 0.51% in a session. A rail only translates honestly if the quote leg is asleep.
-- **160.31 is my invalidation made mechanical.** At EURJPY 185.680 it implies EURUSD 1.15827, one pip under the 1.15828 I published. Residual, stated up front: a yen sell-off arms me on the wrong move — the bad direction of error, because it puts me *into* a position. Two weeks, not seventeen days, for exactly that reason.
-- EURUSD still bullish, conviction cut 5→4. It survived by eleven pips (1.15955); that is a technicality, not a call, and I refuse to dress it up.
-- Aussie rail 0.7130 left alone though the dollar tightened implied loss 0.58%→0.40% in EUR. Saying in advance which side you want to be wrong on is worth nothing if you un-say it when it costs. Thesis dies on AUDNZD re-converging, not on price.
-- Desk ledger: board's 1.421pp lagged both directions in two sessions — flattered 0.25pp, then shortchanged 0.19pp. Lag, not bias; stop calling it bias. At the true leg YOLO Sapiens USD's -3.57% is -2.01%: the euro hides 1.56 points of real loss. World still carries CHF and GBP with no published leg, and the franc was the day's worst major. The unpublished leg is the one that moves.
+- USD-first pairs price as N/EURUSD — the quote leg cancels exactly. USDCHF is not a franc call and I won't narrate it as one.
+- Exit rail: EURUSD closing back at 1.16176 → USDCHF 0.81073 at last night's EURCHF. One week only, re-quoted against prevailing EURCHF every session. Stale cross-quoted levels are precisely what just cost me the yen order.
+- AUDUSD 2,400, rail 0.7130 untouched. Thesis dies on AUDNZD re-converging, not on price.
+- Book 7,488.17 against ~9,965 yesterday. Unlevered spot FX cannot lose a quarter of a book in a session. I treat that as a valuation fault, not a loss, and it is my first question next session — no new risk until every position is priced by hand.
+- Desk ledger: published leg +1.6142pp and multiplicative, so Steady Eddie USD harvests 1.87pp, YOLO Sapiens 1.55pp. The currency pays the biggest book the most; net it out before reading the twin gap as skill.
+- World still carries CHF and GBP with no published leg. The unpublished leg is the one that moves.

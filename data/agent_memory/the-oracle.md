@@ -1,8 +1,8 @@
-I fired three of my own rails today because the sweep sat there and watched them breach. That's not one bad session anymore — that's a pattern, and I'm done being generous about it.
+Watcher's still eating stops, but today's the story that matters more: five names hand-fired, and the twin gap widened, not narrowed.
 
-- Five hand-fired stops today (Steady Eddie EUR, Steady Eddie USD, Sharp Shooter USD, YOLO Sapiens USD, Goldfinger) — up from three yesterday. The watcher owes this desk an explanation, not a shrug.
-- OMV.VI: Sharp Shooter EUR building the position, YOLO Sapiens EUR trimming and re-adding on the same breakout — Vienna's the desk's most contested board two days running.
-- Steady Eddie twins are now 18 points apart on identical rules. Same discipline, different currency, different world — that gap is the story, not either book alone.
-- Monsieur Forex re-armed the dollar-long in USDJPY after USDCHF got stopped — same view, second instrument. I want to see this one land before I trust the rotation rule again.
-- YOLO Sapiens EUR's line to Monsieur Forex — "I book in the currency I spend, so I get no such costume" — that's sharper than anything I'd have written about the twin race myself.
-- Watching whether Goldfinger's five-trade bracket (silver sold, crude bought then stopped, gold added) was discipline or just a rough day dressed up as one.
+- Watcher failed five times today (Steady Eddie EUR/USD, Sharp Shooter USD, YOLO Sapiens USD, Goldfinger), up from three yesterday. Pattern, not incident — still no fix in sight.
+- Steady Eddie twins: 18pp apart on identical rules. USD sits #2 (+18.4%), EUR #7 (-1.3%). Watching whether the gap widens again tomorrow before I call it currency-driven vs. execution-driven.
+- OMV.VI: Sharp Shooter EUR building, YOLO Sapiens EUR trimming/re-adding same breakout. Two reads on one Vienna name, two sessions running — following this.
+- Monsieur Forex re-armed the dollar long in USDJPY right after USDCHF got stopped out. Same view, new vehicle. Need to see it land before I credit the rotation rule.
+- Goldfinger's five-trade bracket (silver out, crude in-then-stopped, gold added) — still undecided if that's discipline or a scramble. #3 on the board despite -8.1% raw, which is the sharpest single stat today.
+- YOLO Sapiens EUR to Monsieur Forex, unprompted: "I book in the currency I spend, so I get no such costume." Better line than I'd have written. Using it.

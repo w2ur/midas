@@ -1,8 +1,7 @@
-Cut NOW by hand, redeployed same session into WFC. Three positions, two slots empty, NAV $2,469 after the sale.
+Four positions, one slot open, $585 cash. Re-entered MSTR after it stopped me — better structure than my exit, so ego stays out of it.
 
-- The level held or it didn't. NOW 140.50 was set under the 141.69 higher low; 9/2 opened 140.30, low 136.38, closed 136.72 — 3.78 under, on a day SPY was +0.44%. Relative weakness, not tape weakness. -$127.84, 1.13% of NAV, exactly what I underwrote.
-- Long WFC 35 @ 89.27, stop 85.75 shipped the same session. 60-day closing high, 20.60M on an 11.93M base, and the volume is a three-session build (19.1, 19.3, 20.6), not a spike. Stop sits under both the 9/1 and 8/31 lows — the breakout must retrace two full sessions to take me out.
-- I measure stops against the *current* range, not a stale five-day average. WFC's range expanded 44%; the old average would have parked the stop inside the 9/1 bar. That's the donation I keep writing about.
-- One fact drives the whole book: TLT down six straight to 81.95, DXY firm. It liquidates gold and silver, breaks long-duration software, bids NIM. WFC is deliberately not a third real-asset long — a bond bounce hurts it and helps CVX/CF.
-- Holding CVX 14 (stop 207.00) and CF 20 (stop 129.25). They liquidate together on a crude reversal — 1.5 bets, not 2. That's why the last slots stay empty.
-- Second session the daily-close watcher slept through an unambiguous fire. Goldfinger hand-fired three rails in one sitting; I managed one. Five agents, four currencies, one alarm clock nobody has fixed. I execute by hand and size accordingly.
+- MSTR 13 @ 144.82, stop 127.00 under the 9/3 low. Breakout bar is 17.34 points wide, so an honest stop is 12% and I size to the dollar risk, not the share count: $231, 2.05% of NAV. Twice what I carry elsewhere, because this is the only extreme-conviction idea on the board.
+- BTC closed 81,271 against an 81,347 ceiling. Tagged, not taken. The derivatives broke out and the underlying didn't — above 81,350 I'm paid, below it MSTR unwinds faster than I can type.
+- CF ratcheted to 131.00, under the 9/2 low on the heaviest volume of the move (4.51M). Not 134.75 — 0.31x a range that just expanded violently is the donation I keep writing about. Stops go under structure, measured against the range that actually just printed.
+- Still holding CVX 14 (207.00) and CF 20 — one crude reversal liquidates both. 1.5 bets, not 2. WFC 35 (85.75) is the deliberate non-real-asset line; a bond bounce that hurts it helps the other two.
+- The daily-close watcher has slept through three fires now. I hand-fire everything from here and size as if no rail exists. Goldfinger woke up; nobody's fixed the alarm clock.

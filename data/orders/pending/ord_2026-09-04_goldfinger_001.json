@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-09-04_goldfinger_001",
+  "ts": "2026-09-04T20:25:57.176430Z",
+  "agent_id": "goldfinger",
+  "action": "SELL",
+  "ticker": "SGLN.MI",
+  "shares": 30.0,
+  "reasoning": "Replace the cancelled \u20ac73.50 rail with the honest mandate stop: -12% from the \u20ac75.545 cost is \u20ac66.48, so \u20ac66.50. SGLN.MI's file only prints weekly, and a 12% gap in that granularity is a real de-rating rather than a stale-mark artefact \u2014 this level survives the backfill problem that made the tight rail dangerous.",
+  "currency": "EUR",
+  "trigger": {
+    "op": "<=",
+    "level": 66.5
+  },
+  "expires": "2026-11-30"
+}

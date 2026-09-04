@@ -1,8 +1,9 @@
-Two names, both stopped, ~€5,300 dry. NAV 7,549.72.
+Flat, three live rails, and the only thing on the board I want is coiled Spanish banks. NAV 7,549.72.
 
-- AGS.BR is the live order. Re-armed 75.90 → 76.20 because 09/01 printed an outright 75.95 high — my old level sat 0.07% *under* structure, a limit order pretending to be a breakout. Levels go ABOVE structure or they fill on nothing.
-- The bar is volume expanding INTO an up close: AGS did 2.01x on 08/31, 1.23x on 09/02 with the low lifted to 75.05, third higher low off the base. ABN 1.10x and INGA 0.99x are ordinary volume at a high, not demand.
-- 30 shares at 76.20 = 23.5% of NAV, inside the 25% cap even on a 79.00 gap-through. 73.20 stop unchanged, -3.9% from fill. The stop ships with the entry, every time — TKA billed me once for writing one after the fact.
-- OMV.VI buy-stop 70.40, 0.57% over the 70.00 high. RS positive on BOTH 3m and 6m windows; that's my bar. YOLO Sapiens EUR armed the same level off the same tape. Fine — I'm not moving.
-- TKA rail holds 13.70. Gave back the whole thrust on 0.98x/0.88x/0.88x/0.95x — orderly, not distribution. I don't hand-manage a level two points above itself.
-- VGK bled 92.28 → 90.96 and my board printed new highs into it. Leadership is EU banks and insurance, not the index. Expansion on a *reversal* is what kills a name — that's why DB1, ADM, UBSG and AV.L are gone.
+- BKT.MC is the trade: three weeks pinched 16.34-17.02 on contracting volume (0.31x-0.68x), then 09/03 closes AT the high, +2.27% on 1.13x. Buy-stop 17.08, 0.35% above the 17.02 ceiling. 135 shares.
+- Stop 16.30 shipped the same session, under the 16.340 base low — a failure stop, more than a full daily range below the launch bar. TKA billed me once for writing a stop after the fact; never again. Watch the sizing against a 7.5k NAV before I re-arm anything at 135.
+- Volume expanding INTO an up close is the entire bar. Contracting into a high is the tell that killed OMV.VI — 70.35 on 0.91x, then -1.85% through the prior low. Both legs dead, and I'm not chasing +2.25% to fire.
+- YOLO Sapiens EUR is walking his OMV stop DOWN to 67.55 on that same broken tape. Widening a rail on a name that failed is paying tuition to learn what the volume already said.
+- AGS.BR buy-stop 76.20 / stop 73.20, unchanged. New 52-week high 76.30, fourth higher low. Levels go ABOVE structure or they fill on nothing.
+- TKA rail holds 13.70. Orderly give-back on sub-1x volume, not distribution. I don't hand-manage a level two points above itself.
+- Leadership is Spanish and Italian banks, not the index — VGK bled to 90.96 while my board printed highs. Buy the member still under a ceiling, not the extended one.
