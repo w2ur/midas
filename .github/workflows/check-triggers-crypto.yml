@@ -34,6 +34,22 @@ name: check-triggers-crypto
 # hourly evaluation moved to a Cloudflare Workers Cron gate (workers/trigger-gate/)
 # which does the reading and the price comparison off GitHub's meter and fires
 # this workflow only on a hit. See the `on:` block below.
+#
+# Push path (2026-09-05): same as check-triggers.yml — a fill main refuses goes
+# to a per-run `triggers/<date>-<run id>` branch (exit 0, ::warning::), the
+# merge-fallback-branches step dispatches auto-merge-session.yml for it, and
+# only a commit that reaches neither main nor the branch is lost with the
+# runner (exit 1). This workflow was where the outage was first seen:
+# 2026-08-25, `GH006: Protected branch update failed for refs/heads/main`.
+#
+# That merge step runs TWICE, before and after the watcher, for the reason
+# check-triggers.yml's header gives: the watcher refuses to evaluate while any
+# `triggers/*` branch exists, so asking for the merge only afterwards cost the
+# run its own evaluation. The re-anchor step between them exists because the
+# leading merge moves `main` and this checkout is `fetch-depth: 1` from job
+# start — check_triggers.py refuses when origin/main is not this HEAD, which
+# is the guard that stops a crypto run queued behind the daily sweep from
+# re-firing an order the merge has just landed.
 
 on:
   # Dispatch-only since 2026-08-18. The hourly cron was removed: at 23 runs/day
@@ -49,6 +65,7 @@ on:
 permissions:
   contents: write # needed to commit fills back to main
   issues: write    # failure has to reach a human — see .github/actions/failure-issue
+  actions: write   # to dispatch auto-merge-session.yml for a fallback branch
 
 concurrency:
   # Shared with check-triggers.yml on purpose: both commit fills to main, and
@@ -103,8 +120,83 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # BEFORE the watcher, not only after it (round-2 review, 2026-09-05).
+      # scripts/check_triggers.py refuses to evaluate while any triggers/*
+      # branch is on origin, so a merge that was deferred inside the session
+      # window or lost its dispatch used to cost the NEXT sweep its whole
+      # evaluation: it exited before firing or expiring anything, and only
+      # then dispatched the merge. Every trigger and expiry due that day
+      # waited for the following dispatch. Dispatching first and waiting for
+      # the branches to disappear lets one run merge and then evaluate. The
+      # wait is bounded and a timeout is not a failure — the watcher below
+      # refuses exactly as it did before, and the trailing call re-dispatches.
+      - name: Merge any waiting fallback branch before evaluating
+        uses: ./.github/actions/merge-fallback-branches
+        with:
+          wait-seconds: "180"
+
+      # The step above may have just pushed a fill to main, and the checkout
+      # is from job start with `fetch-depth: 1`. scripts/check_triggers.py
+      # refuses to evaluate when origin/main is not this HEAD (see
+      # main_tip_ahead_of_checkout) — correctly, because the worktree would
+      # otherwise show the pending file of an order main has already filled.
+      # So re-anchor before evaluating. `--depth=1`: a plain `git fetch` into
+      # a shallow checkout deepens it, and this repo's history is gigabytes.
+      - name: Re-anchor the checkout on main's current tip
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard FETCH_HEAD
+          echo "evaluating against $(git rev-parse HEAD)"
+
       - name: Run watcher (crypto only)
         run: .venv/bin/python scripts/check_triggers.py --crypto-only
+
+      # scripts/check_triggers.py's write_run_report() writes the run's
+      # fired/expired table to $RUNNER_TEMP/watcher-report.md (and its JSON
+      # twin next to it). $RUNNER_TEMP is one directory for the whole job,
+      # which is the point: this step used to read $GITHUB_STEP_SUMMARY, and
+      # that file is PER-STEP — GitHub: "unique to the current step and
+      # changes for each step in a job" — so it read its own fresh, empty
+      # file every time and `details` reached the issue empty on 100% of runs.
+      # `if: always()`: the watcher may have exited 1, and the report is what
+      # tells a reader WHAT failed.
+      - name: Read watcher run report
+        id: report
+        if: always()
+        run: |
+          report="$RUNNER_TEMP/watcher-report.md"
+          if [[ -s "$report" ]]; then
+            {
+              echo "table<<WATCHER_REPORT_EOF"
+              cat "$report"
+              echo "WATCHER_REPORT_EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "table=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The JSON twin's consumer. $RUNNER_TEMP dies with the runner; the
+      # artifact does not. `if-no-files-found: ignore`: a blacked-out run and
+      # a run that refused to evaluate write no report, and that is not a
+      # failure of this step.
+      - name: Upload watcher run report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watcher-report-${{ github.run_id }}
+          path: ${{ runner.temp }}/watcher-report.*
+          if-no-files-found: ignore
+          # A re-run attempt reuses the run id; without this v4 refuses the
+          # duplicate name and the re-run's report is the one that is lost.
+          overwrite: true
+          retention-days: 30
+
+      # `if: always()`: a run that refused because a fallback branch is still
+      # unmerged is the run that should get it merged. See the action header.
+      - name: Merge any fallback branch into main
+        if: always()
+        uses: ./.github/actions/merge-fallback-branches
 
       - name: Report outcome
         if: always()
@@ -112,6 +204,7 @@ jobs:
         with:
           outcome: ${{ job.status }}
           title: "check-triggers-crypto: a dispatched crypto sweep did not complete"
+          details: ${{ steps.report.outputs.table }}
           body: |
             A `check-triggers-crypto` run failed. This workflow is dispatch-only
             — something fired it, which means the `workers/trigger-gate/` Worker
@@ -122,6 +215,20 @@ jobs:
             purpose: the two share a script but not a cause, and the repo
             already learned with fetch-ohlcv's two modes that one title for two
             causes lets a success on one close the other's issue.
+
+            The run log says which case this is: a refusal to evaluate behind
+            an unmerged `triggers/*` fallback branch (nothing evaluated; this
+            run already dispatched the merge and waited for it before
+            evaluating, so if it still refused, see `auto-merge-session`'s own
+            issue for why the merge did not land); a refusal because
+            `origin/main` moved between the checkout and the guard (nothing
+            evaluated, nothing lost, the next dispatch reads the new tip); a
+            commit that reached NEITHER `main` nor its
+            fallback branch (the only case where the fill is lost with the
+            runner — the log names the order and price, and the next run
+            re-fires it at that day's price); or the broker raising on a fired
+            trigger. A push that main refused is NOT a failure on its own: that
+            fill is on a `triggers/*` branch, durable, and the run exited 0.
 
             Degradation: the affected orders are picked up by the daily 13:00
             UTC sweep, which evaluates every asset class.

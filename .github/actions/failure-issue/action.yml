@@ -32,6 +32,14 @@ inputs:
     description: "Token with issues: write on this repository."
     required: false
     default: ${{ github.token }}
+  details:
+    description: >
+      Optional extra markdown appended to the issue body AND to every
+      recurrence comment — e.g. a run report table naming exactly what fired.
+      Empty by default, which reproduces the exact prior behavior for every
+      caller that does not pass it.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -42,6 +50,7 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
         TITLE: ${{ inputs.title }}
         BODY: ${{ inputs.body }}
+        DETAILS: ${{ inputs.details }}
         OUTCOME: ${{ inputs.outcome }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |
@@ -84,19 +93,32 @@ runs:
           exit 0
         fi
 
+        # --body-file throughout, not --body "$(...)": an apostrophe inside a
+        # heredoc nested in a command substitution is a bash syntax error (the
+        # lesson from session-watchdog's own issue body) — and DETAILS is
+        # caller-supplied markdown that must not have to be shell-escaped.
         if [[ -n "$existing" ]]; then
-          gh issue comment "$existing" \
-            --body "Still failing: [another run]($RUN_URL) of this job failed." \
+          comment_file="${RUNNER_TEMP:-/tmp}/failure-issue-comment.md"
+          {
+            printf 'Still failing: [another run](%s) of this job failed.\n' "$RUN_URL"
+            if [[ -n "${DETAILS:-}" ]]; then
+              printf '\n%s\n' "$DETAILS"
+            fi
+          } > "$comment_file"
+          gh issue comment "$existing" --body-file "$comment_file" \
             || echo "::warning::Could not comment on issue #$existing."
           echo "Recorded a recurrence on issue #$existing."
           exit 0
         fi
 
-        # --body-file, not --body "$(...)": an apostrophe inside a heredoc
-        # nested in a command substitution is a bash syntax error (the lesson
-        # from session-watchdog's own issue body).
         body_file="${RUNNER_TEMP:-/tmp}/failure-issue.md"
-        printf '%s\n\n---\n\nDetected by [this run](%s).\n' "$BODY" "$RUN_URL" > "$body_file"
+        {
+          printf '%s\n' "$BODY"
+          if [[ -n "${DETAILS:-}" ]]; then
+            printf '\n%s\n' "$DETAILS"
+          fi
+          printf '\n---\n\nDetected by [this run](%s).\n' "$RUN_URL"
+        } > "$body_file"
 
         url=$(gh issue create --title "$TITLE" --body-file "$body_file" | tail -n1) \
           || { echo "::warning::Could not file an issue for: $TITLE"; exit 0; }

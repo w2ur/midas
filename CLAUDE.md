@@ -43,76 +43,35 @@ pytest -q            # tests/ AND backtester/tests — both are in `testpaths`
 cd site && npm test  # the vitest suite; `npm test` is the authority on the count
 ```
 
-`.github/workflows/tests.yml` runs **two** suites — `pytest` and `site-tests` —
-behind a third job, `gate`, which is the one a branch protection rule would
-require. `gate` asserts a **named** list (`["pytest","site-tests"]`) rather than
-**`gate` asserts a NAMED list**, held in the workflow's own `EXPECTED` — never "did anything in `needs` fail?". Actions reports a skipped job as `skipped` and an absent one as nothing, and `jq 'all(.[]; .result=="success")'` over an empty set returns `true` — so the short form reports success on zero coverage. **Add a suite and you must add its job id to `EXPECTED`**; `tests/test_ci_guards.py` makes that mechanical. `gate` is the only check a branch protection rule should require — requiring the individual jobs reintroduces the hole.
+`.github/workflows/tests.yml` runs each suite as its own job behind a final
+`gate` job, which is the one a branch protection rule would require. **`gate`
+asserts a NAMED list**, held in the workflow's own `EXPECTED` — the roster is
+that list and is never restated here — rather than "did anything in `needs`
+fail?". Actions reports a skipped job as `skipped` and an absent one as nothing,
+and `jq 'all(.[]; .result=="success")'` over an empty set returns `true` — so
+the short form reports success on zero coverage. **Add a suite and you must add
+its job id to `EXPECTED`**; `tests/test_ci_guards.py` makes that mechanical.
+`gate` is the only check a branch protection rule should require — requiring the
+individual jobs reintroduces the hole.
 
-**2026-09-04 addendum.** Classic branch protection with a required `gate` status
-check got created on `main` after the 2026-08-21 flip to public. `enforce_admins:
-false` spared only the owner — `github-actions[bot]` is an Integration, not an
-admin, and every scheduled writer's push to `main` is rejected with `GH006`/`Required
-status check "gate" is expected` (first seen 2026-08-25 on the crypto watcher; a
-run with nothing to push still passes), the commit lost with the runner. The
-required check was removed on 2026-09-04 (`gh api -X DELETE
-repos/w2ur/midas/branches/main/protection/required_status_checks`; force-push
-and deletion protection stay) and the next hosted `fetch-ohlcv` run pushed on
-its first attempt. `gate` is advisory-only again.
+**A required status check on `main` breaks the desk** (measured 2026-08-24..09-04):
+`github-actions[bot]` is not exempt from it, every scheduled writer's push is
+refused with `GH006`, and the watcher's `triggers/*` fallback cannot merge either
+— it pushes with the same token — so fills stay durable and visible, not landed.
+`gate` is advisory **by decision**; never add a required check, never add a PAT.
+Dates and the removal command are in the **`midas-ci-guards`** skill.
 
-Warnings are errors, with three named third-party exceptions in `pyproject.toml`. Hypothesis settings live in one profile (`tests/conftest.py`, `midas`).
+Warnings are errors, with three named third-party exceptions in `pyproject.toml`. Hypothesis settings live in one profile (`tests/conftest.py`, `midas`): `deadline=None` **by measurement** — write no per-test `@settings`.
 
 **Every guard must be able to fail, and must have a consumer.** A check nobody reads and a check that cannot go red are the same thing. The rest of the CI discipline — path filtering, push-with-retry, attestation dating, `sync_core.check()`'s two tiers, failure-issue alerting — is in the **`midas-ci-guards`** skill.
-**Hypothesis settings live in one profile** (`tests/conftest.py`, `midas`):
-`max_examples=1000` per the portfolio mandate, and `deadline=None`. The deadline
-is wall-clock and several properties touch the filesystem, so under CI load it
-produced intermittent `DeadlineExceeded` failures — a red suite caused by a busy
-machine, which trains people to re-run rather than read. Runtime is bounded by
-`max_examples` instead, a property of the test rather than of the machine.
-Per-test `@settings` had already drifted to 200/300/400 before this; write none
-and inherit the profile. `tests/test_money_properties.py` covers the four
-transforms a euro actually travels through: unit normalisation, FX conversion,
-order serde, fees.
-
-**Published data is guarded in CI, not only in application code** (2026-08-07,
-review W4). `session-integrity.yml` now runs three data checks on every push to
-main, none of which existed as a standing gate before:
-- **ledger-integrity** — every filled inbox row has a matching trade (existence).
-- **ledger cash-replay** (`tests/test_ledger_cash.py`) — `initial_capital +
-  replay(trades) == live cash`, per book. The existence check cannot see a trade
-  booked at the *wrong notional*, which is what the quote-currency defect did to
-  24 fills: every row present, joined cleanly, €2,057.65 wrong. The arithmetic is
-  imported from `scripts/restate_valuations.py`, not reimplemented.
-- **baseline freshness** (`scripts/check_session_freshness.py`, 2026-08-07) —
-  the `check` job's Step 9 assertion. It used to grep the commit's changed-file
-  list for `^data/baselines/`, which is a proxy for the thing it cares about,
-  and the two came apart the same day the append-or-refuse contract landed:
-  `a4dc9dce2 [restate]` rebuilt every series that morning, so the evening
-  session's Step 9 ran against an already-current series, `merge_baseline_series`
-  correctly wrote nothing, and both this guard and the inline copy in
-  `auto-merge-session` failed a correct session. **The auto-merge one gates the
-  merge** — it was inert only because the direct push to main had already
-  succeeded. A diff cannot answer "did Step 9 run"; the published state can: a
-  genuine skip leaves the baselines *behind* the snapshots (the Apr 25 shape),
-  a correct no-op leaves them level, and a restatement may legitimately run
-  ahead, so the check is one-sided. Stdlib only, so no runner needs
-  `setup-python`. Calibrated by replaying the real `check` step against
-  `32038bcf8` — the commit that went red — and against a hand-broken copy of it.
-- **append-only** (`scripts/check_append_only.py`) — a dated row in
-  `data/portfolios/*/snapshots.json` or `data/baselines/**` that already exists
-  at `HEAD^` must be byte-identical at `HEAD`. A session correcting **its own**
-  row is allowed (same `session_date`, exactly what `add_snapshot` permits);
-  baselines get no such exemption because they have no writer identity. Anything
-  else needs `[restate]` in the commit message — the disclosure requirement made
-  mechanical, so `git log --grep='\[restate\]'` is a complete list of every time
-  the published record moved. Deliberately a post-hoc detector, not a merge gate:
-  `auto-merge-session.yml` runs its own inline copy of the artifact rules, so
-  this cannot hold a session hostage. Calibrated by replaying it over real
-  history, not only fixtures — the gate's ability to fire is pinned against
-  seven real mutating commits BY SHA (`KNOWN_FIRING_COMMITS`), because the
-  40-commit scan that used to carry that proof drifted past every one of them
-  by 2026-08-11 and asserted nothing. The scan survives as the separate
-  "no new mutation route opened" check, where finding nothing is the pass.
-  Neither runs in CI — `fetch-depth: 1`, and `.git` is 2.5 GB.
+**Published data is guarded in CI, not only in application code** —
+`session-integrity.yml` runs ledger-integrity, ledger cash-replay, baseline
+freshness (one-sided, reads the published *state*, never the diff) and
+append-only on every push to main. **A dated row in `data/portfolios/*/snapshots.json`
+or `data/baselines/**` that already exists at `HEAD^` must be byte-identical at
+`HEAD`, or the commit message carries `[restate]`** — `git log --grep='\[restate\]'`
+is the complete list of every time the published record moved. Mechanics and
+calibration are in the **`midas-ci-guards`** skill.
 
 **Restatement requires disclosure up front** (`engine/disclosure.py`).
 `restate_valuations.py --apply` and `restate_bundles.py --apply` refuse to run
@@ -135,12 +94,8 @@ raised — same book, same missing row, three published answers, two of them
 numbers. All three now refuse and name the condition in the broker's own
 vocabulary (`NO_PRICE_DATA` / `NO_FX_RATE` / `CURRENCY_UNRESOLVED`).
 
-**The daily attestation asserts something now.** `attest-ledger.yml` ran for 55
-green days computing a digest and checking nothing about it — a tampered ledger
-produced a different hash and a green run. `attest_ledger.py --verify` re-derives
-the previous `attest/*` tag's digest from that tag's own tree (via a detached
-worktree, so files deleted since are still covered) and fails on divergence.
-
+**`attest_ledger.py --verify` must compare against the previous `attest/*` tag's
+own tree** — a digest computed and not compared was 55 green days of nothing.
 
 `fetch_ohlcv.py`'s deliberate non-zero exits, and why its 10% threshold is measured against store coverage rather than the requested universe, are in the **`midas-market-data`** skill.
 ## Dashboard
@@ -159,7 +114,7 @@ is not listed is ordinary code; read it rather than a description of it.
 - `engine/quotes.py` — ticker → currency in three ordered layers (override map, vendor's captured answer, suffix heuristic), then price reads. **The heuristic returns `None` for a suffix it does not enumerate rather than defaulting to USD** — a wrong currency still prices, so that failure has no symptom. **`GBp` is a unit, not a currency: the store is ISO-denominated and the pence→pounds division happens ONCE, at ingest. Read paths must never scale**, or every LSE price is divided by 100 twice.
 - `engine/corporate_actions.py` — split detection, keyed on a transition-anchored constant ratio
 - `engine/agent_memory.py` — Ring 2 per-agent journal I/O
-- `engine/persona_dispatch.py` — loads `.claude/agents/{id}.md` and wraps a task prompt with the persona body
+- `engine/persona_dispatch.py` — loads `.claude/agents/{id}.md` and wraps a task prompt with the persona body, and injects any in-window desk notice between the two
 - `engine/config.py` — `MidasConfig`, the single source of truth for paths, roster and safety rails, loaded from `roster.yaml`; `MIDAS_DATA_DIR`-aware
 - `engine/output_bundle.py` — assembles `data/output/YYYY-MM-DD.json`, the single source of truth for API + retries
 - `engine/universes/` — universe resolvers. **Read from committed `data/universes/*.json`; no network at runtime.**
@@ -171,6 +126,7 @@ is not listed is ordinary code; read it rather than a description of it.
 - `data/orders/dropped/` — Brain-side audit ledger for agent trades that were not valid orders
 - `data/orders/{manager-pending,manager-cancels,manager-inbox}/` — the Manager channel, isolated from the trader channel
 - `data/agent_config/` — `live_switch.json` only; per-agent rails moved to `roster.yaml`
+- `data/desk_notices.json` — dated desk-wide notices (`{id, from, until, audience, text}`), read by `engine/desk_notices.py` and injected into every persona prompt at dispatch. **The only channel that tells the agents a fact about the desk's own machinery without the owner re-pasting the live RemoteTrigger prompt** — `docs/triggers/weekday-session.md` is hashed, so a two-week fact does not belong there. Windows are inclusive and self-retiring; `audience: "traders"` is `role: trader` only, `"all"` is everyone. Missing or malformed → no block and a logged warning, never an exception: losing a session over desk prose is worse than an agent missing the notice.
 - `data/cache/` — query-hash cached price data (gitignored)
 - `.claude/agents/` — the ten trader personas plus `the-oracle.md`, which narrates and does not trade
 - `site/` — Astro static site (Ring 3a), `midas.revah.paris`; reads `data/` and `.claude/agents/` at build time. See the **`midas-site`** skill.
@@ -210,14 +166,15 @@ Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_
 
 ### Conditional Triggers (extension of Brain/Hands)
 
-Agents may author conditional orders that defer execution until a price condition fires. Authoring is Brain; evaluation and firing are Hands. Mechanics — the watcher, the Cloudflare crypto gate, the cancellation channel, the ops table — are in the **`midas-session-cadence`** skill. Five rules outrank any change to them:
+Agents may author conditional orders that defer execution until a price condition fires. Authoring is Brain; evaluation and firing are Hands. Mechanics — the watcher, the Cloudflare crypto gate, the cancellation channel, the ops table — are in the **`midas-session-cadence`** skill. These rules outrank any change to them:
 
 - **Expiry is mandatory** (`TRIGGER_NO_EXPIRY`) and inclusive, and **the daily 13:00 UTC sweep is its SOLE owner.** The crypto pass filters non-crypto orders out in `run()`, never in `_process_channel`, precisely so an hourly pass cannot retire an equity order early.
 - **A triggered fire applies the order-level rails and DELIBERATELY SKIPS the two batch-level ones** — `MAX_ORDERS_PER_DAY` and `DAILY_DRAWDOWN_HALT`. A fire the drawdown halt would have stopped still fills, and the agent reacts next session. Changing that is a money-path decision, not a cleanup.
-- **The blackout end is a FUNCTION of the session start — move one and move the other, in the same change.** The constant has now been wrong in both directions (20:30 too early, then 21:30 after a session move and back). The blackout only narrows the race; `session_guard` is the correctness mechanism.
+- **`SESSION_START` is the one constant; both windows are functions of it — move it and move them, in the same change.** The blackout end has now been wrong in both directions (20:30 too early, then 21:30 after a session move and back). **The watcher's evaluation blackout and the auto-merge deferral are DIFFERENT functions of it**: `in_blackout` opens five minutes early for the watcher's multi-minute fire path, `merge_deferred` opens at the session start because a merge is one fetch-merge-push — and deferring the merge over those five minutes was itself enough to trap a fallback branch permanently. **The merge has a hard deadline of that session**: past it the branch is stale by construction and becomes a human decision, not a self-heal. A blackout only narrows the race; `session_guard` is the correctness mechanism.
 - **The crypto gate may only over-dispatch, never under-dispatch**, and **its PAT is a dead-man switch**: when the token dies the Worker fails *and* cannot report it, because the failure issue uses the same dead credential. The renewal date belongs in a calendar.
 - **Gate C**: before the Manager's track record gates real money, record the commit SHA the window was scored at, the ledger basis by name, and that the decision prompt was rendering currency-labelled position values — none is reconstructable afterwards, and all three go in the METHODOLOGY changelog, not a working note.
 - **Manager channel isolation.** Manager orders route to `manager-pending`/`manager-inbox`, never the public channels; Manager fills stay out of the ranked leaderboard by design. Its public dossier at `/arena/the-manager` is **unranked** and never enters `current.json`.
+- **A fire that `main` refuses goes to a per-run `triggers/*` branch that `auto-merge-session.yml` merges** — a warning (exit 0), not a failure; only a commit that reaches neither is lost with the runner, and **a run that finds an unmerged `triggers/*` branch refuses to evaluate** rather than re-fire the same order at a new price against a `main` that lacks the fill. Once a run has fallen back it **stays on the branch — no rebase after a sha has reached origin** (the fills' `executed_sha` provenance). The merge **defers over the session window** (it is the push), **refuses a fill whose order or whose BOOK `main` has since touched** — per book, not per file, because a session writes `snapshots.json` and not the `portfolio.json` a fill writes, so a file-level test let a branch merge behind a snapshot valued without it, and snapshots are immutable — and resolves a conflict on `current.json` alone to main's copy. **Every check binds the `origin/main` sha it was computed on**: the merge refuses any other tip and never retries, because a rejected push means main moved, which is exactly the state nothing has checked. **The merge is dispatched before the watcher evaluates, not only after**, or a branch waiting from yesterday costs that run its fires and its expiries too; the checkout is re-anchored between the two, and **a run whose `origin/main` is not its own `HEAD` refuses to evaluate** — a merge landing between checkout and evaluation is how the same order gets fired twice. **A merge that fails transiently is retried by `retry-fallback-merges.yml`, not by "the next watcher run"** — no watcher runs between the 13:00 sweep and the session, and past the session the branch is stale by construction.
 
 Same Brain/Hands invariant: safety rails live in the broker, at market-fill time and at trigger-fire time, not in the persona.
 

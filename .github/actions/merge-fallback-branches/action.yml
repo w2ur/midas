@@ -1,0 +1,106 @@
+name: Merge fallback branches
+description: >
+  Dispatch auto-merge-session.yml for every `triggers/*` branch origin holds,
+  so a fill the watcher could not push to main gets merged there.
+
+# Why a dispatch and not `on: push`: the watcher runs inside Actions and
+# pushes with GITHUB_TOKEN, and GitHub does not create workflow runs for
+# events that token causes — with two documented exceptions, workflow_dispatch
+# and repository_dispatch. The session's sandbox fallback works on `on: push`
+# only because the sandbox pushes with a different credential. So the watcher
+# workflow has to fire the merge itself, and this is that step.
+#
+# Why EVERY `triggers/*` branch and not just the one this run created: the
+# branch is what is durable, not the dispatch. If a previous run's dispatch
+# was lost (API hiccup, cancelled run), its branch is still on origin and the
+# watcher refuses to evaluate behind it (scripts/check_triggers.py checks for
+# unmerged fallback branches first). Re-dispatching for all of them from every
+# run is what makes that state self-healing instead of permanent. It runs
+# under `if: always()` for the same reason: a run that REFUSED because of an
+# unmerged branch is exactly the run that should try merging it again.
+#
+# A dispatch that fails is a step failure, deliberately: the branch is then
+# unmerged with nothing scheduled to merge it, and the calling workflow's
+# failure-issue is the one channel that reaches a human. An empty branch list
+# is the normal case and exits 0.
+#
+# `wait-seconds` exists for the callers that run this BEFORE their watcher
+# step (round-2 review, 2026-09-05). Dispatching only afterwards made a
+# deferred or failed merge cost the following sweep its own evaluation, not
+# just the merge's timing: scripts/check_triggers.py refuses to evaluate while
+# any triggers/* branch exists, so the 13:00 sweep would exit before firing or
+# expiring anything, THEN dispatch the merge — and every trigger and expiry due
+# that day waited for the next dispatch. Dispatching first and waiting for the
+# branches to disappear lets one run merge and then evaluate. Timing out is not
+# a failure: the caller's watcher then refuses exactly as it used to, and the
+# trailing call re-dispatches.
+
+inputs:
+  token:
+    description: "Token with actions: write on this repository."
+    required: false
+    default: ${{ github.token }}
+  workflow:
+    description: "The merge workflow to dispatch."
+    required: false
+    default: auto-merge-session.yml
+  wait-seconds:
+    description: >
+      Seconds to wait for the dispatched merges to land (the branches to
+      disappear from origin) before returning. 0 = dispatch and return.
+    required: false
+    default: "0"
+
+runs:
+  using: composite
+  steps:
+    - name: Dispatch a merge for every unmerged fallback branch
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        WORKFLOW: ${{ inputs.workflow }}
+        REPO: ${{ github.repository }}
+        WAIT_SECONDS: ${{ inputs.wait-seconds }}
+      run: |
+        set -uo pipefail
+
+        branches=$(git ls-remote --heads origin 'refs/heads/triggers/*' \
+                     | awk '{print $2}' | sed 's|^refs/heads/||') || {
+          echo "::error::Could not list origin's branches; cannot tell whether a fallback branch is waiting."
+          exit 1
+        }
+        if [[ -z "$branches" ]]; then
+          echo "No triggers/* branch on origin — nothing to merge."
+          exit 0
+        fi
+
+        fail=0
+        while IFS= read -r branch; do
+          [[ -z "$branch" ]] && continue
+          if gh workflow run "$WORKFLOW" --repo "$REPO" --ref "$branch"; then
+            echo "Dispatched $WORKFLOW for $branch."
+          else
+            echo "::error::Could not dispatch $WORKFLOW for $branch — the branch stays unmerged and the watcher will refuse to evaluate until it is."
+            fail=1
+          fi
+        done <<< "$branches"
+
+        # Wait for the merges to land, when the caller asked. A timeout is a
+        # normal outcome (the merge may be deferred inside the session window,
+        # or refused as stale) and must not fail the step: the caller's
+        # watcher then refuses to evaluate exactly as it did before, and says
+        # why. Only the dispatch itself is allowed to fail this step.
+        if [[ "${WAIT_SECONDS:-0}" -gt 0 && $fail -eq 0 ]]; then
+          echo "Waiting up to ${WAIT_SECONDS}s for the fallback branch(es) to reach main..."
+          deadline=$(( SECONDS + WAIT_SECONDS ))
+          while (( SECONDS < deadline )); do
+            sleep 15
+            left=$(git ls-remote --heads origin 'refs/heads/triggers/*' | awk '{print $2}') || continue
+            if [[ -z "$left" ]]; then
+              echo "All fallback branches merged — this run can evaluate against main's real tip."
+              exit 0
+            fi
+          done
+          echo "::warning::Fallback branch(es) still on origin after ${WAIT_SECONDS}s: $(tr '\n' ' ' <<< "$branches"). The watcher will refuse to evaluate; auto-merge-session says why."
+        fi
+        exit $fail

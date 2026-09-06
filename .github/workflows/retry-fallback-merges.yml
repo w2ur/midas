@@ -1,0 +1,119 @@
+name: retry-fallback-merges
+
+# Re-dispatch auto-merge-session.yml for every `triggers/*` fallback branch
+# still on origin, on a schedule of its own, BETWEEN the 13:00 UTC watcher
+# sweep and the 20:00 UTC session.
+#
+# Why this exists (round-5 review, 2026-09-05). Every one of
+# auto-merge-session.yml's non-fatal outcomes — a deferral, a rejected push
+# ("main moved after the stale check"), a merge conflict, a lost dispatch —
+# ends with "the next watcher run re-dispatches this merge". Until this
+# workflow existed that sentence was false on the timescale that matters:
+# .github/actions/merge-fallback-branches is invoked ONLY from
+# check-triggers.yml (cron `0 13 * * *`) and check-triggers-crypto.yml (a
+# workflow_dispatch the Cloudflare gate fires only when a crypto trigger is
+# near its level, i.e. never on most days). So the next re-dispatch after the
+# 13:00 sweep was the 13:00 sweep of the FOLLOWING day — and the merge has a
+# hard deadline of tonight's 20:00 session, because the session appends to the
+# same dated inbox file and republishes every book, at which point the stale
+# step refuses the branch permanently (a book is one conflict key, so a
+# session's snapshots.json always overlaps a fill's portfolio.json).
+#
+# The cost of that gap was the whole outage in miniature, reached from ONE
+# transient failure: the fill executed at the 13:00 price never reaches the
+# published ledger, the agent trades that evening against a book that does not
+# hold it, and from the next watcher run onwards the desk is halted — fires
+# AND expiries — because check_triggers.py refuses to evaluate while any
+# `triggers/*` branch is on origin. That is the 2026-08-24..09-04 "re-executed
+# later at a different price" outcome, one rejected push away.
+#
+# Several crons rather than one, and none of them close to 20:00: GitHub's
+# scheduler is never on time — measured across this repo, runs typically land
+# 40 min to 2 h 45 late with a tail past 5 h. A single retry would be one lost
+# dispatch (or one late run) away from the trap it exists to prevent. A run
+# that does land past 20:00 costs nothing: auto-merge-session defers inside
+# the session window and keeps the branch, and past the deadline the branch is
+# a human decision either way — which the stale refusal then says, under its
+# own issue title.
+#
+# This workflow merges nothing itself. It dispatches, exactly as the watcher
+# does, and auto-merge-session re-runs every check (scope, staleness, the
+# verified-tip lock) against whatever main is by then. Dispatch is the only
+# route: the watcher pushes its branch with GITHUB_TOKEN and GitHub creates no
+# workflow run for an event that token causes.
+#
+# Not folded into check-triggers.yml as extra crons: that workflow RUNS the
+# watcher, which fires orders and is the sole owner of expiry. Its daily
+# cadence is a deliberate money-path decision (non-crypto triggers cannot move
+# more than once a day — the OHLCV store is refreshed daily), and adding crons
+# to it would change how often the desk trades in order to fix how often a
+# merge is retried.
+
+on:
+  schedule:
+    # Strictly after check-triggers.yml's `0 13 * * *` sweep and well before
+    # SESSION_START (20:00 UTC, scripts/check_triggers.py). tests/test_ci_guards.py
+    # reads both ends and asserts these sit between them, so a cadence change
+    # on either side fails the suite rather than silently reopening the gap.
+    - cron: "20 14 * * *"
+    - cron: "20 16 * * *"
+    - cron: "20 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read # read-only: this workflow never moves main, it only dispatches
+  actions: write # to dispatch auto-merge-session.yml
+  issues: write # a dispatch that fails has to reach a human — see failure-issue
+
+concurrency:
+  group: retry-fallback-merges
+  cancel-in-progress: false
+
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Shallow: the action needs an origin remote to `git ls-remote`, not
+      # history. This repo's .git is gigabytes.
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Dispatch a merge for every waiting fallback branch
+        uses: ./.github/actions/merge-fallback-branches
+
+      # The action fails only when it could not LIST origin's branches or
+      # could not dispatch — i.e. exactly when a waiting fill has nothing left
+      # that will try to merge it. That is the one thing this workflow can
+      # know and nobody else can: a red X on a sweep nobody watches is the
+      # failure mode this repo has already paid for twice. Its own title, so a
+      # green run here cannot close auto-merge-session's issue and vice versa.
+      - name: Report retry-sweep outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "retry-fallback-merges: a waiting fallback branch could not be re-dispatched"
+          body: |
+            This sweep re-dispatches `auto-merge-session.yml` for every
+            `triggers/*` fallback branch still on origin, between the 13:00 UTC
+            watcher sweep and the 20:00 UTC session. It failed, which means
+            either origin's branches could not be listed or the dispatch itself
+            was refused — so a fill the watcher could not push to `main` may now
+            have **nothing scheduled to merge it before tonight's session**.
+
+            Why that matters: the merge has a hard deadline of the day's 20:00
+            UTC session. Past it the session has appended to the same dated
+            inbox file and republished the books, `auto-merge-session`'s stale
+            step refuses the branch permanently, and every watcher run refuses
+            to evaluate behind it — no fires, no expiries, desk-wide — until a
+            human resolves the branch.
+
+            What to do: open the failed run. If the dispatch was refused, run
+            it by hand — `gh workflow run auto-merge-session.yml --ref
+            <branch>` for each branch `git ls-remote --heads origin
+            'refs/heads/triggers/*'` reports — and read
+            `auto-merge-session`'s own issue for the merge's verdict.

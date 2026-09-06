@@ -1,6 +1,11 @@
 __pycache__/
 *.pyc
-.venv/
+# No trailing slash: a git worktree's .venv is a SYMLINK to the main
+# checkout's venv, and `.venv/` matches directories only — so `git status`
+# listed it untracked and a `git add -A` would have committed a symlink
+# holding a local absolute path into the public repo (round-2 review,
+# 2026-09-05).
+.venv
 venv/
 *.egg-info/
 dist/

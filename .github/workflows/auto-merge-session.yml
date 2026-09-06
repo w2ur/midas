@@ -1,34 +1,208 @@
 name: auto-merge-session
 
-# Backstop for daily-session commits that landed on a sandbox branch
-# instead of main. The trigger pipeline tries `git push origin HEAD:main`
-# first via step_git_commit_push; if the harness 403s that (2026-05-08
-# incident), the helper falls back to pushing the sandbox branch and
-# this workflow takes the merge the rest of the way.
+# Backstop for commits that landed on a branch instead of main, because
+# origin/main refused the push. Two writers use it, and the same two rules
+# hold for both: the merge never rewrites history (fast-forward or a merge
+# commit, never a rebase or a force), and the branch is deleted on success.
 #
-# Scope: only commits matching the daily-session message pattern AND
-# passing the same artifact rules as session-integrity.yml.
+# 1. Daily-session commits on a `claude/**` sandbox branch. The trigger
+#    pipeline tries `git push origin HEAD:main` first via step_git_commit_push;
+#    if the harness 403s that (2026-05-08 incident), the helper falls back to
+#    pushing the sandbox branch and this workflow takes the merge the rest of
+#    the way — after re-running the session-integrity artifact rules and
+#    rejecting a stale session.
+#
+# 2. Watcher commits on a `triggers/**` branch (added 2026-09-05). The
+#    conditional-order watcher (scripts/check_triggers.py) commits each fill
+#    and pushes `HEAD:main`; from 2026-08-24 to 09-04 a branch-protection rule
+#    rejected every one of those pushes with GH006, and because the commit
+#    existed only on the runner, TEN fired orders were lost with their runners
+#    and re-fired later at a different price (METHODOLOGY
+#    `#watcher-outage-2026-08-24`). The watcher now pushes a refused commit to
+#    a per-run `triggers/<date>-<run id>` branch, where it is durable, and this
+#    workflow merges it. The session artifact rules DO NOT apply to a watcher
+#    commit — it publishes no journals, posts or baselines — so it gets its own
+#    scope rule instead: every commit on the branch must carry the
+#    `chore(triggers): ` prefix, and the diff may touch only data/orders/,
+#    data/portfolios/, data/leaderboard/ and data/tax_shadow/. Anything else
+#    is refused, and so is an EMPTY diff: "every changed file is allowed" over
+#    no files is vacuously true, the same zero-coverage hole tests.yml's gate
+#    closes with a named EXPECTED list.
+#
+# Why one workflow and not two: the merge-and-delete mechanics are the same,
+# `on: push` to a branch pattern is the same, and a second file would be a
+# second copy of the git identity, the checkout depth and the delete step to
+# keep in sync. What differs — the rules a commit must pass — is one step each,
+# gated on the kind the inspect step classified.
+#
+# Alerting differs by kind, deliberately. A session merge that fails is caught
+# by session-watchdog (no `chore: weekday session` commit on main → issue), so
+# it needs nothing here. A watcher merge has no watchdog, and a fallback
+# branch that never reaches main is a fill the ledger does not show AND a
+# pending file the next watcher run would re-fire — which is why the watcher
+# refuses to evaluate while any `triggers/*` branch exists on origin. So a
+# failed watcher merge files its own issue through failure-issue, under a
+# title of its own, and the step is gated on the kind so a green session merge
+# can never close it.
+#
+# How a watcher branch reaches this workflow: NOT through `on: push`. The
+# watcher pushes with GITHUB_TOKEN, and GitHub creates no workflow run for an
+# event that token causes — except workflow_dispatch and repository_dispatch.
+# (The sandbox pushes with its own credential, which is why the session half
+# works on push.) So both watcher workflows end with
+# .github/actions/merge-fallback-branches, which dispatches this workflow with
+# `--ref <branch>` for every `triggers/*` branch on origin. `github.sha` is
+# then the branch tip and `github.ref` the branch, the same as on a push. The
+# push trigger is kept for `triggers/**` too, so a human pushing a repaired
+# branch by hand gets the same merge — and, if the repair left a commit
+# without the `chore(triggers): ` prefix, the same loud refusal rather than a
+# green no-op: the kind is decided by the BRANCH, not by the tip's subject
+# (round-4 review; see the inspect step). A dispatch on any OTHER ref — the
+# Actions UI's "Run workflow" button defaults to `main` — is refused by the
+# first step: on main it would classify main's own tip and report a merge that
+# never happened. See that step for the whole shape.
+#
+# Four rules on the watcher path, added 2026-09-05 after the first review:
+#
+# - SESSION-WINDOW-AWARE. A fire must not land on main while the daily
+#   session is anchored to it (the session's assert_session_fresh sees the
+#   ledger move and discards the whole run). The watcher's own blackout
+#   covers evaluation and starts five minutes early, for its multi-minute
+#   fire path; the merge is one fetch-merge-push, so it defers over
+#   SESSION_START..BLACKOUT_END instead — merge_deferred() in
+#   scripts/check_triggers.py, read from there rather than typed here.
+#   tests/test_ci_guards.py executes this step's check against that function
+#   at the boundaries. Deferral is exit 0 with the branch kept, and
+#   .github/actions/merge-fallback-branches re-dispatches this workflow for
+#   every triggers/* branch — from every watcher run AND from
+#   retry-fallback-merges.yml, which sweeps between the 13:00 UTC watcher and
+#   the session precisely so "the next run" is hours away rather than
+#   tomorrow. The deferral WINDOW ITSELF opens at SESSION_START, so a merge
+#   deferred inside it is already past the deadline below: what the retries
+#   buy is every OTHER non-fatal outcome (a rejected push, a conflict, a lost
+#   dispatch) getting another attempt while one can still land.
+#   THE MERGE HAS A HARD DEADLINE OF THAT SESSION, and this is not
+#   self-healing past it: the session appends its own fills to the same
+#   data/orders/inbox/<date>.jsonl and republishes the books, so the stale
+#   rule below then refuses the branch permanently and the watcher refuses
+#   to evaluate behind it. Deferring from 19:55 rather than 20:00 was itself
+#   enough to create that trap (round-2 review, 2026-09-05), which is why the
+#   window is merge_deferred() and not in_blackout(). Past the deadline the
+#   branch is a human decision — the issue below says so.
+# - STALE-FILL REFUSAL. A branch that outlives a session can merge CLEAN on
+#   top of a main where the same order was cancelled and re-executed at
+#   market — the pending file is deleted on both sides, the inbox rows sit in
+#   different date files, and the book holds the position twice. So before
+#   merging, what the branch changed since the merge-base (minus
+#   data/leaderboard/current.json) is compared with what main changed since
+#   the same base; any overlap refuses the merge under its own issue title
+#   ("... is stale against main"), naming the paths. A fill executed against
+#   a book that has since moved is a human decision, not a merge.
+#   THE COMPARISON IS PER BOOK, not per file: everything under
+#   data/portfolios/<agent>/ is one key. A session writes snapshots.json and
+#   not the portfolio.json/trades.json a fill writes, so a file-level
+#   comparison let a branch merge behind a snapshot valued WITHOUT its fill —
+#   and snapshots are immutable across sessions, so that published valuation
+#   could only be corrected by a disclosed restatement (round-2 review).
+# - THE CHECKS BIND THE TIP THEY WERE COMPUTED ON. The stale step exports the
+#   origin/main sha it verified and the merge refuses any other, with no
+#   retry loop. A rejected push means main moved, which is exactly the state
+#   nothing has checked; re-merging against the new tip — which is what the
+#   old `for attempt in 1 2 3` did — merged fills onto ledgers no check had
+#   seen. One dispatch cycle is the cost — and that cost is only bounded
+#   because retry-fallback-merges.yml re-dispatches between the 13:00 sweep
+#   and the session; on the watcher's cadence alone, "one dispatch cycle" was
+#   the next DAY, i.e. past the deadline three lines up (round-5 review).
+# - current.json RESOLVES TO MAIN'S COPY. Both the watcher and the session
+#   regenerate data/leaderboard/current.json, so any branch that outlives a
+#   session conflicts on it by construction. It is derived, self-healing
+#   state (the next watcher run or session rewrites it), so a merge whose
+#   ONLY conflict is that file takes main's version and completes. Any other
+#   conflicting path still aborts, exits 1 and files the issue.
+# - THE FALLBACK CANNOT SELF-HEAL UNDER A REPEAT OF GH006. This workflow
+#   pushes main with GITHUB_TOKEN as github-actions[bot] — the very push a
+#   required status check refuses — so under the 2026-08-24..09-04 condition
+#   the branch would never merge and every watcher run would refuse to
+#   evaluate (fires AND expiries) until a human merged it. The fallback's
+#   guarantee is durability + visibility (the fill is on origin; the issue
+#   is filed and re-filed), NOT that the fill lands. No PAT is added: a
+#   required check and a bot writer on main do not coexist on this account,
+#   and the fix is the one the owner applied on 2026-09-04 — no required
+#   check on main.
+#
+# Concurrency is per branch: one watcher run pushes its branch once per fire,
+# and two merges of the same branch racing each other would reject one push.
+# A newer queued run supersedes an older one (its HEAD contains the older
+# commits), so cancelling the pending one loses nothing.
 
 on:
   push:
     branches:
       - 'claude/**'
+      - 'triggers/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write  # the watcher-merge failure issue — see the header
+
+concurrency:
+  group: auto-merge-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   merge:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
+      # workflow_dispatch exists for .github/actions/merge-fallback-branches,
+      # which dispatches this workflow with `--ref <branch>`. But the Actions
+      # UI's "Run workflow" button defaults to the DEFAULT BRANCH, and the
+      # issue this workflow files tells its reader to open the failed run — so
+      # a dispatch on `main` is a realistic misfire, not a hypothetical.
+      # Unguarded it was a green no-op that CLOSED the open issue (round-3
+      # review, 2026-09-05): main's tip is a `chore(triggers): ` commit most
+      # days, so inspect classified it as a watcher branch; `git merge-base
+      # --is-ancestor main origin/main` is trivially true so already_merged
+      # skipped every verification step; "Delete merged branch" ran
+      # `git push origin --delete main` (GitHub refuses a default-branch
+      # delete, and continue-on-error swallowed the rejection); and the
+      # reporter, gated only on the kind, reported success — closing "a
+      # watcher fallback branch did not reach main" while that branch was
+      # still on origin, still unmerged, and still making every watcher run
+      # refuse to evaluate.
+      #
+      # The two patterns are the same ones `on: push` listens for; nothing
+      # else may ever reach the merge steps. Refusing here rather than in the
+      # inspect step is deliberate: the reporter is gated on
+      # steps.inspect.outputs.kind, which is empty when this step fails, so a
+      # human's misfire goes red without touching the issue tracker.
+      - name: Refuse a run outside the fallback branch patterns
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          branch="${REF#refs/heads/}"
+          case "$branch" in
+            claude/*|triggers/*)
+              echo "Fallback branch: $branch" ;;
+            *)
+              echo "::error::$REF is not a fallback branch. This workflow merges a claude/** session branch or a triggers/** watcher branch INTO main; run on main it would classify main's own tip, skip every check and report a merge that never happened. Dispatch it with --ref <the branch to merge>."
+              exit 1 ;;
+          esac
+
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Inspect pushed commit
         id: inspect
+        env:
+          HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          msg=$(git log -1 --pretty=%s ${{ github.sha }})
+          branch="${GITHUB_REF#refs/heads/}"
+          msg=$(git log -1 --pretty=%s "$HEAD_SHA")
+          echo "Branch: $branch"
           echo "Commit message: $msg"
 
           # docs/triggers/weekday-session.md → "chore: weekday session {date}"
@@ -37,15 +211,118 @@ jobs:
           # refresh-leaderboard.yml, which commits "chore: weekend refresh" from a
           # GitHub Action, not a claude/** sandbox branch — so it never reaches
           # this workflow at all). Kept so an old sandbox branch still merges.
-          if ! echo "$msg" | grep -Eq '^chore: (weekday|weekend|daily)( crypto)? session '; then
-            echo "Not a daily-session commit — nothing to do."
-            echo "is_session=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          session_re='^chore: (weekday|weekend|daily)( crypto)? session '
+          # scripts/check_triggers.py → "chore(triggers): execute ..."
+          triggers_re='^chore\(triggers\): '
+
+          # A `triggers/*` BRANCH is a watcher branch whatever its tip says
+          # (round-4 review, 2026-09-05). Classifying on the subject alone left
+          # exactly one path with no consumer at all: a tip that matched
+          # neither regex set kind=none, every downstream step is gated on the
+          # kind, and the whole job went green having checked nothing, merged
+          # nothing, deleted nothing and reported nothing — while the branch
+          # stayed on origin, where its mere existence makes
+          # scripts/check_triggers.py refuse to evaluate (no fires and no
+          # expiries, desk-wide, indefinitely). And that tip is reachable by
+          # invitation: the stale-refusal issue tells the reader to "resolve by
+          # hand with the same check, then delete the branch", and the header
+          # above advertises the push route for a repaired branch — a
+          # `commit --amend`, a hand-carried fill or a revert all land a
+          # subject that is not `chore(triggers): `. Classified as a watcher
+          # branch, the scope step below refuses that commit by name, the run
+          # goes red, and the reporter files the issue. Same family as
+          # "Refuse a run outside the fallback branch patterns": an
+          # unclassified path must not be able to report a merge that never
+          # happened, and neither must it be able to report nothing at all.
+          #
+          # The subject still classifies everything else. `claude/**` keeps
+          # kind=none for a non-session tip on purpose: a sandbox branch is
+          # pushed for reasons that have nothing to do with this workflow, it
+          # blocks nothing while it sits on origin, and session-watchdog is
+          # what notices a session that never reached main.
+          kind=none
+          if [[ "$branch" == triggers/* ]]; then
+            kind=triggers
+            if [[ ! "$msg" =~ $triggers_re ]]; then
+              echo "::warning::$branch's tip is not a 'chore(triggers): ' commit ($msg). Treating it as a watcher branch anyway — the scope step refuses it and the watcher-merge issue is filed, rather than this run going green having done nothing while the branch halts every watcher run."
+            fi
+          elif [[ "$msg" =~ $session_re ]]; then
+            kind=session
+          elif [[ "$msg" =~ $triggers_re ]]; then
+            kind=triggers
+          else
+            echo "Neither a daily-session nor a watcher commit — nothing to do."
           fi
-          echo "is_session=true" >> "$GITHUB_OUTPUT"
+          echo "kind=$kind"
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+
+          # A watcher branch pushes once per fire, so a later run for the same
+          # branch may find an earlier run already merged everything (or a
+          # successful direct push to main carried it). Nothing to merge then,
+          # and nothing to verify: the branch is simply deleted below.
+          already=false
+          if [[ "$kind" == "triggers" ]]; then
+            git fetch origin main
+            if git merge-base --is-ancestor "$HEAD_SHA" origin/main; then
+              echo "Already on main — nothing to merge."
+              already=true
+            fi
+          fi
+          echo "already_merged=$already" >> "$GITHUB_OUTPUT"
+
+      # The merge IS the push to main, so it stays out of the session's way.
+      # The window is read from scripts/check_triggers.py, never typed here:
+      # the constant has been wrong in both directions when copied. It mirrors
+      # merge_deferred() — SESSION_START..BLACKOUT_END — and NOT in_blackout(),
+      # which starts five minutes earlier. That lead exists for the watcher's
+      # own multi-minute fire path; a merge is one fetch-merge-push and needs
+      # none of it, and those five minutes were the slice that TRAPPED a branch
+      # (round-2 review, 2026-09-05): a fire at 19:54 pushed its branch, the
+      # merge dispatched at ~19:55 deferred, the 20:00 session then appended
+      # its own fills to the same data/orders/inbox/<date>.jsonl, and the stale
+      # step read that as overlap forever after — an unmergeable branch behind
+      # which every watcher run refuses to evaluate, fires and expiries alike.
+      #
+      # What deferral still cannot undo: a branch that survives PAST the
+      # session (a lost dispatch, a failed merge) really is stale, and stays a
+      # human decision. So the merge has a hard deadline of the day's session,
+      # stated here and in the issue rather than papered over as self-healing.
+      # tests/test_ci_guards.py runs this exact script against merge_deferred()
+      # at the boundaries. NOW_UTC is the test's override; a real run never
+      # sets it.
+      - name: Defer inside the session window
+        id: blackout
+        if: steps.inspect.outputs.kind == 'triggers'
+        run: |
+          set -euo pipefail
+          deferred=$(python3 - <<'PY'
+          import os
+          import re
+          import sys
+          from datetime import datetime, time, timezone
+          from pathlib import Path
+
+          src = Path("scripts/check_triggers.py").read_text(encoding="utf-8")
+
+          def const(name: str) -> time:
+              m = re.search(rf"^{name} = time\((\d+), (\d+)\)", src, re.M)
+              if not m:
+                  sys.exit(f"{name} not found in scripts/check_triggers.py")
+              return time(int(m.group(1)), int(m.group(2)))
+
+          start, end = const("SESSION_START"), const("BLACKOUT_END")
+          override = os.environ.get("NOW_UTC")
+          now = datetime.fromisoformat(override) if override else datetime.now(timezone.utc)
+          print("true" if start <= now.time() <= end else "false")
+          PY
+          )
+          echo "deferred=$deferred" >> "$GITHUB_OUTPUT"
+          if [[ "$deferred" == "true" ]]; then
+            echo "deferred: inside the session window — the branch is kept and the next dispatch (retry-fallback-merges.yml, or a watcher run) re-dispatches this merge. If it is still unmerged after tonight's session it becomes a human decision (the session writes the same dated inbox file)."
+          fi
 
       - name: Verify session-integrity rules
-        if: steps.inspect.outputs.is_session == 'true'
+        if: steps.inspect.outputs.kind == 'session'
         run: |
           set -euo pipefail
           files=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }})
@@ -94,7 +371,7 @@ jobs:
       # which is luck, not a guarantee — a narrower stale session would merge
       # clean and silently corrupt the ledger. So reject it explicitly.
       - name: Reject stale sessions
-        if: steps.inspect.outputs.is_session == 'true'
+        if: steps.inspect.outputs.kind == 'session'
         run: |
           set -euo pipefail
           git fetch origin main
@@ -128,8 +405,132 @@ jobs:
             exit 1
           fi
 
+      # The watcher's rule, in place of the session rules above. Every commit
+      # the branch adds over main must be a watcher commit, and the whole diff
+      # must stay inside the paths the watcher writes. The list is the same
+      # one scripts/check_triggers.py names as WATCHER_PATHS;
+      # tests/test_ci_guards.py pins the two together and runs this script
+      # against fixture branches, including an EMPTY one — which must be
+      # refused, because an allow-list over nothing allows everything.
+      - name: Verify watcher fallback branch scope
+        if: steps.inspect.outputs.kind == 'triggers' && steps.inspect.outputs.already_merged != 'true' && steps.blackout.outputs.deferred != 'true'
+        env:
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          base=$(git merge-base origin/main "$HEAD_SHA")
+          echo "merge base with main: $base"
+
+          commits=$(git rev-list "$base".."$HEAD_SHA")
+          if [[ -z "$commits" ]]; then
+            echo "::error::No commits between main and this branch — nothing to verify, refusing rather than passing on zero coverage."
+            exit 1
+          fi
+
+          fail=0
+          triggers_re='^chore\(triggers\): '
+          while IFS= read -r sha; do
+            subject=$(git log -1 --pretty=%s "$sha")
+            if [[ "$subject" =~ $triggers_re ]]; then
+              echo "  ok       $sha $subject"
+            else
+              echo "  REFUSED  $sha $subject"
+              echo "::error::$sha is not a watcher commit (subject must start with 'chore(triggers): ')."
+              fail=1
+            fi
+          done <<< "$commits"
+
+          files=$(git diff --name-only "$base" "$HEAD_SHA")
+          if [[ -z "$files" ]]; then
+            echo "::error::The branch changes no files — an empty diff cannot be verified, refusing."
+            exit 1
+          fi
+          echo "--- changed files ---"
+          echo "$files"
+          echo "---------------------"
+          outside=$(grep -Ev '^data/(orders|portfolios|leaderboard|tax_shadow)/' <<< "$files" || true)
+          if [[ -n "$outside" ]]; then
+            echo "::error::A watcher branch may touch only data/orders/, data/portfolios/, data/leaderboard/ and data/tax_shadow/. Outside that: $outside"
+            fail=1
+          fi
+          [[ $fail -eq 0 ]]
+
+      # The watcher-kind counterpart to "Reject stale sessions", narrower on
+      # purpose: a session recomputes every book, so ANY ledger movement on
+      # main stales it; a fill touches one book and one order, so only
+      # movement on the SAME book or the SAME order does. current.json is left
+      # out of the comparison — both sides regenerate it every time, and the
+      # merge step resolves it to main's copy. tests/test_ci_guards.py runs
+      # this script against fixture branches, stale and not.
+      #
+      # Comparison is on a CONFLICT KEY, not the raw path: everything under
+      # data/portfolios/<agent>/ collapses to that directory. Round-2 review,
+      # 2026-09-05 — a session does not write the files a fill writes (it
+      # writes snapshots.json, journals, posts, baselines), so a branch that
+      # outlived a session merged CLEAN behind a snapshot valued without it.
+      # Snapshots are immutable across sessions and check_append_only.py
+      # forbids correcting that row without `[restate]`, so the published
+      # valuation for that book would be permanently wrong by the
+      # fire-to-close P&L. Same book = same fact, whichever file records it.
+      #
+      # main_sha is exported because this check is only true of the tip it was
+      # computed against; the merge step below refuses to push onto any other.
+      - name: Reject stale watcher fallback branches
+        id: stale
+        if: steps.inspect.outputs.kind == 'triggers' && steps.inspect.outputs.already_merged != 'true' && steps.blackout.outputs.deferred != 'true'
+        env:
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          main_sha=$(git rev-parse origin/main)
+          echo "main_sha=$main_sha" >> "$GITHUB_OUTPUT"
+          base=$(git merge-base "$main_sha" "$HEAD_SHA")
+          echo "merge base with main: $base"
+          echo "origin/main verified at: $main_sha"
+
+          # path → conflict key (see the header above).
+          keys() { sed -E 's|^(data/portfolios/[^/]+)/.*$|\1/|' | sort -u; }
+
+          branch_files=$(git diff --name-only "$base" "$HEAD_SHA" \
+                           | grep -vx 'data/leaderboard/current.json' || true)
+          main_files=$(git diff --name-only "$base" "$main_sha")
+          overlap_keys=$(comm -12 <(keys <<< "$branch_files") <(keys <<< "$main_files") \
+                           | sed '/^$/d')
+          # Report the real paths behind an overlapping key, from both sides —
+          # a bare `data/portfolios/satoshi/` would not tell the reader which
+          # of the two writers touched what.
+          overlap=""
+          if [[ -n "$overlap_keys" ]]; then
+            overlap=$(printf '%s\n%s\n' "$branch_files" "$main_files" | sed '/^$/d' | sort -u \
+                        | while IFS= read -r p; do
+                            k=$(sed -E 's|^(data/portfolios/[^/]+)/.*$|\1/|' <<< "$p")
+                            grep -qxF "$k" <<< "$overlap_keys" && echo "$p"
+                          done || true)
+          fi
+
+          echo "--- files main changed since the base ---"
+          echo "${main_files:-<none>}"
+          echo "-----------------------------------------"
+          if [[ -n "$overlap" ]]; then
+            {
+              echo "overlap<<STALE_OVERLAP_EOF"
+              echo "**Paths the branch and \`main\` both touched since their merge-base \`$base\` (a book counts as one path — see the workflow header):**"
+              echo
+              sed 's/^/- `/; s/$/`/' <<< "$overlap"
+              echo "STALE_OVERLAP_EOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "::error::Stale fill — main touched the same order or the same book since their base $base: $(tr '\n' ' ' <<< "$overlap"). The order may have been cancelled or re-executed on main, or a session may have published a snapshot valued without this fill. Refusing; this is a human decision."
+            exit 1
+          fi
+          echo "overlap=" >> "$GITHUB_OUTPUT"
+          echo "stale=false" >> "$GITHUB_OUTPUT"
+          echo "main touched neither the order nor the book this branch fills — not stale."
+
       - name: Merge sandbox session into main
-        if: steps.inspect.outputs.is_session == 'true'
+        if: steps.inspect.outputs.kind == 'session'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -148,9 +549,198 @@ jobs:
 
           git push origin main
 
-      - name: Delete merged sandbox branch
-        if: steps.inspect.outputs.is_session == 'true'
+      # Fast-forward when main has not moved, a merge commit when it has,
+      # never a rebase: the commits on the branch carry the `executed_sha`
+      # provenance every fill is stamped with, and rewriting them would break
+      # `git checkout <executed_sha>` for the very fills this exists to keep.
+      # A CONFLICT is resolved only when data/leaderboard/current.json is the
+      # ONLY conflicting path — derived state, main's copy wins (see the
+      # header); anything else means main and the branch disagree about the
+      # ledger, and that goes to a human via the issue below.
+      #
+      # EXACTLY THE TIP THE STALE STEP APPROVED, AND NO RETRY (round-2 review,
+      # 2026-09-05). This used to `for attempt in 1 2 3: fetch; checkout -B
+      # main origin/main; merge; push`, and the stale/scope checks ran once,
+      # before the loop, against whatever main was then. Both halves were
+      # holes, and a rejected push is precisely the case that opens them: a
+      # push is rejected only BECAUSE main moved, so every retry merged onto a
+      # tip nothing had verified. Reproduced in a scratch repo — a session
+      # cancels the branch's order (pending file deleted on both sides, the
+      # CANCELLED_BY_AGENT row in a different dated file, the book untouched
+      # on main), git 3-way-merges it clean, and main ends up holding a
+      # cancellation AND a fill for one order, with the book carrying the
+      # position the agent believes it cancelled. Refusing costs one dispatch
+      # cycle: .github/actions/merge-fallback-branches re-dispatches this
+      # workflow from every watcher run, and the whole pipeline — scope, stale,
+      # merge — then re-verifies against the new tip.
+      - name: Merge watcher fallback branch into main
+        if: steps.inspect.outputs.kind == 'triggers' && steps.inspect.outputs.already_merged != 'true' && steps.blackout.outputs.deferred != 'true'
+        env:
+          HEAD_SHA: ${{ github.sha }}
+          VERIFIED_MAIN: ${{ steps.stale.outputs.main_sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          branch_name="${GITHUB_REF#refs/heads/}"
+          subject=$(git log -1 --pretty=%s "$HEAD_SHA")
+
+          if [[ -z "${VERIFIED_MAIN:-}" ]]; then
+            echo "::error::No verified main sha from the stale check — refusing to merge an unverified tip."
+            exit 1
+          fi
+
+          git fetch origin main
+          now=$(git rev-parse origin/main)
+          if [[ "$now" != "$VERIFIED_MAIN" ]]; then
+            echo "::error::main moved from $VERIFIED_MAIN to $now after the stale check — refusing to merge onto a tip nothing verified. retry-fallback-merges.yml re-dispatches this merge within hours (and every watcher run does too) and every check re-runs against the new tip."
+            exit 1
+          fi
+
+          git checkout -q -B main "$VERIFIED_MAIN"
+          if ! git merge --no-edit "$HEAD_SHA" \
+               -m "Merge watcher fallback $branch_name: $subject" \
+               -m "Auto-merged by .github/workflows/auto-merge-session.yml — origin/main refused the watcher's push, the fill landed on its fallback branch and this workflow took it the rest of the way."; then
+            conflicted=$(git diff --name-only --diff-filter=U)
+            if [[ "$conflicted" == "data/leaderboard/current.json" ]]; then
+              echo "Conflict only on data/leaderboard/current.json — derived, self-healing state; keeping main's copy (the next watcher run or session rewrites it)."
+              git checkout --ours -- data/leaderboard/current.json
+              git add data/leaderboard/current.json
+              git commit --no-edit
+            else
+              git merge --abort || true
+              echo "::error::Merge conflict between main and $branch_name on: $(tr '\n' ' ' <<< "$conflicted")— main moved on the same ledger files since the watcher ran. Not retried: resolve by hand."
+              exit 1
+            fi
+          fi
+
+          # A plain push is the second lock, and it needs no flag: the merge
+          # commit's first parent is $VERIFIED_MAIN, so if main moved in the
+          # seconds since the fetch the push is not a fast-forward and git
+          # refuses it. Never a forced update of any kind — main has
+          # force-push protection, and forcing is what would let an
+          # unverified tip be overwritten rather than reported.
+          if git push origin main; then
+            echo "Merged $branch_name into main at verified tip $VERIFIED_MAIN."
+            exit 0
+          fi
+          echo "::error::Push of the merge of $branch_name was rejected — main moved after the checks passed. Nothing was merged. retry-fallback-merges.yml re-dispatches this merge within hours (and every watcher run does too) and every check re-runs against the new tip."
+          exit 1
+
+      - name: Delete merged branch
+        if: steps.inspect.outputs.kind == 'session' || (steps.inspect.outputs.kind == 'triggers' && steps.blackout.outputs.deferred != 'true')
         continue-on-error: true
         run: |
           branch_name="${GITHUB_REF#refs/heads/}"
           git push origin --delete "$branch_name"
+
+      # Gated on the kind, not just always(): a green SESSION merge reporting
+      # success here would close an open watcher-merge issue while the watcher
+      # branch was still unmerged. Gated on the blackout too: a deferred run
+      # is green and merged nothing, so it must neither file nor close.
+      #
+      # One reporter, two titles — the fetch-ohlcv pattern. A stale refusal is
+      # a different fact from a failed merge (a human decision vs. a broken
+      # mechanism) and gets its own issue; the overlapping paths ride in as
+      # `details`. A later clean merge closes the "did not reach main" issue;
+      # the stale one is closed by whoever resolved it, since no run can.
+      # A success here CLOSES the open issue, and that issue is one per CAUSE,
+      # not per branch. With two `triggers/*` branches on origin — one merged,
+      # one refused — the green run for the second would close the issue the
+      # first one filed, while that first branch was still unmerged and every
+      # watcher run still refusing to evaluate behind it (round-3 review,
+      # 2026-09-05). So a RECOVERY is only reported once origin holds no other
+      # fallback branch; a FAILURE always reports, because the branch this run
+      # could not merge is exactly what the issue is about. An origin that
+      # cannot be listed is not a recovery either: unknown, so nothing closes.
+      - name: Decide whether this run may report a recovery
+        id: report_gate
+        if: always() && steps.inspect.outputs.kind == 'triggers' && steps.blackout.outputs.deferred != 'true'
+        env:
+          STATUS: ${{ job.status }}
+          REF: ${{ github.ref }}
+        run: |
+          set -uo pipefail
+          if [[ "$STATUS" != "success" ]]; then
+            echo "A failure is always reported."
+            echo "report=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          me="${REF#refs/heads/}"
+          if ! remote=$(git ls-remote --heads origin 'refs/heads/triggers/*'); then
+            echo "::warning::Could not list origin's triggers/* branches — refusing to close the watcher-merge issue on a recovery nothing verified."
+            echo "report=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          left=$(awk '{print $2}' <<< "$remote" | sed 's|^refs/heads/||' | grep -vx "$me" || true)
+          if [[ -n "$left" ]]; then
+            echo "::warning::Merged $me, but origin still holds: $(tr '\n' ' ' <<< "$left"). Not reporting a recovery — the issue stays open until no fallback branch is left."
+            echo "report=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "No fallback branch left on origin — this run may report the recovery."
+            echo "report=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report watcher-merge outcome
+        if: always() && steps.inspect.outputs.kind == 'triggers' && steps.blackout.outputs.deferred != 'true' && steps.report_gate.outputs.report != 'false'
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: ${{ job.status }}
+          title: "${{ steps.stale.outputs.stale == 'true' && 'auto-merge-session: a watcher fallback branch is stale against main' || 'auto-merge-session: a watcher fallback branch did not reach main' }}"
+          details: ${{ steps.stale.outputs.overlap }}
+          body: |
+            The conditional-order watcher could not push a fill to `main`, pushed
+            it to a `triggers/<date>-<run id>` branch instead, and this workflow
+            failed to merge that branch. The fill is NOT lost — it is on the
+            branch, durable — but it is not on the published ledger either.
+
+            Until the branch is merged or deleted, **every watcher run refuses
+            to evaluate** (`scripts/check_triggers.py` checks origin for
+            `triggers/*` branches first), because evaluating against a `main`
+            that lacks the fill would re-fire the same order at a new price.
+            That is by design: a stalled watcher is recoverable, a double fill
+            is a restatement.
+
+            What to do: open the failed run, read which step refused. A scope
+            refusal means the branch carries something a watcher commit may not
+            (a file outside data/orders/, data/portfolios/, data/leaderboard/,
+            data/tax_shadow/, or a commit without the `chore(triggers): `
+            prefix) — inspect before merging. A **stale** refusal (the "is
+            stale against main" title; the paths are listed below) means
+            `main` changed a file the branch fills since their merge-base —
+            typically a later session cancelled and re-executed the same order
+            at market. Check the order id on `main` FIRST: if the order was
+            cancelled or already filled there, the branch's fill must be
+            discarded (delete the branch), not merged, or the book holds the
+            position twice. Only if `main`'s change is unrelated to that order
+            should the fill be carried over by hand. A merge conflict on any
+            file other than `data/leaderboard/current.json` means the same
+            thing — resolve by hand with the same check, then delete the branch.
+
+            A stale refusal naming only `data/portfolios/<agent>/snapshots.json`
+            is the other shape: a **session published a snapshot for that book
+            valued without this fill**. Snapshots are immutable across
+            sessions, so carrying the fill over now leaves the published
+            valuation for that date wrong by the fire-to-close P&L, and
+            `check_append_only.py` will not let it be corrected without
+            `[restate]`. That is a disclosure decision, not a merge.
+
+            **The merge has a hard deadline of the day's 20:00 UTC session.**
+            A branch still unmerged after it is stale by construction — the
+            session writes the same dated inbox file and republishes the books
+            — and stops being self-healing. If a branch is going to be
+            carried, carry it before tonight's session.
+
+            **"main moved … refusing to merge onto a tip nothing verified"** is
+            not a failure of the branch: another writer landed on `main`
+            between the checks and the push, so nothing was merged and every
+            check re-runs from scratch on the next dispatch — `retry-fallback-merges.yml`
+            sweeps between the 13:00 sweep and the session, so that is hours
+            away, not tomorrow. If it repeats,
+            look for a writer pushing to `main` on a tight loop.
+
+            If `main` refuses the bot's push again (a required status check —
+            the 2026-08-24..09-04 shape), this workflow cannot merge anything:
+            the fills stay durable on their branches, the watcher stays
+            refusing, and the fix is on the repository settings, not here.
