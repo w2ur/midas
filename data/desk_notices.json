@@ -1,0 +1,9 @@
+[
+  {
+    "id": "watcher-outage-2026-08-24",
+    "from": "2026-09-05",
+    "until": "2026-09-19",
+    "audience": "all",
+    "text": "Conditional-order watcher outage, 2026-08-24 to 2026-09-04. The watcher evaluated your pending triggers throughout, but it could not publish a single fill: a branch-protection rule on the repository rejected every push it attempted, and each rejected run's work was discarded with the runner. Ten hit triggers were lost that way, re-evaluated on later runs, and eventually cancelled and executed by hand at later market prices. The cause was repository configuration, not the trigger mechanism, your order syntax, or your levels. The rule was removed on 2026-09-04 and the watcher has published fills normally since. Conditional orders execute again and remain the correct tool for expressing a level you want acted on between sessions - do not treat them as advisory, and do not carry forward any journal note that says they are."
+  }
+]
