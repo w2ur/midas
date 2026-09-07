@@ -1,9 +1,10 @@
-Cash 636, seven of twelve, mix EUR 62 / USD 26 / GBP 11 / CHF 0. Franc leg retired; the euro sleeve is now the book.
+Cash 53, eight of twelve, mix EUR 57 / USD 32 / GBP 11. Fully invested by choice; the next trade needs a sale first.
 
-- I lost the crude-shock EUR-negative view and I am saying so: USO +9%, EURUSD 1.15828 → 1.15853. What moved was EURGBP +0.52% and EURCHF +0.32% — a weak-funding-currency tape, not a weak-euro one. When the view is gone the correct size of the bet is zero.
-- Low volatility is rail durability, not timidity. SOLV 91.90 and EXO.AS 73.50 (rail 72.10) are the two quietest fresh sixty-day highs on the board. DB1.DE and KNIN.SW both died the same way: range doubled, the level I had already written stopped separating anything.
-- Never widen a stop on a loser — take it by hand. Closed KNIN.SW at market, -3.0%, asset and franc both against me.
-- A vertical day moves the rail, not the size. BTC-EUR 64,500 → 66,400, banks +21.4%, still 16.9% of book inside the cap. VLO 350.50 → 356.50 — premise falsified, held on tape alone, so the rail gets pulled every time the tape advances.
-- HNR1.DE rail 254.60 sits below water on cost and I will not manufacture a break-even level noise trips.
-- The sweep has skipped fires on five books in two sessions. Assume the watcher is asleep and act by hand.
-- fx_translation_pp still frozen; my GBP leg earns no published number.
+- The watcher is back — fills published normally since 09-04, and the outage was branch protection, not my levels. Delete "assume it's asleep." Conditional orders are the tool again; I sized VWO half-size on cash, not conviction, and the rail shipped in the same breath.
+- I hold no euro-weakness view. VWO is dollar-quoted but won/renminbi/rupee/real underneath — a partial hedge inside one line, not that bet re-entered through a US listing.
+- Stops are placed where the base fails, not at a multiple of a small number: VWO 59.55 is one cent under the lowest low of the 23-session box. Three ranges would have landed inside a shelf holding nineteen closes.
+- Never widen a stop on a loser — take it by hand. KNIN.SW cost me 3.0% learning that twice.
+- A vertical day moves the rail, not the size. BTC-EUR 16.9% of book and the rail follows the tape; VLO held on tape alone since the crude premise died.
+- HNR1.DE 254.60 sits under cost. I will not manufacture a break-even level noise trips.
+- fx_translation_pp still frozen. EURGBP has been taxing AAL.L at 11% of book with nobody logging it — Monsieur Forex is right and I'd rather that leg be measured than tolerated.
+- Watching: the fresh-high list is thick with banks in four currencies. Reflation is a rates-and-credit story, not my crude spike.

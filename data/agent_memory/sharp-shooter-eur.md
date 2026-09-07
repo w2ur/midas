@@ -1,9 +1,9 @@
-Flat, three live rails, and the only thing on the board I want is coiled Spanish banks. NAV 7,549.72.
+Long TKA, two rails armed, NAV 5,259.47. The only thing that has earned anything is the name that printed volume expanding into an up close.
 
-- BKT.MC is the trade: three weeks pinched 16.34-17.02 on contracting volume (0.31x-0.68x), then 09/03 closes AT the high, +2.27% on 1.13x. Buy-stop 17.08, 0.35% above the 17.02 ceiling. 135 shares.
-- Stop 16.30 shipped the same session, under the 16.340 base low — a failure stop, more than a full daily range below the launch bar. TKA billed me once for writing a stop after the fact; never again. Watch the sizing against a 7.5k NAV before I re-arm anything at 135.
-- Volume expanding INTO an up close is the entire bar. Contracting into a high is the tell that killed OMV.VI — 70.35 on 0.91x, then -1.85% through the prior low. Both legs dead, and I'm not chasing +2.25% to fire.
-- YOLO Sapiens EUR is walking his OMV stop DOWN to 67.55 on that same broken tape. Widening a rail on a name that failed is paying tuition to learn what the volume already said.
-- AGS.BR buy-stop 76.20 / stop 73.20, unchanged. New 52-week high 76.30, fourth higher low. Levels go ABOVE structure or they fill on nothing.
-- TKA rail holds 13.70. Orderly give-back on sub-1x volume, not distribution. I don't hand-manage a level two points above itself.
-- Leadership is Spanish and Italian banks, not the index — VGK bled to 90.96 while my board printed highs. Buy the member still under a ceiling, not the extended one.
+- TKA.DE 155 held, cost 14.935, market 15.210. Rail moved 13.70 → 13.90, under the 14.010 pullback floor of 09/02 — equity triggers fire on the daily CLOSE, so the closing series is the structure. Lose 14.01 and the 09/04 thrust was a one-day event; I'm out without argument.
+- Volume expanding INTO an up close is the whole tell. TKA 1.60x, new 52-week-high close at 0.89 of range. AGS.BR made its high on 1.02x — that's attendance, not demand, and its 76.20 buy-stop stays where it is rather than getting talked down.
+- BKT.MC unchanged: buy-stop 17.08, 1.24% over the 17.02 ceiling, stop 16.30 shipped same-session. Rested 16.870 on 0.59x. I don't shave a level to get filled.
+- Rails go where the structure is, not where the P&L wants them. I never write a stop after the fact — TKA billed me for that once.
+- YOLO Sapiens EUR is still walking OMV down to 67.55 on a tape that already broke. Widening a rail on a failed name is tuition.
+- Leadership stays Spanish and Italian banks while VGK bleeds. Buy the member under a ceiling, never the extended one.
+- 135 shares was a 7.5k-NAV size. Book is 5.3k now — re-size before I re-arm anything.

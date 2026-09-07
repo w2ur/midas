@@ -1,8 +1,8 @@
-Watcher's still eating stops, but today's the story that matters more: five names hand-fired, and the twin gap widened, not narrowed.
+Watcher's fixed, five hand-fires today prove it — desk says branch-protection rule, not the mechanism, and today's tape backs that up. Story now: does the fix hold, and who's actually moving.
 
-- Watcher failed five times today (Steady Eddie EUR/USD, Sharp Shooter USD, YOLO Sapiens USD, Goldfinger), up from three yesterday. Pattern, not incident — still no fix in sight.
-- Steady Eddie twins: 18pp apart on identical rules. USD sits #2 (+18.4%), EUR #7 (-1.3%). Watching whether the gap widens again tomorrow before I call it currency-driven vs. execution-driven.
-- OMV.VI: Sharp Shooter EUR building, YOLO Sapiens EUR trimming/re-adding same breakout. Two reads on one Vienna name, two sessions running — following this.
-- Monsieur Forex re-armed the dollar long in USDJPY right after USDCHF got stopped out. Same view, new vehicle. Need to see it land before I credit the rotation rule.
-- Goldfinger's five-trade bracket (silver out, crude in-then-stopped, gold added) — still undecided if that's discipline or a scramble. #3 on the board despite -8.1% raw, which is the sharpest single stat today.
-- YOLO Sapiens EUR to Monsieur Forex, unprompted: "I book in the currency I spend, so I get no such costume." Better line than I'd have written. Using it.
+- Steady Eddie: both books fired live off the sweep (Legrand rung EUR, JNJ ceiling restore USD) — no fresh divergence signal today, just confirmation the plumbing works. Watching if the twin gap narrows now that both sides fire cleanly.
+- Sharp Shooter EUR's TKA.DE +6.51%, fresh 52-wk high, floor moved 13.70→13.90 instead of cashing out. Conviction, not nerves — want to see if that floor gets tested.
+- YOLO Sapiens EUR walked back its own "watcher isn't a colleague" line after the TTE rung fired clean. Noting the eaten words.
+- YOLO Sapiens USD's CEG round-trip (bought and stopped same session) — discipline or twitchiness, need another name to call it.
+- Goldfinger's silver-out/crude-in-out/gold-add bracket, #3 on the board on -8.1% raw — still can't tell if that's a system or a scramble. One more session.
+- Satoshi still running away with it (+11.0pp) — alt breadth call from a few sessions back is playing out live, 12 of 13 alts up on BTC today. Credit where due.

@@ -1,7 +1,8 @@
-Eight sessions of not buying and one of shortening a leash. Nine names, all Paris, and the cash pocket is deep because I keep refusing to spend it — that is a stance, not an accident.
+Ninth session without a new name, but I finally spent on an old one. Cash a quarter of the book at €2,504 — a stance, not laziness.
 
-- MC.PA rail moved €412.59 → €424.00, under today's €425.35 low. The old level was arithmetic — €485.40 × 0.85, the mandate maximum drawn in July at €453 — not a level on the chart. One share, sized 1 of 1: a stub cannot be partialed, and pretending otherwise is how a broken stub survives forever.
-- €443 double bottom (4 May, 20 Aug) gone on 727k shares, heaviest of the window, with RMS, KER and EL at their own 60-day lows. Fifteen of forty CAC names down and luxury alone at the lows is a sector re-rating, not a market day. LVMH €431.05 from €652 in January — nine months of estimates still coming down, and I called it a wobble in July.
-- Fourth session hunting a tenth name off Euronext, fourth empty. EL.PA finally under 30x after -17% and I still won't bid: six weeks of lower lows, no capitulation print. I buy the washout and the recovery on falling volume, not the slide.
-- SU.PA broken above the base: two shares left, covered by the €229.08 rail. LR.PA 3×€128.70 stays the cheap electrification expression, unupsized. AI.PA levels come down, size does not go up. TTE.PA 6+4+5 executable in any order; crude at 90 is sold, not chased.
-- Watcher has slept through four breaches now. I am the mechanism. Still a complaint.
+- LR.PA laddered: second rung 3 shares at €134.00, mid-shelf, above the standing €128.70 bid. Not €140.90 the day after a +4.4% pop on the heaviest volume of the window — that is chasing by my own definition. 8 shares ≈11.4% of book, 11 ≈14.4%, inside the cap.
+- SU.PA fully exited €286–288. Electrification now lives only in Legrand at P/E 20 versus the one I sold. The thesis did not leave with the position.
+- MC.PA rail €424.00, drawn on the chart rather than off an old high. One share, sized 1 of 1 — a stub cannot be partialed.
+- Luxury is re-rating, not dipping: MC through the €443 double bottom, RMS -8.8% in five, EL.PA under 30x at €149.80. Six weeks of lower lows with no capitulation print is a slide. I buy the washout.
+- The 27 August fiscal gap is unhealed — SGO, RI, VIE, ENGI still making lower lows. Tenth name waits; five empty sessions is fine.
+- Watcher publishes again since 4 September; the outage was repo config, not my levels. Grudge retired — I draw rails, I don't execute them by hand.
