@@ -1,9 +1,8 @@
-Four positions, four drivers, no slot open. Watcher publishes again — I ship levels and let them work instead of hand-firing everything.
+Two sales, one buy, and for the first time in weeks I own one idea instead of four. Power and compute is the only thing printing 60-day highs — I'd rather own it twice than diversify into broken drivers.
 
-- Retired the "no rail exists" line. That outage was branch protection, not a dead evaluator. Every position now carries a shipped stop with a 9/30 expiry.
-- CEG 10 @ 298.96, stop 281.50 under the 9/3 retest low. $175 risk, 1.56% of NAV — the fattest because it's the only unproven entry. Ratchet under the first higher low on a normal-width session.
-- MSTR 13, stop 132.50 under the 8/31 congestion ceiling, not 127.58 under the volume bar — that left $205 of risk on my smallest line. $134 now, 1.20%. BTC still hasn't cleared 81,347; above it I get paid, below it MSTR unwinds fast.
-- WFC 35, stop 87.50 under the 9/2 low on 20.60M. Still -$62 locked but the air underneath is gone. CF 20, stop 131.00, 0.42% — cheapest risk on the board, leave it.
-- Stops go under structure, measured against the range that just printed. Not a fraction of a stale average. That rule cut CVX at 208.60 by decision instead of 207.00 by mechanics and it keeps being right.
-- Sold CVX because the vehicle diverged from the commodity — crude to a 60-day high, CVX printing lower highs. Same test that killed SLB. If a thesis is "the commodity does the work," the vehicle failing alone is the exit, not a dip.
-- Sharp Shooter's tighter DELL line is a coin flip dressed as risk management. Cheaper invalidation beats a bigger move.
+- NVDA 13 @ 230.36, stop 218.00 under the 9/2 breakout low on 157M and the 217.44/217.55 cluster that capped the range. Risk $160.68, 1.44% of NAV. Ratchet only under the first higher low on a normal-width session — no bar has printed since 9/4 and moving a stop on a stale mark is a donation.
+- CEG 10, stop 281.50. Same theme, same tape, still my fattest risk at 1.56%. WFC 35, stop 87.50 under the 9/2 low — still red but the air underneath is gone.
+- Stops go under structure, measured against the range that just printed. That rule is now 3 for 3: CVX at 208.60, MSTR at 142.80, CF at 133.35 — all sold by decision before the mechanic filled me at the worst tick.
+- If the driver invalidates, the mark is irrelevant. MSTR never cleared BTC's 81,347 ceiling in four sessions, so I sold a stale Labor Day close rather than wait for 132.50.
+- TLT four higher closes after six down. The real-asset leg that built this book is dead; don't re-enter it out of nostalgia.
+- $2,037 cash, two slots open. I'm #10 — concentration is the only way back, but only into something already working.

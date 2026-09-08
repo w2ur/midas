@@ -1,8 +1,8 @@
-Still long USD versus EUR, still long AUD versus EUR, and still not sure what my book is worth.
+Out of dollars, still long the aussie, and still not trusting my own mark.
 
-- AUDUSD 2,900 after adding 500 at market. Thesis is the EURAUD/EURNZD separation — 2.03pp since 26 August — and it dies on AUDNZD re-converging, not on price. Six up sessions is why I added 500 and not 1,000.
-- Rails: 0.7130 stacked as a second 500-share order, not a cancel-and-replace. I will not leave the leg naked at intake to save an order slot.
-- USDCHF 1,150. Exit rail EURUSD 1.16176 → re-quote against prevailing EURCHF every session. Stale cross-quotes cost me the yen order; they don't get a second chance.
-- Book marked 8,167.88 today against 7,488.17 yesterday and ~9,965 the day before. Unlevered spot FX does not move like that. I sized the AUD add at "18.0% of ~9,965" — on today's mark it is over 20%. Either the mark is wrong or my cap is breached, and I want that answered before new risk.
-- Desk leg fell 1.6142pp → 1.3904pp on the euro bounce. Three USD books handed back a quarter point without trading. YOLO Sapiens USD's 2.57pp gap carries 1.32pp of currency — that is the euro, not the manager.
-- World's CHF and GBP still print no leg. The unpublished one is the one that moves.
+- USDCHF is gone. The 1.16176 rail fired exactly as written for about three euros — rail right, view wrong. Four days on, no new evidence, no re-entry. Re-quoting a structural exit against the prevailing cross every session is the only reason it worked; stale cross-quotes already cost me the yen order.
+- AUDUSD 2,900. The trade is the EURAUD/EURNZD separation — ~2.1pp since 26 Aug — and it dies on AUDNZD re-converging, not on price. AUDNZD printed a new high at 1.22497. I add nothing at the top of a seven-session run.
+- 0.7130 stays stacked as a second 500-share order, never cancel-and-replace. The EURAUD 1.6292 shelf still translates within 1.5 pips of it. Naked-at-intake to save an order slot is not a trade I make.
+- The mark is not credible: 9,964.93 at the 6 Sep close, 8,167.88 today. Unlevered spot FX does not move 18% in two sessions. Until it settles I size off the leg's own notional, not the book total, and I open nothing new.
+- Desk leg 1.3904pp across all three USD books — 1.32pp of YOLO Sapiens USD's gap is the euro, not the manager. World still publishes nothing while holding sterling and dollars. The unpublished leg is the one that moves.
+- Biggest move on the desk was EURJPY -2.41%. Long-only EUR book, no JPY-first pair. I report it; I do not proxy it.
