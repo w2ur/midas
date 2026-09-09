@@ -21,6 +21,7 @@ import csv
 import io
 import json
 import logging
+import os
 import re
 import time
 import urllib.request
@@ -35,17 +36,21 @@ logger = logging.getLogger(__name__)
 _WIKI_USER_AGENT = "midas-fund/0.1 (https://github.com/w2ur/midas; research)"
 
 
-def _fetch_html_tables(url: str) -> list[pd.DataFrame]:
-    """Fetch an HTML page with a descriptive User-Agent and parse its tables.
+def _fetch_text(url: str, *, timeout: float = 15, encoding: str = "utf-8") -> str:
+    """GET `url` with a descriptive User-Agent and decode the body.
 
-    Wikipedia (and Slickcharts) reject pandas' default Python-urllib UA, so we
-    fetch the HTML ourselves before handing it to pd.read_html. Used for both
-    the Wikipedia index pages and the Slickcharts Nasdaq-100 source.
+    Wikipedia (and Slickcharts) reject pandas' default Python-urllib UA, so
+    every upstream is fetched here before parsing.
     """
     req = urllib.request.Request(url, headers={"User-Agent": _WIKI_USER_AGENT})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        html = resp.read().decode("utf-8")
-    return pd.read_html(io.StringIO(html))
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode(encoding)
+
+
+def _fetch_html_tables(url: str) -> list[pd.DataFrame]:
+    """Fetch an HTML page and parse its tables — the Wikipedia index pages and
+    the Slickcharts Nasdaq-100 source."""
+    return pd.read_html(io.StringIO(_fetch_text(url)))
 
 
 def _largest_table_with_column(
@@ -321,11 +326,20 @@ def refresh_ftse100() -> list[str]:
 
 
 def get_stoxx600_tickers() -> list[str]:
-    """Return committed STOXX Europe 600 constituents (Yahoo symbols)."""
+    """Return committed STOXX Europe 600 constituents (Yahoo symbols).
+
+    No refresh fallback, unlike the other indexes: theirs is one 15 s page
+    fetch, this one is ~605 throttled vendor lookups. A missing file on the
+    session path must fail in a millisecond, not crawl Yahoo for seven
+    minutes and overwrite the universe mid-session.
+    """
     cached = _read_data("stoxx600")
-    if cached is not None:
-        return cached
-    return refresh_stoxx600()
+    if cached is None:
+        raise FileNotFoundError(
+            "data/universes/stoxx600.json is missing — run "
+            "`python scripts/refresh_universes.py` (network) to regenerate it"
+        )
+    return cached
 
 
 # ---------------------------------------------------------------------------
@@ -351,31 +365,47 @@ def get_stoxx600_tickers() -> list[str]:
 # serves — so a symbol in the committed file is one the nightly fetch can
 # fetch, by construction. The tradable universe is defined by what the vendor
 # can price, which is the property the old list lacked.
+#
+# The export's "Constituent Currency ISO Code" is deliberately NOT used to
+# choose a listing. Measured 2026-09-09 it says USD for Compass and IHG, EUR
+# for Shell and Nordea (the ETF's own line, not the listing) — a rule keyed on
+# it would have refused five correct London and Stockholm listings.
 _STOXX600_CONSTITUENTS_URL = (
     "https://etf.dws.com/etfdata/export/LUX/ENG/csv/product/constituent/LU0328475792/"
 )
-_STOXX600_REQUIRED_COLUMNS = (
-    "Constituent ISIN",
-    "Constituent Name",
-    "Constituent Country",
-)
+_STOXX600_REQUIRED_COLUMNS = ("Constituent ISIN", "Constituent Name", "Constituent Country")
 _ISIN_RE = re.compile(r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$")
 
 #: Seconds between two vendor lookups, and the back-off schedule after a rate
 #: limit. Measured 2026-09-09 over 605 ISINs: unthrottled (~4/s) the endpoint
-#: rate-limited 3 times; at 0.4 s spacing once, recovered by the first 10 s
-#: sleep. 0.5 s puts a full pass at ~5 minutes, inside the workflow's timeout.
+#: rate-limited 3 times; at 0.4 s spacing once, recovered by the first
+#: back-off. 0.5 s puts a full pass at ~7 minutes (424 s measured).
 ISIN_LOOKUP_SPACING_S = 0.5
-ISIN_LOOKUP_RETRY_SLEEPS_S = (10.0, 30.0, 60.0)
+ISIN_LOOKUP_RETRY_SLEEPS_S = (5.0, 15.0)
+#: Consecutive lookups that fail on transport or rate limit before the run is
+#: declared a vendor outage and abandoned. Bounds an outage's cost to
+#: ~5 × 20 s instead of 605 × 20 s; the committed file is then left alone.
+MAX_CONSECUTIVE_LOOKUP_FAILURES = 5
 
 #: Refuse to overwrite the committed file when more than this share of the
 #: export's ISINs did not resolve. Measured baseline 2026-09-09: 8 of 605
 #: (1.3%) — loyalty/bonus-share ISINs (L'Oréal, Air Liquide), an Engie
 #: preference line, a cash line with no name, two names Yahoo does not index by
 #: ISIN (Kesko B, Vår Energi) and one only quoted on a German regional floor.
-#: A vendor outage or a rate limit that outlasts the retry schedule reads
-#: ~100%, and the last known-good file stays in place.
+#: `resolve_isins` stops as soon as the count is exceeded rather than crawling
+#: the remainder.
 MAX_UNRESOLVED_ISIN_RATE = 0.05
+
+#: Refuse to overwrite the committed file when the symmetric difference with
+#: it exceeds this share of the previous list — the refresh commits to main
+#: unattended, and a selection regression that swaps ~200 names for their
+#: Frankfurt or US twins keeps the count near 600 and passes every other gate.
+#: A real STOXX rebalance moves a few names per quarter (~3%). The first
+#: ISIN-keyed refresh legitimately moved 486 of 463; that is what the
+#: `MIDAS_ACCEPT_UNIVERSE_CHURN=1` override exists for, set by a human on a
+#: deliberate local run, never by the workflow.
+MAX_UNIVERSE_CHURN_RATE = 0.20
+_ACCEPT_CHURN_ENV = "MIDAS_ACCEPT_UNIVERSE_CHURN"
 
 #: Yahoo exchange codes a symbol must not come from. PNK is the OTC pink sheet:
 #: an ADR or grey-market print, never the listing an EU desk trades.
@@ -383,35 +413,25 @@ _OTC_EXCHANGES = frozenset({"PNK"})
 #: German regional floors. Yahoo lists many foreign names there (SAGAX B of
 #: Stockholm answered only as EFE.F) with thin, often stale daily bars. Accepted
 #: only for a German constituent, where Frankfurt is the home market.
-_GERMAN_REGIONAL_EXCHANGES = frozenset(
-    {"FRA", "STU", "MUN", "DUS", "BER", "HAM", "HAN"}
-)
+_GERMAN_REGIONAL_EXCHANGES = frozenset({"FRA", "STU", "MUN", "DUS", "BER", "HAM", "HAN"})
 
 
-def _fetch_stoxx600_constituents(
-    url: str = _STOXX600_CONSTITUENTS_URL,
-) -> list[dict[str, str]]:
+def _fetch_stoxx600_constituents(url: str = _STOXX600_CONSTITUENTS_URL) -> list[dict[str, str]]:
     """Return the export's ISIN-bearing rows as dicts keyed by column name.
 
     The export also lists cash (`_CURRENCYEUR`) and index-future lines whose
     "ISIN" is not ISIN-shaped; those are dropped here. A missing column is a
     layout change and raises, like the Wikipedia scrapers do.
     """
-    req = urllib.request.Request(url, headers={"User-Agent": _WIKI_USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        text = resp.read().decode("utf-8-sig")
+    text = _fetch_text(url, timeout=30, encoding="utf-8-sig")
     reader = csv.DictReader(io.StringIO(text), delimiter=";")
     columns = [str(c).strip() for c in (reader.fieldnames or [])]
     missing = [c for c in _STOXX600_REQUIRED_COLUMNS if c not in columns]
     if missing:
-        raise RuntimeError(
-            f"STOXX 600: export lacks column(s) {missing} — layout changed"
-        )
+        raise RuntimeError(f"STOXX 600: export lacks column(s) {missing} — layout changed")
     rows: list[dict[str, str]] = []
     for row in reader:
-        clean = {
-            str(k).strip(): (v or "").strip() for k, v in row.items() if k is not None
-        }
+        clean = {str(k).strip(): (v or "").strip() for k, v in row.items() if k is not None}
         if _ISIN_RE.match(clean.get("Constituent ISIN", "")):
             rows.append(clean)
     return rows
@@ -419,78 +439,79 @@ def _fetch_stoxx600_constituents(
 
 def _search_isin_quotes(
     isin: str, sleep: Callable[[float], None] | None = None
-) -> list[dict]:
-    """Ask Yahoo which listings it serves for `isin`, retrying a rate limit.
+) -> list[dict] | None:
+    """Ask Yahoo which listings it serves for `isin`.
 
-    Returns an empty list when the vendor answers with nothing or the retry
-    schedule is exhausted — both leave the ISIN unresolved, and the caller's
-    rate gate decides whether that is a bad line or a bad night.
+    Returns the vendor's quotes (possibly empty: it knows no listing) or
+    `None` when the lookup itself failed — a rate limit that outlasted
+    `ISIN_LOOKUP_RETRY_SLEEPS_S`, or a transport error. Only those two are
+    retried: anything else (a signature change in yfinance, Yahoo's own
+    "currently down" exception) is a fact about this run, not this ISIN, and
+    propagates so the refresh skips the index and keeps the committed file.
     """
     import yfinance as yf  # network-only; keep import cost off the session path
+    from yfinance.exceptions import YFRateLimitError
 
     sleep = sleep or time.sleep  # bound at call time so tests can patch it
     for backoff in (*ISIN_LOOKUP_RETRY_SLEEPS_S, None):
         try:
-            return list(
-                yf.Search(isin, max_results=10, news_count=0, lists_count=0).quotes
-            )
-        except Exception as exc:  # YFRateLimitError, transport errors
+            return list(yf.Search(isin, max_results=10, news_count=0, lists_count=0).quotes)
+        except (YFRateLimitError, OSError) as exc:  # OSError: every transport error
             if backoff is None:
-                logger.warning(
-                    "STOXX 600: lookup for %s failed after retries — %s", isin, exc
-                )
-                return []
+                logger.warning("STOXX 600: lookup for %s failed after retries — %s", isin, exc)
+                return None
             sleep(backoff)
-    return []  # unreachable; keeps the type checker honest
+    return None
 
 
 def _pick_symbol(isin: str, country: str, quotes: list[dict]) -> str | None:
     """Choose the listing to trade among what the vendor returned for `isin`.
 
-    Preference order: the constituent's home-market suffix (a German name on
-    Xetra beats its Frankfurt floor quote), then any real symbol over
-    Stuttgart's `<ISIN>.SG` placeholders, then anything not on a German
-    regional floor. A quote that survives only as a placeholder, or only on a
-    regional floor for a non-German name, is refused rather than traded.
+    A quote is a candidate only if it is an equity on a named exchange that is
+    neither OTC nor (for a non-German name) a German regional floor, is a real
+    symbol rather than Stuttgart's `<ISIN>.SG` placeholder, and carries a
+    suffix the currency layer can denominate (`engine.quotes`) — a symbol it
+    cannot would reach the broker only to die with CURRENCY_UNRESOLVED. Among
+    candidates the constituent's home-market suffix wins (Xetra over the
+    Frankfurt floor for a German name); ties break on the symbol itself so
+    two runs over the same answer pick the same listing.
     """
-    candidates = [
-        q
-        for q in quotes
-        if q.get("quoteType") == "EQUITY"
-        and q.get("symbol")
-        and q.get("exchange") not in _OTC_EXCHANGES
-    ]
+    from engine.quotes import _heuristic_unit
+
+    suffix = _STOXX_COUNTRY_SUFFIX.get(country)
+    candidates: list[str] = []
+    for q in quotes:
+        symbol, exchange = q.get("symbol"), q.get("exchange")
+        if q.get("quoteType") != "EQUITY" or not symbol or not exchange:
+            continue
+        if exchange in _OTC_EXCHANGES or isin in symbol:
+            continue
+        if exchange in _GERMAN_REGIONAL_EXCHANGES and suffix != ".DE":
+            continue
+        if _heuristic_unit(symbol) is None:
+            continue
+        candidates.append(symbol)
     if not candidates:
         return None
-    suffix = _STOXX_COUNTRY_SUFFIX.get(country)
-
-    def rank(q: dict) -> tuple[int, int, int]:
-        symbol, exchange = q["symbol"], q.get("exchange")
-        return (
-            0 if suffix and symbol.endswith(suffix) else 1,
-            0 if isin not in symbol else 1,
-            0 if exchange not in _GERMAN_REGIONAL_EXCHANGES else 1,
-        )
-
-    best = min(candidates, key=rank)
-    if isin in best["symbol"]:
-        return None
-    if best.get("exchange") in _GERMAN_REGIONAL_EXCHANGES and suffix != ".DE":
-        return None
-    return best["symbol"]
+    return min(candidates, key=lambda s: (0 if suffix and s.endswith(suffix) else 1, s))
 
 
 def resolve_isins(
     constituents: list[dict[str, str]],
     *,
-    lookup: Callable[[str], list[dict]] | None = None,
+    max_unresolved: int | None = None,
+    lookup: Callable[[str], list[dict] | None] | None = None,
     sleep: Callable[[float], None] | None = None,
 ) -> tuple[dict[str, str], list[tuple[str, str]]]:
     """Map each constituent's ISIN to a Yahoo symbol.
 
     Returns `(resolved, unresolved)`: `resolved` is `{isin: symbol}`,
     `unresolved` lists `(isin, name)` for every line the vendor could not
-    place. Lookups are spaced `ISIN_LOOKUP_SPACING_S` apart.
+    place. Lookups are spaced `ISIN_LOOKUP_SPACING_S` apart. Raises as soon
+    as `unresolved` exceeds `max_unresolved`, or after
+    `MAX_CONSECUTIVE_LOOKUP_FAILURES` lookups in a row failed outright —
+    both mean the run cannot produce a list worth committing, and finishing
+    the crawl would only cost the workflow its timeout.
     """
     # Resolved at call time, not bound as defaults: a default captures the
     # original `time.sleep`, which is how the first version of the test suite
@@ -499,16 +520,62 @@ def resolve_isins(
     sleep = sleep or time.sleep
     resolved: dict[str, str] = {}
     unresolved: list[tuple[str, str]] = []
+    consecutive_failures = 0
     for i, row in enumerate(constituents):
         if i:
             sleep(ISIN_LOOKUP_SPACING_S)
         isin = row["Constituent ISIN"]
-        symbol = _pick_symbol(isin, row.get("Constituent Country", ""), lookup(isin))
+        quotes = lookup(isin)
+        if quotes is None:
+            consecutive_failures += 1
+            if consecutive_failures >= MAX_CONSECUTIVE_LOOKUP_FAILURES:
+                raise RuntimeError(
+                    f"STOXX 600: {consecutive_failures} consecutive vendor lookups "
+                    "failed — lookup unavailable; committed file left at its last "
+                    "known-good value"
+                )
+            quotes = []
+        else:
+            consecutive_failures = 0
+        symbol = _pick_symbol(isin, row.get("Constituent Country", ""), quotes)
         if symbol is None:
             unresolved.append((isin, row.get("Constituent Name", "")))
+            if max_unresolved is not None and len(unresolved) > max_unresolved:
+                raise RuntimeError(
+                    f"STOXX 600: {len(unresolved)} of {len(constituents)} ISINs "
+                    f"unresolved after {i + 1} lookups (limit {max_unresolved}) — "
+                    "committed file left at its last known-good value"
+                )
         else:
             resolved[isin] = symbol
     return resolved, unresolved
+
+
+def _check_universe_churn(previous: list[str] | None, result: list[str]) -> None:
+    """Refuse a result that differs from the committed list by more than
+    `MAX_UNIVERSE_CHURN_RATE`, unless a human set `MIDAS_ACCEPT_UNIVERSE_CHURN`.
+    Always logs what moved, so the weekly commit's diff is readable."""
+    if not previous:
+        return
+    added = sorted(set(result) - set(previous))
+    removed = sorted(set(previous) - set(result))
+    if not added and not removed:
+        return
+    logger.warning(
+        "STOXX 600: %d added (%s), %d removed (%s)",
+        len(added),
+        ", ".join(added),
+        len(removed),
+        ", ".join(removed),
+    )
+    churn = (len(added) + len(removed)) / len(previous)
+    if churn > MAX_UNIVERSE_CHURN_RATE and not os.environ.get(_ACCEPT_CHURN_ENV):
+        raise RuntimeError(
+            f"STOXX 600: {len(added)} added + {len(removed)} removed against "
+            f"{len(previous)} committed ({churn:.0%}, limit "
+            f"{MAX_UNIVERSE_CHURN_RATE:.0%}) — refusing to overwrite; a deliberate "
+            f"rebuild sets {_ACCEPT_CHURN_ENV}=1"
+        )
 
 
 def refresh_stoxx600() -> list[str]:
@@ -517,14 +584,10 @@ def refresh_stoxx600() -> list[str]:
         raise RuntimeError(
             f"STOXX 600: export lists {len(constituents)} ISINs — layout changed"
         )
-    resolved, unresolved = resolve_isins(constituents)
-    rate = len(unresolved) / len(constituents)
-    if rate > MAX_UNRESOLVED_ISIN_RATE:
-        raise RuntimeError(
-            f"STOXX 600: {len(unresolved)} of {len(constituents)} ISINs unresolved "
-            f"({rate:.0%}, limit {MAX_UNRESOLVED_ISIN_RATE:.0%}) — vendor lookup "
-            "unavailable; committed file left at its last known-good value"
-        )
+    resolved, unresolved = resolve_isins(
+        constituents,
+        max_unresolved=int(len(constituents) * MAX_UNRESOLVED_ISIN_RATE),
+    )
     if unresolved:
         logger.warning(
             "STOXX 600: %d of %d ISINs did not resolve to a tradable listing and "
@@ -536,6 +599,7 @@ def refresh_stoxx600() -> list[str]:
     result = sorted(set(resolved.values()))
     if len(result) < 400:
         raise RuntimeError(f"STOXX 600: {len(result)} symbols — layout changed")
+    _check_universe_churn(_read_data("stoxx600"), result)
     _write_data("stoxx600", result)
     return result
 
