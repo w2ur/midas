@@ -993,10 +993,15 @@ def main() -> int:
     # below unusable. 118 of the 120 failures on 2026-08-07 were Refinitiv-style
     # codes in data/universes/stoxx600.json that Yahoo has no route for at all
     # (AIRP.PA, BNPP.PA, CAGR.PA, ATCOa.ST — Yahoo wants AI.PA, BNP.PA, ACA.PA,
-    # ATCO-A.ST). They will never resolve, so failing the run on them would
-    # freeze the store permanently. They are reported instead, because a
-    # universe carrying ~120 unfetchable tickers is a real defect — just not
-    # this script's, and not one a red run can fix.
+    # ATCO-A.ST). They would never resolve, so failing the run on them would
+    # have frozen the store permanently. They are reported instead, because a
+    # universe carrying unfetchable tickers is a real defect — just not this
+    # script's, and not one a red run can fix. That particular defect was
+    # closed on 2026-09-09 (issue #36): the STOXX 600 resolver now keys on
+    # ISIN and asks Yahoo which listing it serves, so a symbol reaches the
+    # universe file only if the vendor can price it. What this WARN names
+    # from now on is a symbol the vendor has since dropped, or a universe
+    # entry added by hand.
     if unresolved:
         print(
             f"\nWARN: {len(unresolved)} symbol(s) have never served a row and "

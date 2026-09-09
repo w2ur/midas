@@ -9,6 +9,7 @@ session aborted as a downstream consequence.
 
 from __future__ import annotations
 
+import io
 import json
 
 from engine.config import get_config
@@ -407,3 +408,272 @@ class TestHighShortTickers:
 
     def test_result_is_sorted(self):
         assert get_high_short_tickers() == sorted(get_high_short_tickers())
+
+
+# ---------------------------------------------------------------------------
+# STOXX 600 — ISIN-keyed resolution (issue #36)
+# ---------------------------------------------------------------------------
+
+
+def _quote(symbol: str, exchange: str, quote_type: str = "EQUITY") -> dict:
+    return {"symbol": symbol, "exchange": exchange, "quoteType": quote_type}
+
+
+def _row(isin: str, name: str = "Some Co", country: str = "France") -> dict[str, str]:
+    return {
+        "Constituent ISIN": isin,
+        "Constituent Name": name,
+        "Constituent Country": country,
+    }
+
+
+class _FakeResp(io.BytesIO):
+    """`urllib.request.urlopen` stand-in: a context manager over bytes."""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class TestStoxx600PickSymbol:
+    """Regression: issue #36 — Wikipedia's ticker column produced 120 symbols
+    Yahoo had no route for. Resolution is now keyed on ISIN, and these pin the
+    listing-selection rule against the vendor answers measured 2026-09-09."""
+
+    def test_home_market_suffix_beats_first_returned(self):
+        from engine.universes.index import _pick_symbol
+
+        # Yahoo listed Stuttgart's placeholder first for Inchcape.
+        quotes = [_quote("GB00B61TVQ02.SG", "STU"), _quote("INCH.L", "LSE")]
+        assert _pick_symbol("GB00B61TVQ02", "United Kingdom", quotes) == "INCH.L"
+
+    def test_xetra_beats_frankfurt_floor_for_a_german_name(self):
+        from engine.universes.index import _pick_symbol
+
+        quotes = [_quote("G1A.F", "FRA"), _quote("G1A.DE", "GER")]
+        assert _pick_symbol("DE0006602006", "Germany", quotes) == "G1A.DE"
+
+    def test_frankfurt_floor_accepted_when_it_is_the_only_german_listing(self):
+        from engine.universes.index import _pick_symbol
+
+        # Fresenius' new ISIN answered only with its Frankfurt quote.
+        assert _pick_symbol("DE000FRE5EN2", "Germany", [_quote("FRE.F", "FRA")]) == "FRE.F"
+
+    def test_frankfurt_floor_refused_for_a_foreign_name(self):
+        from engine.universes.index import _pick_symbol
+
+        # SAGAX B (Stockholm) answered only as a Frankfurt regional print.
+        assert _pick_symbol("SE0005127818", "Sweden", [_quote("EFE.F", "FRA")]) is None
+
+    def test_domicile_without_a_home_listing_takes_the_real_symbol(self):
+        from engine.universes.index import _pick_symbol
+
+        # Prosus is domiciled "China" in the export; no suffix preference applies.
+        quotes = [_quote("PRX.AS", "AMS"), _quote("NL0013654783.SG", "STU")]
+        assert _pick_symbol("NL0013654783", "China", quotes) == "PRX.AS"
+
+    def test_placeholder_only_is_refused(self):
+        from engine.universes.index import _pick_symbol
+
+        quotes = [_quote("GB0000000001.SG", "STU")]
+        assert _pick_symbol("GB0000000001", "United Kingdom", quotes) is None
+
+    def test_otc_and_non_equity_are_refused(self):
+        from engine.universes.index import _pick_symbol
+
+        # NMC Health: the only answer was a pink-sheet line typed MUTUALFUND.
+        quotes = [_quote("NMMCF", "PNK", "MUTUALFUND")]
+        assert _pick_symbol("GB00B7FC0762", "United Kingdom", quotes) is None
+        assert _pick_symbol("GB00B7FC0762", "United Kingdom", []) is None
+
+    def test_us_primary_listing_without_suffix_is_accepted(self):
+        from engine.universes.index import _pick_symbol
+
+        assert _pick_symbol("NL0015002SN0", "Netherlands", [_quote("QGEN", "NYQ")]) == "QGEN"
+
+
+class TestStoxx600ResolveIsins:
+    def test_maps_each_isin_and_lists_the_unresolved(self):
+        from engine.universes.index import ISIN_LOOKUP_SPACING_S, resolve_isins
+
+        answers = {
+            "FR0000120073": [_quote("AI.PA", "PAR")],
+            "FR0014010OO5": [],  # Air Liquide's bonus-share line
+            "SE0011166610": [_quote("ATCO-A.ST", "STO")],
+        }
+        sleeps: list[float] = []
+        rows = [
+            _row("FR0000120073", "Air Liquide"),
+            _row("FR0014010OO5", "L AIR LIQUIDE"),
+            _row("SE0011166610", "Atlas Copco A", "Sweden"),
+        ]
+        resolved, unresolved = resolve_isins(
+            rows, lookup=lambda isin: answers[isin], sleep=sleeps.append
+        )
+        assert resolved == {"FR0000120073": "AI.PA", "SE0011166610": "ATCO-A.ST"}
+        assert unresolved == [("FR0014010OO5", "L AIR LIQUIDE")]
+        # Throttled BETWEEN lookups: n-1 sleeps of the documented spacing.
+        assert sleeps == [ISIN_LOOKUP_SPACING_S] * 2
+
+    def test_lookup_retries_a_rate_limit_then_gives_up(self, monkeypatch):
+        import sys
+        import types
+
+        import engine.universes.index as ix_mod
+
+        class FlakyOnce:
+            calls = 0
+
+            def __init__(self, query, **kwargs):
+                FlakyOnce.calls += 1
+                if FlakyOnce.calls == 1:
+                    raise RuntimeError("Too Many Requests. Rate limited.")
+                self.quotes = [_quote("AI.PA", "PAR")]
+
+        monkeypatch.setitem(sys.modules, "yfinance", types.SimpleNamespace(Search=FlakyOnce))
+        sleeps: list[float] = []
+        assert ix_mod._search_isin_quotes("FR0000120073", sleep=sleeps.append) == [
+            _quote("AI.PA", "PAR")
+        ]
+        assert sleeps == [ix_mod.ISIN_LOOKUP_RETRY_SLEEPS_S[0]]
+
+        class AlwaysLimited:
+            def __init__(self, query, **kwargs):
+                raise RuntimeError("Too Many Requests. Rate limited.")
+
+        monkeypatch.setitem(
+            sys.modules, "yfinance", types.SimpleNamespace(Search=AlwaysLimited)
+        )
+        sleeps.clear()
+        assert ix_mod._search_isin_quotes("FR0000120073", sleep=sleeps.append) == []
+        assert sleeps == list(ix_mod.ISIN_LOOKUP_RETRY_SLEEPS_S)
+
+
+class TestStoxx600Constituents:
+    def test_keeps_only_isin_shaped_lines(self, monkeypatch):
+        import engine.universes.index as ix_mod
+
+        csv_text = "﻿" + "\n".join(
+            [
+                "ShareClass ISIN;Constituent ISIN;Constituent Name;Constituent Country;"
+                "Constituent Currency ISO Code;Constituent Weighting",
+                "LU0328475792;NL0010273215;ASML Holding NV;Netherlands;EUR;0.04",
+                "LU0328475792;_CURRENCYEUR;EURO CURRENCY;;EUR;0.001",
+                "LU0328475792;___ADI2V9YR9;STOXX EUROPE 600  SEP26;Germany;EUR;0.002",
+                "LU0328475792;IE00BZ3FDF20;;Ireland;EUR;0.0001",
+            ]
+        )
+        monkeypatch.setattr(
+            ix_mod.urllib.request,
+            "urlopen",
+            lambda req, timeout: _FakeResp(csv_text.encode("utf-8")),
+        )
+        rows = ix_mod._fetch_stoxx600_constituents()
+        assert [r["Constituent ISIN"] for r in rows] == ["NL0010273215", "IE00BZ3FDF20"]
+        assert rows[0]["Constituent Name"] == "ASML Holding NV"
+
+    def test_missing_column_is_a_layout_change(self, monkeypatch):
+        import engine.universes.index as ix_mod
+
+        csv_text = "ShareClass ISIN;ISIN;Name\nLU0328475792;NL0010273215;ASML\n"
+        monkeypatch.setattr(
+            ix_mod.urllib.request,
+            "urlopen",
+            lambda req, timeout: _FakeResp(csv_text.encode("utf-8")),
+        )
+        with pytest.raises(RuntimeError, match="layout changed"):
+            ix_mod._fetch_stoxx600_constituents()
+
+
+class TestRefreshStoxx600:
+    @staticmethod
+    def _rows(n: int) -> list[dict[str, str]]:
+        return [_row(f"FR{i:010d}", f"Co {i}") for i in range(n)]
+
+    @staticmethod
+    def _install(monkeypatch, rows, lookup) -> None:
+        import engine.universes.index as ix_mod
+
+        monkeypatch.setattr(ix_mod, "_fetch_stoxx600_constituents", lambda: rows)
+        monkeypatch.setattr(ix_mod, "_search_isin_quotes", lookup)
+        monkeypatch.setattr(ix_mod.time, "sleep", lambda s: None)
+
+    def test_writes_sorted_deduped_symbols_and_tolerates_a_small_residual(
+        self, midas_data_root, monkeypatch
+    ):
+        import engine.universes.index as ix_mod
+
+        rows = self._rows(500)
+
+        # Two ISINs answering the same symbol (a loyalty-share line that DOES
+        # resolve) collapse to one; one line answers nothing.
+        def lookup(isin: str) -> list[dict]:
+            i = int(isin[2:])
+            if i == 7:
+                return []
+            if i == 8:
+                return [_quote("C0006.PA", "PAR")]
+            return [_quote(f"C{i:04d}.PA", "PAR")]
+
+        self._install(monkeypatch, rows, lookup)
+        result = ix_mod.refresh_stoxx600()
+        assert result == sorted(set(result))
+        assert len(result) == 498
+        assert "C0007.PA" not in result
+        written = json.loads((get_config().universes_dir / "stoxx600.json").read_text())
+        assert written == result
+
+    def test_refuses_to_overwrite_when_the_vendor_lookup_is_down(
+        self, midas_data_root, monkeypatch
+    ):
+        """A rate limit that outlasts the retry schedule, or an outage, reads as
+        ~100% unresolved: the committed file must stay at its last known-good
+        value rather than shrink to whatever trickled through."""
+        import engine.universes.index as ix_mod
+
+        fake_dir = get_config().universes_dir
+        fake_dir.mkdir(parents=True, exist_ok=True)
+        (fake_dir / "stoxx600.json").write_text(json.dumps(["KEEP.PA"]))
+
+        rows = self._rows(500)
+        unresolved_n = int(len(rows) * ix_mod.MAX_UNRESOLVED_ISIN_RATE) + 1
+
+        def lookup(isin: str) -> list[dict]:
+            i = int(isin[2:])
+            return [] if i < unresolved_n else [_quote(f"C{i:04d}.PA", "PAR")]
+
+        self._install(monkeypatch, rows, lookup)
+        with pytest.raises(RuntimeError, match="unresolved"):
+            ix_mod.refresh_stoxx600()
+        assert json.loads((fake_dir / "stoxx600.json").read_text()) == ["KEEP.PA"]
+
+    def test_control_the_gate_can_pass(self, midas_data_root, monkeypatch):
+        """Falsifying control for the test above: one fewer unresolved line and
+        the same setup writes the file."""
+        import engine.universes.index as ix_mod
+
+        rows = self._rows(500)
+        unresolved_n = int(len(rows) * ix_mod.MAX_UNRESOLVED_ISIN_RATE)
+
+        def lookup(isin: str) -> list[dict]:
+            i = int(isin[2:])
+            return [] if i < unresolved_n else [_quote(f"C{i:04d}.PA", "PAR")]
+
+        self._install(monkeypatch, rows, lookup)
+        assert len(ix_mod.refresh_stoxx600()) == 500 - unresolved_n
+
+    def test_no_network_call_when_file_exists(self, midas_data_root, monkeypatch):
+        import engine.universes.index as ix_mod
+
+        fake_dir = get_config().universes_dir
+        fake_dir.mkdir(parents=True, exist_ok=True)
+        (fake_dir / "stoxx600.json").write_text(json.dumps(["AI.PA"]))
+
+        def boom(*a, **kw):
+            raise AssertionError("network must not be called when data file exists")
+
+        monkeypatch.setattr(ix_mod, "_fetch_stoxx600_constituents", boom)
+        monkeypatch.setattr(ix_mod, "_search_isin_quotes", boom)
+        assert ix_mod.get_stoxx600_tickers() == ["AI.PA"]

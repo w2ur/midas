@@ -5,9 +5,10 @@ EU: CAC 40, DAX, FTSE 100, STOXX Europe 600.
 
 Universe lists live in `data/universes/{name}.json`, **committed** to the
 repo. The cloud sandbox has no outbound HTTP, so resolvers must NEVER hit
-Wikipedia at runtime. File presence is authoritative. Periodic refresh runs
-out-of-band (manual `scripts/refresh_universes.py` or the GitHub Actions
-weekly cron `refresh-universes.yml`) and commits the diff.
+Wikipedia, Slickcharts, DWS or Yahoo at runtime. File presence is
+authoritative. Periodic refresh runs out-of-band (manual
+`scripts/refresh_universes.py` or the GitHub Actions weekly cron
+`refresh-universes.yml`) and commits the diff.
 
 This module previously kept these files under `data/cache/universes/`
 (gitignored) with a 24-hour TTL — that combination crashed every cloud
@@ -16,10 +17,14 @@ session whose cache was older than a day. Apr 29 incident.
 
 from __future__ import annotations
 
+import csv
 import io
 import json
 import logging
+import re
+import time
 import urllib.request
+from collections.abc import Callable
 
 import pandas as pd
 
@@ -205,7 +210,10 @@ def refresh_nasdaq100() -> list[str]:
 # EU indices — CAC 40, DAX, FTSE 100, STOXX Europe 600
 # ---------------------------------------------------------------------------
 
-# Country → yfinance exchange suffix, used for STOXX 600 (tickers without suffix).
+# Country → yfinance exchange suffix. For STOXX 600 this is a PREFERENCE among
+# the listings Yahoo returns for an ISIN (see `_pick_symbol`), never something
+# appended to a code: the export's country is a domicile (Prosus is "China",
+# Airbus "Netherlands") and the home market can differ from it.
 _STOXX_COUNTRY_SUFFIX: dict[str, str] = {
     "Austria": ".VI",
     "Belgium": ".BR",
@@ -313,36 +321,221 @@ def refresh_ftse100() -> list[str]:
 
 
 def get_stoxx600_tickers() -> list[str]:
-    """Return committed STOXX Europe 600 constituents (with country suffixes)."""
+    """Return committed STOXX Europe 600 constituents (Yahoo symbols)."""
     cached = _read_data("stoxx600")
     if cached is not None:
         return cached
     return refresh_stoxx600()
 
 
+# ---------------------------------------------------------------------------
+# STOXX Europe 600 — keyed on ISIN, resolved through the vendor's own lookup
+# ---------------------------------------------------------------------------
+#
+# Until 2026-09-09 this index was scraped from Wikipedia's "Ticker" column with
+# a country suffix appended. That column holds Reuters-style codes (AIRP, BNPP,
+# CAGR, "AMBU B", "ATCOa"), not Yahoo symbols, so 120 of the 463 entries it
+# produced had never served a single row (issue #36): four agents were handed
+# them as tradable, every order on one died at the broker with NO_PRICE_DATA,
+# and every nightly fetch printed ~120 "Quote not found" lines. The list was
+# also stale — it lacked 270 current constituents and carried names that had
+# left the index. No per-exchange rewrite rule fixes a code the vendor does not
+# route, and a hand-typed override map of 120 entries goes stale the same way.
+#
+# An ISIN is the one identifier both sides agree on. The constituent list comes
+# from DWS's export for the Xtrackers STOXX Europe 600 UCITS ETF 1C
+# (LU0328475792), the only free source found that carries an ISIN per line:
+# STOXX's own components CSV answers 404, Wikipedia has no ISIN column, and the
+# iShares EXSA holdings file omits ISIN in every locale. Each ISIN is then put
+# to Yahoo's search endpoint, which answers with the listings it actually
+# serves — so a symbol in the committed file is one the nightly fetch can
+# fetch, by construction. The tradable universe is defined by what the vendor
+# can price, which is the property the old list lacked.
+_STOXX600_CONSTITUENTS_URL = (
+    "https://etf.dws.com/etfdata/export/LUX/ENG/csv/product/constituent/LU0328475792/"
+)
+_STOXX600_REQUIRED_COLUMNS = (
+    "Constituent ISIN",
+    "Constituent Name",
+    "Constituent Country",
+)
+_ISIN_RE = re.compile(r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$")
+
+#: Seconds between two vendor lookups, and the back-off schedule after a rate
+#: limit. Measured 2026-09-09 over 605 ISINs: unthrottled (~4/s) the endpoint
+#: rate-limited 3 times; at 0.4 s spacing once, recovered by the first 10 s
+#: sleep. 0.5 s puts a full pass at ~5 minutes, inside the workflow's timeout.
+ISIN_LOOKUP_SPACING_S = 0.5
+ISIN_LOOKUP_RETRY_SLEEPS_S = (10.0, 30.0, 60.0)
+
+#: Refuse to overwrite the committed file when more than this share of the
+#: export's ISINs did not resolve. Measured baseline 2026-09-09: 8 of 605
+#: (1.3%) — loyalty/bonus-share ISINs (L'Oréal, Air Liquide), an Engie
+#: preference line, a cash line with no name, two names Yahoo does not index by
+#: ISIN (Kesko B, Vår Energi) and one only quoted on a German regional floor.
+#: A vendor outage or a rate limit that outlasts the retry schedule reads
+#: ~100%, and the last known-good file stays in place.
+MAX_UNRESOLVED_ISIN_RATE = 0.05
+
+#: Yahoo exchange codes a symbol must not come from. PNK is the OTC pink sheet:
+#: an ADR or grey-market print, never the listing an EU desk trades.
+_OTC_EXCHANGES = frozenset({"PNK"})
+#: German regional floors. Yahoo lists many foreign names there (SAGAX B of
+#: Stockholm answered only as EFE.F) with thin, often stale daily bars. Accepted
+#: only for a German constituent, where Frankfurt is the home market.
+_GERMAN_REGIONAL_EXCHANGES = frozenset(
+    {"FRA", "STU", "MUN", "DUS", "BER", "HAM", "HAN"}
+)
+
+
+def _fetch_stoxx600_constituents(
+    url: str = _STOXX600_CONSTITUENTS_URL,
+) -> list[dict[str, str]]:
+    """Return the export's ISIN-bearing rows as dicts keyed by column name.
+
+    The export also lists cash (`_CURRENCYEUR`) and index-future lines whose
+    "ISIN" is not ISIN-shaped; those are dropped here. A missing column is a
+    layout change and raises, like the Wikipedia scrapers do.
+    """
+    req = urllib.request.Request(url, headers={"User-Agent": _WIKI_USER_AGENT})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        text = resp.read().decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text), delimiter=";")
+    columns = [str(c).strip() for c in (reader.fieldnames or [])]
+    missing = [c for c in _STOXX600_REQUIRED_COLUMNS if c not in columns]
+    if missing:
+        raise RuntimeError(
+            f"STOXX 600: export lacks column(s) {missing} — layout changed"
+        )
+    rows: list[dict[str, str]] = []
+    for row in reader:
+        clean = {
+            str(k).strip(): (v or "").strip() for k, v in row.items() if k is not None
+        }
+        if _ISIN_RE.match(clean.get("Constituent ISIN", "")):
+            rows.append(clean)
+    return rows
+
+
+def _search_isin_quotes(
+    isin: str, sleep: Callable[[float], None] | None = None
+) -> list[dict]:
+    """Ask Yahoo which listings it serves for `isin`, retrying a rate limit.
+
+    Returns an empty list when the vendor answers with nothing or the retry
+    schedule is exhausted — both leave the ISIN unresolved, and the caller's
+    rate gate decides whether that is a bad line or a bad night.
+    """
+    import yfinance as yf  # network-only; keep import cost off the session path
+
+    sleep = sleep or time.sleep  # bound at call time so tests can patch it
+    for backoff in (*ISIN_LOOKUP_RETRY_SLEEPS_S, None):
+        try:
+            return list(
+                yf.Search(isin, max_results=10, news_count=0, lists_count=0).quotes
+            )
+        except Exception as exc:  # YFRateLimitError, transport errors
+            if backoff is None:
+                logger.warning(
+                    "STOXX 600: lookup for %s failed after retries — %s", isin, exc
+                )
+                return []
+            sleep(backoff)
+    return []  # unreachable; keeps the type checker honest
+
+
+def _pick_symbol(isin: str, country: str, quotes: list[dict]) -> str | None:
+    """Choose the listing to trade among what the vendor returned for `isin`.
+
+    Preference order: the constituent's home-market suffix (a German name on
+    Xetra beats its Frankfurt floor quote), then any real symbol over
+    Stuttgart's `<ISIN>.SG` placeholders, then anything not on a German
+    regional floor. A quote that survives only as a placeholder, or only on a
+    regional floor for a non-German name, is refused rather than traded.
+    """
+    candidates = [
+        q
+        for q in quotes
+        if q.get("quoteType") == "EQUITY"
+        and q.get("symbol")
+        and q.get("exchange") not in _OTC_EXCHANGES
+    ]
+    if not candidates:
+        return None
+    suffix = _STOXX_COUNTRY_SUFFIX.get(country)
+
+    def rank(q: dict) -> tuple[int, int, int]:
+        symbol, exchange = q["symbol"], q.get("exchange")
+        return (
+            0 if suffix and symbol.endswith(suffix) else 1,
+            0 if isin not in symbol else 1,
+            0 if exchange not in _GERMAN_REGIONAL_EXCHANGES else 1,
+        )
+
+    best = min(candidates, key=rank)
+    if isin in best["symbol"]:
+        return None
+    if best.get("exchange") in _GERMAN_REGIONAL_EXCHANGES and suffix != ".DE":
+        return None
+    return best["symbol"]
+
+
+def resolve_isins(
+    constituents: list[dict[str, str]],
+    *,
+    lookup: Callable[[str], list[dict]] | None = None,
+    sleep: Callable[[float], None] | None = None,
+) -> tuple[dict[str, str], list[tuple[str, str]]]:
+    """Map each constituent's ISIN to a Yahoo symbol.
+
+    Returns `(resolved, unresolved)`: `resolved` is `{isin: symbol}`,
+    `unresolved` lists `(isin, name)` for every line the vendor could not
+    place. Lookups are spaced `ISIN_LOOKUP_SPACING_S` apart.
+    """
+    # Resolved at call time, not bound as defaults: a default captures the
+    # original `time.sleep`, which is how the first version of the test suite
+    # sat through 250 s of real throttling.
+    lookup = lookup or _search_isin_quotes
+    sleep = sleep or time.sleep
+    resolved: dict[str, str] = {}
+    unresolved: list[tuple[str, str]] = []
+    for i, row in enumerate(constituents):
+        if i:
+            sleep(ISIN_LOOKUP_SPACING_S)
+        isin = row["Constituent ISIN"]
+        symbol = _pick_symbol(isin, row.get("Constituent Country", ""), lookup(isin))
+        if symbol is None:
+            unresolved.append((isin, row.get("Constituent Name", "")))
+        else:
+            resolved[isin] = symbol
+    return resolved, unresolved
+
+
 def refresh_stoxx600() -> list[str]:
-    url = "https://en.wikipedia.org/wiki/STOXX_Europe_600"
-    tables = _fetch_html_tables(url)
-    table = _largest_table_with_column(tables, "Ticker")
-    if table is None:
-        raise RuntimeError("STOXX 600: no 'Ticker' column on Wikipedia page")
-    if "Country" not in [str(c) for c in table.columns]:
-        raise RuntimeError("STOXX 600: no 'Country' column — cannot map suffixes")
-    tickers: set[str] = set()
-    for _, row in table.iterrows():
-        t = _clean_ticker(row["Ticker"])
-        country = str(row["Country"]).strip() if row["Country"] is not None else ""
-        if t is None or not country:
-            continue
-        suffix = _STOXX_COUNTRY_SUFFIX.get(country)
-        if suffix is None:
-            continue
-        if not t.endswith(suffix):
-            t = f"{t}{suffix}"
-        tickers.add(t)
-    result = sorted(tickers)
+    constituents = _fetch_stoxx600_constituents()
+    if len(constituents) < 400:
+        raise RuntimeError(
+            f"STOXX 600: export lists {len(constituents)} ISINs — layout changed"
+        )
+    resolved, unresolved = resolve_isins(constituents)
+    rate = len(unresolved) / len(constituents)
+    if rate > MAX_UNRESOLVED_ISIN_RATE:
+        raise RuntimeError(
+            f"STOXX 600: {len(unresolved)} of {len(constituents)} ISINs unresolved "
+            f"({rate:.0%}, limit {MAX_UNRESOLVED_ISIN_RATE:.0%}) — vendor lookup "
+            "unavailable; committed file left at its last known-good value"
+        )
+    if unresolved:
+        logger.warning(
+            "STOXX 600: %d of %d ISINs did not resolve to a tradable listing and "
+            "are left out: %s",
+            len(unresolved),
+            len(constituents),
+            ", ".join(f"{isin} ({name or 'unnamed'})" for isin, name in unresolved),
+        )
+    result = sorted(set(resolved.values()))
     if len(result) < 400:
-        raise RuntimeError(f"STOXX 600: {len(result)} tickers — layout changed")
+        raise RuntimeError(f"STOXX 600: {len(result)} symbols — layout changed")
     _write_data("stoxx600", result)
     return result
 
@@ -369,8 +562,13 @@ INDEX_REFRESHERS = {
 
 
 def refresh_all_indexes() -> dict[str, int]:
-    """Re-fetch every index universe from Wikipedia/Slickcharts and overwrite
-    committed files.
+    """Re-fetch every index universe from its upstream source and overwrite
+    the committed files.
+
+    Sources: Wikipedia for the S&P 500, Dow 30, CAC 40, DAX and FTSE 100;
+    Slickcharts for the Nasdaq-100; for the STOXX 600, DWS's constituent
+    export resolved ISIN by ISIN through Yahoo's lookup (see
+    `refresh_stoxx600`), which is the slow one — a few minutes, throttled.
 
     Used by `scripts/refresh_universes.py` and the weekly GitHub Actions cron.
     Each index refreshes independently: a scraper that raises (e.g. an
