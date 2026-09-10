@@ -103,15 +103,22 @@ describe("cadenceStats", () => {
     }
   });
 
-  it("marks satoshi as the minimum-fill agent — the binding constraint on the pre-registered bar", () => {
+  // The *identity* pin went the same way its own fill-count pin did. `toBe(7)`
+  // was correct until 2026-08-21T10:02Z, when two pending satoshi triggers
+  // fired; `toBe("satoshi")` was correct until satoshi kept firing and passed
+  // steady-eddie-eur (25 vs 22 on 2026-09-10), handing the argmin to a
+  // different book. Neither was a defect — a dormant agent catching up is the
+  // desk working — and because tests.yml carries `paths-ignore: data/**`, the
+  // session commits that moved the count ran no CI, so main went red days
+  // later on an unrelated PR. Which agent is last is a fact about this week,
+  // not an invariant. What is invariant: minAgent is the argmin over perAgent,
+  // and it is a real roster book — that is what every consumer relies on, and
+  // no session can invalidate it.
+  it("reports the true argmin over the roster as the binding constraint on the bar", () => {
     const s = cadenceStats();
-    expect(s.minAgent.id).toBe("satoshi");
-    // Derived, not transcribed. `toBe(7)` was correct until 2026-08-21T10:02Z,
-    // when two pending satoshi triggers fired and took the count to 9 — and
-    // because tests.yml carries `paths-ignore: data/**`, the commits that broke
-    // it ran no CI at all. The invariant this test is about is that minAgent
-    // really is the argmin, which no session can invalidate.
     expect(s.minAgent.fills).toBe(Math.min(...s.perAgent.map((a) => a.fills)));
+    expect(s.perAgent.map((a) => a.id)).toContain(s.minAgent.id);
+    expect(TRADING_AGENTS.map((a) => a.id as string)).toContain(s.minAgent.id);
   });
 
   it("computes dormancy as calendar days between an agent's last fill and the asOf date", () => {
@@ -176,8 +183,10 @@ describe("preRegistrationStatus", () => {
   });
 
   it("reports not on track at the current per-agent fill rate", () => {
-    // 7 fills over ~98 days for the minimum agent projects to years, not
-    // months, before the ≥100-fills-per-agent bar is cleared.
+    // The minimum agent's fills-per-day since DAY_ONE projects to years, not
+    // months, before the ≥100-fills-per-agent bar is cleared. Deliberately not
+    // stated as a rate literal: the count and the agent both move, and the
+    // assertion below is the claim — projected months exceed the required ones.
     const status = preRegistrationStatus();
     expect(status.onTrack).toBe(false);
     expect(status.projectedMonthsToReachBar).not.toBeNull();
