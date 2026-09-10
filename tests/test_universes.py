@@ -457,11 +457,22 @@ class TestStoxx600PickSymbol:
         quotes = [_quote("FRE.VI", "VIE"), _quote("FRE.F", "FRA")]
         assert _pick_symbol("DE000FRE5EN2", "Germany", quotes) == "FRE.F"
 
-    def test_frankfurt_floor_refused_for_a_foreign_name(self):
+    def test_german_venues_refused_for_a_foreign_name(self):
         from engine.universes.index import _pick_symbol
 
         # SAGAX B (Stockholm) answered only as a Frankfurt regional print.
         assert _pick_symbol("SE0005127818", "Sweden", [_quote("EFE.F", "FRA")]) is None
+        # A Xetra secondary line for a CHF name is the wrong instrument in the
+        # right currency — refused too, and the home listing wins when offered.
+        assert _pick_symbol("CH0012032048", "Switzerland", [_quote("RHO5.DE", "GER")]) is None
+        quotes = [_quote("RHO5.DE", "GER"), _quote("ROG.SW", "EBS")]
+        assert _pick_symbol("CH0012032048", "Switzerland", quotes) == "ROG.SW"
+        # Control: the same Xetra line IS the home market for a German name.
+        assert _pick_symbol("DE0007236101", "Germany", [_quote("SIE.DE", "GER")]) == "SIE.DE"
+        # A domicile the map cannot place (the export files Delivery Hero under
+        # Korea) keeps its Xetra answer — but still not a regional floor.
+        assert _pick_symbol("DE000A2E4K43", "Korea, Republic of", [_quote("DHER.DE", "GER")]) == "DHER.DE"
+        assert _pick_symbol("DE000A2E4K43", "Korea, Republic of", [_quote("DHER.F", "FRA")]) is None
 
     def test_domicile_without_a_home_listing_takes_the_real_symbol(self):
         from engine.universes.index import _pick_symbol
@@ -483,6 +494,12 @@ class TestStoxx600PickSymbol:
         quotes = [_quote("NMMCF", "PNK", "MUTUALFUND")]
         assert _pick_symbol("GB00B7FC0762", "United Kingdom", quotes) is None
         assert _pick_symbol("GB00B7FC0762", "United Kingdom", []) is None
+        # The other two US OTC tiers are OTC as well: a dotless ADR symbol the
+        # currency heuristic would otherwise call USD.
+        for tier in ("OQX", "OQB"):
+            assert _pick_symbol("SE0000000001", "Sweden", [_quote("XXXXY", tier)]) is None
+        # Control: the same dotless shape on a real US exchange is accepted.
+        assert _pick_symbol("SE0000000001", "Sweden", [_quote("XXXXY", "NMS")]) == "XXXXY"
 
     def test_quote_without_an_exchange_is_refused(self):
         from engine.universes.index import _pick_symbol
@@ -509,14 +526,22 @@ class TestStoxx600PickSymbol:
 
         assert _pick_symbol("NL0015002SN0", "Netherlands", [_quote("QGEN", "NYQ")]) == "QGEN"
 
-    def test_tie_breaks_on_the_symbol_not_on_vendor_order(self):
+    def test_european_venue_beats_a_us_listing_and_ties_break_on_the_symbol(self):
+        """Without a home-market answer, the venue — and so the currency a EUR
+        book is exposed to — must not be decided by sort order between a EUR
+        and a USD line, nor by the order the vendor happened to list them."""
         from engine.universes.index import _pick_symbol
 
-        a = [_quote("QGEN", "NYQ"), _quote("QIA.DE", "GER")]
-        assert _pick_symbol("NL0012169213", "Netherlands", a) == "QGEN"
-        assert _pick_symbol("NL0012169213", "Netherlands", list(reversed(a))) == "QGEN"
+        a = [_quote("QGEN", "NYQ"), _quote("QIA.PA", "PAR")]
+        assert _pick_symbol("NL0012169213", "Jersey", a) == "QIA.PA"
+        assert _pick_symbol("NL0012169213", "Jersey", list(reversed(a))) == "QIA.PA"
+        # Two European venues, neither the home market: the symbol decides,
+        # identically in both orders.
+        b = [_quote("CPG.MI", "MIL"), _quote("CPG.L", "LSE")]
+        assert _pick_symbol("GB00BD6K4575", "Cayman Islands", b) == "CPG.L"
+        assert _pick_symbol("GB00BD6K4575", "Cayman Islands", list(reversed(b))) == "CPG.L"
         # Control: with a home-market suffix the preference, not the tie-break, decides.
-        assert _pick_symbol("NL0012169213", "Germany", a) == "QIA.DE"
+        assert _pick_symbol("GB00BD6K4575", "Italy", b) == "CPG.MI"
 
 
 class TestStoxx600ResolveIsins:
@@ -573,16 +598,48 @@ class TestStoxx600ResolveIsins:
             resolve_isins(rows, lookup=lookup, sleep=lambda s: None)
         assert len(calls) == MAX_CONSECUTIVE_LOOKUP_FAILURES
 
-    def test_a_single_failed_lookup_counts_as_unresolved_and_resets(self):
-        from engine.universes.index import resolve_isins
+    def test_scattered_failures_reset_the_consecutive_count(self):
+        """More failures in total than MAX_CONSECUTIVE_LOOKUP_FAILURES, never
+        two in a row: the run completes. Deleting the reset makes this raise
+        — verified, which is what makes the test evidence."""
+        from engine.universes.index import MAX_CONSECUTIVE_LOOKUP_FAILURES, resolve_isins
 
-        answers = [None, [_quote("A.PA", "PAR")], None, [_quote("B.PA", "PAR")]]
-        rows = [_row(f"FR{i:010d}", f"Co {i}") for i in range(4)]
+        n = 2 * MAX_CONSECUTIVE_LOOKUP_FAILURES + 2
+        answers = [None if i % 2 == 0 else [_quote(f"S{i}.PA", "PAR")] for i in range(n)]
+        rows = [_row(f"FR{i:010d}", f"Co {i}") for i in range(n)]
         resolved, unresolved = resolve_isins(
             rows, lookup=lambda isin: answers.pop(0), sleep=lambda s: None
         )
-        assert resolved == {"FR0000000001": "A.PA", "FR0000000003": "B.PA"}
-        assert [u[0] for u in unresolved] == ["FR0000000000", "FR0000000002"]
+        assert len(resolved) == n // 2
+        assert len(unresolved) == n // 2
+        assert all(int(isin[2:]) % 2 == 0 for isin, _ in unresolved)
+
+    def test_stops_when_the_wall_clock_budget_is_spent(self):
+        """Every lookup succeeding after a back-off bounds nothing above: the
+        crawl must stop on elapsed time, or the job is cancelled and the six
+        indexes already refreshed to disk die with the runner."""
+        from engine.universes.index import resolve_isins
+
+        rows = [_row(f"FR{i:010d}") for i in range(50)]
+        ticks = iter(range(0, 10_000, 10))  # each lookup "costs" 10 s
+        calls: list[str] = []
+
+        def lookup(isin: str) -> list[dict]:
+            calls.append(isin)
+            return [_quote("A.PA", "PAR")]
+
+        with pytest.raises(RuntimeError, match="budget exhausted"):
+            resolve_isins(
+                rows, budget_s=35, lookup=lookup, sleep=lambda s: None, clock=lambda: next(ticks)
+            )
+        # Clock reads 0 at start, then 10/20/30 before lookups 1-3, 40 > 35 stops.
+        assert len(calls) == 3
+        # Control: no budget, the same crawl completes.
+        calls.clear()
+        resolved, _ = resolve_isins(
+            rows, budget_s=None, lookup=lookup, sleep=lambda s: None, clock=lambda: 0.0
+        )
+        assert len(calls) == 50 and len(resolved) == 50
 
 
 class TestStoxx600SearchIsinQuotes:
@@ -634,6 +691,17 @@ class TestStoxx600SearchIsinQuotes:
         assert ix_mod._search_isin_quotes("FR0000120073", sleep=sleeps.append) is None
         assert sleeps == list(ix_mod.ISIN_LOOKUP_RETRY_SLEEPS_S)
 
+        class HtmlBody:
+            def __init__(self, query, **kwargs):
+                raise json.JSONDecodeError("Expecting value", "<html>", 0)
+
+        # An HTML 5xx or captcha page: yfinance would swallow it into an
+        # empty answer by default, which reads as "no listing". Not here.
+        monkeypatch.setattr(yfinance, "Search", HtmlBody)
+        sleeps.clear()
+        assert ix_mod._search_isin_quotes("FR0000120073", sleep=sleeps.append) is None
+        assert sleeps == list(ix_mod.ISIN_LOOKUP_RETRY_SLEEPS_S)
+
         class SignatureChanged:
             def __init__(self, query, **kwargs):
                 raise TypeError("unexpected keyword argument 'news_count'")
@@ -643,6 +711,25 @@ class TestStoxx600SearchIsinQuotes:
         with pytest.raises(TypeError):
             ix_mod._search_isin_quotes("FR0000120073", sleep=sleeps.append)
         assert sleeps == []
+
+    def test_yfinance_is_told_not_to_hide_a_faulty_body(self, monkeypatch):
+        import yfinance
+        from yfinance.config import YfConfig
+
+        import engine.universes.index as ix_mod
+
+        seen: list[bool] = []
+
+        class Recording:
+            def __init__(self, query, **kwargs):
+                seen.append(YfConfig.debug.hide_exceptions)
+                self.quotes = []
+
+        monkeypatch.setattr(yfinance, "Search", Recording)
+        monkeypatch.setattr(YfConfig.debug, "hide_exceptions", True)
+        assert ix_mod._search_isin_quotes("FR0000120073", sleep=lambda s: None) == []
+        assert seen == [False]
+        assert YfConfig.debug.hide_exceptions is True  # restored
 
 
 class TestStoxx600Constituents:
@@ -787,6 +874,12 @@ class TestRefreshStoxx600:
             ix_mod.refresh_stoxx600()
         assert json.loads((fake_dir / "stoxx600.json").read_text()) == previous
 
+        # "0" and "false" are refusals, not consent — engine.live_switch's
+        # convention, which a bare truthiness test would have inverted.
+        for value in ("0", "false"):
+            monkeypatch.setenv(ix_mod._ACCEPT_CHURN_ENV, value)
+            with pytest.raises(RuntimeError, match="refusing to overwrite"):
+                ix_mod.refresh_stoxx600()
         # Control: the documented override, set by a human on a deliberate
         # rebuild, lets the same result through.
         monkeypatch.setenv(ix_mod._ACCEPT_CHURN_ENV, "1")

@@ -386,6 +386,12 @@ ISIN_LOOKUP_RETRY_SLEEPS_S = (5.0, 15.0)
 #: declared a vendor outage and abandoned. Bounds an outage's cost to
 #: ~5 × 20 s instead of 605 × 20 s; the committed file is then left alone.
 MAX_CONSECUTIVE_LOOKUP_FAILURES = 5
+#: Wall-clock budget for the whole crawl. Neither abort rule above bounds
+#: elapsed time when every lookup SUCCEEDS after a back-off: 605 lookups each
+#: recovering on the first 5 s sleep is ~55 minutes of green answers, past the
+#: workflow's timeout — and a cancelled job commits nothing, not even the six
+#: indexes already refreshed to disk. 15 min is twice the measured pass.
+ISIN_LOOKUP_BUDGET_S = 15 * 60
 
 #: Refuse to overwrite the committed file when more than this share of the
 #: export's ISINs did not resolve. Measured baseline 2026-09-09: 8 of 605
@@ -406,14 +412,23 @@ MAX_UNRESOLVED_ISIN_RATE = 0.05
 #: deliberate local run, never by the workflow.
 MAX_UNIVERSE_CHURN_RATE = 0.20
 _ACCEPT_CHURN_ENV = "MIDAS_ACCEPT_UNIVERSE_CHURN"
+_ENV_TRUE = {"1", "true"}  # engine.live_switch's convention
 
-#: Yahoo exchange codes a symbol must not come from. PNK is the OTC pink sheet:
-#: an ADR or grey-market print, never the listing an EU desk trades.
-_OTC_EXCHANGES = frozenset({"PNK"})
-#: German regional floors. Yahoo lists many foreign names there (SAGAX B of
-#: Stockholm answered only as EFE.F) with thin, often stale daily bars. Accepted
-#: only for a German constituent, where Frankfurt is the home market.
-_GERMAN_REGIONAL_EXCHANGES = frozenset({"FRA", "STU", "MUN", "DUS", "BER", "HAM", "HAN"})
+#: Yahoo exchange codes a symbol must not come from: the three US OTC tiers
+#: (pink sheets, OTCQB, OTCQX — yfinance's own `const.py` lists all three).
+#: An ADR or grey-market print, never the listing an EU desk trades, and a
+#: dotless symbol the currency heuristic would happily call USD.
+_OTC_EXCHANGES = frozenset({"PNK", "OQB", "OQX"})
+#: German venues: Xetra plus the regional floors. Yahoo lists many foreign
+#: names on them (SAGAX B of Stockholm answered only as EFE.F) with thin,
+#: often stale daily bars, and a Xetra secondary line for a CHF or SEK name is
+#: the wrong instrument in the right currency. Accepted only for a German
+#: constituent, where they are the home market.
+_GERMAN_REGIONAL_FLOORS = frozenset({"FRA", "STU", "MUN", "DUS", "BER", "HAM", "HAN"})
+_GERMAN_EXCHANGES = _GERMAN_REGIONAL_FLOORS | {"GER"}
+#: Suffixes of the European home markets, preferred over a dotless US listing
+#: when a constituent's own domicile suffix is absent from the answer.
+_EUROPEAN_SUFFIXES = frozenset(_STOXX_COUNTRY_SUFFIX.values())
 
 
 def _fetch_stoxx600_constituents(url: str = _STOXX600_CONSTITUENTS_URL) -> list[dict[str, str]]:
@@ -450,17 +465,33 @@ def _search_isin_quotes(
     propagates so the refresh skips the index and keeps the committed file.
     """
     import yfinance as yf  # network-only; keep import cost off the session path
+    from yfinance.config import YfConfig
     from yfinance.exceptions import YFRateLimitError
 
     sleep = sleep or time.sleep  # bound at call time so tests can patch it
-    for backoff in (*ISIN_LOOKUP_RETRY_SLEEPS_S, None):
-        try:
-            return list(yf.Search(isin, max_results=10, news_count=0, lists_count=0).quotes)
-        except (YFRateLimitError, OSError) as exc:  # OSError: every transport error
-            if backoff is None:
-                logger.warning("STOXX 600: lookup for %s failed after retries — %s", isin, exc)
-                return None
-            sleep(backoff)
+    # yfinance's default swallows a non-JSON body (an HTML 5xx, a captcha page)
+    # into an EMPTY quote list, which reads as "the vendor knows no listing"
+    # and would drop a tradable name from the universe on a transient window.
+    # With the flag off the body raises JSONDecodeError, which is retried and
+    # then reported as a failed lookup — the distinction the abort rules need.
+    hidden = YfConfig.debug.hide_exceptions
+    YfConfig.debug.hide_exceptions = False
+    try:
+        for backoff in (*ISIN_LOOKUP_RETRY_SLEEPS_S, None):
+            try:
+                return list(
+                    yf.Search(isin, max_results=10, news_count=0, lists_count=0).quotes
+                )
+            # OSError is every transport error; JSONDecodeError is a non-JSON body.
+            except (YFRateLimitError, OSError, json.JSONDecodeError) as exc:
+                if backoff is None:
+                    logger.warning(
+                        "STOXX 600: lookup for %s failed after retries — %s", isin, exc
+                    )
+                    return None
+                sleep(backoff)
+    finally:
+        YfConfig.debug.hide_exceptions = hidden
     return None
 
 
@@ -468,66 +499,101 @@ def _pick_symbol(isin: str, country: str, quotes: list[dict]) -> str | None:
     """Choose the listing to trade among what the vendor returned for `isin`.
 
     A quote is a candidate only if it is an equity on a named exchange that is
-    neither OTC nor (for a non-German name) a German regional floor, is a real
+    neither a US OTC tier nor (for a name domiciled elsewhere) a German venue
+    — a regional floor is refused for any non-German domicile, Xetra only for
+    a domicile the suffix map can place — is a real
     symbol rather than Stuttgart's `<ISIN>.SG` placeholder, and carries a
     suffix the currency layer can denominate (`engine.quotes`) — a symbol it
     cannot would reach the broker only to die with CURRENCY_UNRESOLVED. Among
     candidates the constituent's home-market suffix wins (Xetra over the
-    Frankfurt floor for a German name); ties break on the symbol itself so
-    two runs over the same answer pick the same listing.
+    Frankfurt floor for a German name), then any European home market over a
+    dotless US listing, then the symbol itself — so two runs over the same
+    answer pick the same listing, and the venue a EUR book is exposed to is
+    never decided by sort order between a EUR and a USD line.
     """
     from engine.quotes import _heuristic_unit
 
     suffix = _STOXX_COUNTRY_SUFFIX.get(country)
-    candidates: list[str] = []
+    candidates: list[tuple[str, str]] = []
     for q in quotes:
         symbol, exchange = q.get("symbol"), q.get("exchange")
         if q.get("quoteType") != "EQUITY" or not symbol or not exchange:
             continue
         if exchange in _OTC_EXCHANGES or isin in symbol:
             continue
-        if exchange in _GERMAN_REGIONAL_EXCHANGES and suffix != ".DE":
+        # A German venue for a name whose domicile is KNOWN to be elsewhere is
+        # a secondary line. For a domicile the map cannot place (the export
+        # files Delivery Hero under Korea, Prosus under China) Xetra may well
+        # be the home market, so only the regional floors are refused there.
+        if exchange in _GERMAN_EXCHANGES and suffix not in (None, ".DE"):
+            continue
+        if exchange in _GERMAN_REGIONAL_FLOORS and suffix != ".DE":
             continue
         if _heuristic_unit(symbol) is None:
             continue
-        candidates.append(symbol)
+        candidates.append((symbol, exchange))
     if not candidates:
         return None
-    return min(candidates, key=lambda s: (0 if suffix and s.endswith(suffix) else 1, s))
 
+    def rank(candidate: tuple[str, str]) -> tuple[int, int, int, str]:
+        symbol, exchange = candidate
+        _, dot, tail = symbol.rpartition(".")
+        return (
+            0 if suffix and symbol.endswith(suffix) else 1,
+            # A German name's Frankfurt floor is still its home market,
+            # ahead of a Vienna or Milan secondary.
+            0 if suffix == ".DE" and exchange in _GERMAN_EXCHANGES else 1,
+            0 if dot and f".{tail}" in _EUROPEAN_SUFFIXES else 1,
+            symbol,
+        )
+
+    return min(candidates, key=rank)[0]
 
 def resolve_isins(
     constituents: list[dict[str, str]],
     *,
     max_unresolved: int | None = None,
+    budget_s: float | None = ISIN_LOOKUP_BUDGET_S,
     lookup: Callable[[str], list[dict] | None] | None = None,
     sleep: Callable[[float], None] | None = None,
+    clock: Callable[[], float] | None = None,
 ) -> tuple[dict[str, str], list[tuple[str, str]]]:
     """Map each constituent's ISIN to a Yahoo symbol.
 
     Returns `(resolved, unresolved)`: `resolved` is `{isin: symbol}`,
     `unresolved` lists `(isin, name)` for every line the vendor could not
     place. Lookups are spaced `ISIN_LOOKUP_SPACING_S` apart. Raises as soon
-    as `unresolved` exceeds `max_unresolved`, or after
-    `MAX_CONSECUTIVE_LOOKUP_FAILURES` lookups in a row failed outright —
-    both mean the run cannot produce a list worth committing, and finishing
-    the crawl would only cost the workflow its timeout.
+    as `unresolved` exceeds `max_unresolved`, after
+    `MAX_CONSECUTIVE_LOOKUP_FAILURES` lookups in a row failed outright, or
+    once `budget_s` of wall-clock has elapsed — all three mean the run cannot
+    produce a list worth committing, and finishing the crawl would only cost
+    the workflow its timeout.
     """
     # Resolved at call time, not bound as defaults: a default captures the
     # original `time.sleep`, which is how the first version of the test suite
     # sat through 250 s of real throttling.
     lookup = lookup or _search_isin_quotes
     sleep = sleep or time.sleep
+    clock = clock or time.monotonic
+    started = clock()
     resolved: dict[str, str] = {}
     unresolved: list[tuple[str, str]] = []
+    failed: list[str] = []
     consecutive_failures = 0
     for i, row in enumerate(constituents):
         if i:
             sleep(ISIN_LOOKUP_SPACING_S)
+        if budget_s is not None and clock() - started > budget_s:
+            raise RuntimeError(
+                f"STOXX 600: {budget_s:.0f} s budget exhausted after {i} of "
+                f"{len(constituents)} lookups — committed file left at its last "
+                "known-good value"
+            )
         isin = row["Constituent ISIN"]
         quotes = lookup(isin)
         if quotes is None:
             consecutive_failures += 1
+            failed.append(isin)
             if consecutive_failures >= MAX_CONSECUTIVE_LOOKUP_FAILURES:
                 raise RuntimeError(
                     f"STOXX 600: {consecutive_failures} consecutive vendor lookups "
@@ -548,8 +614,15 @@ def resolve_isins(
                 )
         else:
             resolved[isin] = symbol
+    if failed:
+        # Named separately from the vendor's genuine "no listing" answers, so a
+        # blip and a delisting never read the same in the log.
+        logger.warning(
+            "STOXX 600: %d lookup(s) failed and count as unresolved this run: %s",
+            len(failed),
+            ", ".join(failed),
+        )
     return resolved, unresolved
-
 
 def _check_universe_churn(previous: list[str] | None, result: list[str]) -> None:
     """Refuse a result that differs from the committed list by more than
@@ -569,7 +642,10 @@ def _check_universe_churn(previous: list[str] | None, result: list[str]) -> None
         ", ".join(removed),
     )
     churn = (len(added) + len(removed)) / len(previous)
-    if churn > MAX_UNIVERSE_CHURN_RATE and not os.environ.get(_ACCEPT_CHURN_ENV):
+    # Same truthiness convention as engine.live_switch: only "1"/"true" accept.
+    # A bare truthiness test would read `=0` or `=false` as consent.
+    accepted = os.environ.get(_ACCEPT_CHURN_ENV, "").strip().lower() in _ENV_TRUE
+    if churn > MAX_UNIVERSE_CHURN_RATE and not accepted:
         raise RuntimeError(
             f"STOXX 600: {len(added)} added + {len(removed)} removed against "
             f"{len(previous)} committed ({churn:.0%}, limit "
