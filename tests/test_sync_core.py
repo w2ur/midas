@@ -137,7 +137,12 @@ def test_the_alternative_universes_stay_byte_guarded(tmp_path):
         "[]", encoding="utf-8"
     )
 
-    assert sync_core.check(tmp_path) == [Path("data/universes/congressional.json")]
+    # Both copies are reported: the root one drifted from live, and the demo
+    # desk's derived twin now disagrees with the root one it is written from.
+    assert sync_core.check(tmp_path) == [
+        Path("data/universes/congressional.json"),
+        Path("examples/demo-desk/data/universes/congressional.json"),
+    ]
 
 
 def test_regenerated_data_is_seeded_but_not_held_byte_identical(tmp_path):
@@ -153,7 +158,15 @@ def test_regenerated_data_is_seeded_but_not_held_byte_identical(tmp_path):
     universes = tmp_path / "data" / "universes"
     assert (universes / "sp500.json").is_file(), "apply must still seed them"
 
+    # Staleness is written to BOTH core copies, because that is the only shape
+    # `apply` can produce: it writes the root copy and the demo desk's derived
+    # twin from the same source in the same pass. Editing one alone is a state
+    # a Monday refresh cannot create, and the twin's guard would rightly flag
+    # it — see test_demo_desk_drift_is_measured_against_core_not_live.
     (universes / "sp500.json").write_text("[]", encoding="utf-8")
+    (tmp_path / sync_core.DEMO_DESK_DATA / "universes" / "sp500.json").write_text(
+        "[]", encoding="utf-8"
+    )
 
     assert sync_core.check(tmp_path) == []
 
@@ -221,14 +234,25 @@ def test_prune_leaves_synced_manifest_files(tmp_path):
     assert sync_core.prune(core) == []
 
 
-def test_prune_spares_demo_desk_data_fixtures(tmp_path):
-    # examples/demo-desk/data/ is a core-managed test fixture that live never
-    # populates (its universe resolvers regenerate it on the demo desk); prune
-    # must not delete it, even though it is not in live's manifest.
+def test_prune_owns_demo_desk_universes_and_spares_the_rest_of_its_data(tmp_path):
+    """The universes are derived, so a stale one goes; other data/ is spared.
+
+    This test used to assert the whole `examples/demo-desk/data/` subtree was
+    spared, on the reasoning that live never populates it and its resolvers
+    regenerate it on the demo desk. The second half was false — see
+    `sync_core.demo_desk_universes` — and the exemption is what let the copy
+    freeze at the SP4 extraction. The universes are now written by `apply`, so
+    prune owns them; anything else under that data/ is still core-managed.
+    """
     core = tmp_path / "core"
-    fixture = core / "examples" / "demo-desk" / "data" / "universes" / "sp500.json"
-    fixture.parent.mkdir(parents=True)
-    fixture.write_text('["AAPL", "MSFT"]')
+    demo_data = core / "examples" / "demo-desk" / "data"
+    # A universe live no longer publishes must not linger on the demo desk.
+    stale_universe = demo_data / "universes" / "gone.json"
+    stale_universe.parent.mkdir(parents=True)
+    stale_universe.write_text('["AAPL", "MSFT"]')
+    # Non-universe demo-desk data stays core-managed.
+    other_fixture = demo_data / "notes.json"
+    other_fixture.write_text("{}")
     # A stale demo-desk *source* file (not under data/) is still pruned.
     stale_persona = core / "examples" / "demo-desk" / ".claude" / "agents" / "gone.md"
     stale_persona.parent.mkdir(parents=True)
@@ -236,8 +260,79 @@ def test_prune_spares_demo_desk_data_fixtures(tmp_path):
 
     sync_core.apply(core)
 
-    assert fixture.exists()  # data/ fixture spared
+    assert not stale_universe.exists()  # derived and owned
+    assert other_fixture.exists()  # still core-managed
     assert not stale_persona.exists()  # stale demo-desk source pruned
+
+
+def test_apply_seeds_every_demo_desk_universe_from_its_live_source(tmp_path):
+    """Core CI runs the suite with MIDAS_DATA_DIR=examples/demo-desk.
+
+    So the resolvers read the demo copy, not core's root `data/universes/`.
+    Before this, `apply` wrote only the root copy and the demo one was a
+    snapshot frozen at the SP4 extraction — which is how a green suite in live
+    stopped predicting a green one in core.
+    """
+    sync_core.apply(tmp_path)
+
+    derived = sync_core.demo_desk_universes()
+    assert derived, "the mapping must not be empty"
+    for dst_rel, src_rel in derived.items():
+        assert (tmp_path / dst_rel).is_file(), f"{dst_rel} not seeded"
+        assert (tmp_path / dst_rel).read_bytes() == (tmp_path / src_rel).read_bytes()
+
+
+def test_check_catches_a_hand_edited_demo_desk_universe(tmp_path):
+    """Regression: core CI red on a "BT.A.L" live had already corrected.
+
+    The demo copy was in no manifest, so `check` reported "in sync" over a
+    fixture carrying a symbol that resolves to nothing.
+    """
+    sync_core.apply(tmp_path)
+    assert sync_core.check(tmp_path) == []  # control: the seed is clean
+
+    demo = tmp_path / sync_core.DEMO_DESK_DATA / "universes" / "sp500.json"
+    demo.write_text('["BT.A.L"]', encoding="utf-8")
+
+    assert sync_core.check(tmp_path) == [
+        Path("examples/demo-desk/data/universes/sp500.json")
+    ]
+
+
+def test_a_missing_demo_desk_universe_is_drift(tmp_path):
+    sync_core.apply(tmp_path)
+    (tmp_path / sync_core.DEMO_DESK_DATA / "universes" / "sp500.json").unlink()
+
+    assert sync_core.check(tmp_path) == [
+        Path("examples/demo-desk/data/universes/sp500.json")
+    ]
+
+
+def test_demo_desk_drift_is_measured_against_core_not_live(tmp_path):
+    """The guard must not be the weekly false alarm `check`'s tiers exist to avoid.
+
+    `refresh-universes.yml` rewrites live's scraped indexes every Monday and
+    nothing propagates that to core — which is exactly why those files are
+    presence-only in REGENERATED_DATA_GLOBS. Comparing the demo copy against
+    LIVE would reintroduce that alarm one path deeper. Comparing core's two
+    copies against each other cannot: core has no scheduled writer, so both are
+    written by the same `apply` from the same source.
+
+    Simulated here by moving live's copy after the sync, which is what a Monday
+    refresh does to a core checked out on Sunday.
+    """
+    sync_core.apply(tmp_path)
+    root_copy = tmp_path / "data" / "universes" / "sp500.json"
+    demo_copy = tmp_path / sync_core.DEMO_DESK_DATA / "universes" / "sp500.json"
+    assert root_copy.read_bytes() == demo_copy.read_bytes()
+
+    live = sync_core.LIVE_ROOT / "data" / "universes" / "sp500.json"
+    original = live.read_bytes()
+    try:
+        live.write_text('["NEWLY-SCRAPED"]', encoding="utf-8")
+        assert sync_core.check(tmp_path) == []
+    finally:
+        live.write_bytes(original)
 
 
 def test_apply_refuses_live_source_root():
@@ -384,10 +479,10 @@ def test_check_iterates_the_full_apply_manifest(tmp_path):
     `code_manifest` is still byte-checked; see the companion test for the other
     tier."""
     core = tmp_path / "core"
-    for rel in sync_core.apply_manifest():
-        dst = core / rel
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_bytes((sync_core.LIVE_ROOT / rel).read_bytes())
+    # Built by `apply`, not by hand-copying the manifest: the demo desk's
+    # universe files are derived rather than listed, so a hand-rolled core is
+    # missing them and every one reports as drift.
+    sync_core.apply(core)
 
     assert sync_core.check(core) == []
 
@@ -410,10 +505,7 @@ def test_the_vendor_registry_is_seeded_but_not_byte_guarded(tmp_path):
     an absent registry is worse than a stale one.
     """
     core = tmp_path / "core"
-    for rel in sync_core.apply_manifest():
-        dst = core / rel
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_bytes((sync_core.LIVE_ROOT / rel).read_bytes())
+    sync_core.apply(core)  # derived demo-desk files; see the companion test
 
     registry = Path("data/tickers.json")
     assert registry in sync_core.apply_manifest(), "apply must still seed it"

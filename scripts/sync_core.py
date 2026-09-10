@@ -242,6 +242,46 @@ def apply_manifest(root: Path = LIVE_ROOT) -> list[Path]:
     return _rel_sorted(files)
 
 
+#: The demo desk's own copy of the universe files, DERIVED from
+#: `data/universes/*.json` at apply time rather than listed in the manifest —
+#: live has no `examples/demo-desk/data/`, so there is nothing to mirror from
+#: and a second live copy would just move the drift upstream.
+#:
+#: It exists because core's CI runs the whole suite with
+#: `MIDAS_DATA_DIR=examples/demo-desk`, which proves the engine works against a
+#: minimal desk directory rather than silently reading live's. The resolvers
+#: then read THESE files, so a stale copy means core's suite tests against
+#: universe data live does not have — and a green suite here stops predicting a
+#: green one there. That is not hypothetical: the copy was frozen at the SP4
+#: extraction and by 2026-09-10 had drifted on three of ten files (stoxx600 at
+#: 463 names against live's 597, from before the ISIN resolver landed), and
+#: carried a "BT.A.L" that live had already corrected. `check` did not look,
+#: because these paths were in no manifest.
+DEMO_DESK_DATA = Path("examples/demo-desk/data")
+
+
+def demo_desk_universes(root: Path = LIVE_ROOT) -> dict[Path, Path]:
+    """Map each derived demo-desk universe file to its `data/universes/` source.
+
+    Keys and values are both root-relative; `apply` copies value -> key and
+    `check` compares core's two copies against EACH OTHER.
+
+    Comparing the pair rather than comparing the demo copy against live is the
+    whole point. Live's `refresh-universes.yml` rescrapes seven of these every
+    Monday and nothing propagates that to core, which is exactly why the seven
+    are presence-checked in REGENERATED_DATA_GLOBS — a guard a cron is
+    guaranteed to trip weekly teaches everyone to ignore it. Core has no
+    scheduled writer at all, so its two copies are written by the same `apply`
+    from the same source and can only diverge through a hand-edit or a skipped
+    sync. That makes byte-equality between them an invariant rather than a
+    weekly false alarm.
+    """
+    return {
+        DEMO_DESK_DATA / "universes" / src.name: src
+        for src in _expand(["data/universes/*.json"], root)
+    }
+
+
 # Trees whose contents the manifest fully owns in core. Pruning deletes files
 # HERE that are not in the current apply_manifest(). Core-native files
 # (roster.yaml, README.md, LICENSE, DISCLAIMER.md, .github/, .gitignore) live
@@ -261,10 +301,21 @@ def _is_owned(rel: Path) -> bool:
             rel.name.startswith(("test_", "__init__")) and rel.suffix == ".py"
         )
     if parts[:2] == ("examples", "demo-desk"):
-        # Demo-desk source (roster, personas) is synced from live and prunable;
-        # its data/ subtree is a core-managed test fixture (universe resolvers
-        # regenerate it on the demo desk) that live never populates — leave it.
-        return len(parts) > 2 and parts[2] != "data"
+        # Demo-desk source (roster, personas) is synced from live and prunable.
+        # Its data/universes/ subtree is DERIVED (see demo_desk_universes) and
+        # owned too, so a universe live stops publishing does not linger on the
+        # demo desk. Anything else under its data/ stays core-managed.
+        #
+        # This branch used to exempt the whole data/ subtree on the reasoning
+        # that "universe resolvers regenerate it on the demo desk". They do not:
+        # get_*_tickers() returns the cached file whenever one exists and only
+        # rescrapes when it is absent, so nothing ever rewrote it. The snapshot
+        # taken at the SP4 extraction sat there unchanged and unguarded until
+        # 2026-09-10, when core CI went red on a "BT.A.L" that live had already
+        # fixed — see demo_desk_universes.
+        if len(parts) > 2 and parts[2] == "data":
+            return parts[3:4] == ("universes",) and rel.suffix == ".json"
+        return len(parts) > 2
     if (
         parts[0] == "data"
         and len(parts) == 3
@@ -293,7 +344,11 @@ def prune(
     """Delete core files in owned trees that are no longer in apply_manifest()."""
     _assert_not_live_root(core, root)
     if keep is None:
-        keep = set(apply_manifest(root))
+        # The derived demo-desk universes are owned but deliberately absent
+        # from `apply_manifest` (live has no source for them), so they must be
+        # named here or a standalone `prune` deletes everything `apply` just
+        # wrote — leaving core CI with no universe files at all.
+        keep = set(apply_manifest(root)) | set(demo_desk_universes(root))
     removed: list[Path] = []
     scan_dirs = list(_OWNED_TREES) + ["data/strategies", "data/universes"]
     for tree in scan_dirs:
@@ -317,7 +372,13 @@ def apply(core: Path, root: Path = LIVE_ROOT) -> None:
         src, dst = root / rel, core / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
-    removed = prune(core, root, keep=set(manifest))
+    derived = demo_desk_universes(root)
+    for dst_rel, src_rel in derived.items():
+        dst = core / dst_rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(root / src_rel, dst)
+
+    removed = prune(core, root)
     if removed:
         print(f"[sync_core] pruned {len(removed)} stale file(s)")
 
@@ -350,7 +411,23 @@ def check(core: Path, root: Path = LIVE_ROOT) -> list[Path]:
             drift.append(rel)
         elif rel not in regenerated and not filecmp.cmp(src, dst, shallow=False):
             drift.append(rel)
-    return drift
+
+    # The derived demo-desk copies, compared against core's OWN
+    # `data/universes/` rather than against live — see demo_desk_universes for
+    # why that is the comparison that can fail honestly. Byte-guarded in both
+    # tiers: a scraped index is presence-only against live because a cron
+    # rewrites it there, but nothing rewrites either copy inside core.
+    for dst_rel, src_rel in demo_desk_universes(root).items():
+        if not (root / src_rel).exists():
+            continue
+        core_src, core_dst = core / src_rel, core / dst_rel
+        if not core_src.exists():
+            # The root copy is already reported by the loop above; one cause,
+            # one finding. Reporting the twin as well doubles every such row.
+            continue
+        if not core_dst.exists() or not filecmp.cmp(core_src, core_dst, shallow=False):
+            drift.append(dst_rel)
+    return _rel_sorted(drift)
 
 
 def main(argv: list[str] | None = None) -> int:
