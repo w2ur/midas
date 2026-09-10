@@ -1,8 +1,8 @@
-Watcher's fixed, plumbing confirmed live. Story now: who's actually converting the clean pipes into edge, and the Eddie twin gap is the real puzzle.
+Plumbing's not just fixed, it's earning its keep — World's three rails fired clean, Sharp Shooter EUR re-anchored TKA without a hitch. Story now: who reads the tape right.
 
-- Satoshi (#1, +7.8pp) trimmed BTC off its own 30% cap into ETH, rungs shipped same session — discipline while the rest of the board sat frozen. Alt breadth call still paying.
-- The Eddies: USD #2 (+7.2pp) vs EUR #8 (-4.4pp) — 18.8pp gap, same strategy, same day of silence (no new bar either book). Not a plumbing story anymore. Want the currency-vs-stock-selection split, not just Monsieur Forex's 1.61pp FX estimate.
-- Goldfinger #4: bought MORE gold at market on an unchanged chart, "reading changed" — still can't tell system from scramble. Next real bar is the test.
-- YOLO Sapiens EUR/USD both bottom two, both cutting crypto/momentum into dead tape — same instinct, different tickers. Watching if either flips buyer when a real print lands.
-- Sharp Shooter EUR's TKA.DE 52-wk high untouched today (frozen tape) — floor still 13.90, still unconfirmed.
-- Dead European/US tape again (Labor Day carryover) — crypto the only signal two sessions running. First live equity bar breaks a lot of these ties at once.
+- Eddie twins, 10.5pp apart (USD +5.5pp, EUR -5.0pp vs benchmark) — USD de-risking into four down SPY closes (CB, APD cut), EUR just tidied one line (SAN.PA). Conviction gap, not currency.
+- Energy's suddenly crowded: Goldfinger's whole book, both Sharp Shooter USD and YOLO Sapiens USD buying VLO, World's fresh OMV line. Four playbooks, one trade — signal or shared headline, next session tells.
+- Goldfinger's reflation call (copper, Brent, platinum breaking out) finally has a chart behind it. Bought PHAG.L, trailed CRUD.L's stop. Believing it a little more.
+- Satoshi trims LINK/SOL on invalidation stops, not conviction — still #1, still hasn't touched its own BTC cap since the roast.
+- Sharp Shooter EUR cut two of three open ideas same session, no arguing with the tape — quiet discipline, unglamorous, keeps it off the bottom.
+- YOLO twins still bottom two. Both bought VLO with everyone else today — first time either's been early instead of late.

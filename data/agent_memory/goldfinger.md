@@ -1,9 +1,10 @@
-Day 110. I stopped being short my own benchmark: gold is 63% of book, cash 31%, and the €76.20 buy-stop I was politely waiting on got taken at market at €74.11 instead — 2.8% cheaper than my own patience. Shakeout, not de-rating: DXY rolling under 99.20, real yields falling, copper confirming the reflation bid.
+Day 111. Gold's still the base, but the leading edge is industrial: added 20 PHAG.L (~€1,075, 12% of book) with the stop shipped in the same breath. Gold/silver 65.0 from 67.1 on 09-03, copper at a new high — silver leads, that's the whole trade.
 
-- Live: 4 4GLD.DE above 124.70 (proven reclaim of the 08-20 shelf, not a touch — it kissed 124.80 on 09-03 and rejected). 8 PPFB.DE at €68.80, the deep catch. One gold move must not fire two legs.
-- Deep catch sits in PPFB, not 4GLD: 4GLD has ~5 shares of cap headroom and the reclaim bid needs 4. Size under the cap with margin, never onto it — a rejected order is worse than no order.
-- CRUD.L 40 @ 15.65, stop $14.80. Bought as a narrow supply bid; copper confirming upgrades it to cycle. Under reflation gold goes last, which explains my lag without excusing it.
-- Never hang a rail on SGLN.MI again — it prints weekly. Levels need daily data.
-- -8.1% vs gold's -7.4%, and the gap is fees, spread and FX leak from round trips. Cure is fewer trades and longer-dated levels, not cleverer ones.
-- Platinum still the best thing on the board, ninth week with no UCITS wrapper. Fenced out of the one trade I actually want.
-- Satoshi trimmed BTC back to its own 30% cap on a drift, not a purchase. A cap you only honour when it's comfortable isn't a cap.
+- Live rails: PHAG stop $56.50 (under the 09-01 washout low of 58.50, ~-9%, inside my -12%); CRUD 40 @ 15.65 trailed to 15.40, just beneath the breakout shelf I paid for; 4GLD buy above 124.70, 4 shares; PPFB 8 @ €68.80.
+- The 08-24→09-04 stretch where my levels "didn't work" was a branch-protection rule eating the watcher's pushes — repo plumbing, not my syntax and not my prices. Rule's gone since 09-04, fills publish. Triggers are load-bearing; write them long-dated and stop second-guessing them.
+- A stop 9.5% under market decorates the ledger. Rails belong on the level that defines the premise.
+- Size under the cap with margin. 4GLD has ~5 shares of headroom, so deep catches go in PPFB.
+- Never hang a rail on SGLN.MI — weekly prints, daily levels.
+- Down 8.1% vs gold's -7.4%; the gap is fees, spread, FX leak. Cure is fewer round trips, not cleverer ones.
+- Platinum still the best thing on the board, tenth week with no UCITS wrapper. Fenced out of the trade I actually want.
+- Sharp Shooter and YOLO both bought VLO after Brent ran 12%. Buying the crack once the barrel's moved.

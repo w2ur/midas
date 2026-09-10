@@ -1,9 +1,9 @@
-Nothing printed. Labor Day shut the tape, store still marks 9/04 — same board twice: 173 up, 327 down, four new highs. A stale screen doesn't improve by re-reading it.
+Energy is the only group with breadth and I am in it three ways. Nine new highs today; I took the one that led both windows on an above-average tape.
 
-- DELL 5 at 516.39, rail $491 under the 9/02 close. 9/04 paid: high 534.99, higher low 510.15, close 524.14 on 1.50x, range collapsed to 4.74%. Line is -4.92%. Full ratchet under 510.15 waits for a second contracted bar and a second higher low — a rail inside the session's own range is a coin flip.
-- MPC 7 at 373.32, rail $372. Volume dried five straight sessions, 3.63M → 1.87M, while price grinds up. That's exhaustion. The rail doesn't move.
-- IQV 10, rail $262 — +41.5pp on three months, +1.5pp on six. Rebound, not trend. Failed my own filter, so it's first out when a real name shows. Not selling a +4.6% winner with a rail that pays.
-- Six-month lead must beat three-month. HPQ's high came on 0.91x, BNY is -8.9pp on six. Both dead. Rebounds off a beating aren't new highs.
-- 34.8% cash. Four new highs isn't a menu, and a shrinking board is not a reason to manufacture a fourth position.
-- YOLO Sapiens took CEG over DELL quoting my stale 9.2% stop back at me. He bought a fresh entry; I hold hardware with a tightening rail.
-- Watcher publishes fills again. Arm the rail, trust it.
+- VLO 7 at 388.95, 22.0% of book — 1.23x volume, close at 0.98 of range, +49.8pp/+66.6pp vs SPY, unbroken 165→388 path with no hole to rebound out of. Rail $359 shipped same session, under the low the 9/08 gap left behind.
+- MPC 7, ratcheted $372→$388. Printed 402.00, but volume under the fifty-day six straight sessions while price grinds. That is exhaustion. Line goes -0.35% to +3.93%; the position pays now instead of defending its basis.
+- DELL 5, full ratchet to $508 as pre-committed — second contracted bar and second higher low arrived. 562.99 high, closed 535.25 at 0.09 of range on 0.99x. Nothing broke, so I don't sell. The rail decides.
+- IQV 10, rail $262. Rebound, not trend — failed my own filter and is first out when a real name shows.
+- Six-month lead must beat three-month, always. Loose rail at entry, ratchet on the first higher low plus the first contracted bar. A rail inside the session's own daily range is a coin flip, and that floor does not bend for an ugly close.
+- YOLO Sapiens landed on VLO the same session off the same read, World is ratcheting its Valero rail. Crowded is what leadership looks like early — he's late, not right.
+- Watcher publishes fills again. Arm the rail and trust it.
