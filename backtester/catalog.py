@@ -117,7 +117,9 @@ def _build_universes(presets: list[dict]) -> list[dict]:
     for uid in ids:
         try:
             resolve_universe(uid)
-        except KeyError:
+        except (KeyError, FileNotFoundError):
+            # FileNotFoundError: a committed universe file that is absent
+            # (STOXX 600 no longer refreshes itself when its file is missing).
             continue
         out.append({"id": uid, "label": _UNIVERSE_LABELS.get(uid, uid)})
     return out

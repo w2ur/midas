@@ -1,8 +1,11 @@
 name: refresh-universes
 
 # Re-fetches index universes (S&P 500, Nasdaq-100, CAC 40, DAX, FTSE 100,
-# STOXX 600, Dow 30) from Wikipedia and re-seeds the alternative universes
-# from their curated fallback lists. Commits any diff back to main so the
+# STOXX 600, Dow 30) from their upstream sources — Wikipedia, Slickcharts,
+# and for the STOXX 600 DWS's constituent export resolved ISIN by ISIN
+# through Yahoo's lookup (since 2026-09-09; the Wikipedia ticker column
+# produced 120 symbols Yahoo could not route, issue #36) — and re-seeds the
+# alternative universes from their curated fallback lists. Commits any diff back to main so the
 # cloud trading sandbox — which has no outbound HTTP — can read the
 # committed data/universes/*.json files at session time.
 #
@@ -26,7 +29,10 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The STOXX 600 pass is ~605 throttled Yahoo lookups: measured ~6 min on
+    # 2026-09-09 including one rate-limit back-off. The retry schedule can add
+    # another ~1.5 min per rate-limited ISIN, so 10 was too tight.
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repo

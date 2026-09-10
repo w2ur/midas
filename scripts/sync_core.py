@@ -120,7 +120,9 @@ GENERIC_DATA_GLOBS = ["data/strategies/*.json", "data/universes/*.json"]
 #:
 #: Byte-equality here is an invariant a cron legitimately breaks. Live's
 #: `refresh-universes.yml` (cron `15 03 * * 1`, Mondays 03:15 UTC) rescrapes
-#: these from Wikipedia and commits whatever the page says that week; nothing
+#: these from their upstream sources (Wikipedia, Slickcharts, and for the
+#: STOXX 600 the DWS export resolved through Yahoo) and commits whatever they
+#: say that week; nothing
 #: propagates that to core; `core-drift-guard` (cron `17 6 * * 1`, Mondays
 #: 06:17 UTC) then runs the same morning and goes red. It did exactly that on
 #: 2026-08-10 on `sp500.json` and `nasdaq100.json`. A guard a scheduled job is
