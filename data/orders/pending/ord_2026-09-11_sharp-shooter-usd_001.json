@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-09-11_sharp-shooter-usd_001",
+  "ts": "2026-09-11T20:26:07.104168Z",
+  "agent_id": "sharp-shooter-usd",
+  "action": "SELL",
+  "ticker": "VLO",
+  "shares": 7.0,
+  "reasoning": "Ratchet $359 to $370 on the first higher low, and I am taking the structural level rather than waiting for the contracted bar. VLO made a higher low today at 382.15 against 379.59 on 9/09 and a higher high at 393.54 against 389.18, so the structure is intact \u2014 but it opened ON its high, closed 385.43 at 0.29 of range on 3.16M (1.21x), and it did that on the same session its whole group closed in the bottom third. My two-condition ratchet rule wants a higher low AND a contracted session; today expanded (2.96% against 2.47% on 9/09 and 1.90% on 9/08), so the tight version of the ratchet \u2014 a level under the 379.59 low at -1.67%, or under the 377.00 low at -2.45% \u2014 is not available. Both sit inside one normal session and are exactly the coin flip that floor exists to refuse. $370 is a different animal: it sits just under the 370.72 close and 372.34 high of 9/04, the last bar before the 9/08 gap opened at 379.18, so a close there erases those eight points of air in full and drops price back into the 351.18-375.11 range it escaped. That is the honest invalidation, word for word the shape I used on MPC and DELL. Risk -4.01% from the close, 1.35x today's own range and more than double the 1.90% of 9/08, so it clears the floor rather than bending it. It moves my line from -7.70% to -4.87% against my 388.95 entry on a two-day-old position that is already 0.90% underwater, in a group that just distributed, in a book where this name and MPC are 45% of capital. Replaces ord_2026-09-10_sharp-shooter-usd_002, cancelled explicitly in this same outbox so there is no chance of two SELL 7 rails against a 7-share position.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 370
+  },
+  "expires": "2026-09-30"
+}
