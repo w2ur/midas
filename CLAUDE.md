@@ -17,20 +17,17 @@ uv venv --python 3.12
 uv pip install -r requirements.txt
 ```
 
-**`uv`, not `python -m venv` + `pip`.** There is no bare `python` or `pip` on
-this machine's PATH, so the previous instructions could not be followed as
-written; a bare `python3` would have resolved to Homebrew's dependency
-interpreter, which is the invisible-interpreter-swap the portfolio rule warns
-about. Note this is deliberately **not** `uv sync`: `requirements.txt` below is
-the resolved lockfile every consumer installs, and adding `uv.lock` would give
-the project two answers to what it depends on. The `python scripts/...` lines
-elsewhere in this file assume an activated venv (which is the case in CI and in
-the cloud sandbox); locally, prefer `.venv/bin/python`.
+**Deliberately `uv venv` + `uv pip install`, not `uv sync`.** `requirements.txt`
+below is the resolved lockfile every consumer installs, and adding `uv.lock`
+would give the project two answers to what it depends on. The `python
+scripts/...` lines elsewhere in this file assume an activated venv (the case in
+CI and in the cloud sandbox); locally, prefer `.venv/bin/python`.
 
 **Dependencies are pinned.** `requirements.in` holds the human-editable loose
 constraints; `requirements.txt` is the fully-resolved **lockfile** that every
-consumer installs (6 GitHub workflows, the backtester Dockerfile, local dev,
-the sandbox). Pinning the full transitive closure makes CI reproducible — a
+consumer installs (the GitHub workflows — `grep -l requirements.txt
+.github/workflows/*` lists them — the backtester Dockerfile, local dev, the
+sandbox). Pinning the full transitive closure makes CI reproducible — a
 freshly-published wheel can't break a previously-green run without an explicit
 lock bump (origin: the 2026-06-28 pandas 3.0.4 segfault that an unpinned `>=`
 let in). To add/change a dep: edit `requirements.in`, then regenerate with
@@ -61,7 +58,7 @@ refused with `GH006`, and the watcher's `triggers/*` fallback cannot merge eithe
 `gate` is advisory **by decision**; never add a required check, never add a PAT.
 Dates and the removal command are in the **`midas-ci-guards`** skill.
 
-Warnings are errors, with three named third-party exceptions in `pyproject.toml`. Hypothesis settings live in one profile (`tests/conftest.py`, `midas`): `deadline=None` **by measurement** — write no per-test `@settings`.
+Warnings are errors, with the third-party exceptions named and justified in `pyproject.toml`. Hypothesis settings live in one profile (`tests/conftest.py`, `midas`): `deadline=None` **by measurement** — write no per-test `@settings`.
 
 **Every guard must be able to fail, and must have a consumer.** A check nobody reads and a check that cannot go red are the same thing. The rest of the CI discipline — path filtering, push-with-retry, attestation dating, `sync_core.check()`'s two tiers, failure-issue alerting — is in the **`midas-ci-guards`** skill.
 **Published data is guarded in CI, not only in application code** —
@@ -109,7 +106,7 @@ Paths whose purpose is not obvious from the name. Everything under `engine/` tha
 is not listed is ordinary code; read it rather than a description of it.
 
 - `engine/orders.py` — Order/Fill types + outbox/inbox JSONL serde (the Brain/Hands primitive)
-- `engine/paper_broker.py` — Hands side: 19 rejection/cancel reason codes, fill logic, portfolio update. **It refuses implausible numbers, not just ill-formed ones** — `PRICE_IMPLAUSIBLE`, `TRIGGER_LEVEL_IMPLAUSIBLE` (refused *at intake*, so it never arms), `CURRENCY_UNRESOLVED`, `VALUATION_UNAVAILABLE`. **An unevaluated rail is not a passed rail.** The bands are deliberately loose: they target unit/basis errors, which arrive as a factor of 100, not market moves — and `tests/test_rails_live_coverage.py` replays the committed ledger so a tightened band cannot start refusing real trades unnoticed.
+- `engine/paper_broker.py` — Hands side: the rejection/cancel reason codes (`REJECTION_REASON_CODES` is the list), fill logic, portfolio update. **It refuses implausible numbers, not just ill-formed ones** — `PRICE_IMPLAUSIBLE`, `TRIGGER_LEVEL_IMPLAUSIBLE` (refused *at intake*, so it never arms), `CURRENCY_UNRESOLVED`, `VALUATION_UNAVAILABLE`. **An unevaluated rail is not a passed rail.** The bands are deliberately loose: they target unit/basis errors, which arrive as a factor of 100, not market moves — and `tests/test_rails_live_coverage.py` replays the committed ledger so a tightened band cannot start refusing real trades unnoticed.
 - `engine/market_data.py` — **store first, per ticker; yfinance only for what the store cannot cover**
 - `engine/quotes.py` — ticker → currency in three ordered layers (override map, vendor's captured answer, suffix heuristic), then price reads. **The heuristic returns `None` for a suffix it does not enumerate rather than defaulting to USD** — a wrong currency still prices, so that failure has no symptom. **`GBp` is a unit, not a currency: the store is ISO-denominated and the pence→pounds division happens ONCE, at ingest. Read paths must never scale**, or every LSE price is divided by 100 twice.
 - `engine/corporate_actions.py` — split detection, keyed on a transition-anchored constant ratio
@@ -128,21 +125,21 @@ is not listed is ordinary code; read it rather than a description of it.
 - `data/agent_config/` — `live_switch.json` only; per-agent rails moved to `roster.yaml`
 - `data/desk_notices.json` — dated desk-wide notices (`{id, from, until, audience, text}`), read by `engine/desk_notices.py` and injected into every persona prompt at dispatch. **The only channel that tells the agents a fact about the desk's own machinery without the owner re-pasting the live RemoteTrigger prompt** — `docs/triggers/weekday-session.md` is hashed, so a two-week fact does not belong there. Windows are inclusive and self-retiring; `audience: "traders"` is `role: trader` only, `"all"` is everyone. Missing or malformed → no block and a logged warning, never an exception: losing a session over desk prose is worse than an agent missing the notice.
 - `data/cache/` — query-hash cached price data (gitignored)
-- `.claude/agents/` — the ten trader personas plus `the-oracle.md`, which narrates and does not trade
+- `.claude/agents/` — one persona file per `roster.yaml` entry: the traders, `the-manager.md` (isolated channel, unranked) and `the-oracle.md`, which narrates and does not trade. `roster.yaml` is the cast list; it is not restated here.
 - `site/` — Astro static site (Ring 3a), `midas.revah.paris`; reads `data/` and `.claude/agents/` at build time. See the **`midas-site`** skill.
 - `backtester/` — FastAPI service on Cloud Run wrapping `engine.backtest.run_backtest`; being spun out as its own product
 - `app/` — Streamlit dashboard pages
 
 Full rail bands, the currency-resolution layers and the unit migration are in the **`midas-rails-and-currency`** skill.
 
-## Repo Split (SP4 mirror + SP5 publish-prep)
+## Repo Split (midas-core mirror)
 
 - **`w2ur/midas-core` (PUBLIC, MIT) is a MIRROR of this repo's engine, reusable orchestration and `examples/demo-desk`**, produced by `scripts/sync_core.py`.
 - **Edit here, then `python scripts/sync_core.py apply --core <checkout>`. Never hand-edit midas-core.** `core-drift-guard` enforces it. This is also why midas-core carries no `CLAUDE.md`: guidance placed there would invite the one mistake the mirror discipline forbids.
 - **`CLAUDE.md` is not in the manifest** — `sync_core.py` never mentions it, and midas-core has no copy. Editing this file needs no mirrored counterpart.
 - `check()` runs over the full `apply_manifest`, in two tiers, because some manifest files are rescraped or rewritten on a schedule. Details in the **`midas-ci-guards`** skill.
 ## Infrastructure
-- **Cloud Run exception (backtester).** The backtester service runs on Google Cloud Run — a deliberate exception to this project's zero-cost hosting default. Rationale: it is a heavyweight Python container (`bt` + pandas + `engine/`) that edge runtimes (Cloudflare/Vercel/Netlify) cannot host; Cloud Run scales to zero (`min-instances=0`, `max-instances=3` = $0 idle, capped abuse) with 2–5s cold start. Secured with an app-layer shared-secret gate (`BACKTESTER_SECRET`, checked by the FastAPI app) plus `--max-instances=3`; IAM stays open (`--allow-unauthenticated`) so the Netlify proxy can reach it without GCP credentials (SP3). Hosting is revisited at SP4 during the repo split.
+- **Cloud Run exception (backtester).** The backtester service runs on Google Cloud Run — a deliberate exception to this project's zero-cost hosting default. Rationale: it is a heavyweight Python container (`bt` + pandas + `engine/`) that edge runtimes (Cloudflare/Vercel/Netlify) cannot host; Cloud Run scales to zero (`min-instances=0`, `max-instances=3` = $0 idle, capped abuse) with 2–5s cold start. Secured with an app-layer shared-secret gate (`BACKTESTER_SECRET`, checked by the FastAPI app) plus `--max-instances=3`; IAM stays open (`--allow-unauthenticated`) so the Netlify proxy can reach it without GCP credentials.
 
 
 ## Architecture Principle — Brain / Hands
@@ -154,14 +151,14 @@ All external-world integrations in Midas follow a **Brain / Hands split**:
 
 First application (Ring 1): trade execution.
 - Agents write orders to `data/orders/outbox/YYYY-MM-DD.jsonl`.
-- `engine/paper_broker.py` enforces 19 rejection/cancel reason codes (safety checks), fills at end-of-day close from the OHLCV store, writes to `data/orders/inbox/YYYY-MM-DD.jsonl`.
+- `engine/paper_broker.py` enforces the rejection/cancel reason codes (safety checks), fills at end-of-day close from the OHLCV store, writes to `data/orders/inbox/YYYY-MM-DD.jsonl`.
 - Fills with `status="filled"` mutate portfolios via `PortfolioManager.apply_trade`; rejections carry a reason code.
 - Every fill (filled or rejected) is stamped with `executed_sha` — the git HEAD commit the broker executed against. Tamper-evident provenance: `git checkout <executed_sha>` re-derives the exact outbox order and price store the broker saw. Resolved by `engine.paper_broker._current_commit_sha`, degrades to `null` (omitted from JSONL) outside a git repo. Covers both `fill_day` and watcher trigger-fires.
 - Paper fills carry a realistic per-asset-class fee model (`engine/fees.py`, IBIE/Kraken/FX rates). **The equity commission floor is a EUR amount and is converted into the book's currency** (2026-08-07, W7.4) — it was charged as a bare 1.25 on the USD books, ~8% light on every order small enough for the floor to bind. Rates are percentages of an already-converted notional and are not touched; an unavailable FX rate falls back to the unconverted floor rather than raising (bounded to cents, and on the broker path the rate is necessarily present already). An after-tax shadow ledger (`engine/tax_shadow.py` → `data/tax_shadow/`) estimates PFU drag as a reporting signal — it does not alter portfolio cash.
 
 **Safety rails live in the Hands, not agent prompts.** The agent persona is aspirational; the broker is enforcing.
 
-Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_broker.py` that talks to Interactive Brokers — same outbox/inbox contract, credentials held outside the sandbox. See `~/.claude/plans/2026-04-17-midas-public-experiment-design-v2.md` for the full experiment design.
+Real-money transition is a broker swap: replace `paper_broker.py` with an `ibie_broker.py` that talks to Interactive Brokers — same outbox/inbox contract, credentials held outside the sandbox.
 
 
 ### Conditional Triggers (extension of Brain/Hands)
@@ -190,10 +187,10 @@ Same Brain/Hands invariant: safety rails live in the broker, at market-fill time
 - Portfolio state is committed (needed by the sandboxed remote agent)
 - Query-hash cached price data goes in `data/cache/` (gitignored)
 - Every trade must have a `reasoning` field — no silent trades
-- **Share comparisons use a 1e-9 epsilon, not `==`** (`engine.portfolio._DUST_SHARES`, matching `engine.restatement`). 32 of the 227 committed trades are fractional, and `0.3 - 0.1 - 0.2` is 5.55e-17, not zero — so exact comparison left phantom dust positions open forever *and* refused an agent selling the full 0.2 it genuinely held. Both sides of that comparison were wrong; the second was found by the test written for the first.
+- **Share comparisons use a 1e-9 epsilon, not `==`** (`engine.portfolio._DUST_SHARES`, matching `engine.restatement`). Fractional shares are routine in the committed ledger, and `0.3 - 0.1 - 0.2` is 5.55e-17, not zero — so exact comparison left phantom dust positions open forever *and* refused an agent selling the full 0.2 it genuinely held. Both sides of that comparison were wrong; the second was found by the test written for the first.
 - **A sale may not drive cash negative.** The equity fee has a floor, so a tiny disposal can cost more than it raises; `apply_trade` now refuses, symmetric with the BUY-side insufficient-cash guard. The broker's rails normally prevent this, but restatement and baseline paths call `apply_trade` directly.
 - **A malformed line in the inbox raises.** `inbox_order_ids` is the only thing between an order and a second fill; it used to skip unparseable lines silently, reasoning that a corrupt line "cannot retroactively cause a double-fill if the original write succeeded" — which confuses the write succeeding with the record being readable. A corrupt override map or ticker registry still degrades to `{}` (fail-closed: unresolvable tickers are refused at the broker) but now logs an error, because that degradation silently demotes ~1,000 tickers to the suffix heuristic.
-- **Long-only, no short selling.** Use inverse ETFs (`bearish-etfs` universe: SH, PSQ, SQQQ, SPXS, etc.) to express bearish views as long positions. True shorts require borrow data we don't have.
+- **Long-only, no short selling.** Express bearish views as long positions in inverse ETFs. For real-money execution use the **`bearish-etfs-ucits`** universe (`DSP5.PA`, `BX4.PA`, `XDEB.DE`, `DXSN.DE`); the US-domiciled `bearish-etfs` names (SH, PSQ, SQQQ, SPXS) are blocked for EU retail by PRIIPs and are paper-only. True shorts require borrow data we don't have.
 
 
 ## Market Data Pipeline
@@ -213,7 +210,7 @@ Schedules, the revision window, corporate actions and split detection, the unit-
 - **Cross-currency positions must be converted before summing, on EVERY pricing path.** A book holding more than one currency is silently wrong otherwise.
 - **The session refuses to price against a store that stopped advancing** (`assert_session_fresh`). A stale store is unknown, never healthy.
 - **The trading session has no outbound HTTP dependency.** Prices and benchmarks come from the committed store. Anything that adds a network call to the session path breaks the sandbox contract.
-- **Bundle is cadence-invariant** — `assemble_output_bundle` always emits all 10 agents, whatever ran.
+- **Bundle is cadence-invariant** — `assemble_output_bundle` always emits every roster agent, whatever ran.
 
 Which cadence runs when, the watchdog, the sentiment A/B, persona dispatch, model assignment and the push path are in the **`midas-session-cadence`** skill.
 
