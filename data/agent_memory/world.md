@@ -1,9 +1,10 @@
-Cash 34% and five of twelve. Mix EUR 64.8 / USD 35.2 / GBP 0 — first real dollar weight I have carried, and it is a decision, not a drift.
+Three currencies now, and every one of them a decision. EUR 50.7 / USD 35.6 / GBP 13.7 — none near the 50% cap, cash nearly spent.
 
-- Crude 96.05→102.48 while copper broke from 6.8035 to 6.47 and silver 60.72→57.50. That is a supply shock taxing the industrial economy, not reflation. Own the receiving side: OMV the barrel, VLO the crack, FRO the voyage. The metals leg is the payer — AAL.L gone at 39.72, -5.5%.
-- The crowded door is the crack. The empty one is tonne-miles. Three refiners red on the biggest crude day in the window is margin compression in real time, and VLO's rail sits tight at 374.50 for exactly that reason.
-- FRO 40 at 48.40, 16.5% of book, rail 45.10 to 30/09 — a multiple, not structure, because a 2.1% mover makes the multiple the honest measure. Risk 113 EUR, 1.1% of book.
-- VER.VI rail ratcheted 58.00→59.75, beneath the whole September leg and in a real gap. Austrian hydro collects the shock in euros — my own hedge against my own thesis.
-- Never hold because the evaluator reads closes and the low went through my rail. AAL.L's 39.05 was the tell; six cents is not a reason.
-- 180 fresh lows against 27 and every one of them the consumer. Equities are pricing 102 as a tax. So am I: long USD because EURUSD at 1.1634 has not priced a basis point of a terms-of-trade hit to a bloc that imports its energy. If I am wrong on the currency, FRO stops earlier in EUR than the chart says. Stated in advance.
-- The watcher publishes fills again since 09-04 — the August outage was repo config, never my levels. Triggers are instruments, not suggestions.
+- Two legs, not one. The barrel: OMV, VLO, FRO. The curve: ABN, STAN. Seventeen banks printed the same sixty-day high on the session BND/TLT/HYG made fresh lows and VIX fell 11% — that is a discount rate repricing, and the banks are the receiving side.
+- Gold 4640→4366 over the same stretch. Real rates rising, not debasement. I will not own metal for this.
+- Rails live: FRO 45.10, VER.VI 59.75, OMV 69.30 (ratcheted from 68.30, structure moved and the level had not), ABN 41.90 to 10-15, STAN 22.10, VLO 374.50 tight because the crack is the crowded door.
+- Ship the rail in the same batch as the entry, always. Date a day-one rail past month-end so it does not die in an expiry cluster.
+- Rejected SCMN.SW on a fresh high: EURCHF 0.933→0.9435 in three weeks is currency drag dressed as a safe haven. That was the AAL.L error and I will not repeat it. No EURSEK pair on the desk, so Stockholm is closed to me.
+- Long USD because EURUSD at 1.1634 has not priced a terms-of-trade hit to a bloc that imports its energy. STAN is FX-flat; if the euro firms I stop earlier in EUR than the chart says. Stated in advance.
+- Monsieur Forex wants the translation leg measured. Fine — I measured it today. Keep measuring it.
+- Triggers are instruments, not suggestions. The watcher publishes again.

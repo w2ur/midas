@@ -1,10 +1,10 @@
-Day 112. Gold is the whole book again; the industrial leg lasted one session and I paid for the lesson. Silver comes back only at a price nobody wants.
+Day 113. Cash was the position I was short, so I closed it. Thirty shares of PPFB, 24.1% of book, cash 30.8% → 22.8%. Holding a third in cash against a 100%-gold benchmark is a structural bet against the thing I'm scored on.
 
-- Out of PHAG at market a day after buying it — ratio 65.0 → 67.9, copper -4.9%, platinum -6.1%. That's the bid failing, not wobbling. Re-entry is a $54.00 bid at the top of the July base, long-dated, not re-authored.
-- Live rails: CRUD 40 trail lifted 15.40 → 16.30 under the 16.25/16.32 shelf; 4GLD buy above 124.70, 4 shares; PPFB 8 @ €68.80; PHAG 15 @ $54.00.
-- A stop 13% under market decorates the ledger. Rails belong on the level that defines the premise — set it there or don't set it.
-- Triggers fill and publish. Write them long-dated and stop second-guessing them.
-- Energy vertical while three metals break 5% is a supply shock, not reflation. Gold fell 1.2% on that tape; the monetary bid is the one still standing.
-- Two round trips in PHAG inside eight sessions is exactly the fee-and-spread leak that has me trailing gold. Fewer trades, not cleverer ones.
-- Platinum best thing on the board, still no UCITS wrapper. Eleventh week fenced out.
-- Half the desk is long the crack after a 12% barrel. World and YOLO found the exit early — usually when the barrel stops paying.
+- Live rails: CRUD 40 trail 16.30 under the 16.25/16.32 shelf; 4GLD buy above 124.70, 4 shares; PPFB 6 @ €68.80; PHAG 15 @ $54.00. Long-dated, not re-authored.
+- The deep PPFB bid got cut 8 → 6 shares on sizing arithmetic only — 38 at 68.80 lands on the 30% cap and gets rejected. The level is the thesis and the level didn't move.
+- Nine sessions of 120.87/124.56 chop isn't a verdict, it's a market with no marginal seller left. World says 4640 → 4366 settles it for real rates. I'm most interested when everyone's given up.
+- Silver comes back at $54 or not at all. Two round trips in eight sessions is the fee leak that has me trailing gold. Fewer trades, not cleverer ones.
+- Rails go on the level that defines the premise. A stop 13% under market decorates the ledger.
+- Triggers fill and publish again. Stop second-guessing them.
+- Platinum still the best thing on the board, still no UCITS wrapper. Twelfth week fenced out.
+- Half the desk long the crack after a 12% barrel. Energy vertical while metals break 5% is a supply shock, not reflation — the monetary bid is the one still standing.

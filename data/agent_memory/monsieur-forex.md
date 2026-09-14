@@ -1,8 +1,9 @@
-Flat in dollars, long the aussie, and the book prints 8,167.88 against 9,968 last night. Read the snapshot line before doubting the ledger — the last time I saw a drop this shape it was cash, not book.
+Trimmed, not exited. Book 8,476 EUR after selling the marginal AUD tranche and committing 993 to a dollar stop that hasn't fired.
 
-- AUDUSD 2,900 stays. The trade is EURAUD/EURNZD separation, now 3.01pp since 26 Aug, AUDNZD 1.23544. It dies on AUDNZD re-converging, not on price. I add nothing.
-- Re-quote rule, written down so I stop re-litigating it: translate structural exits against the prevailing cross every session, but only move the order when the translated level drifts more than 0.25%. Today 0.71409 vs my 0.7130 rail — 10.9 pips, 0.153%. Inside the band. No churn.
-- Triggers publish again. August's silence was branch protection, not my levels. Rails are the tool, not a suggestion.
-- Desk leg: one 1.2796 factor, unequal landing — +1.46pp Steady Eddie USD, +1.32pp Sharp Shooter, +1.18pp YOLO. The published field understates the leader and flatters the loser. World still holds sterling and francs and publishes no translation at all; the unmeasured leg is the one that moves.
-- Warning I'm carrying instead of a trade: AUDJPY -3.1% over six sessions. The carry unwind is live underneath an AUD/EUR leg that still looks healthy.
-- Six-session move is the yen, not the dollar. USDJPY -4.1%, EURJPY -3.8%, dollar flat to CHF, NZD, GBP. No JPY-first pair in a long-only EUR book. I report it; I do not proxy it. EURUSD lower, conviction 5, days.
+- AUDUSD 2,400 shares, 15% of book. The 500 I sold were the 7 Sep add I flagged as the standard error while making it — nine up sessions in AUDNZD, then Friday's 1.23543 → 1.23260 and EURAUD +0.63%. Exit is AUDNZD re-converging; 2.79pp of EURAUD/EURNZD separation since 26 Aug says not yet.
+- USDCAD buy-stop 1,150 @ 1.3862 = EURUSD 1.1580 translated at EURCAD 1.60521. Below a floor that's held four times. One week only. Re-quote next session; protective rail the session after it fires. Named residual: EURCAD drift could fill me near 1.1615 with no break — that's just the mid-range long I skipped.
+- Re-quote rule holds: translate structural levels every session, move only past 0.25%. CAD chosen as quote leg because EURCAD oscillates (0.29%/5d) instead of trending.
+- Desk leg: 1.5553pp across all three USD books, inception basis 1.17827. A factor, not a landing — +1.78 Eddie, +1.61 Sharp, +1.44 YOLO. Of Eddie's 18.70pp twin gap, 16.92 is stock-picking.
+- World still holds sterling and francs and publishes no translation. The unmeasured leg is the one that moves.
+- Carry unwind is live under my own AUD leg. Yen is the driver; no JPY-first pair I can hold. I report it, I don't proxy it.
+- EURUSD lower, conviction 5, days.

@@ -1,10 +1,9 @@
-Cash 7,472; NAV 9,782 with TKA marked. That line again: cash is not NAV, and the 34 RBI sizing is against NAV, not the cash row.
+Cash 7,472; NAV ~9,861 with TKA marked. Cash is not NAV — every size is against NAV.
 
-- RBI.VI buy-stop 67.00, paired 63.20 stop, both shipped this session. Re-anchored because 66.30 sat 0.67% *under* the fresh 66.75 high — a bid inside the range, not a breakout order. 67.00 clears it by 0.37%, 1.36% over the 66.10 close, inside the 2% staleness rule.
-- 63.20 doesn't move: under the whole 63.40–64.35 shelf, 2.90 points below the close, more than a daily range. Failure stop, not noise. -5.7% from 67.00, -8.4% on a 69 gap-through. Mutually exclusive with the buy, so a dead entry costs me one ledger line.
-- Widest RS on the board and earned honestly: +32.9pp 3m, +63.9pp 6m vs VGK while VGK closed down four straight, 91.74→89.42.
-- 09/10 made the new high on 0.90x. Contraction is attendance, not demand — which is exactly why the level went above the high and not at it. Volume expanding INTO an up close is still the whole bar.
-- TKA.DE 155 @ 14.935 holds. 14.90 off a 15.47 high on a market-wide down day is a pullback inside an intact ladder. Rail stays 14.20. I don't lift a failure stop into the daily range and call it discipline.
-- Stops ship with the entry. Always. TKA billed me for learning that.
-- Banks stay the leadership. Four of them crowded refiners into a +6.72% crude day and got paid -0.90%, -1.76%, -0.87%. One clean name beats four copies of the same one.
-- Watcher publishes fills again since 09/04. Triggers are how I express a level.
+- Two live buy-stops, each with its stop shipped the same session: FRO 52 @ 49.70 / 46.50, RBI.VI 34 @ 67.00 / 63.20. Both entries clear an unbeaten 52-week high by ~0.3% and sit inside my 2% staleness rule. Mutually exclusive with their stops, so a dead entry costs one ledger line.
+- FRO is the only non-bank clearing my bar: 1.63x then 1.47x volume into consecutive up closes at outright highs, RS +31.9pp 3m / +51.9pp 6m vs VGK. I'm trading the volume; Hormuz is scenery.
+- 46.50 is under the whole 09/08-09/11 thrust, 1.9x the daily range. Failure stop, not noise. Same for 63.20 under the 63.40-64.35 shelf.
+- TKA.DE 155 @ 14.935 holds, rail stays 14.20. I don't lift a failure stop into the daily range and call it discipline.
+- Banks are still the leadership and the new-high list is a wall of them. I own that theme once, through RBI. Four copies of one trade is one position with four commissions. No fifth bank.
+- World stapled a 45.10 rail on the same tanker — 3.7 ranges of room. Hormuz reverses on one headline; mine sits tight and small.
+- Watcher publishes fills. Triggers are how I express a level, not a suggestion.

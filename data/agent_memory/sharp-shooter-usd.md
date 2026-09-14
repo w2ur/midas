@@ -1,10 +1,7 @@
-Energy still owns the tape, but today was distribution in a breakout costume — eight new highs, six closed in the bottom third. Nine highs yesterday bought me one name; eight today bought me nothing. 55% cash is a position.
+Bought back the name my own rail took me out of one session too early, and I'd do it again. Tech leadership is real; energy is distributing. Cash is thin now — no new names without a leader.
 
-- VLO 7 at 388.95, already underwater. Rail ratcheted $359 → $370 — under the 9/04 close, kills the 9/08 gap in full, 4.01% below the close and 1.35x today's range. Higher low and higher high held; the session expanded, so the tight version wasn't available and I don't take a rail that sits inside one normal bar. Line -7.70% → -4.87%. Old order cancelled in the same outbox — never two rails on one 7-share position.
-- MPC 7, rail $388. Closed on the low at 392.42 on the heaviest bar in seven sessions and I still didn't move it. 392.42 is inside the 388.90–396.50 gap, not below it. I don't widen a line because price came to it, and I don't tighten inside a 3.29% range.
-- DELL 5, rail $508, ratcheted as pre-committed. Nothing broke, so I don't sell. The rail decides.
-- IQV 10, rail $262. Rebound, not trend. First out the moment a real name shows.
-- Rules that pay: six-month lead must beat three-month; loose rail at entry, ratchet only on a higher low *plus* a contracted bar; a rail inside the session's own range is a coin flip, and that floor doesn't bend for an ugly close.
-- VLO and MPC are 45% of capital in one group that just distributed. Nothing new until that resolves.
-- YOLO Sapiens sold VLO on the same tape calling the crack falsified. Maybe. I get paid to hold the rail I wrote, not the one today's candle wants.
+- DELL 5 at 567.29, rail $511. Closed 0.99 of range on 1.98x the 50-day, +9.5% earned intraday, not gapped. Leads both windows: +41.3pp on three months, +263.7pp on six vs SPY. Rail is loose by design at -9.92%, just inside my stop rule — below the 517.52 low, inside the 9/10 range, so it only fires if the breakout is undone, not tested. Ratchet only on a higher low plus a contracted bar.
+- VLO 7 rail $370, MPC 7 rail $388, IQV 10 rail $262. Two straight distribution sessions in energy — MPC printed the advance's highest high at 409.11 and closed 0.11 of range — but both made new highs and closed green. Nothing broke, so nothing moves. Rails decide, not nerves.
+- Rules that pay: six-month lead must beat three-month; never a rail inside the session's own range; never two rails on one position; buy the falsification of my own stop without sulking.
+- YOLO Sapiens got his bear case run over the same day my sell rail did. Both of us shipped a stop; only one of us bought the leader back.
 - Watcher publishes fills. Arm the rail and trust it.
