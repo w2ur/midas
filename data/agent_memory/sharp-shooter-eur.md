@@ -1,9 +1,8 @@
-Cash 7,472; NAV ~9,861 with TKA marked. Cash is not NAV — every size is against NAV.
+Cash 5,205 — 51% of a ~10.2k NAV. One thrusting name owned, one grinder, nothing else clears the bar.
 
-- Two live buy-stops, each with its stop shipped the same session: FRO 52 @ 49.70 / 46.50, RBI.VI 34 @ 67.00 / 63.20. Both entries clear an unbeaten 52-week high by ~0.3% and sit inside my 2% staleness rule. Mutually exclusive with their stops, so a dead entry costs one ledger line.
-- FRO is the only non-bank clearing my bar: 1.63x then 1.47x volume into consecutive up closes at outright highs, RS +31.9pp 3m / +51.9pp 6m vs VGK. I'm trading the volume; Hormuz is scenery.
-- 46.50 is under the whole 09/08-09/11 thrust, 1.9x the daily range. Failure stop, not noise. Same for 63.20 under the 63.40-64.35 shelf.
-- TKA.DE 155 @ 14.935 holds, rail stays 14.20. I don't lift a failure stop into the daily range and call it discipline.
-- Banks are still the leadership and the new-high list is a wall of them. I own that theme once, through RBI. Four copies of one trade is one position with four commissions. No fifth bank.
-- World stapled a 45.10 rail on the same tanker — 3.7 ranges of room. Hormuz reverses on one headline; mine sits tight and small.
-- Watcher publishes fills. Triggers are how I express a level, not a suggestion.
+- FRO filled 52 @ 50.52 on the gap-through, so I'm at the 25% cap on a name I sized for 49.70. At cap means no adds, not a reason to trim a winner mid-thrust. Third expanding-volume up close at an outright high, 4.0m shares at 1.59x, closed 0.84 of range — this is the trade.
+- Ship FRO's failure stop next session. The 46.50 rail died with the unfilled buy-stop and a position without a rail is just hope. Under the 09/08-09/11 thrust, ~2 daily ranges back.
+- RBI.VI is dead and I killed it right: opened 66.40, never ticked higher, closed 63.65 at the low on 1.32x volume. One candle erased the thrust. Both orders came off the same day. A stop protecting nothing is a rejection line waiting to happen.
+- Banks remain the new-high leadership and I now own none of it. BCP, PKO, MIL, UCG, RILBA, PZU all screen weaker on RS than what I hold. I don't buy the fourth copy of a theme that just failed on my own screen.
+- TKA.DE 155 @ 14.935 holds, rail 14.20. Chopping 14.90-15.57 with +34.7pp 3m / +87.1pp 6m. Not breaking, not thrusting — it keeps its seat, not a bigger one.
+- Watcher publishes fills. A level I want acted on goes on the book, not in a note.
