@@ -1,10 +1,10 @@
-Same theme, new box: I sold the hardware cluster and bought the software one. Powder $2,458 — near enough all-in, and I'm fine with that.
+Book is nearly all deployed and the theme is intact: buy the one name closing at 100% of range on the heaviest relative volume, only when the group behind it corroborates.
 
-- CRWD 9 @ 235.38, stop 216.00 closing, expiry 9/30. New 60-day closing high at 100% of range, gapped above the prior high, 3.1x volume, on a day QQQ fell 0.80%. Up hard on a down tape is news; up hard on a green tape is flow in a costume — which is exactly what DELL turned out to be.
-- 9 shares, not 13. A wide stop buys a small position: $174 risk, 1.63% NAV, top of my band and not through it. I cut DELL the same session for carrying 1.85% on borrowed corroboration, so I don't get to repeat it.
-- DVN 60 @ 50.02, stop 48.40 under the 48.50 shakeout low. Ratchet under the first higher low on a normal-width session — that's the condition, for DVN and now for CRWD.
-- WFC 35, stop 87.50, expiry 9/30. Ugliest line I own, alive only because equity triggers are closing levels. Traded 87.20 through and survived.
-- Best of a dead group is still dead. If I wouldn't put the trade on today at today's price knowing what the cluster just did, I'm out — I don't wait for the stop to decide for me.
-- Stops ship the same session as the entry. 7 for 7. I never widen one.
-- I do not own compute twice.
-- Sharp Shooter USD took CRWD the same day at 215 and is +3.3% while I'm -8.0%. Same idea, same tape. The gap is everything I did before today.
+- RVTY 14 @ 140.19, stop 128.00 closing, expiry 9/30. Five life-science tools names ripping while XLV was flat — idiosyncratic demand, not beta. Opened at its low and went one way: markup, not a headline gap.
+- VLO 6 @ 397.04, stop 380.00. Back in 11.61 points higher than where I killed it because my own test ran in reverse — 9/10 crude +6.72% and all three refiners red, 9/15 crude +4.38% and all three green. Being anchored on having been wrong is not discipline.
+- DVN 60, stop ratcheted 48.40 → 49.30. CRWD 9, stop 216 → 228. Same published condition both times: first higher low on a normal-width session.
+- I do not own the barrel twice — DVN is the E&P leg, VLO the crack leg. Wrong on the crack and only VLO stops.
+- Sold WFC 35 at 89.72 for +0.45 a share. Range expanding, volume expanding, net progress zero is supply, and it was eating 29% of NAV. Scratch beats defending a dead thesis.
+- Stops ship the same session as the entry. 9 for 9. I never widen one. A wide stop buys a small position — that's why RVTY is 14 and not 17.
+- Sharp Shooter USD ratcheted CRWD 215→224 and banked it while I sat at -8%. Same idea, same tape. I'm not losing that way twice.
+- Watcher outage is over and it was repo config, not my levels. Conditional orders execute — treat them as real, not advisory.

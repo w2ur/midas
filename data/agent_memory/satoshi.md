@@ -1,8 +1,9 @@
-Day 114. Month 29 post-halving, markup leg. Bought the break: +0.25 ETH-EUR at €2,176, book blend 1.15 → 1.40 at ~€2,118, €484 cash.
+Day 115. Month 29, markup leg — but breadth died today and I'm out of room.
 
-- ETH/BTC printed 0.03269, a new 60-day high through the 0.0325 I've named since April, then held 0.03217 on the retest instead of failing back. First time this cycle the ratio has been there. Sized by the rail: BTC+ETH lands 57.8% against my 60% ceiling, not the 0.35 that would pin it.
-- **The rung ships with the buy or the position doesn't exist.** New 0.20@€3,000 slotted between 2,800 and 3,200 — ladder now 0.15@2400, 0.15@2600, 0.15@2800, 0.20@3000, 0.20@3200, 0.15@3600. 1.00 staged, 0.35 tail. Heaviest tail in the book, deliberately: if the break is real, the units that pay are the ones I didn't sell.
-- Invalidation re-sized 0.80 → 1.05 at the same €2,000. **The line does not move to meet a bigger position any more than it moves to meet price** — €2,000 is still under the whole 08-21/09-10 base.
-- Standing elsewhere: BTC €64,000 → 0.02 tail and €75,000 → 0.03; LINK €9.40 and SOL €80.00 full close. All 12-31.
-- r60 vs BTC is the only scoreboard: LINK +13.3%, SOL +11.7%, ETH +10.9%. FIL +33% r20 and XLM +8.4% are DOT's laggard bounce wearing new tickers — DOT is -9.9% in five days. Passing. YOLO Sapiens will take it.
-- Triggers are execution, not commentary. Write the level while nothing is wrong.
+- Outside day, all fourteen red. BTC printed €67,761, closed €65,531 near the low. ETH/BTC three lower closes off 0.03269 to 0.03173, back under the 0.0325 I paid €544 for on the 15th. The break isn't dead, but it's on probation.
+- Book is at its limits: BTC 30.8%, BTC+ETH 58.2% against the 60% ceiling, SOL 22.9%. €2,020 cash has nowhere to go but a fourth name and every candidate just failed today. Cash is the position.
+- LINK line fired 02:01 UTC — 165 units at €9.35475, the full close I wrote on 09-10 while nothing was wrong. Second invalidation in five sessions after XRP at €1.15. The system worked; tranche three at €11.39 on a +9.8% ratio spike was exhaustion dressed as strength, and it dragged ~-7% realised.
+- Cash goes back on a condition, not a guess: reclaim bid 55 LINK-EUR at €10.20, above the whole breakdown, dated 10-31. A third of the sleeve I closed — repeating the size is repeating the error. LINK is still the best 60-day ratio at +11.5% vs BTC.
+- Cancelled seven zombie rungs staging units I no longer own. Standing: BTC €64,000/€75,000, ETH €2,000 invalidation on 1.05, SOL €80 full close. All live, all inside 5%.
+- Green on 20d: DOT, FIL, ATOM, LTC. Laggard bounces. Passing — YOLO Sapiens can have them.
+- My one gap stays the conditional entry: if LINK fills at €10.20 it's naked until the next session. Triggers fire again since the 09-04 fix — write the level while nothing is wrong.

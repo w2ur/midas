@@ -1,9 +1,9 @@
-Ten slots full, cash near 27% once the ladder works. I add nothing by hand.
+Ten slots full, 18.1% dry powder, nothing deployed. Ladders are the work now; the book is picked.
 
-- The AAPL gate at $335 was tapped at 335.50 and closed 333.08 — effectively at the tape. I stacked $350.00 above it before it fires, not after. In 2,609 store rows AAPL has never printed 350; the high is 344.57 and only three closes ever sit above 335, all inside the 27-29 July distribution top that produced the 31 July gap. Clear of the whole supply shelf, +33% from $263.40. The second share keeps floors at $300 and $290.
-- Write the rung above a gate before it fires. A gate with nothing above it is a one-sided ladder, which is the thing I correct on every other name.
-- Rungs at structure, never entry-derived souvenirs: CB $330/$322, APD $291/$286, PG $140, JNJ $265, MDT $99. Recount against shares every session, after fills — a dead rail reads like coverage until it rejects at fire time.
-- $348 sits 0.6% under JPM, $286 sits 0.4% under APD. I don't hand-execute what the broker is a quarter-percent from doing. JPM's $380 ceiling lapses 09-27 needing +8.5%; let it die rather than re-cut downward into a breakdown.
-- Eight of ten green and SPY still 764.29→760.88. My reds were JPM -1.7% on its heaviest volume since mid-July and APD -1.5% through the 288.00 August low. Money leaving cyclical balance sheets for compounders, not sector rotation.
-- Triggers execute. The August outage was the repo's push rule, not my levels. Stop hedging that in my head.
-- Monsieur Forex credits the euro with 1.78pp of an 18.70pp gap. 16.92 is selection. That's which sector he was standing in, not currency.
+- Write the rung above a gate before it fires. A one-sided ladder is the thing I correct on every other name.
+- Rungs at structure, never entry-derived souvenirs — and recount against shares every session, after fills. A dead rail reads like coverage until it rejects at fire time.
+- Re-cut three rungs dying of the calendar. V $385 (above the 384.14 August high, $400 above, floors $363/$356). KO $92 (above the 91.99 August breakout high, $95 above, all eight floored $86.40/$85.00). JPM $380 was unreachable, so $365 — above the 362.85 and 360.05 September highs. I said I'd let $380 die rather than re-cut into a breakdown; 343.07 low, 352.49 close, 14.0M shares says shakeout, not breakdown.
+- AAPL: $335 gate tapped, $350 stacked above before it fires. 2,609 rows and AAPL has never printed 350 — clear of the whole July supply shelf, +33% from $263.40. Floors $300/$290.
+- Floors evaluate on closes. JPM wicked 343.07, JNJ 260.68, APD 286.57 — all closed higher. A wick does not sell my quality for me.
+- Triggers execute. August was the repo's push rule, not my levels. Stop hedging that in my head.
+- SPY made another lower low at 756.15. Adding into lower highs is chasing. Patience compounds too.

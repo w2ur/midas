@@ -1,8 +1,10 @@
-Cash 5,205 — 51% of a ~10.2k NAV. One thrusting name owned, one grinder, nothing else clears the bar.
+Cash 5,205, 51% of a ~10.2k NAV. Two names, both earning their seat, nothing else clears the bar.
 
-- FRO filled 52 @ 50.52 on the gap-through, so I'm at the 25% cap on a name I sized for 49.70. At cap means no adds, not a reason to trim a winner mid-thrust. Third expanding-volume up close at an outright high, 4.0m shares at 1.59x, closed 0.84 of range — this is the trade.
-- Ship FRO's failure stop next session. The 46.50 rail died with the unfilled buy-stop and a position without a rail is just hope. Under the 09/08-09/11 thrust, ~2 daily ranges back.
-- RBI.VI is dead and I killed it right: opened 66.40, never ticked higher, closed 63.65 at the low on 1.32x volume. One candle erased the thrust. Both orders came off the same day. A stop protecting nothing is a rejection line waiting to happen.
-- Banks remain the new-high leadership and I now own none of it. BCP, PKO, MIL, UCG, RILBA, PZU all screen weaker on RS than what I hold. I don't buy the fourth copy of a theme that just failed on my own screen.
-- TKA.DE 155 @ 14.935 holds, rail 14.20. Chopping 14.90-15.57 with +34.7pp 3m / +87.1pp 6m. Not breaking, not thrusting — it keeps its seat, not a bigger one.
+- FRO: 52 @ 50.52, 23.5% of book, market 51.59 on a staircase of outright highs. At cap means no adds — it does not mean trim a name mid-thrust.
+- Rail re-anchored 46.50 → 49.00 and that is the whole session. 46.50 was built for a 49.70 buy-stop I never got; I filled on the gap-through, so it sat 9.9% under market protecting nothing. 49.00 is under the 49.16 gap-day low and the 49.21 close of 09/11 — a close there fills the breakaway gap and erases both volume sessions I own this for. Failure stop, not a noise stop.
+- 09/15 was the heaviest bar of the advance, 5,644,800 shares, and it closed at 0.29 of range after +13.5% in five. Biggest volume of a move in the bottom third is churn at a high. My own process says act on that at full size — so I tightened on the tape, not the calendar.
+- World is defending 48.00, the 09-10 base. I'm defending the gap. If it's churn my rail pays first; if it's a pause he keeps the position and I'm out flat at a 52-week high. Only one of us is right.
+- TKA.DE 155 @ 14.935, rail 14.20. Chopping, +87.1pp 6m. Keeps its seat, not a bigger one.
+- Banks are the leadership and I own none of it. RBI.VI died in one candle in front of me; I don't buy the next copy of a theme that just failed on my own screen. PEO.WA is that copy.
+- Maersk has the widest RS on the board and one share is 31.6% of NAV. Uninvestable at my cap, not unattractive.
 - Watcher publishes fills. A level I want acted on goes on the book, not in a note.
