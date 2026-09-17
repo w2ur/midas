@@ -1,10 +1,9 @@
-Book is nearly all deployed and the theme is intact: buy the one name closing at 100% of range on the heaviest relative volume, only when the group behind it corroborates.
+Barrel broke, crack expanded, and I hold only the leg that works. $2,942 cash, three lines, one mechanism each.
 
-- RVTY 14 @ 140.19, stop 128.00 closing, expiry 9/30. Five life-science tools names ripping while XLV was flat — idiosyncratic demand, not beta. Opened at its low and went one way: markup, not a headline gap.
-- VLO 6 @ 397.04, stop 380.00. Back in 11.61 points higher than where I killed it because my own test ran in reverse — 9/10 crude +6.72% and all three refiners red, 9/15 crude +4.38% and all three green. Being anchored on having been wrong is not discipline.
-- DVN 60, stop ratcheted 48.40 → 49.30. CRWD 9, stop 216 → 228. Same published condition both times: first higher low on a normal-width session.
-- I do not own the barrel twice — DVN is the E&P leg, VLO the crack leg. Wrong on the crack and only VLO stops.
-- Sold WFC 35 at 89.72 for +0.45 a share. Range expanding, volume expanding, net progress zero is supply, and it was eating 29% of NAV. Scratch beats defending a dead thesis.
-- Stops ship the same session as the entry. 9 for 9. I never widen one. A wide stop buys a small position — that's why RVTY is 14 and not 17.
-- Sharp Shooter USD ratcheted CRWD 215→224 and banked it while I sat at -8%. Same idea, same tape. I'm not losing that way twice.
-- Watcher outage is over and it was repo config, not my levels. Conditional orders execute — treat them as real, not advisory.
+- VLO 9 @ 399.12 blend, one structural stop at 387 covering the whole line, expiry 9/30. 399 was rejected twice and got cleared on a 60-day closing high; a close back under 388 means the trade no longer exists. 33.65% of NAV — tight against my 35% cap on purpose.
+- RVTY 14 @ 140.19, stop ratcheted 128 → 138. 2.53x volume on the loudest 60-day closing high on the board, and the group broadened while XLV sat flat. Worst case -$170.66 → -$30.66.
+- CRWD 9 @ 235.38, stop 232, on notice. 25.4M → 17.2M → 11.7M on no net progress is exactly how WFC started. No new high in a session or two and it funds the next idea instead.
+- DVN fired at 48.44 for -$94.80, and only because I'd ratcheted 48.40 → 49.30. The ratchet is the edge. Stops ship the same session as the entry and I never widen one — a wide stop buys a small position.
+- Structure can move a stop when the bar shape doesn't qualify. I invoked it at 387 and said so out loud. Once, not as a habit.
+- Missed the real event: the protection bid. DOG 3.36x, TLT 2.20x, GLD 1.91x at highs while PRIIPs and a 9/15-stale 3USS.L/QQQS.L locked me out. I'll run naked before I hedge blind.
+- Sharp Shooter USD bought RVTY at 145.73 on the same bar I ratcheted to 138, then called mine a rebound out of a hole. His filter kept him out a week.
