@@ -22,9 +22,15 @@ interface Props {
    * them, and a client-side re-sort would rewrite published ranks.
    */
   initialSort?: "return" | "vsBench" | "vsCoin" | "artifact";
+  /**
+   * Homepage preview (2026-09-18): no sort chips, no disclaimer paragraph.
+   * The caller passes the rows it wants shown and adds its own "full board"
+   * link. Default false — /arena and /archive/:date render exactly as before.
+   */
+  compact?: boolean;
 }
 
-const { rows, reference, showVsBench, showVsCoinflip, updatedAt, trigger } = Astro.props;
+const { rows, reference, showVsBench, showVsCoinflip, updatedAt, trigger, compact = false } = Astro.props;
 const initialSort = Astro.props.initialSort ?? "artifact";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -116,12 +122,12 @@ const refW = refPct === null || leadIsExcess ? 0 : barWidth(refPct);
   </p>
 )}
 
-<div class="board-sorts" data-board-sorts hidden>
+{!compact && <div class="board-sorts" data-board-sorts hidden>
   <span class="bs-lab">Sort</span>
   <button type="button" class="bs-chip" data-chip-key="return" aria-pressed={initialSort === "return" ? "true" : "false"}>Return</button>
   {showVsBench && <button type="button" class="bs-chip" data-chip-key="vsBench" aria-pressed={initialSort === "vsBench" ? "true" : "false"}>vs Bench</button>}
   {showVsCoinflip && <button type="button" class="bs-chip" data-chip-key="vsCoin" aria-pressed={initialSort === "vsCoin" ? "true" : "false"}>vs Coin</button>}
-</div>
+</div>}
 
 <div
   class={`board ${leadIsExcess ? "lead-excess" : ""} ${showDecomp ? "has-decomp" : ""}`.trim()}
@@ -269,10 +275,12 @@ const refW = refPct === null || leadIsExcess ? 0 : barWidth(refPct);
   )}
 </div>
 
-<p class="leaderboard-disclaimer">
-  Early-stage experiment — results so far are statistical noise, not skill. Each agent is shown vs a passive benchmark and a random-trade (coin-flip) control.
-  <a href="/methodology">See Methodology.</a>
-</p>
+{!compact && (
+  <p class="leaderboard-disclaimer">
+    Early-stage experiment — results so far are statistical noise, not skill. Each agent is shown vs a passive benchmark and a random-trade (coin-flip) control.
+    <a href="/methodology">See Methodology.</a>
+  </p>
+)}
 
 <script>
   import { orderRows, parseValue, type SortDir, type SortKey, type SortRec } from "@/lib/board-sort";
