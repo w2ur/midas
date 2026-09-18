@@ -59,7 +59,8 @@ const toc = methodologyToc();
 
   {movedAnchors.length > 0 && (
     <script is:inline define:vars={{ movedAnchors, changelogPath: CHANGELOG_PATH }}>
-      /* Forward the eleven anchors that moved to the changelog page.
+      /* Forward every anchor that moved to the changelog page (the list is
+         `changelogAnchors`, derived from the document, never hand-typed).
          A fragment is never sent to the server, so no redirect rule can see
          one — links published in commit messages and ledger notes before the
          split can only be honoured here, on the client. `replace` keeps the
