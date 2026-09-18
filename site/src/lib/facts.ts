@@ -76,3 +76,9 @@ export function pickFacts(keys: FactKey[]): Fact[] {
   const all = experimentFacts();
   return keys.map((k) => all.find((f) => f.key === k)).filter((f): f is Fact => Boolean(f));
 }
+
+/** "ten" for 10, "eleven" for 11 … a numeral past twelve. For prose that names a count. */
+export function countWord(n: number): string {
+  const words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+  return n >= 0 && n < words.length ? words[n] : String(n);
+}

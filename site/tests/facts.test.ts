@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { experimentFacts, pickFacts } from "../src/lib/facts";
+import { experimentFacts, pickFacts, countWord } from "../src/lib/facts";
 import { cadenceStats, preRegistrationStatus } from "../src/lib/cadence";
 import { TRADING_AGENTS } from "../src/lib/roster";
 
@@ -39,12 +39,20 @@ describe("pickFacts", () => {
     expect(picked.map((f) => f.key)).toEqual(["skill", "money"]);
   });
 
-  it("is the same objects the full list carries — one source, two consumers", () => {
+  it("carries the same values as the full list — both read one derivation", () => {
     const full = experimentFacts();
     const picked = pickFacts(["money", "sessions", "fills", "skill"]);
     for (const p of picked) {
       const twin = full.find((f) => f.key === p.key);
       expect(twin).toEqual(p);
     }
+  });
+});
+
+describe("countWord", () => {
+  it("spells small counts and falls back to numerals", () => {
+    expect(countWord(10)).toBe("ten");
+    expect(countWord(6)).toBe("six");
+    expect(countWord(13)).toBe("13");
   });
 });

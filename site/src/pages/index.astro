@@ -12,9 +12,11 @@
 //
 // Now: one status line (StatusRail, in the layout — the only stamp on the
 // page), the promise, the honest-controls strip shared with /methodology,
-// then summaries with one link each. The nine-column board, the reference
-// row and the sort chips live on /arena, untouched. No FX arithmetic here:
-// every figure is read off the engine's artifacts or off lib/cadence.
+// then summaries with one link each. The board preview is the top three rows
+// plus the MSCI World reference row, unsortable; /arena renders every agent
+// as a tile with the compare chart, and /archive/:date keeps the full sortable
+// board. No FX arithmetic here: every figure is read off the engine's
+// artifacts or off lib/cadence.
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import AgentCrest from "@/components/AgentCrest.astro";
 import LeaderboardTable from "@/components/LeaderboardTable.astro";
@@ -23,7 +25,9 @@ import { loadLatest } from "@/lib/output";
 import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 import { loadBlogLatest, excerpt } from "@/lib/blog";
 import { loadAllOrders } from "@/lib/orders";
-import { isTradingAgent, getAgent } from "@/lib/roster";
+import { isTradingAgent, getAgent, TRADING_AGENTS } from "@/lib/roster";
+import { loadGlobalReference, returnPct } from "@/lib/baselines";
+import { countWord } from "@/lib/facts";
 import { isCrestId } from "@/lib/crests";
 import { cadenceStats } from "@/lib/cadence";
 import { gateCDate } from "@/lib/methodology";
@@ -63,8 +67,13 @@ const managerDays = managerSnaps.length;
 const gateC = gateCDate();
 
 const cadence = cadenceStats();
+// The roster size is derived like every other count on this page; "Ten" was
+// hand-typed in the h1 and the title while StatusRail printed the length.
+const rosterWord = countWord(TRADING_AGENTS.length);
+const RosterWord = rosterWord.charAt(0).toUpperCase() + rosterWord.slice(1);
+const globalRefPct = returnPct(loadGlobalReference());
 const homeDescription =
-  `Ten Claude agents evaluate the market every weekday; most decline most days. ` +
+  `${RosterWord} Claude agents evaluate the market every weekday; most decline most days. ` +
   `${cadence.totalFills} fills across ${cadence.sessions} sessions since April 2026 — ` +
   `every order, fill, and rationale public. Paper money only — nothing is real.`;
 
@@ -100,18 +109,18 @@ const eur = (n: number) =>
 const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 0 ? "neg" : "";
 ---
 <BaseLayout
-  title="Ten AI agents, one desk, every decision public"
+  title={`${RosterWord} AI agents, one desk, every decision public`}
   description={homeDescription}
   current="home"
 >
   <!-- ═══ 1. THE PROMISE ═══ -->
   <section class="page hero">
-    <h1>Ten AI agents trade a paper book. Every decision is public.</h1>
+    <h1>{RosterWord} AI agents trade a paper book. Every decision is public.</h1>
     <p class="promise">
       Every order they place — and every one they refuse — is published the same day.
       Every book runs against a passive benchmark and a coin flip.
     </p>
-    <MethodologyFacts only={["money", "sessions", "fills", "skill"]} compact label="The experiment in four facts" />
+    <MethodologyFacts only={["money", "sessions", "fills", "skill"]} compact />
     <p class="hero-links">
       <a class="cta" href="/methodology">How this is scored →</a>
       <a class="cta ghost" href="/arena">The full board →</a>
@@ -126,9 +135,15 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
         <p class="board-fact">Ahead of their own benchmark: <b>{beating} of {measured.length}</b></p>
       )}
     </header>
-    <LeaderboardTable rows={previewRows} showVsBench initialSort="vsBench" compact />
+    <LeaderboardTable
+      rows={previewRows}
+      reference={{ label: "MSCI World (EUR)", return_pct: globalRefPct }}
+      showVsBench
+      initialSort="vsBench"
+      compact
+    />
     <p class="more-row">
-      <a href="/arena">All ten agents, the passive reference and the full decomposition →</a>
+      <a href="/arena">All {rosterWord} agents, side by side →</a>
     </p>
   </section>
 
@@ -178,7 +193,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
         </div>
       </div>
       <p class="mc-pitch">
-        The allocator: it reads the ten traders&rsquo; convictions and commits a separate
+        The allocator: it reads the {rosterWord} traders&rsquo; convictions and commits a separate
         €{eur(MANAGER.initial_capital)} book. It is the one book with a pre-registered real-money
         gate{gateC ? <>, scored on <b>{humanDate(gateC)}</b></> : null}.
       </p>

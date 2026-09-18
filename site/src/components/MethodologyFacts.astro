@@ -5,7 +5,7 @@
 // six) and the homepage (four, `compact`) read — so the two pages cannot
 // disagree on a fill or session count. Every figure is derived from committed
 // artifacts at build time.
-import { experimentFacts, pickFacts, type FactKey } from "@/lib/facts";
+import { experimentFacts, pickFacts, countWord, type FactKey } from "@/lib/facts";
 
 interface Props {
   /** Which facts, in order. Omit for all six. */
@@ -17,7 +17,7 @@ interface Props {
 }
 const { only, compact = false, label } = Astro.props;
 const facts = only ? pickFacts(only) : experimentFacts();
-const ariaLabel = label ?? "The experiment in six facts";
+const ariaLabel = label ?? `The experiment in ${countWord(facts.length)} facts`;
 ---
 <section class={`facts ${compact ? "compact" : ""}`.trim()} aria-label={ariaLabel}>
   <dl>

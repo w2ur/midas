@@ -23,9 +23,11 @@ interface Props {
    */
   initialSort?: "return" | "vsBench" | "vsCoin" | "artifact";
   /**
-   * Homepage preview (2026-09-18): no sort chips, no disclaimer paragraph.
-   * The caller passes the rows it wants shown and adds its own "full board"
-   * link. Default false — /arena and /archive/:date render exactly as before.
+   * Homepage preview (2026-09-18): no sort chips and no sortable headers —
+   * re-sorting a three-row slice would renumber `.l-rank` over it and assert
+   * a rank no artifact contains. The noise disclaimer still renders: it must
+   * travel with ranked figures wherever they appear. Default false —
+   * /archive/:date renders exactly as before.
    */
   compact?: boolean;
 }
@@ -143,20 +145,20 @@ const refW = refPct === null || leadIsExcess ? 0 : barWidth(refPct);
     <span role="columnheader">Agent</span>
     {leadIsExcess ? (
       <>
-        <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>
+        <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "vsBench"} aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>
         <span role="columnheader" class="ta-c">Excess</span>
-        <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort={initialSort === "return" ? "descending" : "none"}>Ret EUR</span>
+        <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "return"} aria-sort={initialSort === "return" ? "descending" : "none"}>Ret EUR</span>
         {showDecomp && <span role="columnheader" class="ta-r col-decomp">Ret local</span>}
         {showDecomp && <span role="columnheader" class="ta-r col-decomp">FX</span>}
       </>
     ) : (
       <>
-        <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort={initialSort === "return" ? "descending" : "none"}>Return EUR</span>
+        <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "return"} aria-sort={initialSort === "return" ? "descending" : "none"}>Return EUR</span>
         <span role="columnheader" class="ta-c">P&amp;L</span>
-        {showVsBench && <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>}
+        {showVsBench && <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "vsBench"} aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>}
       </>
     )}
-    {showVsCoinflip && <span role="columnheader" class="ta-r" data-sort-key="vsCoin" aria-sort={initialSort === "vsCoin" ? "descending" : "none"}>vs Coin</span>}
+    {showVsCoinflip && <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "vsCoin"} aria-sort={initialSort === "vsCoin" ? "descending" : "none"}>vs Coin</span>}
   </div>
 
   {rows.map((row) => {
@@ -275,12 +277,10 @@ const refW = refPct === null || leadIsExcess ? 0 : barWidth(refPct);
   )}
 </div>
 
-{!compact && (
-  <p class="leaderboard-disclaimer">
-    Early-stage experiment — results so far are statistical noise, not skill. Each agent is shown vs a passive benchmark and a random-trade (coin-flip) control.
-    <a href="/methodology">See Methodology.</a>
-  </p>
-)}
+<p class="leaderboard-disclaimer">
+  Early-stage experiment — results so far are statistical noise, not skill. Each agent is shown vs a passive benchmark and a random-trade (coin-flip) control.
+  <a href="/methodology">See Methodology.</a>
+</p>
 
 <script>
   import { orderRows, parseValue, type SortDir, type SortKey, type SortRec } from "@/lib/board-sort";
