@@ -1,5 +1,10 @@
 ---
 const { current } = Astro.props as { current?: string };
+// Five items (2026-09-18 clarity pass). Feed, Archive and Source moved to the
+// footer's secondary nav (SiteFooter.astro): four primary items competed for
+// the same "read what happened" intent and the traffic split accordingly. The
+// pages, their URLs and the sitemap are unchanged — every page still links
+// them, from the footer.
 const nav = [
   { href: "/", label: "Front page", key: "home" },
   { href: "/arena", label: "The Arena", key: "arena" },
@@ -7,10 +12,7 @@ const nav = [
   // as a dashed card at the foot of /arena — a dedicated page with no entrance.
   { href: "/arena/the-manager", label: "The Manager", key: "manager" },
   { href: "/journal", label: "The Oracle", key: "journal" },
-  { href: "/feed", label: "Feed", key: "feed" },
-  { href: "/archive", label: "Archive", key: "archive" },
   { href: "/methodology", label: "Methodology", key: "methodology" },
-  { href: "/open-source", label: "Source", key: "open-source" },
 ];
 ---
 <header class="site-header">
