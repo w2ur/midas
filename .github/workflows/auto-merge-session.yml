@@ -12,6 +12,28 @@ name: auto-merge-session
 #    the way — after re-running the session-integrity artifact rules and
 #    rejecting a stale session.
 #
+#    THE MERGE IS THE EXCEPTION, NOT THE RULE (2026-09-18). On a healthy day
+#    that direct `git push origin HEAD:main` SUCCEEDS, and the sandbox pushes
+#    its own branch anyway — so this workflow's session half fires on a commit
+#    that is already an ancestor of origin/main. That is the ordinary case;
+#    the merge path is reached only when main refused the push (403/GH006).
+#    The already_merged short-circuit below exists for it: run 35270947225
+#    (2026-09-17) is the shape — branch tip c96ffd291 IS main's c96ffd291,
+#    session-integrity.yml green on that sha a minute earlier, and "Reject
+#    stale sessions" nonetheless red because main's newest session date
+#    equalled the incoming one. Do not remove that short-circuit to "close a
+#    hole in the stale guard": ancestry, not the session date, is what it
+#    tests, and 11 of the 12 runs before it were red for this reason alone —
+#    which also stranded 15 merged `claude/*` branches on origin, because
+#    "Delete merged branch" sits after the stale step in the same job. Run
+#    33921355238 (2026-09-04, inside the required-check window) is the one
+#    real session merge in the last 14 runs.
+#    The short-circuit skips the STALE and MERGE steps only. "Verify
+#    session-integrity rules" still runs on the landed commit, because its
+#    artifacts assertion is the one rule session-integrity.yml does not
+#    duplicate (its check job exits 0, "nothing to check", on a commit with
+#    journals and baselines but no posts/blog/output).
+#
 # 2. Watcher commits on a `triggers/**` branch (added 2026-09-05). The
 #    conditional-order watcher (scripts/check_triggers.py) commits each fill
 #    and pushes `HEAD:main`; from 2026-08-24 to 09-04 a branch-protection rule
@@ -260,12 +282,26 @@ jobs:
           # branch may find an earlier run already merged everything (or a
           # successful direct push to main carried it). Nothing to merge then,
           # and nothing to verify: the branch is simply deleted below.
+          #
+          # The SESSION kind needs the same probe, and it is its ORDINARY
+          # outcome, not an edge case (2026-09-18). This was hard-wired to
+          # `false` for `claude/**`, so every healthy day's run reached
+          # "Reject stale sessions" with the commit already on main and was
+          # correctly told the date was not newer — 11 of the last 12 runs red
+          # on a commit byte-identical to one main already carried and already
+          # judged there by session-integrity.yml. ANCESTRY is the test, not
+          # the session date: a branch someone has pushed a repair onto is not
+          # an ancestor, so it keeps going down the full path.
           already=false
-          if [[ "$kind" == "triggers" ]]; then
+          if [[ "$kind" == "triggers" || "$kind" == "session" ]]; then
             git fetch origin main
             if git merge-base --is-ancestor "$HEAD_SHA" origin/main; then
-              echo "Already on main — nothing to merge."
               already=true
+              if [[ "$kind" == "session" ]]; then
+                echo "::notice::$branch's session commit is already an ancestor of origin/main — the sandbox's direct 'git push origin HEAD:main' succeeded and this branch push is its echo. session-integrity.yml judged this exact sha on main. Nothing to merge; deleting the branch."
+              else
+                echo "Already on main — nothing to merge."
+              fi
             fi
           fi
           echo "already_merged=$already" >> "$GITHUB_OUTPUT"
@@ -322,6 +358,12 @@ jobs:
           fi
 
       - name: Verify session-integrity rules
+        # Deliberately NOT gated on already_merged: the artifacts rule ("a
+        # session commit publishes something under data/posts|blog|output")
+        # is the one session rule session-integrity.yml does NOT hold — its
+        # `check` job exits 0 with "nothing to check" on an artifact-less
+        # commit. Skipping this step on the ordinary already-landed path
+        # would make that rule dark on 11 runs out of 12 (2026-09-18 review).
         if: steps.inspect.outputs.kind == 'session'
         run: |
           set -euo pipefail
@@ -371,7 +413,7 @@ jobs:
       # which is luck, not a guarantee — a narrower stale session would merge
       # clean and silently corrupt the ledger. So reject it explicitly.
       - name: Reject stale sessions
-        if: steps.inspect.outputs.kind == 'session'
+        if: steps.inspect.outputs.kind == 'session' && steps.inspect.outputs.already_merged != 'true'
         run: |
           set -euo pipefail
           git fetch origin main
@@ -530,7 +572,7 @@ jobs:
           echo "main touched neither the order nor the book this branch fills — not stale."
 
       - name: Merge sandbox session into main
-        if: steps.inspect.outputs.kind == 'session'
+        if: steps.inspect.outputs.kind == 'session' && steps.inspect.outputs.already_merged != 'true'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
