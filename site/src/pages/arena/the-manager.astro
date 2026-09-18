@@ -26,6 +26,11 @@ const baseline = loadManagerBaseline();
 const reviews = loadManagerReviews();
 const resolved = loadManagerResolved();
 const fills = loadManagerFills();
+// Summary above archive: the latest orders in the open, the rest behind one
+// disclosure (2026-09-18 — the page measured 15 phone screens).
+const OPEN_FILLS = 5;
+const recentFills = fills.slice(0, OPEN_FILLS);
+const olderFills = fills.slice(OPEN_FILLS);
 
 const latestSnap = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
 const daysLive = snapshots.length;
@@ -167,7 +172,7 @@ function statusCls(status: string): string {
         <p class="empty">No orders yet.</p>
       ) : (
         <ol class="fill-list">
-          {fills.map((f) => (
+          {recentFills.map((f) => (
             <li class="fill">
               {/* Same disclosure shape as the decision log above: the row is the
                   scannable record, the rationale is one click down. Printing
@@ -197,6 +202,37 @@ function statusCls(status: string): string {
           ))}
         </ol>
       )}
+      {olderFills.length > 0 && (
+        <details class="fill-archive">
+          <summary>All orders — {olderFills.length} earlier</summary>
+          <ol class="fill-list">
+            {olderFills.map((f) => (
+              <li class="fill">
+                <details>
+                  <summary>
+                    <span class="f-date">{f.date}</span>
+                    <a class="f-tick" href={`/ticker/${tickerSlug(f.ticker)}`}>{f.ticker}</a>
+                    <span class="f-action">{f.action}</span>
+                    <span class="f-notional">
+                      {f.notional_base !== null ? `EUR ${eur(f.notional_base)}` : "—"}
+                    </span>
+                    <span class={`f-status ${statusCls(f.status)}`}>{statusLabel(f)}</span>
+                    <span class="f-caret" aria-hidden="true"></span>
+                  </summary>
+                  <div class="f-body">
+                    {f.trigger && (
+                      <p class="f-trigger">
+                        trigger {f.trigger.op} {f.trigger.level}{f.expires ? ` · expires ${f.expires}` : ""}
+                      </p>
+                    )}
+                    <p class="f-reasoning">{f.reasoning}</p>
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
     </section>
 
     {resolved.length > 0 && (
@@ -207,6 +243,8 @@ function statusCls(status: string): string {
           Closed theses the allocator scores against itself — realized return and alpha versus MSCI World.
           Used as its own outcome memory, not a public ranking.
         </p>
+        <details class="resolved-fold">
+        <summary>{resolved.length} resolved position{resolved.length > 1 ? "s" : ""}</summary>
         <div class="resolved-wrap">
           <table class="resolved-tbl">
             <thead>
@@ -235,6 +273,7 @@ function statusCls(status: string): string {
             </tbody>
           </table>
         </div>
+        </details>
       </section>
     )}
 
@@ -354,6 +393,19 @@ function statusCls(status: string): string {
 
   /* Fills */
   .fill-list { list-style: none; padding: 0; margin: 0; }
+  .fill-archive, .resolved-fold { margin-top: var(--sp-4); }
+  .fill-archive > summary, .resolved-fold > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: var(--sp-3) 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    color: var(--accent);
+  }
+  .fill-archive > summary::-webkit-details-marker, .resolved-fold > summary::-webkit-details-marker { display: none; }
+  .fill-archive > summary::before, .resolved-fold > summary::before { content: "▸ "; }
+  .fill-archive[open] > summary::before, .resolved-fold[open] > summary::before { content: "▾ "; }
   .fill { border-top: 1px solid var(--rule); }
   .fill:last-child { border-bottom: 1px solid var(--rule); }
   .fill summary {
