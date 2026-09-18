@@ -22,9 +22,17 @@ interface Props {
    * them, and a client-side re-sort would rewrite published ranks.
    */
   initialSort?: "return" | "vsBench" | "vsCoin" | "artifact";
+  /**
+   * Homepage preview (2026-09-18): no sort chips and no sortable headers —
+   * re-sorting a three-row slice would renumber `.l-rank` over it and assert
+   * a rank no artifact contains. The noise disclaimer still renders: it must
+   * travel with ranked figures wherever they appear. Default false —
+   * /archive/:date renders exactly as before.
+   */
+  compact?: boolean;
 }
 
-const { rows, reference, showVsBench, showVsCoinflip, updatedAt, trigger } = Astro.props;
+const { rows, reference, showVsBench, showVsCoinflip, updatedAt, trigger, compact = false } = Astro.props;
 const initialSort = Astro.props.initialSort ?? "artifact";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -116,12 +124,12 @@ const refW = refPct === null || leadIsExcess ? 0 : barWidth(refPct);
   </p>
 )}
 
-<div class="board-sorts" data-board-sorts hidden>
+{!compact && <div class="board-sorts" data-board-sorts hidden>
   <span class="bs-lab">Sort</span>
   <button type="button" class="bs-chip" data-chip-key="return" aria-pressed={initialSort === "return" ? "true" : "false"}>Return</button>
   {showVsBench && <button type="button" class="bs-chip" data-chip-key="vsBench" aria-pressed={initialSort === "vsBench" ? "true" : "false"}>vs Bench</button>}
   {showVsCoinflip && <button type="button" class="bs-chip" data-chip-key="vsCoin" aria-pressed={initialSort === "vsCoin" ? "true" : "false"}>vs Coin</button>}
-</div>
+</div>}
 
 <div
   class={`board ${leadIsExcess ? "lead-excess" : ""} ${showDecomp ? "has-decomp" : ""}`.trim()}
@@ -137,20 +145,20 @@ const refW = refPct === null || leadIsExcess ? 0 : barWidth(refPct);
     <span role="columnheader">Agent</span>
     {leadIsExcess ? (
       <>
-        <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>
+        <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "vsBench"} aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>
         <span role="columnheader" class="ta-c">Excess</span>
-        <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort={initialSort === "return" ? "descending" : "none"}>Ret EUR</span>
+        <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "return"} aria-sort={initialSort === "return" ? "descending" : "none"}>Ret EUR</span>
         {showDecomp && <span role="columnheader" class="ta-r col-decomp">Ret local</span>}
         {showDecomp && <span role="columnheader" class="ta-r col-decomp">FX</span>}
       </>
     ) : (
       <>
-        <span role="columnheader" class="ta-r" data-sort-key="return" aria-sort={initialSort === "return" ? "descending" : "none"}>Return EUR</span>
+        <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "return"} aria-sort={initialSort === "return" ? "descending" : "none"}>Return EUR</span>
         <span role="columnheader" class="ta-c">P&amp;L</span>
-        {showVsBench && <span role="columnheader" class="ta-r" data-sort-key="vsBench" aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>}
+        {showVsBench && <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "vsBench"} aria-sort={initialSort === "vsBench" ? "descending" : "none"}>vs Bench</span>}
       </>
     )}
-    {showVsCoinflip && <span role="columnheader" class="ta-r" data-sort-key="vsCoin" aria-sort={initialSort === "vsCoin" ? "descending" : "none"}>vs Coin</span>}
+    {showVsCoinflip && <span role="columnheader" class="ta-r" data-sort-key={compact ? undefined : "vsCoin"} aria-sort={initialSort === "vsCoin" ? "descending" : "none"}>vs Coin</span>}
   </div>
 
   {rows.map((row) => {

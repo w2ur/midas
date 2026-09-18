@@ -97,6 +97,22 @@ export function methodologyDoc(): MethodologyDoc {
 }
 
 /**
+ * The real-money gate's pinned evaluation date, read from the changelog entry
+ * that pinned it (`gate-c-evaluation-2026-08-14`) rather than typed into the
+ * site: METHODOLOGY.md is the pre-registration, so it is the only place that
+ * date may live. Null if the entry or the sentence is gone — a consumer then
+ * renders without a date rather than with a stale one.
+ */
+export function gateCDate(): string | null {
+  const raw = rawMarkdown();
+  const start = raw.indexOf('<a id="gate-c-evaluation-');
+  if (start === -1) return null;
+  const entry = raw.slice(start, start + 600);
+  const m = entry.match(/evaluation date is pinned: (\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : null;
+}
+
+/**
  * Repoint same-document `#anchor` links at the page that now owns the target.
  *
  * Runs over the rendered HTML rather than the markdown so it catches links

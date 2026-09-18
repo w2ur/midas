@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  gateCDate,
   methodologyDoc,
   methodologyToc,
   renderMethodology,
@@ -153,5 +154,19 @@ describe("table of contents", () => {
     expect(addHeadingIds("<h2>What <em>is</em> measured</h2>")).toBe(
       '<h2 id="what-is-measured">What <em>is</em> measured</h2>',
     );
+  });
+});
+
+describe("gateCDate", () => {
+  it("reads the pinned evaluation date from the Gate C changelog entry", () => {
+    // Independent parse: find the anchor's own paragraph and its ISO date, so
+    // the site never types the date that only the pre-registration may hold.
+    const doc = methodologyDoc();
+    const idx = doc.changelog.indexOf('<a id="gate-c-evaluation-');
+    expect(idx).toBeGreaterThan(-1);
+    const iso = doc.changelog.slice(idx, idx + 600).match(/\d{4}-\d{2}-\d{2}, six months/);
+    expect(iso).not.toBeNull();
+    expect(gateCDate()).toBe(iso![0].slice(0, 10));
+    expect(gateCDate()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

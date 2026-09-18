@@ -2,6 +2,15 @@
 const year = new Date().getFullYear();
 ---
 <footer class="site-footer">
+  <nav class="secondary" aria-label="More">
+    <ul>
+      <li><a href="/feed">Feed</a></li>
+      <li><a href="/archive">Archive</a></li>
+      <li><a href="/open-source">Source</a></li>
+      <li><a href="/methodology/changelog">Changelog</a></li>
+      <li><a href="/rss.xml">RSS</a></li>
+    </ul>
+  </nav>
   <div class="inner">
     <p class="credit">Made with care by <a href="https://william.revah.paris">William</a> &middot; &copy; {year} &middot; <a href="/open-source">The engine is open source</a></p>
     <p class="tagline">Nothing is real money — yet. Paper simulation, not financial advice.</p>
@@ -13,6 +22,26 @@ const year = new Date().getFullYear();
     padding: var(--sp-5) 0 var(--sp-6);
     background: var(--bg);
   }
+  /* Secondary nav — the pages that left the masthead on 2026-09-18. Kept on
+     every page so internal linking and the sitemap are unchanged. */
+  .secondary ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2) var(--sp-5);
+    list-style: none;
+    max-width: var(--page-max);
+    margin: 0 auto var(--sp-4);
+    padding: 0 var(--gutter);
+  }
+  .secondary a {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+  .secondary a:hover { color: var(--accent); }
   .inner {
     display: flex;
     gap: var(--sp-3) var(--sp-5);
