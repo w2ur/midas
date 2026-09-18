@@ -33,6 +33,11 @@ async function getOracleLatest() {
   return mod.GET({} as never);
 }
 
+async function getLeaderboard() {
+  const mod = await import("@/pages/leaderboard.json.ts");
+  return mod.GET({} as never);
+}
+
 beforeEach(() => {
   vi.resetModules();
 });
@@ -40,6 +45,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.doUnmock("@/lib/posts");
   vi.doUnmock("@/lib/blog");
+  vi.doUnmock("@/lib/leaderboard");
 });
 
 describe("/latest.json", () => {
@@ -89,6 +95,42 @@ describe("/latest.json", () => {
     const res = await getLatest();
     const payload = JSON.parse(await res.text());
     expect(payload.items).toEqual([]);
+  });
+});
+
+describe("/leaderboard.json", () => {
+  it("is prerendered — a non-prerendered route emits no file in a static build", async () => {
+    const mod = await import("@/pages/leaderboard.json.ts");
+    expect(mod.prerender).toBe(true);
+  });
+
+  it("serves the current ranked board with the fields the hub reads", async () => {
+    const res = await getLeaderboard();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    const payload = JSON.parse(await res.text());
+    expect(payload).toHaveProperty("generated_at");
+    expect(payload).toHaveProperty("updated_at");
+    expect(Array.isArray(payload.rows)).toBe(true);
+    for (const row of payload.rows) {
+      expect(typeof row.agent).toBe("string");
+      expect(typeof row.return_pct).toBe("number");
+    }
+  });
+
+  it("answers with an empty envelope when the loader throws, rather than throwing", async () => {
+    vi.doMock("@/lib/leaderboard", () => ({
+      loadCurrentLeaderboard: () => {
+        throw new Error("no committed leaderboard at this data root");
+      },
+    }));
+    const res = await getLeaderboard();
+    expect(res.status).toBe(200);
+    expect(JSON.parse(await res.text())).toEqual({
+      generated_at: null,
+      updated_at: null,
+      rows: [],
+    });
   });
 });
 
