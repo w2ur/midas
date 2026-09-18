@@ -1461,15 +1461,24 @@ def _git_env(tmp_path: Path) -> dict[str, str]:
     }
 
 
-def _watcher_branch_repo(
-    tmp_path: Path, commits: list[tuple[str, dict[str, str]]]
+def _fallback_branch_repo(
+    tmp_path: Path,
+    commits: list[tuple[str, dict[str, str]]],
+    *,
+    branch: str,
+    landed_on_main: bool = False,
 ) -> tuple[Path, str]:
-    """A clone of a bare `main` with a `triggers/…` branch on top.
+    """A clone of a bare `main` with `branch` on top.
 
     ``commits`` is a list of (subject, {path: content}) applied on the branch
     after main's seed commit. Returns the clone and the branch tip sha; the
-    scope script is run in the clone with HEAD_SHA set to that tip, exactly
-    as the workflow runs it after `actions/checkout`.
+    step scripts are run in the clone with HEAD_SHA set to that tip, exactly
+    as the workflow runs them after `actions/checkout`.
+
+    With ``landed_on_main`` the tip is ALSO pushed to the bare's `main`, which
+    is the shape a healthy weekday session arrives in: the sandbox's own
+    direct push to main succeeded and the branch push that triggers the
+    workflow is its echo.
     """
     env = _git_env(tmp_path)
     bare = tmp_path / "bare.git"
@@ -1491,10 +1500,7 @@ def _watcher_branch_repo(
     repo = tmp_path / "repo"
     subprocess.run(["git", "clone", "-q", str(bare), str(repo)], check=True, env=env)
     subprocess.run(
-        ["git", "checkout", "-q", "-b", "triggers/2026-09-05-1"],
-        cwd=repo,
-        check=True,
-        env=env,
+        ["git", "checkout", "-q", "-b", branch], cwd=repo, check=True, env=env
     )
     for subject, files in commits:
         for rel, content in files.items():
@@ -1519,7 +1525,51 @@ def _watcher_branch_repo(
         text=True,
         env=env,
     ).stdout.strip()
+    if landed_on_main:
+        subprocess.run(
+            ["git", "push", "-q", "origin", f"{tip}:main"],
+            cwd=repo,
+            check=True,
+            env=env,
+        )
     return repo, tip
+
+
+def _watcher_branch_repo(
+    tmp_path: Path, commits: list[tuple[str, dict[str, str]]]
+) -> tuple[Path, str]:
+    """`_fallback_branch_repo` on the watcher's branch shape."""
+    return _fallback_branch_repo(tmp_path, commits, branch="triggers/2026-09-05-1")
+
+
+def _session_branch_repo(
+    tmp_path: Path,
+    commits: list[tuple[str, dict[str, str]]],
+    *,
+    landed_on_main: bool,
+) -> tuple[Path, str]:
+    """`_fallback_branch_repo` on the sandbox session's branch shape."""
+    return _fallback_branch_repo(
+        tmp_path,
+        commits,
+        branch="claude/dreamy-lovelace-test",
+        landed_on_main=landed_on_main,
+    )
+
+
+def _land_on_main(tmp_path: Path, subject: str) -> None:
+    """Put an INDEPENDENT commit carrying `subject` on the bare's `main`."""
+    env = _git_env(tmp_path)
+    seed = tmp_path / "seed"
+    subprocess.run(
+        ["git", "commit", "-q", "--allow-empty", "-m", subject],
+        cwd=seed,
+        check=True,
+        env=env,
+    )
+    subprocess.run(
+        ["git", "push", "-q", "origin", "HEAD:main"], cwd=seed, check=True, env=env
+    )
 
 
 def _run_scope_check(
@@ -1556,6 +1606,25 @@ def _run_inspect(
         line.split("=", 1) for line in out.read_text().splitlines() if "=" in line
     )
     return result, outputs
+
+
+def _run_stale_session(
+    repo: Path, tip: str, tmp_path: Path
+) -> subprocess.CompletedProcess:
+    """Run the real "Reject stale sessions" script, with the `github.sha`
+    interpolation substituted the way the runner does it before bash ever
+    sees the script."""
+    script = _auto_merge_step("Reject stale sessions")["run"].replace(
+        "${{ github.sha }}", tip
+    )
+    env = {
+        **_git_env(tmp_path),
+        "GITHUB_REF": "refs/heads/claude/dreamy-lovelace-test",
+        "GITHUB_OUTPUT": str(tmp_path / "out"),
+    }
+    return subprocess.run(
+        ["bash", "-c", script], cwd=repo, env=env, capture_output=True, text=True
+    )
 
 
 A_FILL = {
@@ -1598,10 +1667,8 @@ class TestAutoMergeTakesWatcherFallbackBranches:
             "Reject stale sessions",
             "Merge sandbox session into main",
         ):
-            assert (
-                _auto_merge_step(name).get("if")
-                == "steps.inspect.outputs.kind == 'session'"
-            ), name
+            cond = _auto_merge_step(name).get("if") or ""
+            assert "steps.inspect.outputs.kind == 'session'" in cond, name
 
     def test_the_watcher_steps_run_only_for_a_watcher_branch(self):
         for name in (
@@ -1798,6 +1865,80 @@ class TestAutoMergeTakesWatcherFallbackBranches:
             repo, tip, tmp_path, "refs/heads/claude/dreamy-lovelace-6t8ifh"
         )
         assert outputs["kind"] == "session"
+
+
+A_SESSION = (
+    "chore: weekday session 2026-09-17",
+    {"data/portfolios/satoshi/snapshots.json": "[]\n"},
+)
+
+
+class TestAutoMergeSkipsASessionAlreadyOnMain:
+    """Regression: the session half was red on 11 of its last 12 runs.
+
+    On a healthy weekday the sandbox's direct push to main SUCCEEDS, and the
+    sandbox then pushes its own `claude/**` branch anyway — that second push
+    is what triggers this workflow. So the commit the run classifies is
+    already an ancestor of origin/main, and "Reject stale sessions" found
+    main's newest session date equal to the incoming one and exited 1 (run
+    35270947225, 2026-09-17: `incoming session date: 2026-09-17` / `newest on
+    main: 2026-09-17`, on a branch tip that IS main's commit c96ffd291). The
+    guard was not wrong about staleness; it was answering a question that no
+    longer applies once the commit is on main. `already_merged` existed for
+    exactly this shape and was computed only under `kind == "triggers"`.
+
+    Cost beyond the noise: "Delete merged branch" sits AFTER the stale step in
+    the same job, so the job died before the delete ever ran and 15 merged
+    `claude/*` branches accumulated on origin.
+    """
+
+    def test_a_session_already_on_main_is_not_merged_again(self, tmp_path):
+        repo, tip = _session_branch_repo(tmp_path, [A_SESSION], landed_on_main=True)
+        result, outputs = _run_inspect(
+            repo, tip, tmp_path, "refs/heads/claude/dreamy-lovelace-ymo4kt"
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert outputs["kind"] == "session", outputs
+        assert outputs["already_merged"] == "true", result.stdout
+        # A notice, not silence: a reader of the green run has to be able to
+        # see why nothing downstream verified anything.
+        assert "::notice::" in result.stdout, result.stdout
+
+    def test_a_session_not_on_main_still_goes_through_the_stale_check(self, tmp_path):
+        """THE CONTROL. Ancestry is the test, not the session date — so a
+        branch carrying commits main does not have still faces every session
+        rule, and a genuinely stale one is still refused. Without this half,
+        the test above passes forever by short-circuiting everything."""
+        repo, tip = _session_branch_repo(tmp_path, [A_SESSION], landed_on_main=False)
+        _, outputs = _run_inspect(
+            repo, tip, tmp_path, "refs/heads/claude/dreamy-lovelace-ymo4kt"
+        )
+        assert outputs["kind"] == "session", outputs
+        assert outputs["already_merged"] == "false", outputs
+
+        # ...and the stale step, executed for real against a main that already
+        # carries the same session date by a different commit, still refuses.
+        _land_on_main(tmp_path, A_SESSION[0])
+        result = _run_stale_session(repo, tip, tmp_path)
+        assert result.returncode == 1, result.stdout + result.stderr
+        assert "Stale session" in result.stdout + result.stderr
+
+    def test_the_already_merged_flag_gates_only_the_session_merge_path(self):
+        """The orphan-branch half of the fix. The three verify/merge steps are
+        gated on the flag; "Delete merged branch" deliberately is NOT, which
+        is what lets an already-landed run reach the delete and stop leaving a
+        branch behind."""
+        for name in (
+            "Verify session-integrity rules",
+            "Reject stale sessions",
+            "Merge sandbox session into main",
+        ):
+            cond = _auto_merge_step(name)["if"]
+            assert "steps.inspect.outputs.kind == 'session'" in cond, name
+            assert "steps.inspect.outputs.already_merged != 'true'" in cond, name
+        session_clause = _auto_merge_step("Delete merged branch")["if"].split("||")[0]
+        assert "kind == 'session'" in session_clause, session_clause
+        assert "already_merged" not in session_clause, session_clause
 
 
 # --------------------------------------------------------------------------
