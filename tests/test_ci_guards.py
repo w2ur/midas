@@ -1669,6 +1669,7 @@ class TestAutoMergeTakesWatcherFallbackBranches:
         ):
             cond = _auto_merge_step(name).get("if") or ""
             assert "steps.inspect.outputs.kind == 'session'" in cond, name
+            assert "triggers" not in cond, name
 
     def test_the_watcher_steps_run_only_for_a_watcher_branch(self):
         for name in (
@@ -1924,18 +1925,23 @@ class TestAutoMergeSkipsASessionAlreadyOnMain:
         assert "Stale session" in result.stdout + result.stderr
 
     def test_the_already_merged_flag_gates_only_the_session_merge_path(self):
-        """The orphan-branch half of the fix. The three verify/merge steps are
+        """The orphan-branch half of the fix. The stale and merge steps are
         gated on the flag; "Delete merged branch" deliberately is NOT, which
         is what lets an already-landed run reach the delete and stop leaving a
-        branch behind."""
+        branch behind. "Verify session-integrity rules" is deliberately NOT
+        gated either: its artifacts assertion is the one session rule that
+        session-integrity.yml does not duplicate (its check job exits 0 on an
+        artifact-less commit), so skipping it on the ordinary already-landed
+        path would make that rule dark (2026-09-18 review finding)."""
         for name in (
-            "Verify session-integrity rules",
             "Reject stale sessions",
             "Merge sandbox session into main",
         ):
             cond = _auto_merge_step(name)["if"]
             assert "steps.inspect.outputs.kind == 'session'" in cond, name
             assert "steps.inspect.outputs.already_merged != 'true'" in cond, name
+        verify = _auto_merge_step("Verify session-integrity rules")["if"]
+        assert "already_merged" not in verify, verify
         session_clause = _auto_merge_step("Delete merged branch")["if"].split("||")[0]
         assert "kind == 'session'" in session_clause, session_clause
         assert "already_merged" not in session_clause, session_clause

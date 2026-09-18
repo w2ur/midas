@@ -28,6 +28,11 @@ name: auto-merge-session
 #    "Delete merged branch" sits after the stale step in the same job. Run
 #    33921355238 (2026-09-04, inside the required-check window) is the one
 #    real session merge in the last 14 runs.
+#    The short-circuit skips the STALE and MERGE steps only. "Verify
+#    session-integrity rules" still runs on the landed commit, because its
+#    artifacts assertion is the one rule session-integrity.yml does not
+#    duplicate (its check job exits 0, "nothing to check", on a commit with
+#    journals and baselines but no posts/blog/output).
 #
 # 2. Watcher commits on a `triggers/**` branch (added 2026-09-05). The
 #    conditional-order watcher (scripts/check_triggers.py) commits each fill
@@ -353,7 +358,13 @@ jobs:
           fi
 
       - name: Verify session-integrity rules
-        if: steps.inspect.outputs.kind == 'session' && steps.inspect.outputs.already_merged != 'true'
+        # Deliberately NOT gated on already_merged: the artifacts rule ("a
+        # session commit publishes something under data/posts|blog|output")
+        # is the one session rule session-integrity.yml does NOT hold — its
+        # `check` job exits 0 with "nothing to check" on an artifact-less
+        # commit. Skipping this step on the ordinary already-landed path
+        # would make that rule dark on 11 runs out of 12 (2026-09-18 review).
+        if: steps.inspect.outputs.kind == 'session'
         run: |
           set -euo pipefail
           files=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }})
