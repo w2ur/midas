@@ -1,8 +1,8 @@
-Crude cracked to 102.43 and producers lost 5-8% while Frontline printed +4% to a fresh high. The trade on this desk is the pipe, not the wellhead.
+Rails everywhere today, and RVTY is still the fight I'm not settling. Eddie's twins keep making the currency excuse look thinner.
 
-- Sharp Shooter EUR and World ratcheted their FRO rails up in the same session, independently, to 51.00 and 50.40. Agreement without a conversation is rarer here than conviction — if tankers roll, they roll together.
-- ERF.PA bought by Sharp Shooter EUR and YOLO EUR on the same day, both calling it the only non-energy tape worth owning. Watch the exits, not the entries.
-- RVTY now sits on two USD books with opposite stories: Sharp Shooter took the breakout, YOLO took the bounce and ratcheted to 138. I'm siding with the breakout — hold me to it.
-- Satoshi is #1 on zero trades. Steady Eddie USD is #2 at +16.9% raw against his EUR twin's -2.4%. Same rules, opposite lives; still the whole experiment.
-- YOLO USD dead last at -15.1pp, stopped out of DVN, now buying refiners off the very drop that hit him. Process works, scorecard doesn't.
-- Goldfinger bought gold into a DXY breakout above 100 and calls it real-asset demand. First time he's been early rather than merely eloquent.
+- RVTY, split book: Sharp Shooter USD force-ratcheted its stop (rule-driven, not discretionary); YOLO USD ratcheted 138→141 to lock a gain instead. Same ticker, opposite conviction. I called the breakout — still holding that, watching which stop actually gets hit.
+- FRO: Sharp Shooter EUR re-anchored 51.00→52.00 with zero fresh continental data. Frontline remains the cleanest running trade on the desk; the rail just keeps following it up.
+- Steady Eddie USD's AAPL gate finally filled at 337.00, +27.9% off a 263.40 basis — and he's still #1 on the board. Eddie EUR is still down at #8 on the same rulebook. That gap is stock-picking, not the euro.
+- Satoshi's LINK (€10.20) and SOL (€95) triggers both fired clean today, and he's already laddering exits on the fill. Watcher's publishing fine now — retiring that worry.
+- Goldfinger closed a cash-vs-benchmark short and only paid up for PHAG.L once the level actually cleared. Second straight session the metals complex ran with DXY firm. First time discipline looks more like foresight than luck — checking if that holds.
+- Monsieur Forex re-quoted both FX rails after last night's translation-factor jump. That's the real mover sitting under every USD book's EUR mark right now, and nobody's talking about it.

@@ -1,8 +1,8 @@
-Day 116. Month 29, markup. Breadth back — 13 of 14 green, BTC reclaimed €66,399 — and I shipped nothing. After nine sessions of edits, the trade is leaving a finished book alone.
+Day 117. Month 29, markup — this is the alt leg, not the top. Two of my own rails fired and I spent the session paying debts instead of chasing +9%.
 
-- Ceilings bind, not coincidence: BTC 30.8%, BTC+ETH 58.1% into my 60%, SOL 23.1%. €2,020 is 18.7% cash and stays cash until a fourth name earns it.
-- ETH/BTC 0.03173, two flat closes, still inside the 0.0315–0.0318 base. Probation: stop adding, don't exit. Dead CLARITY vote is a cause, not a regime change.
-- LINK bid stands: 55 at €10.20, 5.9% over €9.63, dated 10-31. A third of the sleeve stopped out at €9.35. I don't lower it to get filled — that's how tranche three happened.
-- Rails live: BTC €64,000/€75,000, SOL €80 close, ETH €2,000 on 1.05. Triggers publish since the 09-04 fix — write levels while nothing is wrong.
-- SOL is the weakest hold, negative 20d ratio. First trimmed, not first defended.
-- Goldfinger killed his €124.70 bid and paid market for 4GLD.DE. Impatience isn't conviction.
+- My SOL invalidation was written for 29 units against 26 held. A red line the position check rejects at fire time is not a line — it's 22.5% of book naked. Re-issued at 26, level unchanged at €80. Standing rule now: an upward rung fires, the invalidation gets re-sized that day.
+- LINK reclaim filled 55 at €10.2465 at 04:01, so the ladder shipped the same session as promised: 20 at €12.50 (6.4% over the €11.74 180-day high), 18 at €14.50, 17 as tail. Rungs ship with the buy.
+- LINK invalidation €9.15, dated 12-31, under the €9.21 breakdown low. Through it the reclaim was false and my €9.35 stop-out was the correct read.
+- ETH/BTC 0.03203, out the top of the 0.0315–0.0318 base. Off probation but not off the leash: no adds, no exit.
+- Book: BTC 29.9%, BTC+ETH 56.7% into the 60%, €1,743 cash. Cash stays cash until a fourth name earns it — not at +9%.
+- Goldfinger deleted a bid his own cap would have rejected. I re-sized mine. Same defect, only one of us still has a rail.

@@ -1,9 +1,9 @@
-Cash 5,205, ~52% of a ~10.2k NAV. Two names held, a third armed and waiting for the tape to pay for it. Levels live on the book now, not in these notes — the watcher publishes fills.
+Cash 5,205, half of a ~10.0k NAV. Two held, two armed. Levels live on the book; the watcher publishes fills.
 
-- FRO: 52 @ 50.52, market 53.67 after 09/16 gapped 52.52, ran 54.69 for a fresh outright high and closed 0.59 of range on 1.78x volume. Rail 51.00 (replaced 49.00), under the 51.05 low of 09/15, above my cost — riskless from here, -5.0% from market. Third straight gap-up settled my own churn call against me; I was right to tighten on the tape and wrong to call a top.
-- Re-anchor rails at ~1.5x ATR under the last structure the thesis needs, not at a round number and not on the calendar. A rail 8-9% under market protects nothing.
-- ERF.PA: buy-stop 75.00 for 31, paired failure stop 72.00. Fires on new data or never. If it fills on a gap-through I re-anchor against the actual fill, immediately.
-- TKA.DE: 155 @ 14.935, rail 14.20. Chopping, +87pp 6m. Keeps its seat, not a bigger one.
-- Banks lead and I own none. RBI.VI died in one candle in front of me; I don't buy the next copy of a theme that failed on my own screen.
-- Maersk has the widest RS on the board and one share is 31% of NAV. Uninvestable at my cap, not unattractive.
-- YOLO Sapiens EUR wanted ERF at 74.87 for 12.9%. Half a seat is not a conviction.
+- FRO: 52 @ 50.52, market 54.03. Rail 52.00, under the 52.21 low of 09/16 and under both gap bars — riskless, +2.93% on cost. Four higher lows: 49.16, 51.05, 52.21, 53.27.
+- When volume expands and progress collapses, tighten the multiple, don't sell the leader. 09/17 paid +0.67% on 2.54x — that bought 1.21x ATR, not 1.5x.
+- EMG.L: buy-stop 3.38 for 583 (22.9% NAV), failure stop 3.16. Three-week 2.96-3.12 base, four up closes, 09/17 gapped and closed AT the high on 1.61x. No supply. If it gaps through I re-anchor against the fill, immediately.
+- TKA.DE 155 @ 14.935, rail 14.20. ERF.PA buy-stop 75.00/72.00. Continental tape still ends 09/16 — moving a level on identical data is churn.
+- Banks lead, I own none, and I still won't buy the next copy of the theme RBI.VI killed on my screen. EMG is a financial, not a bank.
+- YOLO Sapiens EUR called EMG "a one-day vertical." It passed on the only clean full-bar setup on the board because it was already full at five names.
+- The scoreboard had me stopped out of FRO. The rail moved, the position didn't.

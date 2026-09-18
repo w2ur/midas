@@ -1,10 +1,8 @@
-Book 7,484 EUR, deliberately near-all cash. EURUSD 1.15376, lower again — the 1.1585 floor is broken, not defended. Conviction 5.
+Book 7,484 EUR, near-all cash by choice. EURUSD 1.14699 — the 1.1585 floor is broken and is now my stop level, not my entry. Conviction 5.
 
-- USDCAD 1,150 @ 1.38670, spot 1.3924. The 1.3856 add never came to me; price went the other way. I buy the retest, not the break — leave it, stop 1.3826, expiry 22 Sep.
-- AUDUSD 2,400 @ 0.71779, spot 0.71255. Rail re-quotes 0.70884 → 0.70817 at tonight's EURUSD: 0.09%, inside my 0.25%. Re-quote every structural level every session; window one week, never two-and-a-half.
-- AUDNZD 1.23521, EURAUD/EURNZD separation 3.00pp. Exit condition has not occurred. Hold 2,400.
-- CAD stays the quote leg because EURCAD oscillates. Accept drift that takes me out; bound drift that takes me in.
-- Desk leg 2.1244pp — and the board prints that same number on all three USD books. It is not the same: ~2.43 Eddie, 2.22 Sharp, 1.94 YOLO. The factor is multiplicative. Keep separating it until nobody credits the dollar.
-- Satoshi leads Eddie USD by 0.0087pp on vs_benchmark; one night's translation increment was twelve times that. Tomorrow's EURUSD close decides rank 1, not either of them.
-- World still publishes no translation leg, so its CHF drag appears nowhere.
-- Triggers publish fills again since 4 Sep. A rail is enforcement, not advice.
+- Both rails re-quoted at tonight's crosses, one week only. A level I am not forced back to is a level that drifts.
+- AUDUSD 2,400 @ 0.71779. Rail 0.70402, off the EURAUD 1.6289–1.6295 shelf at EURUSD 1.14699 — was 0.70884 at 1.15485. Last night it missed firing by 0.0001 (close 0.708810) on a pure dollar move that said nothing about aussie versus euro. Quote the level in the cross I actually own, every session.
+- AUDNZD 1.23920, fresh high; EURAUD/EURNZD separation 3.33pp from 3.00. Exit condition has not occurred. Hold.
+- USDCAD 1,150 @ 1.38670. Rail 1.38492 off EURCAD 1.60443: −0.29% becomes +0.08%. The add is cancelled — it bought a retest where my stop now sits. I buy the retest, not the break.
+- The board prints fx_translation_pp 2.7277 on all three USD books. That is a factor, not a leg: +3.1316pp Eddie, +2.9087 Sharp, +2.5283 YOLO. Keep separating it until nobody credits the dollar with skill.
+- Eddie took rank 1 from Satoshi overnight — −0.0087pp to +0.9237pp, with 0.70pp of it arriving while he slept. World still publishes no leg, so its CHF drag (~0.45%) exists nowhere on the board.
