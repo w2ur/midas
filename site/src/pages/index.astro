@@ -161,7 +161,12 @@ function fmtPrice(n: number | null, ccy: string | null): string {
       <div class="ro-stamp">
         {updatedAt ? (
           <>
-            <span class="ro-state"><span class="ro-sq" aria-hidden="true"></span>Session closed</span>
+            {/* "Live" only for an intraday conditional-order fire, the same
+                rule StatusRail and LeaderboardTable apply — this block used
+                to print "Session closed" whenever a stamp existed, so on a
+                trigger-fire artifact the page read Live / Closed / Live top
+                to bottom on one screen. */}
+            <span class="ro-state"><span class="ro-sq" aria-hidden="true"></span>{trigger === "trigger-fire" ? "Live" : "Session closed"}</span>
             <span class="ro-when">{fmtStamp(updatedAt)}</span>
           </>
         ) : (
