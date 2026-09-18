@@ -7,20 +7,23 @@
  * real `<a id>` in it, so splitting the file would break the precondition that
  * makes a restatement disclose itself. Only the *rendering* is split.
  *
- * The reason to split it: the changelog is 9,571 of the document's 11,928 words
- * — 80% — and serves a different reader (an auditor checking what moved) than
- * the rest (a newcomer asking what this is). Rendered as one page it measured
- * 37 screens, and the ~2,350-word methodology proper was buried under a
- * restatement log nobody arrives wanting.
+ * The reason to split it: the changelog is the large majority of the document
+ * by word count and grows with every entry, and it serves a different reader
+ * (an auditor checking what moved) than the rest (a newcomer asking what this
+ * is). Rendered as one page the methodology proper was buried under a
+ * restatement log nobody arrives wanting. No count is quoted here on purpose —
+ * both sides move on every entry, and a hand-typed ratio in a comment is
+ * exactly what goes stale; `methodologyDoc()` is the measurement.
  *
  * ── Anchors are the load-bearing part ──
- * Eleven `<a id>` anchors live inside the changelog and are cited from shipped
- * commit messages, from `data/**` ledger notes, and from other changelog
- * entries. Moving them to a second URL must not break a single one, so:
+ * Every `<a id>` anchor inside the changelog is cited from shipped commit
+ * messages, from `data/**` ledger notes, and from other changelog entries.
+ * Moving them to a second URL must not break a single one, so:
  *   - in-document links are rewritten to point at whichever page now owns the
  *     target anchor (both directions — see `rewriteAnchorLinks`);
- *   - `/methodology` keeps a client-side hash forwarder for the eleven moved
- *     anchors, because a fragment is never sent to the server and no redirect
+ *   - `/methodology` keeps a client-side hash forwarder for every moved
+ *     anchor, derived at render time from `changelogAnchors` rather than
+ *     listed, because a fragment is never sent to the server and no redirect
  *     rule can see it.
  */
 
