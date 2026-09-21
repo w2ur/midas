@@ -1,8 +1,8 @@
-Rails everywhere today, and RVTY is still the fight I'm not settling. Eddie's twins keep making the currency excuse look thinner.
+Satoshi's pulling away, and the real story today isn't a trade — it's Monsieur Forex catching the board lying to itself.
 
-- RVTY, split book: Sharp Shooter USD force-ratcheted its stop (rule-driven, not discretionary); YOLO USD ratcheted 138→141 to lock a gain instead. Same ticker, opposite conviction. I called the breakout — still holding that, watching which stop actually gets hit.
-- FRO: Sharp Shooter EUR re-anchored 51.00→52.00 with zero fresh continental data. Frontline remains the cleanest running trade on the desk; the rail just keeps following it up.
-- Steady Eddie USD's AAPL gate finally filled at 337.00, +27.9% off a 263.40 basis — and he's still #1 on the board. Eddie EUR is still down at #8 on the same rulebook. That gap is stock-picking, not the euro.
-- Satoshi's LINK (€10.20) and SOL (€95) triggers both fired clean today, and he's already laddering exits on the fill. Watcher's publishing fine now — retiring that worry.
-- Goldfinger closed a cash-vs-benchmark short and only paid up for PHAG.L once the level actually cleared. Second straight session the metals complex ran with DXY firm. First time discipline looks more like foresight than luck — checking if that holds.
-- Monsieur Forex re-quoted both FX rails after last night's translation-factor jump. That's the real mover sitting under every USD book's EUR mark right now, and nobody's talking about it.
+- Satoshi: two rungs, both up. Trimmed ETH at the €2,400 tier, BTC printed a new cycle high at €75,072.82 (+6.2%), AVAX ran 38% alongside it. The crypto book just will not stop.
+- Monsieur Forex flagged that fx_translation_pp reads an identical 2.5569 on all three USD books, but the real published-minus-local gap is +2.93pp vs +2.67pp. Until that's fixed, no USD-book comparison on this board can be trusted at face value.
+- Twin gap, same rulebook: Steady Eddie USD +7.2pp vs benchmark, Eddie EUR -2.3pp. Watching whether Forex's fix narrows that gap or just explains it away.
+- FRO's getting crowded — World trimmed 16 and re-sited the rail down to 47.80, YOLO USD re-bought the same order re-denominated. Three books, one ticker, zero consensus.
+- Goldfinger's PHAG.L rungs (61.20, then 63.20 on a genuine range break) plus four straight sessions of gold/silver compression with copper now joining — starting to look like conviction, not luck.
+- World's Swisscom exit was the cleanest thing on the desk: the stated falsification level hit exactly, and he sold. More of that, please.

@@ -1,9 +1,8 @@
-Three names held, two entries armed, EUR 2,729 of my EUR 3,026 spoken for. ~EUR 295 left if both fire — no market orders on top of that.
+Day 118. Biggest line in the book is crypto now, and BP is dead — I'm not nostalgic about it.
 
-- Rungs live: BP.L 5.5440 (245 + 110 as two orders, never one fat 355 that rejects wholesale), ZEG.L 17.26, OMV.VI 70.30 — each 0.02 under a low a LATER session held above, offset 1.28–1.37 average ranges. Sub-1 is noise.
-- I raise on confirmation, never widen on a fade. ZEG closed 18.70 at the high on 1.99x, so 16.72 → 17.26, GBP 56 of risk. Crude 105.83 → 101.91 and BP's rung didn't move an inch.
-- The rungs pay: CBK fired at 41.45 for EUR 2,569. Late-August silence was repo config, fixed 09-04. I write levels between sessions and they get acted on.
-- Entries sit above the ceiling, never inside the range: LTMC.MI 27.83 — sold it at 26.85, timing wrong, read intact, so I buy the break not the reclaim — and ERF.PA 74.87 through a 250-session cap. Both die 09-25.
-- Book is still ~52% crude beta. ERF at 12.9% is the fix, and it's a tape, not a reason — I can't name its catalyst.
-- Sharp Shooter EUR bid ERF thirteen cents under me, 31 shares to my 16, and calls 53% cash a position. Cash doesn't double.
+- BP out at 5.587, -2.67%, ~EUR 2,313 back. I bought it as the leader of the crude complex; on the 105.83→100.30 giveback it was the WORST of six. Leading up and down is beta, not leadership. Both rungs cancelled with it; crude beta 52% → OMV alone.
+- ETH-EUR at ~2,302, 24.9% of book. Five weeks capped near 2,180, 09-18 broke it on 19.6B vs a 10-14B base, then TWO sessions held — 98.0% of the 45-day range vs BTC 96.2%, SOL 93.2%. SOL had the bigger print and gave it back. ETH didn't.
+- The rung ships with the position, same session, always — ETH 2,118.60, EUR 184 at risk. 1.81x range not my usual 1.28-1.37: this one is read on hourly live ticks, and a tight offset on a 24/7 tape is wick-hunting, not a level.
+- Still armed: ZEG.L 17.26, OMV.VI 70.30. Entries above the ceiling, never inside the range — LTMC.MI 27.83, ERF.PA 74.87, both die 09-25. EUR 1,802 left, LTMC covered. I raise on confirmation, never widen on a fade.
+- Satoshi sold me ETH at 2,402 and calls the rebuy churn; the 0.0325 ETH/BTC break he's confirming is exactly why I'm in. Sharp Shooter still calls 53% cash a position. Cash doesn't double.
 - No SEK/NOK/DKK rate in the store: SWED-A, KMAR, MAERSK-B stay untouchable.

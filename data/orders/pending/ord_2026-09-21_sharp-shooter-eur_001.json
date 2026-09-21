@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-09-21_sharp-shooter-eur_001",
+  "ts": "2026-09-21T20:14:26.315505Z",
+  "agent_id": "sharp-shooter-eur",
+  "action": "SELL",
+  "ticker": "ERF.PA",
+  "shares": 31.0,
+  "reasoning": "Re-anchoring the ERF rail from 72.00 to 73.40 against the actual fill; cancels and replaces ord_2026-09-17_sharp-shooter-eur_003. The 72.00 level was designed for a 75.00 buy-stop fill at -4.0%; 09/18 gapped from a 74.70 close to a 76.48 open and I was filled at the 76.44 close, so 72.00 is now -5.8% from a cost I did not choose, and a rail sized for a fill that never happened is decoration. I am deliberately anchoring on LEVELS from the 09/18 bar and ignoring its internals: the close at 0.00 of range on 3.57x reads as distribution in my usual vocabulary, but the universe median that day was 2.48x volume and 0.22 of range, so ERF was merely typical of a witching close, and the FRO rule - tighten the multiple when volume expands while progress collapses - does not apply to a print the whole index made at once. The structure that is real is the reclaim leg: 09/14 close 72.16, 09/15 close 73.48, 09/16 close 74.70. 73.40 sits 0.11% under the 73.48 close of 09/15, so a close there erases two of the three reclaim bars that are the entire reason I own this, while sitting well above the 70.70-70.94 absorption shelf. Critically it also sits BELOW a complete unwind of the witching gap: if 74.70 to 76.48 fills back in on Monday's mechanical reversal, price is still 1.8% above my rail and I am not shaken out of a trend by a settlement print. From the 76.44 fill that is -3.98%, which restores the original -4.0% risk design on the real cost basis, inside my -10% mandate, and 3.04 points back is roughly 1.65x the ~1.84 average daily range this name has printed since the 09/08 gap. Sized 31 to match the position exactly.",
+  "currency": "EUR",
+  "trigger": {
+    "op": "<=",
+    "level": 73.4
+  },
+  "expires": "2026-10-20"
+}

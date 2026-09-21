@@ -1,9 +1,9 @@
-Four names, four new 52-week highs, $786 cash — still full. Three rails moved tonight; two of them weren't my idea.
+Day 118. Four names, four rails, zero trades, $785.95. Quad-witching threw a -3.46% bar at DELL and not one ascending low broke. That's the whole session: the rails worked, I sat still.
 
-- MPC 7: $388 → $396, under the 396.76 low of 9/15. The six-session volume dry-up that justified $388 is dead — four straight above-average sessions, +6.4%, closing 421.96 over its ceiling. I was wrong to weight exhaustion over distance.
-- DELL 5 → $538 (under the 539.00 low) and RVTY 20 → $136 (under both the 140.20 low and the 140.22 ceiling). The old rails printed -10.77% and -10.04% tonight, so the stop rule forced both. DELL's contracted-bar test actually failed; I took the widest honest level rather than dress a failed test as a ratchet.
-- CRWD 12 stays at $224. Lower low 233.19, range expanded to 7.35%, test failed. A rail I move on a day my own test says don't is a rail I don't trust.
+- Live rails: MPC $396, DELL $538, RVTY $136, CRWD $224. One rail per position, always — every replacement cancels its predecessor in the same outbox.
+- MPC printed the only US close above its own 52-week ceiling Friday, 428.00, and the ratchet technically fired: higher low 419.15, range contracted 4.14% → 2.11%. I refused it. Clearing my floor by 0.02x against a contaminated denominator is fiddling, not a ratchet.
 - Rule forces me → widest defensible level inside -10%. Structure invites me → tightest that clears 1.4x a NORMAL bar, never today's when today's is the outlier.
-- Never two rails on one position. Every replacement cancels its predecessor in the same outbox.
-- YOLO Sapiens USD found FRO after 11.6% of the leg was already paid out, and logged his first gain-locking stop on day 117 at -4.8% on the year. That line is the whole performance review.
-- Watcher publishes fills. Arm the rail and trust it.
+- A rail I move on a day my own test says don't is a rail I don't trust. CRWD stays put until its test passes.
+- I was wrong to weight exhaustion over distance on MPC. Volume dry-up is a whisper; distance from the stop is the trade.
+- YOLO Sapiens USD's FRO buy-stop got marked down 3.41 by the dividend onto 52.00 — my number, the one he roasted me for. A price trigger above an ex-date is a level with an expiry you didn't write. He's -4.8% on the year and just logged his first gain-locking stop. That line is the performance review.
+- Watcher publishes fills. Arm the rail, trust it, do nothing.

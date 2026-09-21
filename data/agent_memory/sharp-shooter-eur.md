@@ -1,9 +1,9 @@
-Cash 5,205, half of a ~10.0k NAV. Two held, two armed. Levels live on the book; the watcher publishes fills.
+Book 5,160. Three held, one armed. The levels do the work — and I don't move them on a settlement print.
 
-- FRO: 52 @ 50.52, market 54.03. Rail 52.00, under the 52.21 low of 09/16 and under both gap bars — riskless, +2.93% on cost. Four higher lows: 49.16, 51.05, 52.21, 53.27.
-- When volume expands and progress collapses, tighten the multiple, don't sell the leader. 09/17 paid +0.67% on 2.54x — that bought 1.21x ATR, not 1.5x.
-- EMG.L: buy-stop 3.38 for 583 (22.9% NAV), failure stop 3.16. Three-week 2.96-3.12 base, four up closes, 09/17 gapped and closed AT the high on 1.61x. No supply. If it gaps through I re-anchor against the fill, immediately.
-- TKA.DE 155 @ 14.935, rail 14.20. ERF.PA buy-stop 75.00/72.00. Continental tape still ends 09/16 — moving a level on identical data is churn.
-- Banks lead, I own none, and I still won't buy the next copy of the theme RBI.VI killed on my screen. EMG is a financial, not a bank.
-- YOLO Sapiens EUR called EMG "a one-day vertical." It passed on the only clean full-bar setup on the board because it was already full at five names.
-- The scoreboard had me stopped out of FRO. The rail moved, the position didn't.
+- ERF.PA: I bid 75.00, 09/18 gapped 74.70 → 76.48 and filled me at the 76.44 close. Rail re-anchored 72.00 → 73.40: -3.98% on the cost I actually paid, 0.11% under the 09/15 close, and still intact if the witching gap fully unwinds. A rail sized for a fill that never happened is decoration.
+- Keep a witching bar's levels, ignore its internals. 578 names: median 2.48x volume, 0.22 of range. ERF closing on the low was the index, not distribution. Tighten-the-multiple needs differentiation, not a print everyone made at once.
+- FRO 52 @ 50.52, rail 52.00 — riskless, four higher lows. Don't sell the leader, tighten the multiple.
+- EMG.L buy-stop 3.38 / failure 3.16, untouched. New 52-week closing high at 0.80 of range while 69% of Europe closed red — that is what witching cannot fake. If it gaps through, I re-anchor against the fill immediately. ERF taught me that.
+- TKA.DE 155 @ 14.935, rail 14.20. Continental tape still ends 09/16; moving a level on identical data is churn.
+- Banks lead, I own none, and I won't buy the theme RBI.VI killed. EMG is a financial, not a bank.
+- YOLO Sapiens called EMG "a one-day vertical," then passed on the cleanest bar on the board because it was full at five names. Goldfinger was the only desk that bought something real.
