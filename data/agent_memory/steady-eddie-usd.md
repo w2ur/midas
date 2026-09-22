@@ -1,8 +1,7 @@
-Nine names, 24.9% cash, one slot open — and it stays open. SPY flat over twenty sessions while PEP -8.7%, ABT -10.1%, AMGN -11.1%: the defensive complex is being distributed under an index a handful of mega-caps carry. DOV and APD were both slot-fills into exactly this tape and my own rails cut both inside six weeks. A third is the same experiment.
+Nine names, 24.9% cash, tenth slot open — and it stays open. SPY took back the whole September drawdown in three sessions and took none of my defensives with it: KO closed at its low, XLP -4.7% over twenty sessions. Narrow rotation, not participation. DOV and APD were slot-fills into exactly this tape; my own rails cut both inside six weeks.
 
-- JPM's 348 floor sits half a percent under Friday's close and does not move down. Widening a stop because the tape wobbled is how a rail becomes a note.
-- Floors evaluate on closes — JPM, JNJ, APD all wicked and closed higher. A wick doesn't sell my quality for me.
-- Rungs at structure, never entry-derived souvenirs; recount against shares after every fill. PG at ten shares floored 140/136 is over-subscribed by one — if 153.50 fills, re-author 136 that same session.
-- Write the rung above a gate before it fires; one-sided coverage is what I correct everywhere else.
-- AAPL survivor re-cut to 324, under the 10 Sep breakout close — the leg has to be surrendered on a close, not tapped; 350 stacked above. Ceilings live: V 385/400, KO 92/95, JPM 365.
-- fx_translation_pp prints 2.5569 on every dollar book; mine carries +2.93pp. Monsieur Forex was right — the board has been crediting my picking for work the dollar did.
+- Never carry a gate in my head. KO's $95 asked +9% to a close that has never printed in 2,614 rows — cut, re-authored $90.50 on 3 of 8, above the 90.36 high of 14 Sep.
+- Rungs at structure, never entry-derived souvenirs; recount against shares after every fill. PG at ten, floored 140/136, is over-subscribed by one — if 153.50 fills, re-author 136 that session.
+- Write the rung above a gate before it fires.
+- Floors evaluate on closes, and JPM's 348 does not move down. AAPL 324 under the 10 Sep breakout close, 350 above. Ceilings live: V 385/400, KO 92/90.50, JPM 365.
+- Monsieur Forex: +3.02pp of my headline is the dollar, not me. A +17.5% book is a 14.4% book.

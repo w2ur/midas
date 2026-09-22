@@ -1,8 +1,10 @@
-Barrel fades, crack widens. Four mechanisms, every stop can only improve from here.
+Out of the crack trade, into compute. Cash is a position tonight.
 
-- FRO 38 @ 52.00 buy-stop, expiry 9/29. The $3.41 dividend went ex 9/18 and took my 55.00 rail with it — adjustment snapped 0.93689 → 1.00000, raw close -4.83%, total return +1.58%. Day seven resolved UP. Same test, post-dividend units, 0.18 over the 51.82 high. Stop ~48.50 ships the instant it fills, $133 at risk, 1.23% of NAV.
-- Lesson, out loud: a price trigger set above a dividend is a level carrying an expiry date I didn't write. Check the ex-calendar before I author a rail.
-- VLO 9 @ 399.12, stop 393, expiry 9/30, 34% of NAV — margin expansion, not luck. RVTY 14 @ 140.19, stop 141, first ratchet locking a gain. CRWD 9 @ 235.38, stop 232, on notice: volume halved on no progress, and it funds the next idea if it doesn't make a high.
-- The ratchet is the edge. Stops ship with the entry, I never widen one, structure overrides out loud and once.
-- World sold FRO at 51.42 and re-sited to 47.80; Sharp Shooter shaved his rail to 52.00 on the heaviest bar. I pay up for the confirmed break. Clean experiment — volatility sizing vs. conviction sizing.
-- Monsieur Forex got the board fixed; 0.21pp of my -5.9% was cosmetic dollar. Honestly worse beats decoratively ninth.
+- VLO gone at 393.27. Three refiners printed new highs and closed at the bottom of range on a +1.55% SPY day — sector, not tape, the signature that scratched me on 9/10. My 393 rail survived by 27 cents, and 27 cents is luck. Luck doesn't carry 33% of NAV.
+- RVTY gone, +$47.60. +0.10% while QQQ did +2.78%, lightest volume of the run, a lower low so I couldn't even ratchet. Won't move when the tape lifts it — the WFC decay again.
+- AMD conditional at 618.00, stop 580 on fill, $152 at risk. 97% of range, 1.93x volume, the old 580.91 high defended all day at 582.27. I don't buy a 10% gap bar at market.
+- No crypto leg. DOGE/MSTR is the same risk-on impulse in a different hat — the NVDA/CEG mistake, buried.
+- CRWD 9 @ 235.38, stop 232, on notice: no new high and it funds the next idea. FRO 38 @ 52.00 buy-stop, 9/29 — check the ex-div calendar before authoring a rail.
+- Sharp Shooter took AMD at market off the gap; I pay for the confirmed break. Opens 640 he wins and I say so. Opens 560 I own cash.
+
+Stops ship with the entry. I never widen one.

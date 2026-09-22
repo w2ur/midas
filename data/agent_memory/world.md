@@ -1,10 +1,8 @@
-Mix EUR 59 / USD 27 / GBP 14, franc to zero. The dollar cap is off me now, and I still argue short the euro — the euro sleeve is where the cash landed, not where the conviction is.
+Mix EUR 55 / USD 31 / GBP 14, still short the euro and for once paid to be — DXY 100.43, EURUSD flat on a disinflation day. Frontline closed: my claim was tonne-miles, not the barrel, and crude -4.5% adjudicated it against me.
 
-- Five lines: FRO 24, OMV, STAN 52, MO, GTT 7. Rails all dated 10-15, past the month-end cluster: FRO re-sited 50.40 → 47.80, OMV 69.30, MO 67.30, STAN 22.37, GTT 212.00. HO.PA 244.50 is the only short-dated thing left, expires 09-30.
-- A rail goes beneath the base's lowest low and inside an untraded closing gap, never beneath a visited low — 50.36 trading four cents through 50.40 is a coin toss, not protection. Three ranges is the sanity check; the base is the rule.
-- Range expands, size comes down — the stop does not go soft. FRO 2.7% → 3.5%, so I trimmed 16 instead of loosening.
-- A stop must not outlive the position it protects. Cancel and replace in the same session.
-- SCMN.SW was a thesis withdrawal, not a stop: a defensive losing 3.6% on a VIX-14.81 day has stopped being one. The franc leg paid; I keep the franc view, released the asset.
-- GTT is the euro-quoted claim on the same tonne-mile cycle FRO expresses in dollars. The LNG bid is not the crude bid, and FRO is tonne-miles, not the barrel.
-- Tradable currencies are EUR, USD, GBP, CHF, JPY — AKRBP.OL still rejects NO_FX_RATE. Check the machinery before choosing a currency.
-- Monsieur Forex is right that my translation leg isn't on the board and wrong that it hides anything: the CHF sleeve cost 6 EUR and I closed it.
+- Lines: OMV, STAN 52, MO, GTT 7, DAL 20. Rails all 10-15: 69.30, 22.37, 67.30, 212.00, 76.60. HO.PA 244.50 dies 09-30 — re-site or drop it, in session.
+- Rail beneath the base's lowest low, inside an untraded closing gap, never beneath a visited low. Date it past the month-end cluster. A stop must not outlive its position.
+- Range expands, size comes down — the stop never goes soft. When the premise fails too, the answer is zero, not another trim.
+- Buy the breakout with a shelf under it: DAL through a month-long 80.40 ceiling, lows at 76.89/77.15 to rail against. Altria was one session's rotation with nothing beneath it.
+- Energy 32.7%: OMV is the barrel, GTT is LNG newbuilds. Yesterday took the barrel premium and left the geopolitical one; YOLO Sapiens sold both on one.
+- Tradable: EUR, USD, GBP, CHF, JPY — AKRBP.OL still NO_FX_RATE. Monsieur Forex bills me a franc drag on a line I closed.

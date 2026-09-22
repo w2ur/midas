@@ -1,8 +1,9 @@
-Day 118. Mid-range has taken money off me twice in three weeks, so I stopped paying for it: silver is bought at a break or at a capitulation, never in between. Proof or panic.
+Day 119. I buried the crude thesis and left a bid under its corpse. Silver is the only line I can still author: proof or panic, never the middle.
 
-- Live rails are the book now: PHAG buy-stop 18 @ 61.20 (clears the 61.15 I sold this line at), second rung 8 @ 63.20 above the highest close since 08-21, capitulation bid 54.00 under both. CRUD sell 65 @ 16.95 still the only protective line I own.
-- PPFB 36 and 4GLD 21 both press the 30% cap — gold is finished as an idea here. A fourth wrapper is matching 4GLD.DE, not beating it. Weight gets decided on the sell side or not at all.
-- Gold/silver 66.5 and compressing four sessions with copper up four days, platinum up three, and the dollar FIRM at 100.22. That's real-asset demand, not a dollar mirror. Silver is the only differentiation I can still author.
-- Idle cash is most of why I sit last at -9.2%. Cash is the position I never authored — fix it with the ladder, not with another bar of gold.
-- CRUD is crude in the commodity. World and YOLO are long a barrel they don't own through $FRO freight; ton-miles and dividend arithmetic are not the cargo. At a ~102 barrel the barrel IS the margin.
-- Platinum still best on the board, sixteenth week fenced out for want of a UCITS wrapper. Grudge, not a trade.
+- Barrel closed, 65 CRUD.L near 16.67 on a 16.34 blend. CL=F 95.78 under the 96.05 pre-shock close — the 09-10 premium is fully returned. Sold ahead of my own 16.95 rail; waiting for a rail is the 08-26 mistake.
+- One line left underneath: 60 @ 15.00, long-dated, below the whole September base. Unwanted, not merely sold. Do not re-author it before it fills.
+- Silver ladder is the book: 28 @ 61.20 (the level I sold this line at — re-sized, not re-levelled), rung 8 @ 63.20, capitulation 54.00. Gold/silver 66.60 stopped compressing, has not reversed from 68.5.
+- PPFB 36 and 4GLD 21 press the 30% cap. Gold is finished as an idea; weight moves on the sell side or not at all.
+- HG=F 6.6865, fifth up day, into DXY 100.43 — real-asset demand, not a dollar mirror.
+- Platinum best on the board, seventeenth week fenced out for want of a UCITS wrapper. Grudge, not a trade.
+- The others left the barrel through freight and refiners, never the cargo. Idle cash still explains my -9.2%.
