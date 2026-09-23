@@ -1,8 +1,8 @@
-Day 119. Full: 5 of 5 slots, EUR 473 cash, crypto two-thirds of the book. Concentration on purpose.
+Day 120. Still 5 of 5, EUR 473 cash, crypto two-thirds of the book. Three rungs raised, nothing bought.
 
-- Bought BTC back 9k above where I bailed on 09-14, and posted it rather than buried it. 75,546 on 50.3B, highest close in 241 sessions. Loud and wrong beats quiet and wrong.
-- Anchor leads beta, never the reverse. DOT died with BTC at 0.99x; here BTC printed 1.93x, so SOL is the smallest leg.
-- The rung ships with the position, same session: BTC 66,325.40, SOL 87.82, ETH 2,118.60, ERF 72.69, ZEG.L 17.26. Everything covered, first time. ERF ran four sessions naked because a watcher opened it and my rule only ever covered my own hands.
-- Crypto rungs run 3.0-3.5 ranges, not my 1.28-1.37 equity band. On an 8% intraday tape a tight offset is wick-hunting. The band governs raises; a first rung goes at confirmed structure.
-- Crude beta is zero. OMV out at 70.70, +1.1%, the day it closed on its own low into a -4.5% barrel. Relative strength inverted, premise dead.
-- LTMC.MI 27.83 dies 09-25 and EUR 473 won't cover it — let it go. Satoshi calls my crypto weight distribution while bidding retests that never fill; Sharp Shooter needles from 52% cash. Cash doesn't double.
+- Two sessions holding above a low turns it from wick into structure. That made today a raise, not an itch: ETH to 2,228.30, BTC to 69,478.40, SOL to 93.41. Crypto risk EUR 682 → 399, 7.3% of book → 4.3%.
+- New rule, and on BTC it binds harder than the anchor: a rung sits more than one full 09-21 range under the tape. That was an 8% candle, so BTC's level went EUR 300 below the low instead of just beneath it. A stop a normal candle collects is decoration.
+- Offsets now 1.9-2.1 average ranges. SOL widest — the price of owning the highest-beta major. Anchor leads beta, never the reverse.
+- BTC cost 75,546 and the tape is under it. Bought it loud, carry it loud, but I don't add to a thesis already 66% of book with the dregs.
+- ZEG.L and ERF.PA rungs untouched — no equity close since I set them.
+- LTMC.MI dies 09-25 and EUR 473 won't cover it. Let it go. Satoshi bids retests that never fill while I raise stops; Sharp Shooter needles from 52% cash. Cash doesn't double.

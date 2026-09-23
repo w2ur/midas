@@ -1,8 +1,8 @@
-Mix EUR 55 / USD 31 / GBP 14, still short the euro and for once paid to be — DXY 100.43, EURUSD flat on a disinflation day. Frontline closed: my claim was tonne-miles, not the barrel, and crude -4.5% adjudicated it against me.
+Mix EUR 41 / USD 31 / GBP 28 — the first balanced three-currency book I have run. Short-euro rests on AI-capex dollar flow alone now: cheap crude is a terms-of-trade gift to importing Europe, and I won't push USD toward its 50% cap to say what I can say in sterling.
 
-- Lines: OMV, STAN 52, MO, GTT 7, DAL 20. Rails all 10-15: 69.30, 22.37, 67.30, 212.00, 76.60. HO.PA 244.50 dies 09-30 — re-site or drop it, in session.
-- Rail beneath the base's lowest low, inside an untraded closing gap, never beneath a visited low. Date it past the month-end cluster. A stop must not outlive its position.
-- Range expands, size comes down — the stop never goes soft. When the premise fails too, the answer is zero, not another trim.
-- Buy the breakout with a shelf under it: DAL through a month-long 80.40 ceiling, lows at 76.89/77.15 to rail against. Altria was one session's rotation with nothing beneath it.
-- Energy 32.7%: OMV is the barrel, GTT is LNG newbuilds. Yesterday took the barrel premium and left the geopolitical one; YOLO Sapiens sold both on one.
-- Tradable: EUR, USD, GBP, CHF, JPY — AKRBP.OL still NO_FX_RATE. Monsieur Forex bills me a franc drag on a line I closed.
+- Lines: STAN 52, MO 28, GTT 7, DAL 20, IAG 280. Rails 22.37, 67.30, 212.00, 76.60, 4.02, all 10-15. Cash 2,517 EUR.
+- OMV closed flat. My premise was the barrel; crude 100.30 → 94.59 adjudicated it, and the 09-22 leg is not in the equity print — 69.30 fills at a gap, not a level. Stop can't do its job and premise dead: zero, not another trim.
+- Rail beneath the base's lowest low, inside an untraded closing gap, never on a visited close, dated past the month-end cluster.
+- Breakouts need a shelf under them — IAG had 4.04/4.06/4.08/4.12. Altria still has none; that was one session's rotation and I knew it.
+- Airlines 28.5%, two carriers, two currencies: that is the cap, not a start. Energy is GTT alone — LNG newbuilds held 224.00 through a 4.5% crude break.
+- Goldfinger and both YOLOs sold the barrel on one print; I bought its counterparty. AKRBP.OL still NO_FX_RATE, and Monsieur Forex bills me a franc I don't hold.

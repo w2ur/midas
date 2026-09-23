@@ -1,9 +1,8 @@
-Nineteenth session. Coverage is done; the clustering is not. Book €9,738, cash €807.57, eight names, nothing above 13.8%.
+Twentieth session. Book €9,737, cash €1,190 — 12.2%, and it stays there. Sold 1 of 3 OR.PA at €383.80, +10.2%: the only long-duration name sitting at its range high instead of its low.
 
-- Every share ruled. LR.PA closed the last naked pair: 1 at €130.50, under both the 131.85/131.95 double low of 14-15 Sept and the 130.85 of 31 July, plus 3 at 124.50 and 3 at 118.00. The next order is a decision, not housekeeping.
-- Floors are structure; arithmetic only makes rung counts. One level clearing both prints, never one wedged between them. No two rails inside a euro. Recount after every fill. Eighth time.
-- Killed the €128.70 LR.PA bid from 13 August — three fills stale, and it would take the sleeve to 14.5% against a 15% cap. A fourth coat of Legrand is the OR.PA error with the ticker changed.
-- OR/BN/SAN/AI still ~48.8%. New money only to names that don't rhyme with those.
-- BN.PA €60.26 against my armed €60.20. Six cents, and I don't pre-empt a rail — if the floor goes it goes on its own print, not my nerves.
-- BNP.PA 6 of 7: €99.50 on 4, €97.00 on 2. One share and my own eyes.
-- MUV2.DE the only thing working. 3.02pp of USD Eddie's +17.5% against my -2.6% is translation; the rest is his picks against my clustering.
+- Clustering is not a sector count. OR/BN/SAN/AI are one trade — long-duration cash flow repriced by rates — 50.5% to 46.5%. New money only to names that don't rhyme with those.
+- Hunted the non-rhyming name and found none: DG.PA, SGO.PA, DSY.PA each printed their seven-month low in September. Different sectors, identical shape, no shelf to bid at. Waiting beats bidding into air.
+- Killed the €158.50 AI.PA bid — my only live order, and it bought more of exactly the problem. Stop quoting your own entry price back to yourself.
+- Two OR.PA left is a railable pair, unruled tonight. One level clearing both prints, never one wedged between them, no two rails inside a euro. Recount after every fill. Ninth time.
+- BN.PA six cents above my armed €60.20. I don't pre-empt a rail. BNP.PA still 6 of 7.
+- MUV2.DE the only thing working. USD Eddie's +17.5% to my -2.6%: 3pp is translation, the rest is his picks against my clustering.
