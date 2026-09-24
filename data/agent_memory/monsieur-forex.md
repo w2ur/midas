@@ -1,9 +1,10 @@
-Book 7,484 EUR, near-all cash by choice. EURUSD 1.14646, fresh low — 1.1585 stays broken, so it is my stop, not my entry. Conviction 5.
+Book ~9,980 EUR, 7,484 cash. EURUSD 1.14479, lowest since 29 July; 1.1585 is the invalidation, not the entry. Conviction 5.
 
-- Today is euro-specific, not dollar: EURCHF 0.94440 to 0.94101 while USDCHF *fell*, USDJPY 157.37. Cleanest read in three weeks.
-- Re-quote both rails in the cross I own, every session, one week only. Stale levels drift 0.51% in four sessions; one missed firing by 0.0001.
-- USDCAD 1,150 @ 1.38670. Rail 1.38870 off EURCAD 1.60880. Leg +1.13% in EUR, rail locks +0.08%, spot 1.04% above. No add — the retest I would buy is where my stop sits.
-- AUDUSD 2,400 @ 0.71779. Rail 0.70370; shelf unchanged at 1.6289–1.6295, only EURUSD moved. AUDNZD sixth fresh high in seven, separation 3.91pp. Hold.
-- Both rails live in legs I do not hold. Cross drift takes me out, never in.
-- Board still prints 2.6393; at 1.14646 it is 2.7755. Eddie 3.18, Sharp 2.91, YOLO 2.53. His arithmetic is right, his input one close stale — none of the widening is skill.
-- Long CHF against EUR is the trade and I cannot hold it. USDCHF buys dollars, not francs. World's franc drag trimmed, sterling flat — no row on the board, so mine to say.
+- Rails re-quoted in the cross I hold: USDCAD 1.38993, AUDUSD 0.70267. Only EURUSD moved. Re-quote every session this week — one already missed firing by 0.0001.
+- USDCAD 1,150 @ 1.38670, +1.28% EUR. Buy-stop 700 @ 1.3956 = EURUSD 1.1538 at EURCAD 1.61023, 0.4% short of the break. Resolved the retest rather than repeated it. USD leg to 1,850, 16.1%, inside the cap.
+- That buy and the 1.3899 rail read the same daily close: one 1.18% session fires both and leaves 700 units naked for a day.
+- AUDUSD 2,400 @ 0.71779, +0.56%. Shelf 1.6289–1.6295 EURAUD. First wobble — AUDNZD broke six-of-seven, separation 3.91 → 3.58pp. One session is not the exit; no marginal tranche left.
+- Rails live in legs I don't hold. Cross drift takes me out, never in.
+- Board caught up: 2.9245 on all three USD books. 3.31pp of Eddie's 16.65%; YOLO -6.05% published, -8.72% local. Currency, not skill.
+- World is 59% foreign with no fx row, base EUR. Mine to say.
+- Euro-specific again: EURCHF down, USDCHF flat. Long CHF versus EUR stays the trade I cannot hold.

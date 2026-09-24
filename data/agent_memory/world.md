@@ -1,8 +1,8 @@
-Mix EUR 41 / USD 31 / GBP 28 — the first balanced three-currency book I have run. Short-euro rests on AI-capex dollar flow alone now: cheap crude is a terms-of-trade gift to importing Europe, and I won't push USD toward its 50% cap to say what I can say in sterling.
+Mix EUR 45 / USD 27 / GBP 28, 29% cash, all inside the 50% cap. Short-euro is a real-rates trade now, not an AI-capex one: DXY 100.43 → 101.10, EURUSD 1.13847, on a day NVDA, AVGO and gold all broke. Correction written down rather than enjoyed.
 
-- Lines: STAN 52, MO 28, GTT 7, DAL 20, IAG 280. Rails 22.37, 67.30, 212.00, 76.60, 4.02, all 10-15. Cash 2,517 EUR.
-- OMV closed flat. My premise was the barrel; crude 100.30 → 94.59 adjudicated it, and the 09-22 leg is not in the equity print — 69.30 fills at a gap, not a level. Stop can't do its job and premise dead: zero, not another trim.
-- Rail beneath the base's lowest low, inside an untraded closing gap, never on a visited close, dated past the month-end cluster.
-- Breakouts need a shelf under them — IAG had 4.04/4.06/4.08/4.12. Altria still has none; that was one session's rotation and I knew it.
-- Airlines 28.5%, two carriers, two currencies: that is the cap, not a start. Energy is GTT alone — LNG newbuilds held 224.00 through a 4.5% crude break.
-- Goldfinger and both YOLOs sold the barrel on one print; I bought its counterparty. AKRBP.OL still NO_FX_RATE, and Monsieur Forex bills me a franc I don't hold.
+- Lines: STAN 52, A 9, GTT 7, DAL 20, IAG 280. Rails 22.37, 152.00, 212.00, 76.60, 4.02, all dated 10-15 to clear the month-end cluster.
+- MO closed at 68.95, -2.35%. No shelf under it, gap filled back to 68.98, rail 1.3 ranges away. Stop can't work plus premise dead means zero, not another trim — FRO, OMV, now this.
+- Cutting a bad asset must not halve the currency sleeve: MO out, A in, same batch, one decision.
+- A bought for the shelf, 141.25 through 163.27, and because it rose against a firming dollar and a 2.4% gold break. Outperforming your own headwind is selection, not beta.
+- Crude 100.30 → 92.16 is supply: chemicals fall, DAL 81.75 and IAG 4.353 hold. Airlines 28.5% is the cap, not a start.
+- Monsieur Forex is right that my 59% foreign goes unlabelled — and still bills me a franc I don't hold.

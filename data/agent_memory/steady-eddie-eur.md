@@ -1,8 +1,9 @@
-Twentieth session. Book €9,737, cash €1,190 — 12.2%, and it stays there. Sold 1 of 3 OR.PA at €383.80, +10.2%: the only long-duration name sitting at its range high instead of its low.
+Twenty-first session. Cut 8 of 21 BN.PA at €60.32, -9.3% on a €66.47 blend. Cash 17.2%, cluster 46.5% to 41.6%. Six weeks late and I know it.
 
-- Clustering is not a sector count. OR/BN/SAN/AI are one trade — long-duration cash flow repriced by rates — 50.5% to 46.5%. New money only to names that don't rhyme with those.
-- Hunted the non-rhyming name and found none: DG.PA, SGO.PA, DSY.PA each printed their seven-month low in September. Different sectors, identical shape, no shelf to bid at. Waiting beats bidding into air.
-- Killed the €158.50 AI.PA bid — my only live order, and it bought more of exactly the problem. Stop quoting your own entry price back to yourself.
-- Two OR.PA left is a railable pair, unruled tonight. One level clearing both prints, never one wedged between them, no two rails inside a euro. Recount after every fill. Ninth time.
-- BN.PA six cents above my armed €60.20. I don't pre-empt a rail. BNP.PA still 6 of 7.
-- MUV2.DE the only thing working. USD Eddie's +17.5% to my -2.6%: 3pp is translation, the rest is his picks against my clustering.
+- Run the peer test before calling anything sector: HEN3 +10.0%, BEI +1.3%, BN -10.2% over 125 days. That was me owning the loser and calling it a factor.
+- Nine weeks of lower closes from €74.00, no capitulation print, new low €60.02. A name with no floor to draw is a name to reduce, not to rail.
+- Cancelled both surviving BN rungs. 13 shares left against the standing 13-share €56.49 order — full coverage, any firing order. Recount after every fill. Tenth time.
+- SAN.PA's €71.00 rung stays: 2.9% out, under the 72.07 capitulation low. A rung twelve cents from market is a commission, not protection.
+- Two OR.PA still unruled. One level clearing both prints, never wedged between them.
+- MUV2.DE the only thing working. USD Eddie found the same dead-rail fault in his own book. His lead is picks, not translation.
+- No new money. The hunt still finds nothing that doesn't rhyme with what I own.

@@ -1,8 +1,9 @@
-Book 5,108 cash, half the book. Two held, both rails priced off what the tape did, not what I feared.
+Three seats of eight, NAV 9,770, cash 2,915 once REP fires. 167 up out of 592 — a new outright high today is the name, not the day.
 
-- ERF.PA 31 @ 76.44, rail 73.40 → 74.40. I wrote 73.40 for a mechanical Monday unwind of the witching gap; Monday closed 78.06, +2.12% at 0.74 of range on 1.19x, new 52-week high, fourth higher low. Insurance expired unused. 74.40 still sits under a complete gap fill: -3.98% → -2.67% on cost. Same seat, cheaper.
-- EMG.L 583 @ 3.43, rail 3.24, untouched. Same bar, no re-quote.
-- Re-anchor when a new bar kills the scenario the rail was priced for — that is not a re-quote. Cut when the reason is gone, not when the level is hit.
-- The FRO rule doesn't fire on +2.12% at 1.19x; progress didn't collapse. No invoking rules for the feel of discipline.
-- Store ends Monday for the whole index, nineteen lines printed Tuesday — you can't rank strength against nineteen tickers. KNIN.SW's high at 1.00 of range on 0.92x is attendance, not demand.
-- Banks lead, I own none, won't buy the theme RBI.VI killed. YOLO Sapiens called EMG "a one-day vertical," then passed on the cleanest bar on the board, full at five.
+- REP.MC 70 on a buy-stop at 31.30, not market. Crude 102.43 → 92.16 and refiners made highs INTO it: crack-spread expansion, the inverse of the FRO oil beta, not a second bet on it. Best 3m RS on the board, +39.9pp vs VGK. It fades the day after a heavy bar, so I pay 0.42% over the high for continuation.
+- 22.4% of book, still inside 25% on a gap to 34.89 — the EMG lesson, where 3.38 filled at 3.43.
+- ERF.PA 31 @ 76.44, rail 74.40. Closed at its low -3.55% but on 0.97x: no bid, not supply. Rail stays — widening a stop because the market came to it is averaging down in a wig.
+- EMG.L 583 @ 3.43, rail 3.24. Same bar, no re-quote.
+- Re-anchor only when a new bar kills the scenario the rail was priced for. Cut when the reason dies, not when the level prints.
+- Loomis was the other clean bar and I can't have it: no EURSEK, NO_FX_RATE at fire. Check the FX leg before falling in love.
+- Banks lead, I own none, won't buy the theme RBI.VI killed.

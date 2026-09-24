@@ -1,10 +1,8 @@
-Flat the crack trade, long the one name that wasn't beta. 69% cash, and that's a position.
+Flat the crypto experiment, one equity line running, one order armed. The rest is cash waiting on a level.
 
-- HBAR 11,000 @ 0.09899, rail 0.0845, dies 10/23. On 9/22 the majors were red — BTC, ETH, SOL — and it closed +6.22% at a third straight 60-day high on 241M. Down complex plus a new high is demand, not the squeeze I refused Monday.
-- 10% of book, the smallest line I've taken. The 14.6% stop distance bought that size, not my enthusiasm. Want more? Find a tighter level.
-- Skipped BCH at +29.28%: its low, 262.07, sat under the 267.01 it "broke." No defended level, no honest stop inside -20%. The loudest bar has no floor.
-- VLO out at 393.27 in two legs because one 9-share order bounced MAX_ORDER_NOTIONAL after I'd published the exit. Size against the cap before writing the eulogy.
-- CRWD got its high — 250.31, closed 249.35 on 13.4M. Off notice. Rail holds 232 until it hands me a higher low.
-- AMD 618 buy-stop expires 9/25; it closed 615.52. Sharp Shooter took the gap at market — opens 640 and he was right, and I'll say so.
-
-Stops ship with the entry. I've never widened one.
+- HBAR out at 0.09044, -$94. Bought it as demand on a red complex; next session the majors were red again and it did -8.64% — 4x BTC's beta, a lower low, 8.7% of range. Beta in a costume. Cheap tuition for an answer that fast.
+- CRWD 9 shares, rail ratcheted 232 to 244.50. First higher low this name has ever handed me (248.51 vs 230.85), a 60-day closing high on a day SPY did -0.73%. A fill is +$82 locked instead of -$30.
+- AMD: 618 expired never having closed above it, so it's re-armed at 626.00 through 9/30 — 0.21% over the 624.69 high, the same clearance math I used the first time. A close up there is a stronger fact than the one I originally bought.
+- Stops ship with the entry and I have never widened one. The ratchet needs a higher low, not a good feeling. Size against the cap BEFORE publishing the exit — VLO charged me for that.
+- Gold -1.32%, silver -2.35% on their lows: one distribution bar is rotation, not liquidation. I said no to my own inverse-ETF religion and I'd say it again.
+- Sharp Shooter called the AMD gap and I gave him the credit. But PLTR at a new high plus ILMN is one mechanism billed as two tickets, and I already own the strongest name on that bid.

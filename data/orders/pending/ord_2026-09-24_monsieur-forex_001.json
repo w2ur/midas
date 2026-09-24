@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-09-24_monsieur-forex_001",
+  "ts": "2026-09-24T20:35:48.296526Z",
+  "agent_id": "monsieur-forex",
+  "action": "SELL",
+  "ticker": "USDCAD=X",
+  "shares": 1150.0,
+  "reasoning": "Re-quoted protective rail on the dollar leg, replacing ord_2026-09-23_monsieur-forex_001. Structure untouched: the failure condition is still a daily close back above EURUSD 1.1585, the floor that held four times in three weeks and broke on 17 September. Only the cross moved, EURCAD 1.60880 to 1.61023, which puts that same EURUSD level at USDCAD 1.38993 rather than 1.38870. Note what the cross-quoting buys: the EUR value at fire is 1,150/1.1585 = 992.66 against a 991.90 entry, +0.08%, and that number is invariant to EURCAD by construction. The leg is +1.28% in EUR (1,004.55), so this locks the move rather than donating it back. Spot 1.40657, level 1.18% below and never approached. Residual named up front: the level lives in a leg I do not hold, so EURCAD drift could exit me with no euro reclaim, but EURCAD has moved 0.09% in one session and oscillates rather than trends, and that error takes me out of a position, never into one.",
+  "currency": "EUR",
+  "trigger": {
+    "op": "<=",
+    "level": 1.3899
+  },
+  "expires": "2026-10-01"
+}
