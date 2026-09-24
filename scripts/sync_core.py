@@ -3,8 +3,8 @@
 midas-core checkout. A dev/CI tool ONLY — it is never imported on the live
 runtime path.
 
-    python scripts/sync_core.py apply --core /path/to/midas-core
-    python scripts/sync_core.py check --core /path/to/midas-core   # exit 1 on drift
+    uv run python scripts/sync_core.py apply --core /path/to/midas-core
+    uv run python scripts/sync_core.py check --core /path/to/midas-core   # exit 1 on drift
 """
 
 from __future__ import annotations
