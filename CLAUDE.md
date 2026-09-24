@@ -135,7 +135,7 @@ Full rail bands, the currency-resolution layers and the unit migration are in th
 ## Repo Split (midas-core mirror)
 
 - **`w2ur/midas-core` (PUBLIC, MIT) is a MIRROR of this repo's engine, reusable orchestration and `examples/demo-desk`**, produced by `scripts/sync_core.py`.
-- **Edit here, then `python scripts/sync_core.py apply --core <checkout>`. Never hand-edit midas-core.** `core-drift-guard` enforces it. This is also why midas-core carries no `CLAUDE.md`: guidance placed there would invite the one mistake the mirror discipline forbids.
+- **Edit here, then `uv run python scripts/sync_core.py apply --core <checkout>`. Never hand-edit midas-core.** `core-drift-guard` enforces it. This is also why midas-core carries no `CLAUDE.md`: guidance placed there would invite the one mistake the mirror discipline forbids.
 - **`CLAUDE.md` is not in the manifest** — `sync_core.py` never mentions it, and midas-core has no copy. Editing this file needs no mirrored counterpart.
 - `check()` runs over the full `apply_manifest`, in two tiers, because some manifest files are rescraped or rewritten on a schedule. Details in the **`midas-ci-guards`** skill.
 ## Infrastructure
