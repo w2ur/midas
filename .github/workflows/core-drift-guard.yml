@@ -42,7 +42,7 @@ jobs:
             - Engine or orchestration edited directly in the midas-core checkout
               instead of here. Live is the source of truth; core is a mirror.
             - A change landed here without the follow-up
-              `python scripts/sync_core.py apply --core <checkout>`.
+              `uv run python scripts/sync_core.py apply --core <checkout>`.
             - `scripts/sync_core.py check` output in the run log names the
               diverging files.
 
