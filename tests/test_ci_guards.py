@@ -414,6 +414,9 @@ def test_cancellation_is_not_an_alertable_failure(tmp_path):
     assert _run_failure_issue(tmp_path, "cancelled") == []
 
 
+_NON_OUTCOME_FAILURE_ISSUE_JOBS = {("session-integrity.yml", "concerns")}
+
+
 def test_alerting_workflows_report_their_outcome():
     """Every scheduled writer routes its outcome to the shared action.
 
@@ -428,9 +431,15 @@ def test_alerting_workflows_report_their_outcome():
         # workflow reports once from a trailing job that `needs` the others,
         # because one red run is one fact and three issues for it is the
         # alert-fatigue machine this action exists to replace.
+        #
+        # session-integrity's `concerns` job also calls the action, but it
+        # files the session's own Concerns trailers, not this workflow's
+        # outcome (TestSessionConcernsAreFiled pins it), so it is not a
+        # second outcome reporter.
         reporters = [
             (job_name, s)
             for job_name, job in workflow["jobs"].items()
+            if (name, job_name) not in _NON_OUTCOME_FAILURE_ISSUE_JOBS
             for s in job["steps"]
             if s.get("uses") == "./.github/actions/failure-issue"
         ]

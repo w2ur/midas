@@ -327,7 +327,9 @@ jobs:
   # success — it only reports), so the outcome is aggregated from what it
   # watches. `always()` so it still runs when the jobs it needs have failed.
   alert:
-    needs: [ledger-integrity, append-only, check]
+    # `concerns` too: a reader that crashed files nothing, and that silence
+    # would look exactly like a session with no concerns.
+    needs: [ledger-integrity, append-only, check, concerns]
     if: always()
     runs-on: ubuntu-latest
     steps:
