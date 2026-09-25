@@ -1473,7 +1473,7 @@ class TestDeniedTickers:
     def test_a_case_or_whitespace_variant_of_a_denied_ticker_is_refused(
         self, broker_env, variant
     ):
-        """Regression: follow-up money review r1, M3. The rail compared the
+        """Regression: 2de6c7039 — follow-up money review r1, M3. The rail compared the
         raw ticker string, so a lower-case `sh` passed it; on a
         case-insensitive filesystem (a Mac, the demo desk's entry point) the
         store read `SH.jsonl` for it and the BUY filled. Refused regardless

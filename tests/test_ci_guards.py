@@ -4321,7 +4321,7 @@ class TestSessionIntegrityAlertsByScope:
     # --- follow-up review r1, M2: refused for good vs failed for now ------
 
     def test_a_sha_main_does_not_hold_is_refused_not_retried(self, tmp_path):
-        """Regression: follow-up money review r1, M2. A well-formed sha the pin
+        """Regression: 3190e0174 — follow-up money review r1, M2. A well-formed sha the pin
         refuses DETERMINISTICALLY — more than 200 commits deep, a typo, a
         branch-only commit — was filed under the commit-scoped title, whose
         body says a green re-run closes it. No re-run of that sha can ever be

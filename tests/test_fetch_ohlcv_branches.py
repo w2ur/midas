@@ -1421,7 +1421,7 @@ class TestExchangeWideHole:
     def test_a_crypto_hole_on_a_full_run_fails(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
-        """Regression: money review r1 (J6 follow-ups), M1. Crypto shared the
+        """Regression: b3aaa4fb1 — follow-up money review r1, M1. Crypto shared the
         no-suffix bucket with ~590 US names: all 34 pairs holed read 34/640 =
         5.3% and a weekday full run exited 0 while every crypto book priced a
         day stale."""
