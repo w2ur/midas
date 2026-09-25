@@ -409,12 +409,21 @@ jobs:
   # cause, not per job. `job.status` would be this job's own status (always
   # success — it only reports), so the outcome is aggregated from what it
   # watches. `always()` so it still runs when the jobs it needs have failed.
+  # Two reporters, split by what a green run proves (money review round 4,
+  # I-B). failure-issue closes an open issue on the next green run of the same
+  # TITLE, and since every bot commit dispatches this workflow, "the next
+  # green run" arrives within hours:
+  #  - STATE checks (ledger-integrity, cash-replay) read the whole ledger, so
+  #    a later green run really is recovery: one fixed title, self-closing.
+  #  - COMMIT-scoped checks (append-only's HEAD^..HEAD, `check`'s artifacts,
+  #    `concerns`) judge one commit. A later commit passing says nothing about
+  #    a row the earlier one moved, so the title carries the sha: only a green
+  #    re-run of THAT commit closes it; anything else is a human's close.
+  # `target` feeds both: when it refuses a dispatched sha every other job is
+  # SKIPPED, and skipped must read as failure, never as "nothing failed" — the
+  # state reporter files that; the commit reporter has no sha to key on.
   alert:
-    # `concerns` too: a reader that crashed files nothing, and that silence
-    # would look exactly like a session with no concerns. `target` too: when
-    # it refuses a dispatched sha every other job is SKIPPED, and skipped must
-    # read as failure here, never as "nothing failed".
-    needs: [target, ledger-integrity, append-only, check, concerns]
+    needs: [target, ledger-integrity]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -428,18 +437,42 @@ jobs:
           # literally, so the wrapped version of this embedded newlines in the
           # expression rather than spaces.
           outcome: "${{ (contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')) && 'failure' || contains(needs.*.result, 'cancelled') && 'cancelled' || 'success' }}"
-          title: "session-integrity: a published-data guard failed on main"
+          title: "session-integrity: the ledger failed reconciliation on main"
           body: |
-            A commit on `main` (pushed, or landed by auto-merge-session's
-            fallback merge and dispatched here) failed or skipped one of the
-            `session-integrity` jobs. All
-            three read committed data, so a failure here means the published
-            record may be wrong — not merely that a build broke.
+            A commit on `main` failed (or could not run) a ledger STATE check
+            in `session-integrity`. These read the whole committed ledger, so a
+            later green run means it has been repaired, and closes this issue.
 
             **Which job, and what it means**
+            - `target` — a dispatched sha was not a commit on main, so no guard
+              ran at all. Re-dispatch with the right sha.
             - `ledger-integrity` — a filled inbox row has no matching trade, or
               a book's `initial_capital + replay(trades)` no longer equals its
               recorded cash. Treat as a data incident, not a flaky test.
+
+  alert-commit:
+    # `concerns` here: a reader that crashed files nothing, and that silence
+    # would look exactly like a session with no concerns.
+    needs: [target, append-only, check, concerns]
+    if: always() && needs.target.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Report outcome
+        if: always()
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: "${{ (contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')) && 'failure' || contains(needs.*.result, 'cancelled') && 'cancelled' || 'success' }}"
+          title: "session-integrity: commit ${{ needs.target.outputs.sha }} failed a published-data guard"
+          body: |
+            One commit on `main` failed a COMMIT-scoped `session-integrity`
+            guard. This issue is keyed to that commit: a later commit passing
+            does not close it, because it says nothing about what this one
+            did. Only a green re-run on the same sha closes it; otherwise close
+            it once the finding is dealt with.
+
+            **Which job, and what it means**
             - `append-only` — a dated row in `data/portfolios/*/snapshots.json`
               or `data/baselines/**` moved without a human-authored `[restate]`
               subject (or `[restate]` line of its own); the session, the bot and
@@ -449,6 +482,8 @@ jobs:
             - `check` — a session or weekend-refresh commit skipped a
               load-bearing step (journals, baselines, manager-review,
               `current.json` on a refresh).
+            - `concerns` — the job that files the session's Concerns trailers
+              crashed; that day's concerns were not filed.
 
             **Before assuming the guard is wrong:** it has been, once. On
             2026-08-07 the baselines check read an empty diff as "Step 9

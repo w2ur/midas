@@ -195,6 +195,18 @@ own `job.status` is always `success` (it only reports), so the outcome is
 aggregated from `needs.*.result`; `tests/test_ci_guards.py` asserts the
 aggregation and the `needs` list, and all three of those assertions were
 confirmed capable of failing by breaking them one at a time.
+**Since 2026-09-25 it reports once per SCOPE, not once** (J6 money review
+round 4, I-B). failure-issue closes an open issue on the next green run of the
+same title, and once every bot commit dispatched this workflow the next green
+run came within hours — closing an append-only failure as "Recovered" while
+the moved row stayed moved. So `alert` (needs `target`, `ledger-integrity`)
+keeps one fixed, self-closing title: those are state checks, and a later green
+run IS recovery. `alert-commit` (needs `target`, `append-only`, `check`,
+`concerns`) files under a title carrying the commit's sha: only a green re-run
+of that commit closes it. `_SPLIT_REPORTERS` in the test holds the split, and
+`TestSessionIntegrityAlertsByScope` runs the real failure-issue script against
+a title-tracking `gh` stub: a later green commit leaves the earlier commit's
+issue open, a green re-run of the same sha closes it.
 
 ## Moved out of CLAUDE.md on 2026-09-05
 

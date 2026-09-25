@@ -416,6 +416,16 @@ def test_cancellation_is_not_an_alertable_failure(tmp_path):
 
 _NON_OUTCOME_FAILURE_ISSUE_JOBS = {("session-integrity.yml", "concerns")}
 
+#: Workflows reporting once per SCOPE rather than once: reporter job -> the
+#: jobs it must watch. session-integrity keys commit-scoped failures to the
+#: commit so a later green commit cannot close them (round 4, I-B).
+_SPLIT_REPORTERS = {
+    "session-integrity.yml": {
+        "alert": {"target", "ledger-integrity"},
+        "alert-commit": {"target", "append-only", "check", "concerns"},
+    },
+}
+
 
 def test_alerting_workflows_report_their_outcome():
     """Every scheduled writer routes its outcome to the shared action.
@@ -443,6 +453,23 @@ def test_alerting_workflows_report_their_outcome():
             for s in job["steps"]
             if s.get("uses") == "./.github/actions/failure-issue"
         ]
+        if name in _SPLIT_REPORTERS:
+            # One reporter per SCOPE (round 4, I-B): together they must watch
+            # every guard, each exactly the jobs it is declared for.
+            split = _SPLIT_REPORTERS[name]
+            assert {j for j, _ in reporters} == set(split), name
+            watched = set()
+            for job_name, step in reporters:
+                assert (step.get("if") or "").startswith("always()"), name
+                assert "needs.*.result" in step["with"]["outcome"], name
+                declared = set(workflow["jobs"][job_name].get("needs") or [])
+                assert declared == split[job_name], (name, job_name, sorted(declared))
+                watched |= declared
+            assert watched == set(workflow["jobs"]) - set(split), (
+                f"{name}: a guard no reporter watches"
+            )
+            assert workflow["permissions"]["issues"] == "write"
+            continue
         assert len(reporters) == 1, f"{name} does not report its outcome exactly once"
         job_name, step = reporters[0]
         # `if: always()` — without it the step is skipped on the failure it
@@ -3654,13 +3681,15 @@ class TestFallbackMergesAreCheckedByDispatch:
 
     def test_a_refused_target_reads_as_failure_not_success(self):
         jobs = _si_spec()["jobs"]
-        assert "target" in jobs["alert"]["needs"]
-        step = next(
-            s for s in jobs["alert"]["steps"] if s.get("uses") == "./.github/actions/failure-issue"
-        )
-        # Every guard is SKIPPED when target refuses; skipped must not
-        # aggregate to success, or a refused dispatch closes the open issue.
-        assert "contains(needs.*.result, 'skipped')" in step["with"]["outcome"]
+        for reporter in ("alert", "alert-commit"):
+            assert "target" in jobs[reporter]["needs"]
+            step = next(
+                s for s in jobs[reporter]["steps"]
+                if s.get("uses") == "./.github/actions/failure-issue"
+            )
+            # Every guard is SKIPPED when target refuses; skipped must not
+            # aggregate to success, or a refused dispatch closes the open issue.
+            assert "contains(needs.*.result, 'skipped')" in step["with"]["outcome"]
 
     def _pin(self, repo: Path, tmp_path: Path, **env: str) -> tuple[int, str]:
         step = next(s for s in _si_spec()["jobs"]["target"]["steps"] if s.get("id") == "pin")
@@ -3966,3 +3995,110 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         fail = steps[-1]
         assert fail["if"] == "steps.dispatch.outputs.result == 'failed'"
         assert "exit 1" in fail["run"]
+
+
+# --------------------------------------------------------------------------
+# J6 money review round 4, I-B (2026-09-25) — a commit-scoped guard failure
+# is keyed to its commit; a later green commit cannot close it
+# --------------------------------------------------------------------------
+
+
+def _si_reporters() -> dict[str, dict]:
+    jobs = yaml.safe_load(SESSION_INTEGRITY_WF.read_text())["jobs"]
+    return {
+        name: next(s for s in job["steps"] if s.get("uses") == "./.github/actions/failure-issue")
+        for name, job in jobs.items()
+        if name != "concerns"
+        and any(s.get("uses") == "./.github/actions/failure-issue" for s in job["steps"])
+    }
+
+
+def _render(expr: str, sha: str) -> str:
+    return expr.replace("${{ needs.target.outputs.sha }}", sha)
+
+
+def _tracker_gh(tmp_path: Path) -> Path:
+    """A `gh` that keeps open issues by exact title in a file, so the
+    failure-issue script's open/comment/close decisions are observable."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(exist_ok=True)
+    store = tmp_path / "open-titles.txt"
+    store.touch()
+    gh = bin_dir / "gh"
+    gh.write_text(
+        "#!/bin/bash\n"
+        f'store="{store}"\n'
+        'if [[ "$1 $2" == "issue list" ]]; then\n'
+        '  for a in "$@"; do if [[ "$a" == in:title* ]]; then t=${a#in:title \\"}; t=${t%\\"}; fi; done\n'
+        '  n=$(grep -nxF -- "$t" "$store" | head -1 | cut -d: -f1); [[ -n "$n" ]] && echo "$n"; exit 0\n'
+        "fi\n"
+        'if [[ "$1 $2" == "issue create" ]]; then\n'
+        '  while [[ $# -gt 0 ]]; do if [[ "$1" == "--title" ]]; then echo "$2" >> "$store"; fi; shift; done\n'
+        '  echo "https://example/issues/new"; exit 0\n'
+        "fi\n"
+        'if [[ "$1 $2" == "issue close" ]]; then sed -i.bak "${3}s/.*/__closed__/" "$store"; exit 0; fi\n'
+        "exit 0\n"
+    )
+    gh.chmod(0o755)
+    return store
+
+
+def _report(tmp_path: Path, title: str, outcome: str) -> None:
+    result = subprocess.run(
+        ["bash", "-c", _failure_issue_script()],
+        env={
+            "PATH": f"{tmp_path / 'bin'}:/usr/bin:/bin",
+            "HOME": str(tmp_path),
+            "RUNNER_TEMP": str(tmp_path),
+            "GH_TOKEN": "stub",
+            "TITLE": title,
+            "BODY": "b",
+            "OUTCOME": outcome,
+            "RUN_URL": "https://example/run/1",
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+class TestSessionIntegrityAlertsByScope:
+    """Round 4, I-B: one fixed title, and failure-issue closes an open issue
+    on the next green run of that title. append-only and `check` judge ONE
+    commit's diff, so since every bot commit dispatches a (green) run, a
+    moved row's issue was closed as "Recovered" within hours while the row
+    stayed moved. Commit-scoped guards now report under a title carrying the
+    sha; only the ledger state checks keep the fixed, self-closing title."""
+
+    A, B = "a" * 40, "b" * 40
+
+    def test_the_reporters_split_by_scope(self):
+        reps = _si_reporters()
+        jobs = yaml.safe_load(SESSION_INTEGRITY_WF.read_text())["jobs"]
+        assert set(reps) == {"alert", "alert-commit"}
+        assert set(jobs["alert"]["needs"]) == {"target", "ledger-integrity"}
+        assert set(jobs["alert-commit"]["needs"]) == {"target", "append-only", "check", "concerns"}
+        assert "needs.target.outputs.sha" in reps["alert-commit"]["with"]["title"]
+        assert "needs.target.outputs.sha" not in reps["alert"]["with"]["title"]
+
+    def test_a_green_later_commit_does_not_close_an_earlier_commits_failure(self, tmp_path):
+        store = _tracker_gh(tmp_path)
+        title = _si_reporters()["alert-commit"]["with"]["title"]
+        _report(tmp_path, _render(title, self.A), "failure")
+        _report(tmp_path, _render(title, self.B), "success")
+        assert _render(title, self.A) in store.read_text().splitlines()
+
+    def test_a_green_rerun_on_the_same_commit_closes_it(self, tmp_path):
+        # Control: the keying still lets the issue close when THAT commit passes.
+        store = _tracker_gh(tmp_path)
+        title = _si_reporters()["alert-commit"]["with"]["title"]
+        _report(tmp_path, _render(title, self.A), "failure")
+        _report(tmp_path, _render(title, self.A), "success")
+        assert _render(title, self.A) not in store.read_text().splitlines()
+
+    def test_the_state_checks_still_recover_on_a_later_green_run(self, tmp_path):
+        store = _tracker_gh(tmp_path)
+        title = _si_reporters()["alert"]["with"]["title"]
+        _report(tmp_path, _render(title, self.A), "failure")
+        _report(tmp_path, _render(title, self.B), "success")
+        assert title not in store.read_text().splitlines()
