@@ -277,6 +277,11 @@ agents:
       max_orders_per_day: 5
       daily_drawdown_halt_pct: -5.0
       allowed_universe: []
+      # The PRIIPs-blocked US ETFs, enforced: the broker refuses a BUY of any
+      # of them (TICKER_DENIED). The same list is the policy's `blocklist`
+      # below, through the anchor, so the rule the Manager reads and the rule
+      # the broker enforces cannot drift apart.
+      denied_tickers: &priips_blocked [SQQQ, SPXS, SPXU, TQQQ, UPRO, SOXL, SH, PSQ]
       dry_run: false
     allocator:
       channels_prefix: manager
@@ -300,12 +305,11 @@ agents:
         max_trades_per_week: 2
         min_conviction: 6
       policy:
-        # PROMPT-ONLY, not a rail. The paper broker never reads this list, and
-        # with prose_override set it is not even rendered (render_policy_prose
-        # returns the override). What stops the Manager buying these is its
-        # policy prose, nothing else; a PRIIPs-blocked BUY would fill. A broker
-        # deny-list would be a new rail (money path, owner decision).
-        blocklist: [SQQQ, SPXS, SPXU, TQQQ, UPRO, SOXL, SH, PSQ]
+        # The prose side of `safety.denied_tickers` above (same list, by
+        # anchor). With prose_override set it is not rendered — the override
+        # names the funds itself — but it is no longer the only protection:
+        # since 2026-09-25 the broker refuses these BUYs (TICKER_DENIED).
+        blocklist: *priips_blocked
         prose_override: |
           FEE AND TAX POLICY (French tax resident — these are GIVEN facts, not suggestions)
 

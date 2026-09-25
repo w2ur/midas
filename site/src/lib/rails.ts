@@ -18,6 +18,7 @@ export const BROKER_RAILS: Rail[] = [
   { code: "MAX_ORDERS_PER_DAY", blurb: "The agent's daily order cap is already spent." },
   { code: "MAX_ORDER_NOTIONAL", blurb: "The order is larger, in base currency, than the agent's per-order cap." },
   { code: "TICKER_NOT_IN_UNIVERSE", blurb: "The agent has an allowlist and this ticker is not on it." },
+  { code: "TICKER_DENIED", blurb: "A buy of a ticker the agent may never own. The Manager's list is the US-domiciled leveraged and inverse ETFs that PRIIPs keeps from EU retail investors. Selling one already held is still allowed." },
   { code: "NO_PRICE_DATA", blurb: "No row in the committed price store for this ticker on or before the trade date." },
   { code: "CURRENCY_UNRESOLVED", blurb: "Neither the override map nor the vendor registry knows what currency this ticker quotes in, and its exchange suffix is unrecognised. The broker refuses rather than guessing." },
   { code: "PRICE_IMPLAUSIBLE", blurb: "The fill price is more than five times, or less than a fifth of, its reference — the prior close on a buy, the position's own cost on a sell. A unit error arrives as a factor of 100; a market move does not." },

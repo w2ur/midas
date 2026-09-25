@@ -6,11 +6,12 @@ import { currentDayNumber } from "../src/lib/session";
 import { cadenceStats } from "../src/lib/cadence";
 
 describe("rails registry", () => {
-  it("carries the 19 broker codes", () => {
+  it("carries the 20 broker codes", () => {
     // 15 -> 19 on 2026-08-07 (reliability review W1): CURRENCY_UNRESOLVED,
     // PRICE_IMPLAUSIBLE, TRIGGER_LEVEL_IMPLAUSIBLE, VALUATION_UNAVAILABLE.
+    // 19 -> 20 on 2026-09-25: TICKER_DENIED (the Manager's PRIIPs deny-list).
     // tests/test_reason_codes.py binds this file to the engine's own set.
-    expect(BROKER_RAILS).toHaveLength(19);
+    expect(BROKER_RAILS).toHaveLength(20);
   });
 
   it("carries the single watcher code", () => {
