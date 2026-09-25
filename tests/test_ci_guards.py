@@ -4129,6 +4129,39 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         _, out, _ = self._run(repo, tmp_path, before="")
         assert out["result"] == "failed"
 
+    def test_a_later_dispatch_of_another_commit_does_not_close_the_issue(self, tmp_path):
+        """Regression: follow-up money review r3, M1. The "not dispatched"
+        issue named ONE commit but was titled per workflow, so the next run
+        that dispatched anything closed it as recovered while the commit it
+        named was never checked. It is keyed to that commit now: only a
+        dispatch of the same commit closes it."""
+        title = next(
+            s for s in self._action()["runs"]["steps"]
+            if s.get("uses") == "./.github/actions/failure-issue"
+        )["with"]["title"]
+
+        def render(subject: str) -> str:
+            return title.replace("${{ steps.dispatch.outputs.subject }}", subject).replace(
+                "${{ github.workflow }}", "refresh-leaderboard"
+            )
+
+        store = _tracker_gh(tmp_path)
+        x, y = "a" * 40, "b" * 40
+        _report(tmp_path, render(x), "failure")
+        _report(tmp_path, render(y), "success")
+        assert render(x) in store.read_text().splitlines()
+        _report(tmp_path, render(x), "success")  # control: the same commit closes it
+        assert render(x) not in store.read_text().splitlines()
+
+    def test_the_issue_subject_is_the_commit_or_a_unique_unknown(self, tmp_path):
+        # A failure that cannot name its commit gets a per-run subject, so it
+        # can never be closed by some other run's success.
+        repo, tip = _fallback_branch_repo(tmp_path, [("x", {"data/b.json": "{}"})], branch="w")
+        _, out, _ = self._run(repo, tmp_path, before="")
+        assert out["result"] == "failed" and out["subject"].startswith("an unknown commit")
+        _, out, _ = self._run(repo, tmp_path, before=self._parent(repo, tmp_path), landed=tip)
+        assert out["result"] == "failed" and out["subject"] == tip
+
     def test_a_failure_files_its_own_issue_and_fails_the_step(self):
         """M-A: the dispatching job must go red AND reach a consumer, with a
         body that is true (the writer's own reporter ran first, on its own

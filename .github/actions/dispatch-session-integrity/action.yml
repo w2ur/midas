@@ -39,7 +39,8 @@ description: >
 # issue under its own title and then fails the step. Put this step AFTER the
 # workflow's own `Report outcome`: the writer's issue then describes the
 # writer's own outcome truthfully, and this one describes the missing check.
-# A later successful dispatch from the same workflow closes it.
+# The issue names the commit left unchecked, and only a successful dispatch
+# of THAT commit closes it; a later run landing another commit does not.
 
 inputs:
   before:
@@ -75,6 +76,7 @@ runs:
         dispatch() {
           local sha=$1
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "subject=$sha" >> "$GITHUB_OUTPUT"
           for attempt in 1 2 3; do
             if gh workflow run session-integrity.yml --repo "$REPO" --ref main -f sha="$sha"; then
               echo "Dispatched session-integrity for $sha."
@@ -93,6 +95,7 @@ runs:
              || ! git merge-base --is-ancestor "$SHA" FETCH_HEAD; then
             echo "::error::'$SHA' was reported as landed but is not a commit on main."
             echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            echo "subject=$SHA" >> "$GITHUB_OUTPUT"
             echo "result=failed" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -101,6 +104,9 @@ runs:
         head=$(git rev-parse HEAD)
         if [[ ! "$BEFORE" =~ ^[0-9a-f]{40}$ ]]; then
           echo "::error::dispatch-session-integrity: 'before' is not a sha ('$BEFORE') — cannot tell whether this run landed a commit."
+          # No commit to name: a subject unique to this run, so no other
+          # run's success can close the issue (follow-up review r3, M1).
+          echo "subject=an unknown commit (run ${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1})" >> "$GITHUB_OUTPUT"
           echo "result=failed" >> "$GITHUB_OUTPUT"
           exit 0
         fi
@@ -120,6 +126,7 @@ runs:
           exit 0
         fi
         echo "sha=$landed" >> "$GITHUB_OUTPUT"
+        echo "subject=$landed" >> "$GITHUB_OUTPUT"
         if [[ ! "$landed" =~ ^[0-9a-f]{40}$ ]] || ! git fetch -q --depth=50 origin main \
            || ! git merge-base --is-ancestor "$landed" FETCH_HEAD \
            || [[ "$landed" == "$BEFORE" ]] \
@@ -136,7 +143,11 @@ runs:
       with:
         token: ${{ inputs.token }}
         outcome: ${{ steps.dispatch.outputs.result == 'dispatched' && 'success' || 'failure' }}
-        title: "session-integrity was not dispatched after ${{ github.workflow }}"
+        # Keyed to the commit (follow-up review r3, M1): titled per workflow,
+        # the next run that dispatched ANY commit closed this issue as
+        # recovered while the commit it names was never checked. Only a
+        # successful dispatch of that same commit closes it now.
+        title: "session-integrity was not dispatched on ${{ steps.dispatch.outputs.subject }} after ${{ github.workflow }}"
         body: |
           `${{ github.workflow }}` pushed a commit to `main` with GITHUB_TOKEN,
           which starts no `on: push` run, and then could not dispatch
@@ -149,8 +160,9 @@ runs:
 
               gh workflow run session-integrity.yml --ref main -f sha=<sha>
 
-          then close this issue (a later successful dispatch from this
-          workflow also closes it).
+          then close this issue. A later run of this workflow does NOT close
+          it: it names this commit, and a later commit passing says nothing
+          about this one.
         details: "Commit left unchecked: `${{ steps.dispatch.outputs.sha }}`"
 
     - name: Fail when the check was not dispatched
