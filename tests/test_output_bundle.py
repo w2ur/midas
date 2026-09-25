@@ -309,18 +309,21 @@ class TestRefreshSessionCosts:
     def test_rewrites_only_session_costs(self, midas_data_root: Path) -> None:
         day = date(2026, 9, 23)
         reset_session_costs()
-        record_dispatch("satoshi", "a" * 40)
+        record_dispatch("satoshi", "a" * 40, model="opus")
         self._save_bundle(day)
         path = get_config().output_dir / f"{day.isoformat()}.json"
         before = json.loads(path.read_text())
         assert before["session_costs"]["total_dispatches"] == 1
 
-        record_dispatch("the-oracle", "b" * 40)  # journal round
+        record_dispatch("the-oracle", "b" * 40, model="sonnet")  # journal round
         assert refresh_session_costs(day) is True
 
         after = json.loads(path.read_text())
         assert after["session_costs"]["total_dispatches"] == 2
-        assert set(after["session_costs"]["by_agent"]) == {"satoshi", "the-oracle"}
+        assert [r["agent_id"] for r in after["session_costs"]["dispatches"]] == [
+            "satoshi",
+            "the-oracle",
+        ]
         del before["session_costs"], after["session_costs"]
         assert after == before
 

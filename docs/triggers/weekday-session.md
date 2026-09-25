@@ -26,7 +26,7 @@ wrapped, model = wrap_persona_prompt(agent_id, task_prompt)
 
 ## Running on Claude Opus 5
 
-The orchestrator runs on **Claude Opus 5** (set in the RemoteTrigger `job_config`, outside this repo). The aliases in `.claude/agents/*.md` frontmatter resolve to current releases, so **the 10 traders and the Manager are on Opus 5 as well**; only the Oracle (`model: sonnet`) is not.
+The orchestrator runs on **Claude Opus 5** (pinned in the RemoteTrigger `job_config`, outside this repo). The 10 traders and the Manager are not pinned: their dispatch **follows the `opus` alias; the resolved id is recorded per dispatch** — `session_costs.dispatches[]` in each day's bundle carries the alias (`model`) and the release it resolved to (`model_id`). `model_id` is `null` when nothing in the session's environment pins the alias (`ANTHROPIC_DEFAULT_OPUS_MODEL`); a `null` there means unknown, not Opus 5. The alias moved to Opus 5.5 on 2026-09-23, inside the Gate C window, and is kept deliberately ([METHODOLOGY](../../METHODOLOGY.md#opus-alias-2026-09-23)). The Oracle follows `sonnet`.
 
 Opus 5 runs this prompt well as written. The deltas below are the behaviours that needed tuning, from Anthropic's [Opus 5 prompting guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5).
 

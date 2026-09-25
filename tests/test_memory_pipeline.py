@@ -247,7 +247,7 @@ class TestStepSaveMemoriesRefreshesSessionCosts:
         path = self._bundle_path(day)
         path.write_text(json.dumps({"date": day.isoformat(), "session_costs": {}}))
         for aid in ("satoshi", "the-oracle"):
-            record_dispatch(aid, "x" * 40)
+            record_dispatch(aid, "x" * 40, model="opus")
 
         step_save_memories({"satoshi": "Day 1."})
 
@@ -263,7 +263,7 @@ class TestStepSaveMemoriesRefreshesSessionCosts:
         day = date(2026, 9, 23)
         path = self._bundle_path(day)
         path.write_text(json.dumps({"date": day.isoformat(), "session_costs": {}}))
-        record_dispatch("satoshi", "x" * 40)
+        record_dispatch("satoshi", "x" * 40, model="opus")
 
         step_save_memories({"satoshi": "Day 1."})
 

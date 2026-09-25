@@ -155,7 +155,7 @@ def test_anchoring_resets_the_dispatch_ledger(anchored):
     # earlier run or a hand invocation left in the persisted ledger.
     from engine.token_cost import record_dispatch, session_cost_totals
 
-    record_dispatch("satoshi", "x" * 40)
+    record_dispatch("satoshi", "x" * 40, model="opus")
     assert session_cost_totals()["total_dispatches"] == 1
     anchor_session(date(2026, 9, 23))
     assert session_cost_totals()["total_dispatches"] == 0
