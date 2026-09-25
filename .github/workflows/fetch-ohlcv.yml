@@ -255,6 +255,9 @@ jobs:
             **Where to look**
             - Yahoo rejecting or throttling the request (the run log prints a
               per-symbol failure count).
+            - A vendor-wide hole: the log says `vendor-wide hole` and names the
+              date most symbols came back without a close. Re-run with
+              `--resweep` over a longer window before the 20:00 session.
             - A push that lost a race with another scheduled writer.
             - `scripts/fetch_ohlcv.py --dry-run` locally to confirm symbol
               resolution still works.
