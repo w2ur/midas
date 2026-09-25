@@ -213,7 +213,18 @@ order serde, fees.
 
 **Published data is guarded in CI, not only in application code** (2026-08-07,
 review W4). `session-integrity.yml` now runs three data checks on every push to
-main, none of which existed as a standing gate before:
+main, none of which existed as a standing gate before. **A fallback-landed
+commit was never a push that ran them** (J6 money review round 2, N2):
+`auto-merge-session` pushes its merge with GITHUB_TOKEN, GitHub creates no
+`on: push` run for that, and the Actions API shows no session-integrity run on
+982dc191c, b63617d8b or 0cd1d815c. Since 2026-09-25 the merge step exports
+`merged_sha` and the workflow's last step dispatches session-integrity with it
+(`workflow_dispatch` is exempt from the token rule); a `target` job pins that
+sha and refuses one not on main, every guard checks it out, `check` and
+`concerns` read HEAD^2 behind a merge, and the alert counts a SKIPPED guard as a
+failure. A dispatch that cannot be made fails the auto-merge run after three
+tries. Only a live fallback can prove the bot token's dispatch is accepted;
+`TestFallbackMergesAreCheckedByDispatch` covers the rest:
 - **ledger-integrity** — every filled inbox row has a matching trade (existence).
 - **ledger cash-replay** (`tests/test_ledger_cash.py`) — `initial_capital +
   replay(trades) == live cash`, per book. The existence check cannot see a trade

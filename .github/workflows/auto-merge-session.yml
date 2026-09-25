@@ -9,8 +9,11 @@ name: auto-merge-session
 #    pipeline tries `git push origin HEAD:main` first via step_git_commit_push;
 #    if the harness 403s that (2026-05-08 incident), the helper falls back to
 #    pushing the sandbox branch and this workflow takes the merge the rest of
-#    the way — after re-running the session-integrity artifact rules and
-#    rejecting a stale session.
+#    the way — after re-running the session-integrity ARTIFACT rules inline
+#    and rejecting a stale session. The rest of session-integrity (ledger,
+#    cash-replay, append-only, concerns) does NOT run on the merge by itself:
+#    the merge is pushed with GITHUB_TOKEN, which starts no `on: push` run, so
+#    the last step dispatches session-integrity on the merged sha (2026-09-25).
 #
 #    THE MERGE IS THE EXCEPTION, NOT THE RULE (2026-09-18). On a healthy day
 #    that direct `git push origin HEAD:main` SUCCEEDS, and the sandbox pushes
@@ -167,6 +170,7 @@ on:
 permissions:
   contents: write
   issues: write  # the watcher-merge failure issue — see the header
+  actions: write # to dispatch session-integrity.yml on the commit a merge landed
 
 concurrency:
   group: auto-merge-${{ github.ref }}
@@ -572,6 +576,7 @@ jobs:
           echo "main touched neither the order nor the book this branch fills — not stale."
 
       - name: Merge sandbox session into main
+        id: merge_session
         if: steps.inspect.outputs.kind == 'session' && steps.inspect.outputs.already_merged != 'true'
         run: |
           set -euo pipefail
@@ -590,6 +595,7 @@ jobs:
             -m "Auto-merged by .github/workflows/auto-merge-session.yml — main push from cloud sandbox blocked by harness, session commit landed on sandbox branch and this workflow took it the rest of the way."
 
           git push origin main
+          echo "merged_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # Fast-forward when main has not moved, a merge commit when it has,
       # never a rebase: the commits on the branch carry the `executed_sha`
@@ -616,6 +622,7 @@ jobs:
       # workflow from every watcher run, and the whole pipeline — scope, stale,
       # merge — then re-verifies against the new tip.
       - name: Merge watcher fallback branch into main
+        id: merge_watcher
         if: steps.inspect.outputs.kind == 'triggers' && steps.inspect.outputs.already_merged != 'true' && steps.blackout.outputs.deferred != 'true'
         env:
           HEAD_SHA: ${{ github.sha }}
@@ -665,6 +672,7 @@ jobs:
           # unverified tip be overwritten rather than reported.
           if git push origin main; then
             echo "Merged $branch_name into main at verified tip $VERIFIED_MAIN."
+            echo "merged_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "::error::Push of the merge of $branch_name was rejected — main moved after the checks passed. Nothing was merged. retry-fallback-merges.yml re-dispatches this merge within hours (and every watcher run does too) and every check re-runs against the new tip."
@@ -676,6 +684,36 @@ jobs:
         run: |
           branch_name="${GITHUB_REF#refs/heads/}"
           git push origin --delete "$branch_name"
+
+      # The merge above is pushed with GITHUB_TOKEN, and GitHub creates no
+      # `on: push` run for a push that token makes — so session-integrity
+      # (ledger-integrity, cash-replay, append-only, the session artifact
+      # check, concerns) never ran on a single fallback-landed commit before
+      # 2026-09-25: no run exists on 982dc191c, b63617d8b or 0cd1d815c (J6
+      # money review round 2, N2). workflow_dispatch is exempt from that rule,
+      # so the merge dispatches it with the exact sha it pushed. Both kinds:
+      # a watcher fill that lands this way needs the ledger checks as much as
+      # a session does. Only after a merge this run actually pushed — an
+      # already_merged echo was judged by its own push run.
+      #
+      # A dispatch that cannot be made fails THIS run, after three tries: a
+      # guard that silently did not run must not look like one that passed.
+      - name: Dispatch session-integrity on the merged commit
+        if: steps.merge_session.outputs.merged_sha != '' || steps.merge_watcher.outputs.merged_sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGED_SHA: ${{ steps.merge_session.outputs.merged_sha || steps.merge_watcher.outputs.merged_sha }}
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if gh workflow run session-integrity.yml --repo "$GITHUB_REPOSITORY" --ref main -f sha="$MERGED_SHA"; then
+              echo "Dispatched session-integrity for $MERGED_SHA."
+              exit 0
+            fi
+            sleep $((attempt * 10))
+          done
+          echo "::error::Could not dispatch session-integrity for $MERGED_SHA. The fallback-landed commit is on main UNCHECKED — run it by hand: gh workflow run session-integrity.yml --ref main -f sha=$MERGED_SHA"
+          exit 1
 
       # Gated on the kind, not just always(): a green SESSION merge reporting
       # success here would close an open watcher-merge issue while the watcher

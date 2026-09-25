@@ -64,7 +64,9 @@ Warnings are errors, with the third-party exceptions named and justified in `pyp
 **Published data is guarded in CI, not only in application code** —
 `session-integrity.yml` runs ledger-integrity, ledger cash-replay, baseline
 freshness (one-sided, reads the published *state*, never the diff) and
-append-only on every push to main. **A dated row in `data/portfolios/*/snapshots.json`
+append-only on every push to main — and, because a GITHUB_TOKEN push starts no
+run, on a fallback-landed merge only because `auto-merge-session` dispatches it
+with the merged sha. **A dated row in `data/portfolios/*/snapshots.json`
 or `data/baselines/**` that already exists at `HEAD^` must be byte-identical at
 `HEAD`, or the commit subject starts with `[restate]`** (or a body line is exactly
 `[restate]`; the token anywhere else, such as a session's `Concerns:` trailer, does

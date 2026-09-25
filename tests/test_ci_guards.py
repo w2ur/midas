@@ -3609,3 +3609,154 @@ class TestSessionConcernsAreFiled:
         # clean later run must not close an earlier session's concerns.
         assert step["with"]["outcome"] == "failure"
         assert "steps.read.outputs.day" in step["with"]["title"]
+
+
+# --------------------------------------------------------------------------
+# J6 money review round 2, N2 (2026-09-25) — a fallback-landed commit gets
+# session-integrity by dispatch, because a GITHUB_TOKEN push starts no run
+# --------------------------------------------------------------------------
+
+SESSION_INTEGRITY_WF = REPO_ROOT / ".github" / "workflows" / "session-integrity.yml"
+
+
+def _si_spec() -> dict:
+    return yaml.safe_load(SESSION_INTEGRITY_WF.read_text())
+
+
+def _si_on(spec: dict) -> dict:
+    # PyYAML reads the bare key `on` as boolean True.
+    return spec.get("on") or spec.get(True)
+
+
+class TestFallbackMergesAreCheckedByDispatch:
+    """No session-integrity run exists on the fallback merges 982dc191c
+    (2026-09-04), b63617d8b or 0cd1d815c: auto-merge-session pushes them with
+    GITHUB_TOKEN, which creates no `on: push` run. The merge now dispatches
+    session-integrity with the sha it pushed. What only a live run can prove:
+    that GitHub accepts the dispatch from the bot token and that the
+    dispatched run checks out that sha — everything below is the local half."""
+
+    # --- session-integrity accepts and pins a dispatched sha ---------------
+
+    def test_session_integrity_accepts_a_dispatch_with_a_required_sha(self):
+        on = _si_on(_si_spec())
+        assert "push" in on
+        assert on["workflow_dispatch"]["inputs"]["sha"]["required"] is True
+
+    def test_every_guard_evaluates_the_pinned_sha(self):
+        jobs = _si_spec()["jobs"]
+        for name in ("ledger-integrity", "append-only", "check", "concerns"):
+            assert jobs[name]["needs"] == "target", name
+            checkout = next(
+                s for s in jobs[name]["steps"] if s.get("uses", "").startswith("actions/checkout")
+            )
+            assert checkout["with"]["ref"] == "${{ needs.target.outputs.sha }}", name
+
+    def test_a_refused_target_reads_as_failure_not_success(self):
+        jobs = _si_spec()["jobs"]
+        assert "target" in jobs["alert"]["needs"]
+        step = next(
+            s for s in jobs["alert"]["steps"] if s.get("uses") == "./.github/actions/failure-issue"
+        )
+        # Every guard is SKIPPED when target refuses; skipped must not
+        # aggregate to success, or a refused dispatch closes the open issue.
+        assert "contains(needs.*.result, 'skipped')" in step["with"]["outcome"]
+
+    def _pin(self, repo: Path, tmp_path: Path, **env: str) -> tuple[int, str]:
+        step = next(s for s in _si_spec()["jobs"]["target"]["steps"] if s.get("id") == "pin")
+        out = tmp_path / "pin_out"
+        out.write_text("")
+        result = subprocess.run(
+            ["bash", "-c", step["run"]],
+            cwd=repo,
+            env={**_git_env(tmp_path), "GITHUB_OUTPUT": str(out), **env},
+            capture_output=True,
+            text=True,
+        )
+        return result.returncode, out.read_text()
+
+    def test_a_dispatched_sha_on_main_is_pinned(self, tmp_path):
+        repo, _tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        main = _bare_main(tmp_path)
+        rc, out = self._pin(
+            repo, tmp_path, EVENT="workflow_dispatch", INPUT_SHA=main, GITHUB_SHA="0" * 40
+        )
+        assert rc == 0 and out.strip() == f"sha={main}"
+
+    def test_a_dispatched_sha_not_on_main_is_refused(self, tmp_path):
+        # Control for the one above: a branch-only commit must go red.
+        repo, tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        rc, out = self._pin(repo, tmp_path, EVENT="workflow_dispatch", INPUT_SHA=tip)
+        assert rc == 1 and "sha=" not in out
+
+    def test_a_malformed_sha_is_refused(self, tmp_path):
+        repo, _tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        rc, _ = self._pin(repo, tmp_path, EVENT="workflow_dispatch", INPUT_SHA="main")
+        assert rc == 1
+
+    def test_a_push_evaluates_the_pushed_commit(self, tmp_path):
+        repo, _tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        rc, out = self._pin(repo, tmp_path, EVENT="push", INPUT_SHA="", GITHUB_SHA="a" * 40)
+        assert rc == 0 and out.strip() == f"sha={'a' * 40}"
+
+    # --- auto-merge-session dispatches it after a merge it pushed ----------
+
+    def test_auto_merge_may_dispatch_workflows(self):
+        spec = yaml.safe_load(AUTO_MERGE.read_text())
+        assert spec["permissions"]["actions"] == "write"
+
+    def test_the_dispatch_follows_both_merges_and_names_the_merged_sha(self):
+        step = _auto_merge_step("Dispatch session-integrity on the merged commit")
+        cond = step["if"]
+        assert "steps.merge_session.outputs.merged_sha" in cond
+        assert "steps.merge_watcher.outputs.merged_sha" in cond
+        assert "gh workflow run session-integrity.yml" in step["run"]
+        assert '-f sha="$MERGED_SHA"' in step["run"]
+        assert _auto_merge_step("Merge sandbox session into main")["id"] == "merge_session"
+        assert _auto_merge_step("Merge watcher fallback branch into main")["id"] == "merge_watcher"
+
+    def test_a_watcher_merge_exports_the_sha_it_pushed(self, tmp_path):
+        repo, tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        _advance_main(tmp_path, "chore: weekday session 2026-09-05", {"data/market/ohlcv/BTC-EUR.jsonl": "{}\n"})
+        result = _run_auto_merge_step(
+            "Merge watcher fallback branch into main",
+            repo, tip, tmp_path, VERIFIED_MAIN=_bare_main(tmp_path),
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert f"merged_sha={_bare_main(tmp_path)}" in _outputs(tmp_path)
+
+    def _dispatch(self, tmp_path: Path, gh_rc: int) -> tuple[subprocess.CompletedProcess, str]:
+        bindir = tmp_path / "bin"
+        bindir.mkdir()
+        log = tmp_path / "gh.log"
+        (bindir / "gh").write_text(f'#!/bin/bash\necho "$@" >> "{log}"\nexit {gh_rc}\n')
+        (bindir / "sleep").write_text("#!/bin/bash\nexit 0\n")
+        for f in bindir.iterdir():
+            f.chmod(0o755)
+        step = _auto_merge_step("Dispatch session-integrity on the merged commit")
+        result = subprocess.run(
+            ["bash", "-c", step["run"]],
+            env={
+                "PATH": f"{bindir}:/usr/bin:/bin",
+                "MERGED_SHA": "b" * 40,
+                "GITHUB_REPOSITORY": "w2ur/midas",
+                "GH_TOKEN": "x",
+            },
+            capture_output=True,
+            text=True,
+        )
+        return result, log.read_text() if log.exists() else ""
+
+    def test_the_dispatch_passes_the_sha_to_session_integrity(self, tmp_path):
+        result, calls = self._dispatch(tmp_path, gh_rc=0)
+        assert result.returncode == 0
+        assert calls.strip() == (
+            f"workflow run session-integrity.yml --repo w2ur/midas --ref main -f sha={'b' * 40}"
+        )
+
+    def test_a_dispatch_that_cannot_be_made_fails_the_run(self, tmp_path):
+        # Unchecked must never read as checked: three refusals, then red.
+        result, calls = self._dispatch(tmp_path, gh_rc=1)
+        assert result.returncode == 1
+        assert len(calls.strip().splitlines()) == 3
+        assert "UNCHECKED" in result.stdout

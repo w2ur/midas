@@ -19,9 +19,23 @@ name: session-integrity
 #   "chore: weekend refresh".
 # Backfills and manual artifact commits use different messages and pass through.
 
+# Two triggers, one commit under test each (`needs.target.outputs.sha`):
+#  - push to main — every direct push, the ordinary session path.
+#  - workflow_dispatch with `sha` — dispatched by auto-merge-session after a
+#    FALLBACK merge. That merge is pushed with GITHUB_TOKEN, and GitHub creates
+#    no `on: push` run for a push that token makes, so until 2026-09-25 no job
+#    here ever ran on a fallback-landed session: the Actions API shows no
+#    session-integrity run on 982dc191c (09-04), b63617d8b (08-05) or
+#    0cd1d815c (08-03), against a `push` run on every direct-push session
+#    (J6 money review round 2, N2). A dispatch is exempt from that rule.
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit on main to evaluate (auto-merge-session passes its merge)."
+        required: true
 
 # `issues: write` for the `alert` job below, or gh 403s and the alert is lost.
 permissions:
@@ -29,6 +43,42 @@ permissions:
   issues: write
 
 jobs:
+  # Pins the commit every job evaluates. On a dispatch the input must be a full
+  # sha already on main: a typo or a branch-only commit fails HERE, red, and
+  # never turns into a green run that closed the open issue while checking
+  # nothing. On a push it is simply the pushed commit.
+  target:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.pin.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Pin the commit under test
+        id: pin
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT" != "workflow_dispatch" ]]; then
+            echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ ! "$INPUT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::sha input must be a full 40-hex commit id, got '$INPUT_SHA'."
+            exit 1
+          fi
+          # The merge was pushed minutes ago, so it sits near main's tip; a
+          # bounded deepen keeps this off the multi-gigabyte history.
+          git fetch -q --depth=200 origin main
+          if ! git merge-base --is-ancestor "$INPUT_SHA" origin/main; then
+            echo "::error::$INPUT_SHA is not on main (within 200 commits of its tip) — refusing to evaluate it."
+            exit 1
+          fi
+          echo "Evaluating $INPUT_SHA (dispatched)."
+          echo "sha=$INPUT_SHA" >> "$GITHUB_OUTPUT"
+
   ledger-integrity:
     # Standing data invariant, independent of commit-message scoping above:
     # every status:"filled" row in data/orders/inbox/ (and each allocator's
@@ -40,10 +90,14 @@ jobs:
     # in CI read data/ content, only diffed file paths. tests.yml only runs
     # on pull_request, and daily-session / watcher-fire / weekend-refresh
     # commits land on main via sandbox-branch auto-merge, which never opens
-    # a PR — so this push-triggered workflow is the only gate that sees them.
+    # a PR — so this workflow is the only gate that sees them. The fallback
+    # merge reaches it by dispatch, not by push (see the trigger comment).
+    needs: target
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.target.outputs.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -86,10 +140,12 @@ jobs:
     # the fact rather than blocking auto-merge-session, which runs its own
     # inline copy of the artifact rules. Data that has already been written is
     # better reported loudly than held hostage.
+    needs: target
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ needs.target.outputs.sha }}
           # HEAD^..HEAD. On a session merge commit HEAD^ is main-before-merge,
           # which is the comparison we want.
           fetch-depth: 2
@@ -103,18 +159,29 @@ jobs:
         run: python scripts/check_append_only.py --base HEAD^ --head HEAD
 
   check:
+    needs: target
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 2
+          ref: ${{ needs.target.outputs.sha }}
+          # Depth 3: on a fallback merge the session commit is HEAD^2, and its
+          # own changed files need ITS parent.
+          fetch-depth: 3
 
       - name: Verify session or refresh commit integrity
         run: |
           set -euo pipefail
 
-          msg=$(git log -1 --pretty=%s)
-          echo "HEAD commit message: $msg"
+          # The session commit itself: HEAD, or HEAD^2 when HEAD is the
+          # `--no-ff` merge auto-merge-session made on the fallback path, whose
+          # own subject ("Merge sandbox session …") matches no mode below.
+          commit=HEAD
+          if git rev-parse -q --verify 'HEAD^2' >/dev/null; then
+            commit='HEAD^2'
+          fi
+          msg=$(git log -1 --pretty=%s "$commit")
+          echo "Commit under test ($commit) message: $msg"
 
           if echo "$msg" | grep -Eq '^chore: (weekday|weekend|daily) session'; then
             mode="session"
@@ -125,7 +192,7 @@ jobs:
             exit 0
           fi
 
-          files=$(git diff-tree --no-commit-id --name-only -r HEAD)
+          files=$(git diff-tree --no-commit-id --name-only -r "$commit")
           echo "--- changed files ---"
           echo "$files"
           echo "---------------------"
@@ -270,16 +337,15 @@ jobs:
   # are a separate fact, and the issue is only ever filed here, never closed
   # by a later green run. Git parses the trailers; no interpreter needed.
   concerns:
+    needs: target
     runs-on: ubuntu-latest
     steps:
       # Depth 2: on the 403 fallback path auto-merge-session lands the session
-      # as a `--no-ff` merge, and the session commit is then HEAD^2. Caveat:
-      # auto-merge-session pushes that merge with GITHUB_TOKEN, which triggers
-      # no `on: push` run, so on that path this job may not run at all and the
-      # concerns can still go unfiled. Reading HEAD^2 covers a merge pushed by
-      # a credential that does trigger runs (a human landing the branch).
+      # as a `--no-ff` merge, and the session commit is then HEAD^2. That run
+      # arrives by dispatch with the merge's sha (see the trigger comment).
       - uses: actions/checkout@v5
         with:
+          ref: ${{ needs.target.outputs.sha }}
           fetch-depth: 2
 
       - name: Read the session's Concerns trailers
@@ -343,8 +409,10 @@ jobs:
   # watches. `always()` so it still runs when the jobs it needs have failed.
   alert:
     # `concerns` too: a reader that crashed files nothing, and that silence
-    # would look exactly like a session with no concerns.
-    needs: [ledger-integrity, append-only, check, concerns]
+    # would look exactly like a session with no concerns. `target` too: when
+    # it refuses a dispatched sha every other job is SKIPPED, and skipped must
+    # read as failure here, never as "nothing failed".
+    needs: [target, ledger-integrity, append-only, check, concerns]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -357,10 +425,12 @@ jobs:
           # One line deliberately: a `>-` block folds *more-indented* lines
           # literally, so the wrapped version of this embedded newlines in the
           # expression rather than spaces.
-          outcome: "${{ contains(needs.*.result, 'failure') && 'failure' || contains(needs.*.result, 'cancelled') && 'cancelled' || 'success' }}"
+          outcome: "${{ (contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')) && 'failure' || contains(needs.*.result, 'cancelled') && 'cancelled' || 'success' }}"
           title: "session-integrity: a published-data guard failed on main"
           body: |
-            A push to `main` failed one of the `session-integrity` jobs. All
+            A commit on `main` (pushed, or landed by auto-merge-session's
+            fallback merge and dispatched here) failed or skipped one of the
+            `session-integrity` jobs. All
             three read committed data, so a failure here means the published
             record may be wrong — not merely that a build broke.
 
