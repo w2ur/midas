@@ -1597,6 +1597,42 @@ def step_build_tax_shadow() -> None:
     print(f"  Wrote {len(written)} tax shadow ledger(s).")
 
 
+SANDBOX_BRANCH_PREFIX = "claude/"
+
+
+def _publish_sandbox_branch() -> None:
+    """Once HEAD is on main, publish the same commit on the sandbox branch.
+
+    The cloud sandbox's stop hook reports any commit its ``claude/<slug>``
+    branch has not pushed, and the orchestrator then spent a model turn (about
+    two minutes on 2026-09-23) pushing a branch identical to main. Pushing it
+    here settles the hook without a turn; the ``auto-merge-session`` run that
+    push triggers takes its ``already_merged`` path, as it did when the model
+    pushed. Only a ``claude/`` branch is pushed, so a local run on any other
+    branch is left alone, and a failure is a warning: the session is already
+    on main.
+    """
+    branch = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=_PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    name = (branch.stdout or "").strip()
+    if branch.returncode != 0 or not name.startswith(SANDBOX_BRANCH_PREFIX):
+        return
+    push = subprocess.run(
+        ["git", "push", "-u", "origin", "HEAD"],
+        cwd=_PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if push.returncode == 0:
+        print(f"  Also pushed sandbox branch '{name}' (same commit as main).")
+    else:
+        detail = (push.stderr or push.stdout or "").strip()
+        print(f"  [WARN] Sandbox branch '{name}' not pushed: {detail}")
+
 def step_git_commit_push(dry_run: bool = False) -> None:
     """Step 5 — Git commit and push data changes.
 
@@ -1681,6 +1717,7 @@ def step_git_commit_push(dry_run: bool = False) -> None:
             )
             if push_main.returncode == 0:
                 print("  Pushed to origin/main.")
+                _publish_sandbox_branch()
             else:
                 stderr = (push_main.stderr or "").strip()
                 stdout = (push_main.stdout or "").strip()
