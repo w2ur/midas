@@ -300,6 +300,11 @@ agents:
         max_trades_per_week: 2
         min_conviction: 6
       policy:
+        # PROMPT-ONLY, not a rail. The paper broker never reads this list, and
+        # with prose_override set it is not even rendered (render_policy_prose
+        # returns the override). What stops the Manager buying these is its
+        # policy prose, nothing else; a PRIIPs-blocked BUY would fill. A broker
+        # deny-list would be a new rail (money path, owner decision).
         blocklist: [SQQQ, SPXS, SPXU, TQQQ, UPRO, SOXL, SH, PSQ]
         prose_override: |
           FEE AND TAX POLICY (French tax resident — these are GIVEN facts, not suggestions)
