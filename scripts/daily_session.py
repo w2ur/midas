@@ -49,7 +49,7 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from scripts.session_guard import assert_session_fresh, clear_anchor
+from scripts.session_guard import assert_session_fresh, clear_anchor, load_anchor
 from scripts.session_state import clear as _clear_state
 from scripts.session_state import is_done as _is_done
 from scripts.session_state import mark_done as _mark_done
@@ -89,6 +89,7 @@ from engine.types import Portfolio
 from engine.output_bundle import (
     assemble_output_bundle,
     get_day_number,
+    refresh_session_costs,
     save_output_bundle,
 )
 from engine.paper_broker import fill_day
@@ -1300,6 +1301,11 @@ def step_save_memories(new_journals: dict[str, str]) -> int:
         Empty/blank values are skipped so a partial round doesn't wipe a journal.
 
     Returns the number of journals actually written.
+
+    The journal round is the session's last dispatch, and it runs after the
+    bundle was saved, so this step also re-reads the dispatch ledger into the
+    anchored session's bundle (``refresh_session_costs``). Unanchored — a hand
+    run — there is no session bundle to correct and nothing is rewritten.
     """
     print("\n=== Step 7b: Save updated memories ===")
     written = 0
@@ -1310,6 +1316,14 @@ def step_save_memories(new_journals: dict[str, str]) -> int:
         save_journal(agent_id, content)
         written += 1
     print(f"  Saved {written}/{len(new_journals)} journals")
+    # A visibility counter must never cost the journals: any failure here is
+    # a warning, and the step still completes.
+    try:
+        anchor = load_anchor()
+        if anchor is not None and refresh_session_costs(anchor.session_date):
+            print(f"  Refreshed session_costs in the {anchor.session_date} bundle")
+    except (OSError, ValueError, KeyError) as exc:
+        print(f"  [WARN] session_costs not refreshed: {exc}")
     return written
 
 

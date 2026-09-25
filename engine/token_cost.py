@@ -7,14 +7,34 @@ It is a visibility signal (how heavy was today's prompt load, and which agent
 dominated it), not a billing figure.
 
 The persona dispatch path (``engine.persona_dispatch.wrap_persona_prompt``) feeds
-every wrapped prompt into the process-level session ledger. The daily output
-bundle reads the accumulated totals into a ``session_costs`` block.
+every wrapped prompt into the session ledger. The daily output bundle reads the
+accumulated totals into a ``session_costs`` block.
+
+The ledger is persisted, one JSON row per dispatch
+-------------------------------------------------
+The orchestrator runs each step as its own ``python -c`` process, so a ledger
+held only in memory was empty in the process that assembled the bundle: the
+2026-09-23 bundle recorded 0 dispatches against the 33 the session made, and
+every bundle before it read the same way. Each dispatch is therefore appended
+to ``<session_state_dir>/dispatch_ledger.jsonl`` (gitignored), and the totals
+are rebuilt from that file. ``scripts.session_guard.anchor_session`` resets it
+at Step 0c, so a session counts its own dispatches only.
+
+A torn or unreadable line is skipped with a warning, never raised: losing a
+session over a visibility counter would cost far more than a miscount.
 """
 
 from __future__ import annotations
 
+import json
+import sys
+from pathlib import Path
+
+from engine.config import get_config
+
 _CHARS_PER_TOKEN = 4
 PROXY_LABEL = "len/4"
+LEDGER_FILENAME = "dispatch_ledger.jsonl"
 
 
 def estimate_tokens(text: str | None) -> int:
@@ -40,8 +60,9 @@ class SessionCostLedger:
 
     def record(self, agent_id: str, prompt: str) -> int:
         """Record one dispatch for ``agent_id``. Returns the dispatch's token proxy."""
-        chars = len(prompt) if prompt else 0
-        est = estimate_tokens(prompt)
+        return self._add(agent_id, len(prompt) if prompt else 0, estimate_tokens(prompt))
+
+    def _add(self, agent_id: str, chars: int, est: int) -> int:
         entry = self._by_agent.setdefault(
             agent_id, {"dispatches": 0, "prompt_chars": 0, "est_tokens": 0}
         )
@@ -76,22 +97,67 @@ class SessionCostLedger:
         }
 
 
-# Process-level default ledger. The persona dispatch path feeds it; the output
-# bundle reads it. A module singleton because dispatch and bundle assembly are
-# decoupled call sites within a session process.
-_SESSION_LEDGER = SessionCostLedger()
+def __getattr__(name: str) -> object:
+    """Expose ``_LEDGER_PATH`` lazily (PEP 562), mirroring ``session_state``.
+
+    ``None`` means "resolve from config"; the test suite sets a per-test path.
+    """
+    if name == "_LEDGER_PATH":
+        return None
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def _ledger_path() -> Path:
+    override = globals().get("_LEDGER_PATH")
+    if override is not None:
+        return Path(override)
+    return get_config().session_state_dir / LEDGER_FILENAME
 
 
 def record_dispatch(agent_id: str, prompt: str) -> int:
-    """Record a dispatch on the process-level session ledger. Returns the token proxy."""
-    return _SESSION_LEDGER.record(agent_id, prompt)
+    """Append one dispatch to the session ledger. Returns the token proxy."""
+    chars = len(prompt) if prompt else 0
+    est = estimate_tokens(prompt)
+    row = {"agent_id": agent_id, "prompt_chars": chars, "est_tokens": est}
+    path = _ledger_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # One short line per write, opened in append mode: the parallel dispatch
+    # rounds are prepared from separate processes, and appends of this size
+    # do not interleave.
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row) + "\n")
+    return est
+
+
+def _load_ledger() -> SessionCostLedger:
+    ledger = SessionCostLedger()
+    path = _ledger_path()
+    if not path.exists():
+        return ledger
+    for lineno, line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+            ledger._add(
+                str(row["agent_id"]), int(row["prompt_chars"]), int(row["est_tokens"])
+            )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            print(
+                f"[token_cost] skipping unreadable dispatch ledger line {lineno} "
+                f"in {path}",
+                file=sys.stderr,
+            )
+    return ledger
 
 
 def session_cost_totals() -> dict:
-    """Return the session totals block from the process-level ledger."""
-    return _SESSION_LEDGER.totals()
+    """Return the session totals block, rebuilt from the persisted ledger."""
+    return _load_ledger().totals()
 
 
 def reset_session_costs() -> None:
-    """Clear the process-level ledger (used at session start and in tests)."""
-    _SESSION_LEDGER.reset()
+    """Clear the session ledger (called by ``anchor_session`` and in tests)."""
+    _ledger_path().unlink(missing_ok=True)
