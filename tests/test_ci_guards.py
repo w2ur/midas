@@ -2623,13 +2623,19 @@ class TestWatcherReportFeedsTheIssue:
         The deliberate callers are the two watchers and auto-merge-session
         (the stale-fill overlap list — see TestAutoMergeRefusesStaleFills)."""
         deliberate = {*WATCHER_WORKFLOWS, "auto-merge-session.yml"}
+        # One deliberate JOB rather than a whole workflow: session-integrity's
+        # `concerns` job ships the session's Concerns trailers as `details`
+        # (TestSessionConcernsAreFiled); its `alert` job must still pass none.
+        deliberate_jobs = {("session-integrity.yml", "concerns")}
         for name in ALERTING_WORKFLOWS:
             if name in deliberate:
                 continue
             spec = yaml.safe_load(
                 (REPO_ROOT / ".github" / "workflows" / name).read_text()
             )
-            for job in spec["jobs"].values():
+            for job_id, job in spec["jobs"].items():
+                if (name, job_id) in deliberate_jobs:
+                    continue
                 for step in job["steps"]:
                     if step.get("uses") == "./.github/actions/failure-issue":
                         assert (
@@ -3452,3 +3458,109 @@ class TestAutoMergeClosesTheIssueOnlyWhenNoBranchIsLeft:
         )
         assert result.returncode == 0, result.stdout + result.stderr
         assert "report=false" in _outputs(tmp_path)
+
+
+# --------------------------------------------------------------------------
+# J6/F6 (2026-09-25) — end-of-run concerns reach an issue
+# --------------------------------------------------------------------------
+
+SESSION_INTEGRITY = REPO_ROOT / ".github" / "workflows" / "session-integrity.yml"
+
+
+class TestSessionConcernsAreFiled:
+    """On 2026-09-23 the session's final message named two defects "reported
+    rather than fixed", and nothing stored it. The prompt now writes each
+    concern as a `Concerns:` trailer; the `concerns` job reads them. Executed
+    against real git commits, not grepped."""
+
+    def _read_step(self) -> str:
+        spec = yaml.safe_load(SESSION_INTEGRITY.read_text())
+        steps = spec["jobs"]["concerns"]["steps"]
+        return next(s["run"] for s in steps if s.get("id") == "read")
+
+    def _run(self, tmp_path: Path, message_args: list[str]) -> dict[str, str]:
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        env = {
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@t",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@t",
+            "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "HOME": str(tmp_path),
+        }
+        subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True, env=env)
+        (repo / "f.txt").write_text("x")
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True, env=env)
+        subprocess.run(
+            ["git", "commit", "-q", *message_args], cwd=repo, check=True, env=env
+        )
+        out = tmp_path / "gh_output"
+        out.write_text("")
+        subprocess.run(
+            ["bash", "-c", self._read_step()],
+            cwd=repo,
+            check=True,
+            env={**env, "GITHUB_OUTPUT": str(out)},
+            capture_output=True,
+            text=True,
+        )
+        parsed: dict[str, str] = {}
+        lines = out.read_text().splitlines()
+        i = 0
+        while i < len(lines):
+            key, _, value = lines[i].partition("=")
+            if "<<" in lines[i] and not _:
+                key, delim = lines[i].split("<<", 1)
+                j = lines.index(delim, i + 1)
+                parsed[key] = "\n".join(lines[i + 1 : j])
+                i = j + 1
+                continue
+            parsed[key] = value
+            i += 1
+        return parsed
+
+    def test_trailers_on_a_session_commit_are_filed(self, tmp_path):
+        out = self._run(
+            tmp_path,
+            [
+                "-m",
+                "chore: weekday session 2026-09-23",
+                "--trailer",
+                "Concerns: PortfolioManager is given a str in the Step 3 snippet",
+                "--trailer",
+                "Concerns: catalysts truncated 212 -> 200 chars",
+            ],
+        )
+        assert out["found"] == "true"
+        assert out["day"] == "2026-09-23"
+        assert out["list"].splitlines() == [
+            "- PortfolioManager is given a str in the Step 3 snippet",
+            "- catalysts truncated 212 -> 200 chars",
+        ]
+
+    def test_session_without_trailers_files_nothing(self, tmp_path):
+        # Control: the ordinary healthy session.
+        out = self._run(tmp_path, ["-m", "chore: weekday session 2026-09-23"])
+        assert out == {"found": "false"}
+
+    def test_non_session_commit_is_ignored(self, tmp_path):
+        # A trailer on some other commit is not a session report.
+        out = self._run(
+            tmp_path,
+            ["-m", "docs: unrelated", "--trailer", "Concerns: not a session"],
+        )
+        assert out == {"found": "false"}
+
+    def test_filing_is_gated_on_found_and_never_reports_success(self):
+        spec = yaml.safe_load(SESSION_INTEGRITY.read_text())
+        step = next(
+            s
+            for s in spec["jobs"]["concerns"]["steps"]
+            if s.get("uses") == "./.github/actions/failure-issue"
+        )
+        assert step["if"] == "steps.read.outputs.found == 'true'"
+        # Never `success`: failure-issue closes an open issue on success, and a
+        # clean later run must not close an earlier session's concerns.
+        assert step["with"]["outcome"] == "failure"
+        assert "steps.read.outputs.day" in step["with"]["title"]

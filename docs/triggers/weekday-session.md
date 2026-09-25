@@ -99,7 +99,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: b2a3af8edc1411669f030c6db0dad90d46ecee27a56974dde77f9fc869bab88f
+PROMPT_SHA256: b24bc02308ff4b63d0a918e1f8ef71974d09f25226163a50c094a7e1b4d85174
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -199,8 +199,10 @@ DELIVER THIS PIPELINE AT THIS SCOPE. Do not add steps, do not fix
 unrelated things you notice in the repo, do not refactor a helper, do
 not improve an artifact that is merely not to your taste. If a step
 looks wrong or a helper looks buggy, say so in one sentence in your
-final report and keep running the pipeline as written — do NOT quietly
-repair it mid-session. The abort conditions named in the steps below
+final report AND as a `Concerns:` trailer on the session commit (Step
+10), and keep running the pipeline as written — do NOT quietly repair
+it mid-session. Your final report reaches no one; the trailer is filed
+as a GitHub issue. The abort conditions named in the steps below
 are the exception, and they mean STOP, not FIX.
 
 NEVER reconcile state by hand. Portfolios, orders, baselines and the
@@ -337,8 +339,9 @@ After all 10 results arrive:
 
 # Step 3 — Fill orders
     from scripts.daily_session import step_fill_orders
+    from pathlib import Path
     from engine.portfolio import PortfolioManager
-    pm = PortfolioManager(base_dir="data/portfolios")
+    pm = PortfolioManager(base_dir=Path("data/portfolios"))
     fills = step_fill_orders(today, pm)
 
 # Step 4 — Snapshot every portfolio (all 10, not just runners)
@@ -522,9 +525,16 @@ keep reading data/output/{today}.json. Reuses the `leaderboard` variable
 computed in Step 5 — do NOT recompute.
 
 # Step 10 — Commit and push
-Commit data/ first, with the richer message:
+Commit data/ first, with the richer message, and one `--trailer` per
+concern you will put in your final report (a step that looked wrong, a
+helper that looked buggy, a PROMPT DRIFT line) — one sentence each, no
+newline inside. With no concern, pass no trailer:
     git add data/
-    git commit -m "chore: weekday session {today}"
+    git commit -m "chore: weekday session {today}" \
+        --trailer "Concerns: <one sentence>"
+# session-integrity.yml reads these trailers from main and files them as a
+# `session concerns {today}` issue. On 2026-09-23 two real defects were
+# "reported rather than fixed" in a final message nothing stores.
 Then ALWAYS hand the push off to the helper:
     from scripts.daily_session import step_git_commit_push
     step_git_commit_push(dry_run=False)

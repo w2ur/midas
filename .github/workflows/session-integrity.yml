@@ -260,6 +260,60 @@ jobs:
 
           echo "Session integrity OK: manager-review (if authored) + artifacts + journals + baselines all present."
 
+  # End-of-run concerns get a consumer (J6/F6, 2026-09-25). The prompt tells
+  # the orchestrator to report a wrong-looking step in one sentence and keep
+  # going; that sentence sat in a final message nothing stores, so on
+  # 2026-09-23 two real defects were "reported rather than fixed" and never
+  # filed. The prompt now puts each one on the session commit as a
+  # `Concerns:` trailer (docs/triggers/weekday-session.md, Step 10), and this
+  # job files them. Per DATE, like session-watchdog: each session's concerns
+  # are a separate fact, and the issue is only ever filed here, never closed
+  # by a later green run. Git parses the trailers; no interpreter needed.
+  concerns:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Read the session's Concerns trailers
+        id: read
+        run: |
+          set -euo pipefail
+          subject=$(git log -1 --format=%s)
+          re='^chore: weekday session ([0-9]{4}-[0-9]{2}-[0-9]{2})'
+          if [[ ! "$subject" =~ $re ]]; then
+            echo "Not a weekday session commit — nothing to read."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          day="${BASH_REMATCH[1]}"
+          concerns=$(git log -1 --format='%(trailers:key=Concerns,valueonly)' | sed '/^[[:space:]]*$/d')
+          if [[ -z "$concerns" ]]; then
+            echo "Session $day reported no concerns."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::warning::Session $day reported concerns — filing them."
+          {
+            echo "found=true"
+            echo "day=$day"
+            echo "list<<CONCERNS_EOF"
+            printf '%s\n' "$concerns" | sed 's/^/- /'
+            echo "CONCERNS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: File the concerns
+        if: steps.read.outputs.found == 'true'
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: failure
+          title: "session concerns ${{ steps.read.outputs.day }}"
+          body: |
+            The weekday session for ${{ steps.read.outputs.day }} landed and
+            reported the concerns below on its commit (`Concerns:` trailers).
+            The session kept running as written, so nothing here was repaired
+            mid-run: each line is a finding to triage, not an outage.
+          details: ${{ steps.read.outputs.list }}
+
   # A red X is not a consumer. These three jobs guard published data — the
   # ledger reconciliation, the append-only freeze on published rows, and the
   # per-mode pipeline contract — and until 2026-08-07 a failure produced
