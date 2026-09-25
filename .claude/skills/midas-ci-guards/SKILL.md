@@ -215,6 +215,7 @@ emits a `key` (the pushed sha, or a well-formed dispatched one) in a step
 before anything touches the network. With a key, `alert-commit` files under it
 and `alert` stays silent (it may neither file nor close: no ledger check ran);
 only a malformed sha, which has no key, goes to `alert`.
+**Refused for good is not failed for now** (follow-up review r1, M2). A well-formed sha that origin answered for but main does not hold within the pin's 200 commits (an old commit, a branch-only one, a typo) is refused the same way on every re-run, so the commit title's "a green re-run closes this" can never come true. The pin exports `refused=true` in that case only (a failed fetch leaves it unset: transient), and `alert-commit` then files under its own never-self-closing title, "cannot be checked", whose body gives the by-hand check.
 
 ## Moved out of CLAUDE.md on 2026-09-05
 

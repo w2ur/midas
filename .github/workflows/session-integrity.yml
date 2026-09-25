@@ -62,6 +62,10 @@ jobs:
     outputs:
       sha: ${{ steps.pin.outputs.sha }}
       key: ${{ steps.key.outputs.key }}
+      # "true" when origin answered and main does not hold the sha within the
+      # pin's window: deterministic, so no re-run can pass (follow-up review
+      # r1, M2). Unset when the fetch itself failed — that one is transient.
+      refused: ${{ steps.pin.outputs.refused }}
     steps:
       - name: Name the commit under test
         id: key
@@ -98,6 +102,7 @@ jobs:
           git fetch -q --depth=200 origin main
           if ! git merge-base --is-ancestor "$INPUT_SHA" origin/main; then
             echo "::error::$INPUT_SHA is not on main (within 200 commits of its tip) — refusing to evaluate it."
+            echo "refused=true" >> "$GITHUB_OUTPUT"
             exit 1
           fi
           echo "Evaluating $INPUT_SHA (dispatched)."
@@ -489,7 +494,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Report outcome
-        if: always()
+        if: always() && needs.target.outputs.refused != 'true'
         uses: ./.github/actions/failure-issue
         with:
           outcome: "${{ (contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')) && 'failure' || contains(needs.*.result, 'cancelled') && 'cancelled' || 'success' }}"
@@ -502,10 +507,10 @@ jobs:
             it once the finding is dealt with.
 
             **Which job, and what it means**
-            - `target` — this commit could not be pinned (a transient fetch
-              failure, or it sits more than 200 commits behind main's tip), so
-              NO guard ran on it, the ledger checks included. Nothing has
-              passed. Re-dispatch on this sha; its green run closes this issue.
+            - `target` — origin could not be read to pin this commit (a
+              transient fetch failure), so NO guard ran on it, the ledger
+              checks included. Nothing has passed. Re-dispatch on this sha;
+              its green run closes this issue.
             - `append-only` — a dated row in `data/portfolios/*/snapshots.json`
               or `data/baselines/**` moved without a human-authored `[restate]`
               subject (or `[restate]` line of its own); the session, the bot and
@@ -524,3 +529,28 @@ jobs:
             nothing. That specific proxy is now a state check
             (`scripts/check_session_freshness.py`); a *new* false positive is
             worth the same scepticism, but verify it rather than assuming it.
+
+      # A sha the pin refused deterministically (follow-up review r1, M2): a
+      # re-run refuses it again and main only grows, so it must not sit under
+      # the commit title whose remedy is "re-run it". Its own title, never
+      # self-closing (every guard is skipped, so the outcome is failure).
+      - name: Report a commit no run can check
+        if: always() && needs.target.outputs.refused == 'true'
+        uses: ./.github/actions/failure-issue
+        with:
+          outcome: "${{ (contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')) && 'failure' || 'success' }}"
+          title: "session-integrity: commit ${{ needs.target.outputs.key }} cannot be checked (not on main within 200 commits)"
+          body: |
+            A dispatch asked `session-integrity` to check a commit that main
+            does not hold within 200 commits of its tip: an old commit, a
+            branch-only commit, or a typo. NO guard ran on it.
+
+            No re-run can pass: the pin refuses the same sha every time, and
+            main only moves further away. If the commit is real and on main,
+            check it by hand at full depth —
+
+                git checkout <sha>
+                python scripts/check_append_only.py --base <sha>^ --head <sha>
+                pytest tests/test_ledger_integrity.py tests/test_ledger_cash.py
+
+            — then close this issue. If it was a typo, close it.

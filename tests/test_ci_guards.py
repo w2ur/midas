@@ -4318,6 +4318,51 @@ class TestSessionIntegrityAlertsByScope:
         assert "needs.target.outputs.key == ''" in state_if
         assert "needs.target.result == 'success'" in state_if
 
+    # --- follow-up review r1, M2: refused for good vs failed for now ------
+
+    def test_a_sha_main_does_not_hold_is_refused_not_retried(self, tmp_path):
+        """Regression: follow-up money review r1, M2. A well-formed sha the pin
+        refuses DETERMINISTICALLY — more than 200 commits deep, a typo, a
+        branch-only commit — was filed under the commit-scoped title, whose
+        body says a green re-run closes it. No re-run of that sha can ever be
+        green. The pin now says which of the two failures it was."""
+        repo, tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        codes, out = self._run_target(repo, tmp_path, EVENT="workflow_dispatch", INPUT_SHA=tip)
+        assert codes == [0, 1]
+        assert "refused=true" in out.splitlines()
+
+    def test_a_pin_that_could_not_reach_origin_is_not_refused(self, tmp_path):
+        # The transient case (M-b's): the fetch itself failed, so nothing is
+        # known about the sha — a re-run can pass, and the commit title stays.
+        repo, _tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        main = _bare_main(tmp_path)
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", str(tmp_path / "gone.git")],
+            cwd=repo, env=_git_env(tmp_path), check=True,
+        )
+        codes, out = self._run_target(repo, tmp_path, EVENT="workflow_dispatch", INPUT_SHA=main)
+        assert codes[0] == 0 and codes[1] != 0
+        assert f"key={main}" in out.splitlines()
+        assert "refused=true" not in out.splitlines()
+
+    def test_a_refused_sha_gets_its_own_title_that_never_self_closes(self):
+        jobs = _si_spec()["jobs"]
+        assert jobs["target"]["outputs"]["refused"] == "${{ steps.pin.outputs.refused }}"
+        steps = [
+            st for st in jobs["alert-commit"]["steps"]
+            if st.get("uses") == "./.github/actions/failure-issue"
+        ]
+        commit_step, refused_step = steps
+        assert "needs.target.outputs.refused != 'true'" in commit_step["if"]
+        assert "needs.target.outputs.refused == 'true'" in refused_step["if"]
+        assert refused_step["with"]["title"] != commit_step["with"]["title"]
+        assert "cannot be checked" in refused_step["with"]["title"]
+        body = refused_step["with"]["body"]
+        assert "No re-run" in body and "close" in body
+        # The refused sha's remedy is by hand; the commit body's re-dispatch
+        # advice no longer claims to cover it.
+        assert "200 commits" not in commit_step["with"]["body"]
+
     def test_a_keyed_target_failure_is_not_closed_by_a_later_green_commit(self, tmp_path):
         store = _tracker_gh(tmp_path)
         title = _si_reporters()["alert-commit"]["with"]["title"]
