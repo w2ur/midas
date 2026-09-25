@@ -20,6 +20,8 @@ wrapped, model = wrap_persona_prompt(agent_id, task_prompt)
 #   Task(subagent_type="general-purpose", model=model, prompt=wrapped)
 ```
 
+In the session itself `wrapped` is written to a file under `data/session_state/prompts/` and the dispatch prompt is a pointer to it — the form the orchestrator reached for on its own by 2026-09-23, now written into the prompt so the run matches the doc (see "Persona dispatch pattern" in the prompt).
+
 `model` is `"opus"` for every current persona — pass it through so the dispatch matches the frontmatter intent. If `model` is `None`, omit the parameter and let the harness pick.
 
 ---
@@ -99,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: b24bc02308ff4b63d0a918e1f8ef71974d09f25226163a50c094a7e1b4d85174
+PROMPT_SHA256: 36f644ead6971c87a49f272c4d4d2ca4ce958f4af34323754bb54f02d73c9acf
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -174,7 +176,21 @@ MUST come back from a Task tool dispatch.
 Persona dispatch pattern (used in every step that targets an agent):
     from engine.persona_dispatch import wrap_persona_prompt
     wrapped, model = wrap_persona_prompt(agent_id, task_prompt)
-    # dispatch: Task(subagent_type="general-purpose", model=model, prompt=wrapped)
+    # write it to a file, then dispatch a short pointer to that file:
+    path = f"data/session_state/prompts/{step}_{agent_id}.txt"  # gitignored
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(wrapped)
+    # Task(subagent_type="general-purpose", model=model, prompt=POINTER)
+POINTER is the FILE-POINTER form, and it is the only prompt form:
+    Your complete instructions are in the file {absolute path}. Read it
+    in full and follow it exactly. Work from the repo at {repo root}.
+For the post round (Step 6) and the journal round (Step 8) append:
+    All the facts you need are in that file; do not read anything else
+    in the repository.
+Those two prompts already carry every fact the task uses; a subagent
+that re-reads journals and portfolios gets a different view each run.
+Every "prompt=wrapped" below means: the POINTER to the file holding
+wrapped (for Step 4b, the file holding manager_prompt).
 
 NEVER use subagent_type=<agent_id> directly — project agents are not
 registered in the Task registry. Use "general-purpose" + wrapper.
