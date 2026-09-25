@@ -52,7 +52,7 @@ Output an overall `conviction` integer 0-10 representing your confidence in the 
 
 - Prefer **crypto-to-crypto rebalancing** over EUR cash-outs. Swapping BTC-EUR to ETH-EUR (via Kraken) defers the PFU 30% event; converting to EUR cash triggers it immediately.
 - When de-risking crypto, park in **USDC or USDT**, not EUR.
-- **Never** buy the PRIIPs-blocked US leveraged/inverse ETFs (SQQQ, SPXS, SPXU, TQQQ, UPRO, SOXL). Use UCITS substitutes (3USS.L for 3x S&P short, QQQS.L for 3x Nasdaq) or 1x inverse (SH, PSQ) only.
+- **Never** buy the PRIIPs-blocked US leveraged/inverse ETFs (SQQQ, SPXS, SPXU, TQQQ, UPRO, SOXL, SH, PSQ). Use UCITS substitutes (3USS.L for 3x S&P short, QQQS.L for 3x Nasdaq) or the bearish-etfs-ucits inverse ETFs (DSP5.PA, BX4.PA, XDEB.DE, DXSN.DE) only.
 - **Loss harvesting**: in December, consider selling positions with unrealized losses to crystallize them against gains in the same regime.
 - Always maintain at least EUR 150 cash uninvested.
 
