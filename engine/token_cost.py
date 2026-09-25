@@ -26,13 +26,19 @@ session over a visibility counter would cost far more than a miscount.
 The model is recorded per dispatch
 ----------------------------------
 Each row carries the ``model`` the dispatch was made with (the persona's
-frontmatter alias, e.g. ``"opus"``) and ``model_id``, the release that alias
-resolved to. The personas follow floating aliases on purpose (decision D4,
-2026-09-24), so the alias alone does not say which release wrote a record.
-``resolve_model_id`` reads the harness's own alias override
-(``ANTHROPIC_DEFAULT_<ALIAS>_MODEL``) — the one source that fixes what the alias
-means for this process — and records ``None`` when nothing pins it. Unknown is
-recorded as unknown, never guessed.
+frontmatter alias, e.g. ``"opus"``) and ``model_id``. The personas follow
+floating aliases on purpose (decision D4, 2026-09-24), so the alias alone does
+not say which release wrote a record. ``model_id`` is NOT an observation of the
+release that answered: ``resolve_model_id`` reads what the harness's alias
+override (``ANTHROPIC_DEFAULT_<ALIAS>_MODEL``) pins in this process's
+environment, before the dispatch, and records ``None`` when nothing pins it —
+the expected value in the cloud. The real id is in the session transcript and
+is not captured yet (deferred 2026-09-25: it cannot be validated outside the
+cloud sandbox). Unknown is recorded as unknown, never guessed.
+
+``total_dispatches`` counts ``wrap_persona_prompt`` calls — prompt wraps, not
+API dispatches. They are equal when the orchestrator follows the prompt; a
+wrap that is never dispatched, or a retry that re-wraps, counts once more.
 """
 
 from __future__ import annotations
