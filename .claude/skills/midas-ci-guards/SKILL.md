@@ -240,9 +240,13 @@ main, none of which existed as a standing gate before:
   at `HEAD^` must be byte-identical at `HEAD`. A session correcting **its own**
   row is allowed (same `session_date`, exactly what `add_snapshot` permits);
   baselines get no such exemption because they have no writer identity. Anything
-  else needs `[restate]` in the commit message — the disclosure requirement made
-  mechanical, so `git log --grep='\[restate\]'` is a complete list of every time
-  the published record moved. Deliberately a post-hoc detector, not a merge gate:
+  else needs a declared `[restate]`: at the start of the subject, or alone on a
+  body line — the disclosure requirement made mechanical. **The token anywhere
+  else does not declare** (2026-09-25): since F6 the session commit carries
+  model-written `Concerns:` trailers, and a concern naming the token used to
+  switch the freeze off for the very commit that moved a row. Several real
+  commits also mention the token in prose, so `git log --grep='\[restate\]'`
+  over-matches; the declarations are the subjects that start with it. Deliberately a post-hoc detector, not a merge gate:
   `auto-merge-session.yml` runs its own inline copy of the artifact rules, so
   this cannot hold a session hostage. Calibrated by replaying it over real
   history, not only fixtures — the gate's ability to fire is pinned against

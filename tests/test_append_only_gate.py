@@ -210,6 +210,39 @@ class TestRestateDeclaration:
         assert _gate(repo).returncode == 1
 
 
+    def test_a_restate_subject_passes(self, repo):
+        # The form every real declaration has used (a4dc9dce2).
+        _write_snapshots(repo, [ROW_A])
+        _commit(repo, "seed")
+        _write_snapshots(repo, [dict(ROW_A, session_date="2026-08-07", cash=1.0)])
+        _commit(repo, "[restate] raw-close basis: 861 published rows move")
+        assert _gate(repo).returncode == 0
+
+    def test_a_concern_mentioning_restate_does_not_declare(self, repo):
+        """Regression: the J6 money review (I1) — since F6 the session commit
+        carries model-written `Concerns:` trailers, and a concern naming the
+        token ("this would need [restate]") used to switch the freeze off for
+        exactly the commit that moved a published row."""
+        _write_snapshots(repo, [ROW_A])
+        _commit(repo, "seed")
+        _write_snapshots(repo, [dict(ROW_A, session_date="2026-08-08", cash=3.0)])
+        _commit(
+            repo,
+            "chore: weekday session 2026-08-08\n\n"
+            "Concerns: step_build_baselines moved the 2026-04-17 row; "
+            "this would need [restate]",
+        )
+        assert _gate(repo).returncode == 1
+
+    def test_prose_mentioning_the_token_does_not_declare(self, repo):
+        # f9930a67d-shaped: a message that talks ABOUT the marker.
+        _write_snapshots(repo, [ROW_A])
+        _commit(repo, "seed")
+        _write_snapshots(repo, [dict(ROW_A, session_date="2026-08-08", cash=3.0)])
+        _commit(repo, "docs: x\n\nNo number moved, so no `[restate]` marker.")
+        assert _gate(repo).returncode == 1
+
+
 class TestOutOfScope:
     def test_unrelated_files_are_ignored(self, repo):
         (repo / "data" / "portfolios" / "book" / "portfolio.json").write_text("{}")

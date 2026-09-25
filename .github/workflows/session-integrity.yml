@@ -77,10 +77,10 @@ jobs:
     # arrived by one of those routes.
     #
     # A session correcting its OWN row (same session_date) is allowed, exactly
-    # as add_snapshot allows it. Anything else needs `[restate]` in the commit
-    # message — not a bypass, but the disclosure requirement made mechanical:
-    # `git log --grep='\[restate\]'` becomes a complete list of every time the
-    # published record moved.
+    # as add_snapshot allows it. Anything else needs a subject starting with
+    # `[restate]` (or `[restate]` alone on a body line) — not a bypass, but the
+    # disclosure requirement made mechanical. The token anywhere else, e.g. in
+    # a model-written `Concerns:` trailer, does not declare (J6 review I1).
     #
     # Deliberately a post-hoc detector, not a merge gate: it fails main after
     # the fact rather than blocking auto-merge-session, which runs its own
@@ -354,9 +354,9 @@ jobs:
               a book's `initial_capital + replay(trades)` no longer equals its
               recorded cash. Treat as a data incident, not a flaky test.
             - `append-only` — a dated row in `data/portfolios/*/snapshots.json`
-              or `data/baselines/**` moved without `[restate]` in the commit
-              message. Either the move was unintended, or the disclosure is
-              missing.
+              or `data/baselines/**` moved without a `[restate]` subject (or a
+              `[restate]` line of its own). Either the move was unintended, or
+              the disclosure is missing.
             - `check` — a session or weekend-refresh commit skipped a
               load-bearing step (journals, baselines, manager-review,
               `current.json` on a refresh).

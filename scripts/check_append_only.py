@@ -39,11 +39,18 @@ coin-flip work reached the hard way.
 
 ## Declaring a restatement
 
-Put `[restate]` in the commit message. That is not a bypass — it is the
-disclosure requirement made mechanical: a restatement that has to be declared
-in the commit subject is a restatement somebody has to think about, and
-`git log --grep='\\[restate\\]'` is then a complete list of every time the
-published record moved.
+Start the commit subject with `[restate]`, or put `[restate]` on a line of its
+own in the body. That is not a bypass — it is the disclosure requirement made
+mechanical: a restatement that has to be declared is a restatement somebody has
+to think about.
+
+**Only those two positions declare** (2026-09-25, J6 money review I1). The
+gate used to accept the token anywhere in the message, and since the session
+commit carries model-written `Concerns:` trailers, a concern that merely named
+the token ("this would need [restate]") switched the freeze off for exactly
+the commit that moved a row. Prose that talks about the marker, which several
+real commits do, no longer counts either. `git log --grep` still matches those
+mentions; the declarations are the subjects starting with `[restate]`.
 """
 
 from __future__ import annotations
@@ -174,8 +181,24 @@ def find_violations(base: str, head: str) -> list[Violation]:
     return violations
 
 
-def _commit_messages(base: str, head: str) -> str:
-    return _git("log", "--format=%B", f"{base}..{head}")
+def _commit_messages(base: str, head: str) -> list[str]:
+    raw = _git("log", "--format=%B%x00", f"{base}..{head}")
+    return [m.strip("\n") for m in raw.split("\x00") if m.strip()]
+
+
+def declares_restatement(message: str) -> bool:
+    """True when a human declared a restatement in this commit message.
+
+    The subject starts with ``[restate]``, or a body line is exactly
+    ``[restate]``. A mention anywhere else — a model-written ``Concerns:``
+    trailer, prose about the marker — is not a declaration.
+    """
+    lines = message.splitlines()
+    if not lines:
+        return False
+    if lines[0].lstrip().startswith(RESTATE_TRAILER):
+        return True
+    return any(line.strip() == RESTATE_TRAILER for line in lines[1:])
 
 
 def _resolves(ref: str) -> bool:
@@ -210,7 +233,9 @@ def main() -> int:
         return 0
 
     try:
-        declared = RESTATE_TRAILER in _commit_messages(args.base, args.head)
+        declared = any(
+            declares_restatement(m) for m in _commit_messages(args.base, args.head)
+        )
         violations = find_violations(args.base, args.head)
     except subprocess.CalledProcessError as exc:
         print(f"::error::append-only check could not run: {exc}")
