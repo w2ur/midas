@@ -1732,7 +1732,7 @@ class TestALandedPushIsRecorded:
         assert (tmp_path / LANDED_FILENAME).read_text().strip() == main
 
     def test_a_fire_the_rebase_empties_records_nothing(self, tmp_path, monkeypatch) -> None:
-        """Regression: follow-up money review r3, M2 — another writer landed
+        """Regression: 628cd9530 — follow-up money review r3, M2 — another writer landed
         the same change, the rebase dropped this fire's commit, and the retry
         push was an up-to-date no-op: nothing of this run reached main."""
         import subprocess as sp

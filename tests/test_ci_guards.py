@@ -615,7 +615,7 @@ def test_a_landed_push_records_the_sha_main_holds(pushable_repo, tmp_path):
 
 
 def test_a_commit_the_rebase_empties_records_nothing(pushable_repo, tmp_path):
-    """Regression: follow-up money review r3, M2. Another writer landed the
+    """Regression: 628cd9530 — follow-up money review r3, M2. Another writer landed the
     very change this run committed. The push is refused, `pull --rebase`
     drops the now-empty commit ("patch contents already upstream"), and the
     retry answers "Everything up-to-date" with exit 0 — HEAD is the OTHER
@@ -3953,7 +3953,7 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         self._audit_recording(_workflow_specs(), _main_writers())
 
     def test_a_writer_pushing_through_an_unknown_script_is_caught(self):
-        """Regression: follow-up money review r3, M4. The audit skipped any
+        """Regression: eb78501e1 — follow-up money review r3, M4. The audit skipped any
         step with no marker and asserted only a global `checked > 0`, so a
         new writer pushing from `python scripts/new_writer.py` (which records
         nothing) was never inspected, and the other seven satisfied the count."""
@@ -4189,7 +4189,7 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         assert out["result"] == "failed"
 
     def test_a_later_dispatch_of_another_commit_does_not_close_the_issue(self, tmp_path):
-        """Regression: follow-up money review r3, M1. The "not dispatched"
+        """Regression: ba37d862f — follow-up money review r3, M1. The "not dispatched"
         issue named ONE commit but was titled per workflow, so the next run
         that dispatched anything closed it as recovered while the commit it
         named was never checked. It is keyed to that commit now: only a

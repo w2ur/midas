@@ -1464,7 +1464,7 @@ class TestExchangeWideHole:
     def test_an_exchange_that_serves_nothing_fails_the_run(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
-        """Regression: follow-up money review r3, M5. The per-exchange rule
+        """Regression: 3dc232816 — follow-up money review r3, M5. The per-exchange rule
         counted only dates served with a NaN close. A vendor serving EMPTY
         frames for every `.PA` name was only `covered_failures`, rated over
         the whole universe (20 of 220 = 9.1% here, 74 of ~1,300 live), and the
@@ -1505,7 +1505,7 @@ class TestExchangeWideHole:
     def test_a_near_total_hole_on_a_small_exchange_fires(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Regression: follow-up money review r2, N1. Below the 20-symbol
+        """Regression: cfafb84f1 — follow-up money review r2, N1. Below the 20-symbol
         floor the rule needed EVERY covered name holed, and the real holes in
         the logs were near-total, not total: `.WA` 17 of 18 on 2026-09-17 and
         `.HE` 16 of 17 on 2026-09-22. One straggler hid the whole exchange."""
