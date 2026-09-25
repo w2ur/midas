@@ -161,20 +161,14 @@ class SessionCostLedger:
         }
 
 
-def __getattr__(name: str) -> object:
-    """Expose ``_LEDGER_PATH`` lazily (PEP 562), mirroring ``session_state``.
-
-    ``None`` means "resolve from config"; the test suite sets a per-test path.
-    """
-    if name == "_LEDGER_PATH":
-        return None
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+#: Test override for the ledger file. ``None`` resolves it from config at call
+#: time, so a fork's ``MIDAS_DATA_DIR`` reaches it; the suite sets a per-test path.
+_LEDGER_PATH: Path | None = None
 
 
 def _ledger_path() -> Path:
-    override = globals().get("_LEDGER_PATH")
-    if override is not None:
-        return Path(override)
+    if _LEDGER_PATH is not None:
+        return Path(_LEDGER_PATH)
     return get_config().session_state_dir / LEDGER_FILENAME
 
 
