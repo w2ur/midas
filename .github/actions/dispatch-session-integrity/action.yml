@@ -17,10 +17,11 @@ description: >
 # `before` is the sha HEAD held just before the writing step, recorded by a
 # step that is `if: always()` like this one: a writer that went red after its
 # fetch still pushes, and a skipped record step lost that commit (round 4, I-A). The commit
-# under test is HEAD now, and it is dispatched only when this run moved HEAD
-# AND HEAD is on main — a run that committed nothing, or whose commit went to a
-# `triggers/*` fallback branch (auto-merge-session dispatches when it merges
-# that), dispatches nothing. A multi-commit run (a watcher with several
+# under test is the newest commit of this run that is on main — HEAD when
+# every push landed — and it is dispatched only when this run moved HEAD
+# AND landed something. A run that committed nothing, or whose every commit
+# went to a `triggers/*` fallback branch (auto-merge-session dispatches when
+# it merges that), dispatches nothing. A multi-commit run (a watcher with several
 # fires) dispatches its last commit: the ledger checks read state, so they
 # cover the rest; append-only's HEAD^..HEAD window covers the last only, and
 # the watcher writes no append-only path.
@@ -52,7 +53,6 @@ runs:
       run: |
         set -uo pipefail
         head=$(git rev-parse HEAD)
-        echo "sha=$head" >> "$GITHUB_OUTPUT"
         if [[ ! "$BEFORE" =~ ^[0-9a-f]{40}$ ]]; then
           echo "::error::dispatch-session-integrity: 'before' is not a sha ('$BEFORE') — cannot tell whether this run landed a commit."
           echo "result=failed" >> "$GITHUB_OUTPUT"
@@ -64,15 +64,25 @@ runs:
           exit 0
         fi
         if ! git fetch -q --depth=50 origin main; then
-          echo "::error::Could not read origin/main to confirm $head landed there."
+          echo "::error::Could not read origin/main to confirm what this run landed."
+          echo "sha=$head" >> "$GITHUB_OUTPUT"
           echo "result=failed" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        if ! git merge-base --is-ancestor "$head" FETCH_HEAD; then
-          echo "$head is not on main (a fallback branch, or a push that did not land) — nothing to dispatch; whatever merges it dispatches then."
+        # The newest commit of this run that is on main: HEAD itself when
+        # every push landed, or the last fill before a watcher fell back to a
+        # `triggers/*` branch (round 4, M-2: fire A on main, fire B on the
+        # branch with A as its parent — A must still be checked). A result at
+        # or behind `before` means this run landed nothing on main.
+        landed=$(git merge-base "$head" FETCH_HEAD 2>/dev/null || true)
+        if [[ -z "$landed" || "$landed" == "$BEFORE" ]] \
+           || ! git merge-base --is-ancestor "$BEFORE" "$landed"; then
+          echo "$head is not on main and this run landed nothing before it (a fallback branch, or a push that did not land) — nothing to dispatch; whatever merges it dispatches then."
           echo "result=none" >> "$GITHUB_OUTPUT"
           exit 0
         fi
+        head="$landed"
+        echo "sha=$head" >> "$GITHUB_OUTPUT"
         for attempt in 1 2 3; do
           if gh workflow run session-integrity.yml --repo "$REPO" --ref main -f sha="$head"; then
             echo "Dispatched session-integrity for $head."

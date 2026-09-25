@@ -3859,6 +3859,27 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         _, out, calls = self._run(repo, tmp_path, before=self._parent(repo, tmp_path))
         assert out["result"] == "none" and calls == ""
 
+    def test_a_run_whose_first_fill_landed_and_second_fell_back_dispatches_the_first(self, tmp_path):
+        """Money review round 4, M-2: fire A reached main, fire B was refused
+        and went to `triggers/x` with A as its parent. HEAD is B (not on
+        main), and the run used to dispatch nothing — A landed unchecked.
+        The commit dispatched is the newest one this run put on main."""
+        repo, _tip = _fallback_branch_repo(
+            tmp_path,
+            [("chore(triggers): execute A", {"data/a.json": "{}"}),
+             ("chore(triggers): execute B", {"data/b.json": "{}"})],
+            branch="triggers/x",
+        )
+        env = _git_env(tmp_path)
+        a = subprocess.run(["git", "rev-parse", "HEAD~1"], cwd=repo, env=env,
+                           capture_output=True, text=True, check=True).stdout.strip()
+        before = subprocess.run(["git", "rev-parse", "HEAD~2"], cwd=repo, env=env,
+                                capture_output=True, text=True, check=True).stdout.strip()
+        subprocess.run(["git", "push", "-q", "origin", f"{a}:main"], cwd=repo, env=env, check=True)
+        _, out, calls = self._run(repo, tmp_path, before=before)
+        assert out["result"] == "dispatched"
+        assert calls.strip().endswith(f"-f sha={a}")
+
     def test_a_dispatch_that_cannot_be_made_is_a_failure(self, tmp_path):
         repo, tip = _fallback_branch_repo(
             tmp_path, [("chore: weekend refresh 2026-09-20", {"data/b.json": "{}"})],
