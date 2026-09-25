@@ -1527,6 +1527,7 @@ class TestDeniedTickers:
         assert fill.reason == "TICKER_DENIED" and fill.trigger_fired
         assert pm.load("agent1").positions == []
 
+    @pytest.mark.live_cast
     def test_the_managers_buy_of_sh_is_refused_through_its_own_channel(self, broker_env):
         """The review's missing test, on the LIVE roster's Manager rails and
         the Manager's isolated channel — not a fixture's agent."""
@@ -1558,6 +1559,7 @@ class TestDeniedTickers:
         )
         assert [(f.status, f.reason) for f in fills] == [("rejected", "TICKER_DENIED")] * 2
 
+    @pytest.mark.live_cast
     def test_the_managers_rail_denies_every_ticker_its_policy_names(self, midas_data_root):
         """One list, two readers: the prose the Manager reads and the rail the
         broker enforces must not drift apart."""
