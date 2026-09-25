@@ -95,18 +95,24 @@ runs:
         git commit -m "$INPUT_MESSAGE"
 
         for attempt in $(seq 1 "$INPUT_ATTEMPTS"); do
-          if git push origin HEAD:main; then
+          if porcelain=$(git push --porcelain origin HEAD:main); then
+            printf '%s\n' "$porcelain"
             echo "Pushed on attempt ${attempt}."
             echo "pushed=true" >> "$GITHUB_OUTPUT"
             # What dispatch-session-integrity dispatches: the sha main took,
             # never inferred from history (J6 money review round 5, M-a —
-            # scripts/landed_on_main.py is the Python twin). Best effort: a
+            # scripts/landed_on_main.py is the Python twin). Only when main's
+            # ref MOVED: a rebase that emptied this commit (the same change
+            # already upstream) exits 0 with "[up to date]" and HEAD is the
+            # other writer's commit (follow-up review r3, M2). Best effort: a
             # failed write means no dispatch, never a false one.
-            if [[ -n "${RUNNER_TEMP:-}" ]]; then
+            if [[ -n "${RUNNER_TEMP:-}" ]] \
+               && grep -qE $'^[ *+]\tHEAD:refs/heads/main\t' <<<"$porcelain"; then
               git rev-parse HEAD > "$RUNNER_TEMP/landed-on-main.sha" || true
             fi
             exit 0
           fi
+          printf '%s\n' "$porcelain"
           if [[ "$attempt" -eq "$INPUT_ATTEMPTS" ]]; then
             break
           fi

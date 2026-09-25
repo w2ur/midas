@@ -4,13 +4,20 @@ from pathlib import Path
 
 import pytest
 
+from scripts.landed_on_main import landed_by_push
+
 # Resolve project root so we can probe the committed tax_shadow dir.
 _REAL_PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class _FakeCompleted:
-    def __init__(self, returncode):
+    def __init__(self, returncode, stdout=""):
         self.returncode = returncode
+        self.stdout = stdout
+
+
+#: A push that exits 0 having moved nothing ("Everything up-to-date").
+UP_TO_DATE = "up-to-date"
 
 
 def _make_fake_run(calls, push_returncodes):
@@ -21,7 +28,10 @@ def _make_fake_run(calls, push_returncodes):
     def fake_run(cmd, **kwargs):
         calls.append(cmd)
         if cmd[:2] == ["git", "push"]:
-            return _FakeCompleted(next(pushes))
+            rc = next(pushes)
+            if rc == UP_TO_DATE:
+                return _FakeCompleted(0, "=\tHEAD:refs/heads/main\t[up to date]\nDone\n")
+            return _FakeCompleted(rc, " \tHEAD:refs/heads/main\ta..b\nDone\n" if rc == 0 else "")
         return _FakeCompleted(0)
 
     return fake_run
@@ -61,12 +71,35 @@ def test_a_landed_push_is_recorded_once(monkeypatch):
         _make_fake_run(calls, push_returncodes=[1, 0]),
     )
     monkeypatch.setattr(
-        refresh_leaderboard, "record_landed_on_main", lambda cwd: recorded.append(len(calls))
+        refresh_leaderboard,
+        "record_landed_on_main",
+        lambda cwd, porcelain: recorded.append(len(calls)) if landed_by_push(porcelain) else None,
     )
 
     refresh_leaderboard._push_with_rebase_retry(max_attempts=3)
 
     assert recorded == [len(calls)], "recorded once, after the push that landed"
+
+
+def test_a_refresh_the_rebase_emptied_records_nothing(monkeypatch):
+    """Follow-up money review r3, M2: the retry exited 0 but moved nothing —
+    another writer had landed the same rows, so the rebase dropped ours."""
+    from scripts import refresh_leaderboard
+
+    calls, recorded = [], []
+    monkeypatch.setattr(
+        refresh_leaderboard.subprocess,
+        "run",
+        _make_fake_run(calls, push_returncodes=[1, UP_TO_DATE]),
+    )
+    monkeypatch.setattr(
+        refresh_leaderboard,
+        "record_landed_on_main",
+        lambda cwd, porcelain: recorded.append(porcelain) if landed_by_push(porcelain) else None,
+    )
+
+    refresh_leaderboard._push_with_rebase_retry(max_attempts=3)
+    assert recorded == []
 
 
 def test_a_refused_refresh_records_nothing(monkeypatch):
@@ -79,7 +112,7 @@ def test_a_refused_refresh_records_nothing(monkeypatch):
         _make_fake_run(calls, push_returncodes=[1, 1, 1]),
     )
     monkeypatch.setattr(
-        refresh_leaderboard, "record_landed_on_main", lambda cwd: recorded.append(cwd)
+        refresh_leaderboard, "record_landed_on_main", lambda cwd, porcelain: recorded.append(cwd)
     )
 
     with pytest.raises(RuntimeError):

@@ -80,12 +80,24 @@ def _push_with_rebase_retry(max_attempts: int = 3) -> None:
     retrying resolves the race without human intervention.
     """
     for attempt in range(1, max_attempts + 1):
-        push = subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=_PROJECT_ROOT)
+        push = subprocess.run(
+            ["git", "push", "--porcelain", "origin", "HEAD:main"],
+            cwd=_PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        # Echoed so the run log keeps what git said, as it did uncaptured.
+        if getattr(push, "stdout", None):
+            print(push.stdout, end="")
+        if getattr(push, "stderr", None):
+            print(push.stderr, end="", file=sys.stderr)
         if push.returncode == 0:
             # What the workflow's session-integrity dispatch checks: the sha
             # main took, never one inferred from history after a rebase onto
-            # another writer's commit (money review round 5, M-a).
-            record_landed_on_main(_PROJECT_ROOT)
+            # another writer's commit (money review round 5, M-a) — and only
+            # when the push moved main: a rebase that emptied this commit
+            # exits 0 having pushed nothing (follow-up review r3, M2).
+            record_landed_on_main(_PROJECT_ROOT, getattr(push, "stdout", None))
             return
         if attempt == max_attempts:
             raise RuntimeError(

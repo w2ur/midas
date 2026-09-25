@@ -614,6 +614,31 @@ def test_a_landed_push_records_the_sha_main_holds(pushable_repo, tmp_path):
     assert record.read_text().strip() == _git(pushable_repo, "rev-parse", "origin/main").strip()
 
 
+def test_a_commit_the_rebase_empties_records_nothing(pushable_repo, tmp_path):
+    """Regression: follow-up money review r3, M2. Another writer landed the
+    very change this run committed. The push is refused, `pull --rebase`
+    drops the now-empty commit ("patch contents already upstream"), and the
+    retry answers "Everything up-to-date" with exit 0 — HEAD is the OTHER
+    writer's commit, and it was recorded as this run's. Only a push that
+    moved main's ref records now."""
+    remote = tmp_path / "remote.git"
+    other = tmp_path / "other"
+    subprocess.run(["git", "clone", "-q", str(remote), str(other)], check=True)
+    _git(other, "config", "user.email", "o@o")
+    _git(other, "config", "user.name", "o")
+    (other / "data" / "store" / "MSFT.jsonl").write_text('{"date": "x"}\n')
+    _git(other, "add", "-A")
+    _git(other, "commit", "-m", "other writer, same rows")
+    _git(other, "push", "origin", "HEAD:main")
+    (pushable_repo / "data" / "store" / "MSFT.jsonl").write_text('{"date": "x"}\n')
+
+    result = _run_push(pushable_repo, tmp_path, "data/store/")
+
+    assert result.returncode == 0, result.stderr
+    assert _git(pushable_repo, "rev-parse", "HEAD") == _git(other, "rev-parse", "HEAD")
+    assert not (tmp_path / "runner-temp" / LANDED_FILENAME).exists()
+
+
 def test_nothing_to_commit_records_nothing(pushable_repo, tmp_path):
     result = _run_push(pushable_repo, tmp_path, "data/store/")
 

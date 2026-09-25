@@ -252,7 +252,7 @@ writing" — and after a refused rebase-and-retry that inferred **another
 writer's** commit and re-filed its concerns (round 5, M-a). No record, no
 dispatch: a run that wrote nothing, whose commit went to a `triggers/*` branch
 (the merge dispatches later), or whose push was refused. `before` stays as a
-cross-check: a record that is not on main after `before` is a failure. A dispatch that cannot be made files **its own** issue
+cross-check: a record that is not on main after `before` is a failure. "Landed" is read from `git push --porcelain`, not the exit code: a rebase that empties the commit (the same change already upstream) exits 0 with `[up to date]` and HEAD is another writer's commit, so it records nothing (follow-up review r3, M2). A dispatch that cannot be made files **its own** issue
 ("session-integrity was not dispatched on <sha> after <workflow>", keyed to the commit so a later run landing another commit cannot close it: follow-up review r3, M1) and fails the job;
 it sits after the writer's reporter so the writer's issue always describes the
 writer's own outcome (round 3, M-A). In session-integrity a `target` job pins
