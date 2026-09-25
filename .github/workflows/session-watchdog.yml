@@ -143,6 +143,11 @@ jobs:
             **not** reconcile by hand.
           - A sandbox push that 403'd, leaving the work on a \`claude/**\` branch
             that \`auto-merge-session\` never landed.
+          - The account's five-hour rate limit: the run log shows
+            \`rate_limit: rejected\` and the run ends after one turn, before
+            Step 0. The desk shares the subscription limit with interactive
+            work (2026-09-09, #68). Nothing to repair; record the lost day in
+            the METHODOLOGY changelog (\`#missing-session-2026-09-09\`).
 
           Detected by [this run]($RUN_URL).
           EOF

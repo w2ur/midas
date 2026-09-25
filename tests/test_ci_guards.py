@@ -225,6 +225,39 @@ def test_watchdog_reports_a_genuinely_missing_session(absent_repo, tmp_path):
     assert _run_detection(absent_repo, tmp_path, DAY) is False
 
 
+def _render_watchdog_issue_body(tmp_path: Path, day: str) -> str:
+    """Render the watchdog's issue heredoc exactly as the runner's bash would."""
+    lines = _watchdog_run_script().splitlines()
+    start = next(i for i, ln in enumerate(lines) if ln.startswith('cat > "$body_file" <<EOF'))
+    end = next(i for i in range(start + 1, len(lines)) if lines[i] == "EOF")
+    script = "\n".join(
+        [
+            "set -euo pipefail",
+            f'yesterday="{day}"',
+            'RUN_URL="https://example.invalid/run"',
+            f'body_file="{tmp_path}/body.md"',
+            *lines[start : end + 1],
+        ]
+    )
+    subprocess.run(["bash", "-c", script], check=True, capture_output=True, text=True)
+    return (tmp_path / "body.md").read_text()
+
+
+def test_watchdog_issue_names_the_rate_limit_cause(tmp_path):
+    """Regression: #68 (2026-09-09) sat open two weeks with 0 comments. The
+    cause, the account's five-hour rate limit, is visible in the run log as
+    `rate_limit: rejected`, and the issue body now names it as a known cause.
+
+    Rendered through bash, not grepped: an unescaped backtick in the heredoc is
+    a command substitution and would drop the text or fail the step.
+    """
+    body = _render_watchdog_issue_body(tmp_path, DAY)
+    assert "`rate_limit: rejected`" in body
+    # Control: the existing causes and the date substitution still render.
+    assert f"`chore: weekday session {DAY}`" in body
+    assert "`auto-merge-session`" in body
+
+
 # --------------------------------------------------------------------------
 # W2.4 — the failure-issue action's branching
 # --------------------------------------------------------------------------
