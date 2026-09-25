@@ -1447,7 +1447,7 @@ class TestValuationUnavailable:
 
 
 class TestDeniedTickers:
-    """Regression: J6 money review round 1, I3. The Manager's
+    """Regression: c74f7e062 — J6 money review round 1, I3. The Manager's
     `policy.blocklist` (SH, PSQ and the other PRIIPs-blocked US ETFs) was
     prose only: the broker never read it, and with `prose_override` set it
     was not even rendered, so `{"ticker": "SH", "action": "BUY"}` filled into

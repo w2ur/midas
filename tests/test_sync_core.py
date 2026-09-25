@@ -581,7 +581,7 @@ def test_no_synced_test_imports_a_live_only_script():
 
 
 def test_apply_makes_core_ignore_the_session_state(tmp_path):
-    """Regression: J6 money review round 1, M3. The mirrored orchestrator
+    """Regression: 864c21f5d — J6 money review round 1, M3. The mirrored orchestrator
     persists its dispatch ledger, anchor and step state under
     `data/session_state/`, and `step_git_commit_push` stages `data/`. Core's
     `.gitignore` is core-native and did not ignore that directory, so a fork

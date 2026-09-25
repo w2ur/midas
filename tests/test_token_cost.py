@@ -215,7 +215,7 @@ def _transcript(root: Path, session: str, agent: str, alias: str | None, models:
 
 
 class TestTranscriptModelCapture:
-    """The dispatch ledger recorded `model_id` from ANTHROPIC_DEFAULT_<ALIAS>_MODEL,
+    """Regression: a760dceba — the dispatch ledger recorded `model_id` from ANTHROPIC_DEFAULT_<ALIAS>_MODEL,
     a prediction made before the dispatch that is null in the cloud, where the
     routine pins nothing — while each subagent transcript names the release
     that actually answered (J6 spec review, Important #1). The totals now read

@@ -4011,7 +4011,7 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         assert calls.strip().endswith(f"-f sha={a}")
 
     def test_a_push_refused_after_a_rebase_dispatches_nothing(self, tmp_path):
-        """Regression: J6 money review round 5, M-a. The run committed C on
+        """Regression: 34a0df778 — J6 money review round 5, M-a. The run committed C on
         S (= before); another writer landed M' on main; the push was refused,
         `pull --rebase` put C on top of M', and the retry was refused too.
         HEAD's parent is now M' — on main and ahead of `before` — and the
@@ -4272,7 +4272,7 @@ class TestSessionIntegrityAlertsByScope:
         return codes, out.read_text()
 
     def test_a_dispatched_commit_the_pin_could_not_verify_is_still_keyed(self, tmp_path):
-        """Regression: J6 money review round 5, M-b. `target`'s fetch failed
+        """Regression: 6f994079c — J6 money review round 5, M-b. `target`'s fetch failed
         (or the sha sat deeper than its 200-commit window) on a dispatch
         naming a real commit: every guard was skipped, and the failure went to
         the STATE title, which the next green run of ANY commit closes as

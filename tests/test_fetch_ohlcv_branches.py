@@ -1354,7 +1354,7 @@ class TestVendorWideHoleNeedsAPopulation:
 
 
 class TestExchangeWideHole:
-    """Regression: J6 money review round 2, N4. MAX_HOLE_RATE is taken over
+    """Regression: b4d562949 — J6 money review round 2, N4. MAX_HOLE_RATE is taken over
     every covered symbol (~1,320), so the vendor serving every `.PA` name (82)
     or every `.DE` name (83) with no close for D-1 read ~6% and exited 0 — the
     CAC and DAX books, and the Manager's DSP5.PA/BX4.PA hedges, priced a day
