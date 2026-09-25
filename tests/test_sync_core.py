@@ -388,6 +388,8 @@ def test_cast_tests_reclaimed_into_manifest():
         "test_manager_session.py",
         "test_sync_core.py",
         "test_bootstrap_venv.py",
+        # Holds METHODOLOGY.md prose to the live store at a pinned commit.
+        "test_ucits_day_late_disclosure.py",
         # Asserts on this repo's .github/ and backtester/, neither of which
         # core has (core ships its own .github/ as a core-native file).
         "test_ci_guards.py",

@@ -63,6 +63,9 @@ CORE_SCRIPTS = [
 ]
 
 LIVE_ONLY_TESTS = {
+    # Holds METHODOLOGY.md prose to the live price store at a pinned commit;
+    # core ships neither the document nor the store history.
+    "test_ucits_day_late_disclosure.py",
     # Import a live-only script that core does not ship.
     "test_attest_ledger.py",
     "test_attest_verify.py",
