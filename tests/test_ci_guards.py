@@ -4161,7 +4161,7 @@ def _si_reporters() -> dict[str, dict]:
 
 
 def _render(expr: str, sha: str) -> str:
-    return expr.replace("${{ needs.target.outputs.sha }}", sha)
+    return expr.replace("${{ needs.target.outputs.key }}", sha)
 
 
 def _tracker_gh(tmp_path: Path) -> Path:
@@ -4225,8 +4225,10 @@ class TestSessionIntegrityAlertsByScope:
         assert set(reps) == {"alert", "alert-commit"}
         assert set(jobs["alert"]["needs"]) == {"target", "ledger-integrity"}
         assert set(jobs["alert-commit"]["needs"]) == {"target", "append-only", "check", "concerns"}
-        assert "needs.target.outputs.sha" in reps["alert-commit"]["with"]["title"]
-        assert "needs.target.outputs.sha" not in reps["alert"]["with"]["title"]
+        # Keyed on `key`, not `sha` (round 5, M-b): `key` exists even when
+        # `target` failed to pin a well-formed dispatched sha.
+        assert "needs.target.outputs.key" in reps["alert-commit"]["with"]["title"]
+        assert "needs.target" not in reps["alert"]["with"]["title"]
 
     def test_a_green_later_commit_does_not_close_an_earlier_commits_failure(self, tmp_path):
         store = _tracker_gh(tmp_path)
@@ -4242,6 +4244,86 @@ class TestSessionIntegrityAlertsByScope:
         _report(tmp_path, _render(title, self.A), "failure")
         _report(tmp_path, _render(title, self.A), "success")
         assert _render(title, self.A) not in store.read_text().splitlines()
+
+    # --- round 5, M-b: a `target` that could not pin a real commit --------
+
+    def _target_step(self, step_id: str) -> dict:
+        return next(
+            s for s in _si_spec()["jobs"]["target"]["steps"] if s.get("id") == step_id
+        )
+
+    def _run_target(self, repo: Path, tmp_path: Path, **env: str) -> tuple[list[int], str]:
+        """Run `target`'s key and pin steps in order, as the job does, and
+        return each step's exit code and the job's combined outputs."""
+        out = tmp_path / "target_out"
+        out.write_text("")
+        codes = []
+        for step_id in ("key", "pin"):
+            result = subprocess.run(
+                ["bash", "-c", self._target_step(step_id)["run"]],
+                cwd=repo,
+                env={**_git_env(tmp_path), "GITHUB_OUTPUT": str(out), **env},
+                capture_output=True,
+                text=True,
+            )
+            codes.append(result.returncode)
+            if result.returncode != 0:
+                break  # a failed step ends the job, as on the runner
+        return codes, out.read_text()
+
+    def test_a_dispatched_commit_the_pin_could_not_verify_is_still_keyed(self, tmp_path):
+        """Regression: J6 money review round 5, M-b. `target`'s fetch failed
+        (or the sha sat deeper than its 200-commit window) on a dispatch
+        naming a real commit: every guard was skipped, and the failure went to
+        the STATE title, which the next green run of ANY commit closes as
+        "Recovered" — the commit's append-only never ran, and its only record
+        read as a pass. The dispatched sha is now the job's `key` before the
+        pin runs, so the commit reporter can file under that commit."""
+        repo, tip = _watcher_branch_repo(tmp_path, [("chore: weekend refresh 2026-09-20", A_FILL)])
+        codes, out = self._run_target(repo, tmp_path, EVENT="workflow_dispatch", INPUT_SHA=tip)
+        assert codes == [0, 1]  # keyed, then refused
+        assert f"key={tip}" in out.splitlines()
+        assert "sha=" not in out  # no guard evaluates an unpinned commit
+
+    def test_a_malformed_dispatch_has_no_key(self, tmp_path):
+        repo, _tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        _codes, out = self._run_target(repo, tmp_path, EVENT="workflow_dispatch", INPUT_SHA="main")
+        assert "key=" not in out
+
+    def test_a_push_is_keyed_on_the_pushed_commit(self, tmp_path):
+        repo, _tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        codes, out = self._run_target(repo, tmp_path, EVENT="push", INPUT_SHA="", GITHUB_SHA="a" * 40)
+        assert codes == [0, 0]
+        assert f"key={'a' * 40}" in out.splitlines() and f"sha={'a' * 40}" in out.splitlines()
+
+    def test_the_key_step_runs_before_anything_that_can_fail_on_the_network(self):
+        steps = _si_spec()["jobs"]["target"]["steps"]
+        ids = [s.get("id") for s in steps]
+        assert ids.index("key") < ids.index("pin")
+        assert "fetch" not in self._target_step("key")["run"]
+        assert _si_spec()["jobs"]["target"]["outputs"]["key"] == "${{ steps.key.outputs.key }}"
+
+    def test_a_keyed_target_failure_is_reported_under_the_commit(self):
+        jobs = _si_spec()["jobs"]
+        # The commit reporter runs whenever there is a commit to name — not
+        # only when `target` succeeded — and counts target's failure (every
+        # guard skipped) as a failure of that commit.
+        commit_if = jobs["alert-commit"]["if"]
+        assert "needs.target.outputs.key != ''" in commit_if
+        assert "needs.target.result == 'success'" not in commit_if
+        # The state reporter stays out of it: the ledger checks did not run,
+        # so it may neither file (not a ledger failure) nor close (not a pass).
+        # It keeps only the unkeyed case, a malformed sha.
+        state_if = jobs["alert"]["if"]
+        assert "needs.target.outputs.key == ''" in state_if
+        assert "needs.target.result == 'success'" in state_if
+
+    def test_a_keyed_target_failure_is_not_closed_by_a_later_green_commit(self, tmp_path):
+        store = _tracker_gh(tmp_path)
+        title = _si_reporters()["alert-commit"]["with"]["title"]
+        _report(tmp_path, _render(title, self.A), "failure")  # target failed on A
+        _report(tmp_path, _render(title, self.B), "success")  # B is green later
+        assert _render(title, self.A) in store.read_text().splitlines()
 
     def test_the_state_checks_still_recover_on_a_later_green_run(self, tmp_path):
         store = _tracker_gh(tmp_path)

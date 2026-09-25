@@ -207,6 +207,14 @@ of that commit closes it. `_SPLIT_REPORTERS` in the test holds the split, and
 `TestSessionIntegrityAlertsByScope` runs the real failure-issue script against
 a title-tracking `gh` stub: a later green commit leaves the earlier commit's
 issue open, a green re-run of the same sha closes it.
+**A `target` that could not pin a real commit is that commit's failure** (round
+5, M-b). A transient fetch failure on a dispatch naming a real sha skips every
+guard; it used to reach the state title, and the next green run of any commit
+closed it "Recovered" though that commit's append-only never ran. `target` now
+emits a `key` (the pushed sha, or a well-formed dispatched one) in a step
+before anything touches the network. With a key, `alert-commit` files under it
+and `alert` stays silent (it may neither file nor close: no ledger check ran);
+only a malformed sha, which has no key, goes to `alert`.
 
 ## Moved out of CLAUDE.md on 2026-09-05
 

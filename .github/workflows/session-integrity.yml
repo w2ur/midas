@@ -49,11 +49,33 @@ jobs:
   # sha already on main: a typo or a branch-only commit fails HERE, red, and
   # never turns into a green run that closed the open issue while checking
   # nothing. On a push it is simply the pushed commit.
+  #
+  # `key` names the commit before anything can fail on the network (money
+  # review round 5, M-b): a transient fetch failure, or a sha deeper than the
+  # pin's window, on a dispatch naming a REAL commit skips every guard, and
+  # that is commit-scoped damage — it was filed under the self-closing state
+  # title, which the next green run of any commit closed as "Recovered" while
+  # the commit's append-only had never run. With a key, alert-commit files it
+  # under that commit's own title. Only a malformed sha has no key.
   target:
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.pin.outputs.sha }}
+      key: ${{ steps.key.outputs.key }}
     steps:
+      - name: Name the commit under test
+        id: key
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT" != "workflow_dispatch" ]]; then
+            echo "key=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          elif [[ "$INPUT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "key=$INPUT_SHA" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v5
 
       - name: Pin the commit under test
@@ -420,11 +442,16 @@ jobs:
   #    a row the earlier one moved, so the title carries the sha: only a green
   #    re-run of THAT commit closes it; anything else is a human's close.
   # `target` feeds both: when it refuses a dispatched sha every other job is
-  # SKIPPED, and skipped must read as failure, never as "nothing failed" — the
-  # state reporter files that; the commit reporter has no sha to key on.
+  # SKIPPED, and skipped must read as failure, never as "nothing failed". Who
+  # files it depends on whether there is a commit to name (round 5, M-b): a
+  # well-formed sha (`key`) is filed by the COMMIT reporter under that sha —
+  # its append-only never ran, and only its own green re-run proves otherwise;
+  # the state reporter then stays silent, neither filing (no ledger check
+  # failed) nor closing (none ran). A malformed sha has no key, so the state
+  # reporter files it.
   alert:
     needs: [target, ledger-integrity]
-    if: always()
+    if: always() && (needs.target.result == 'success' || needs.target.outputs.key == '')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -444,8 +471,10 @@ jobs:
             later green run means it has been repaired, and closes this issue.
 
             **Which job, and what it means**
-            - `target` — a dispatched sha was not a commit on main, so no guard
-              ran at all. Re-dispatch with the right sha.
+            - `target` — a dispatched sha was not a full 40-hex commit id, so
+              no guard ran at all. Re-dispatch with the right sha. (A
+              well-formed sha that could not be pinned is filed under that
+              commit's own issue instead.)
             - `ledger-integrity` — a filled inbox row has no matching trade, or
               a book's `initial_capital + replay(trades)` no longer equals its
               recorded cash. Treat as a data incident, not a flaky test.
@@ -454,7 +483,7 @@ jobs:
     # `concerns` here: a reader that crashed files nothing, and that silence
     # would look exactly like a session with no concerns.
     needs: [target, append-only, check, concerns]
-    if: always() && needs.target.result == 'success'
+    if: always() && needs.target.outputs.key != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -464,7 +493,7 @@ jobs:
         uses: ./.github/actions/failure-issue
         with:
           outcome: "${{ (contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')) && 'failure' || contains(needs.*.result, 'cancelled') && 'cancelled' || 'success' }}"
-          title: "session-integrity: commit ${{ needs.target.outputs.sha }} failed a published-data guard"
+          title: "session-integrity: commit ${{ needs.target.outputs.key }} failed a published-data guard"
           body: |
             One commit on `main` failed a COMMIT-scoped `session-integrity`
             guard. This issue is keyed to that commit: a later commit passing
@@ -473,6 +502,10 @@ jobs:
             it once the finding is dealt with.
 
             **Which job, and what it means**
+            - `target` — this commit could not be pinned (a transient fetch
+              failure, or it sits more than 200 commits behind main's tip), so
+              NO guard ran on it, the ledger checks included. Nothing has
+              passed. Re-dispatch on this sha; its green run closes this issue.
             - `append-only` — a dated row in `data/portfolios/*/snapshots.json`
               or `data/baselines/**` moved without a human-authored `[restate]`
               subject (or `[restate]` line of its own); the session, the bot and
