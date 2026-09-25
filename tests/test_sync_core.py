@@ -573,3 +573,60 @@ def test_no_synced_test_imports_a_live_only_script():
         "LIVE_ONLY_TESTS, or add the script to CORE_SCRIPTS:\n  "
         + "\n  ".join(offenders)
     )
+
+
+# --------------------------------------------------------------------------
+# Ignores core must carry (J6 money review round 1, M3)
+# --------------------------------------------------------------------------
+
+
+def test_apply_makes_core_ignore_the_session_state(tmp_path):
+    """Regression: J6 money review round 1, M3. The mirrored orchestrator
+    persists its dispatch ledger, anchor and step state under
+    `data/session_state/`, and `step_git_commit_push` stages `data/`. Core's
+    `.gitignore` is core-native and did not ignore that directory, so a fork
+    running the mirrored session committed its session state. `.gitignore`
+    is outside the owned trees, so `apply` now ensures the required lines."""
+    import subprocess
+
+    sync_core.apply(tmp_path)
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    probe = subprocess.run(
+        ["git", "check-ignore", "-q", "data/session_state/dispatch_ledger.jsonl"],
+        cwd=tmp_path,
+    )
+    assert probe.returncode == 0
+
+
+def test_apply_keeps_core_native_ignore_lines(tmp_path):
+    (tmp_path / ".gitignore").write_text("__pycache__/\n.venv/\n", encoding="utf-8")
+    sync_core.apply(tmp_path)
+    lines = (tmp_path / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert lines[:2] == ["__pycache__/", ".venv/"]
+    assert lines.count("data/session_state/") == 1
+    sync_core.apply(tmp_path)  # idempotent: a second apply adds nothing
+    again = (tmp_path / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert again == lines
+
+
+def test_check_reports_a_missing_required_ignore(tmp_path):
+    sync_core.apply(tmp_path)
+    (tmp_path / ".gitignore").write_text("__pycache__/\n", encoding="utf-8")
+    assert sync_core.check(tmp_path) == [Path(".gitignore")]
+
+
+def test_the_required_ignores_are_what_live_ignores_and_the_engine_writes():
+    """Derived, not typed twice: each required line is ignored in live too,
+    and the session-state one is the directory the engine resolves."""
+    import subprocess
+
+    from engine.config import get_config
+
+    for pattern in sync_core.CORE_REQUIRED_IGNORES:
+        probe = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", pattern.rstrip("/") + "/x"],
+            cwd=sync_core.LIVE_ROOT,
+        )
+        assert probe.returncode == 0, f"live does not ignore {pattern}"
+    state = get_config().session_state_dir.resolve().relative_to(sync_core.LIVE_ROOT)
+    assert f"{state.as_posix()}/" in sync_core.CORE_REQUIRED_IGNORES

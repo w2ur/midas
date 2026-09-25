@@ -285,10 +285,49 @@ def demo_desk_universes(root: Path = LIVE_ROOT) -> dict[Path, Path]:
     }
 
 
+#: Lines core's `.gitignore` must contain. The file itself is core-native
+#: (it also names core-only paths such as `uv.lock`), so it is not mirrored;
+#: `apply` appends a missing line and `check` reports one. Each is a path the
+#: MIRRORED code writes at runtime that must never be committed:
+#: `data/session_state/` holds the orchestrator's dispatch ledger, anchor and
+#: step markers, and the mirrored `step_git_commit_push` stages `data/` — so
+#: until 2026-09-25 a fork running the mirrored session committed them (J6
+#: money review round 1, M3). tests/test_sync_core.py checks each line is
+#: ignored in live too.
+CORE_REQUIRED_IGNORES = ("data/session_state/",)
+
+_GITIGNORE = Path(".gitignore")
+_REQUIRED_IGNORES_HEADER = "# Required by the mirrored engine (scripts/sync_core.py CORE_REQUIRED_IGNORES)"
+
+
+def _missing_ignores(core: Path) -> list[str]:
+    path = core / _GITIGNORE
+    present = (
+        set(path.read_text(encoding="utf-8").splitlines()) if path.exists() else set()
+    )
+    return [line for line in CORE_REQUIRED_IGNORES if line not in present]
+
+
+def ensure_required_ignores(core: Path) -> None:
+    """Append any missing CORE_REQUIRED_IGNORES line to core's `.gitignore`,
+    leaving every core-native line where it is."""
+    missing = _missing_ignores(core)
+    if not missing:
+        return
+    path = core / _GITIGNORE
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    if text and not text.endswith("\n"):
+        text += "\n"
+    block = [_REQUIRED_IGNORES_HEADER] if _REQUIRED_IGNORES_HEADER not in text else []
+    text += ("\n" if text else "") + "\n".join(block + missing) + "\n"
+    path.write_text(text, encoding="utf-8")
+
+
 # Trees whose contents the manifest fully owns in core. Pruning deletes files
 # HERE that are not in the current apply_manifest(). Core-native files
 # (roster.yaml, README.md, LICENSE, DISCLAIMER.md, .github/, .gitignore) live
-# OUTSIDE these trees and are never touched.
+# OUTSIDE these trees and are never pruned (`.gitignore` only gains the
+# CORE_REQUIRED_IGNORES lines, never loses one).
 _OWNED_TREES = ("engine", "scripts", "tests", "examples/demo-desk")
 
 
@@ -381,6 +420,8 @@ def apply(core: Path, root: Path = LIVE_ROOT) -> None:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(root / src_rel, dst)
 
+    ensure_required_ignores(core)
+
     removed = prune(core, root)
     if removed:
         print(f"[sync_core] pruned {len(removed)} stale file(s)")
@@ -430,6 +471,10 @@ def check(core: Path, root: Path = LIVE_ROOT) -> list[Path]:
             continue
         if not core_dst.exists() or not filecmp.cmp(core_src, core_dst, shallow=False):
             drift.append(dst_rel)
+
+    # Not byte-compared (the file is core-native); only the required lines.
+    if _missing_ignores(core):
+        drift.append(_GITIGNORE)
     return _rel_sorted(drift)
 
 
