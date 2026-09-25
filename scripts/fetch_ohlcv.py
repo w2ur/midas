@@ -307,6 +307,10 @@ def exchange_wide_holes(
     bucket between MIN_SMALL_BUCKET_POPULATION and that floor, a hole when
     more than SMALL_BUCKET_HOLE_SHARE of its covered members lack the date.
 
+    A covered symbol whose download came back EMPTY counts as lacking `end`
+    (the caller records it so): it did not advance either (follow-up review
+    r3, M5).
+
     J6 money review round 2, N4: over the whole universe (~1,320 covered
     symbols) a hole across every `.PA` (82) or `.DE` (83) name reads ~6%,
     under MAX_HOLE_RATE, and the run exited 0 while those books priced a day
@@ -987,6 +991,17 @@ def main() -> int:
             if df is None:
                 if covered:
                     covered_failures += 1
+                    # A covered symbol that served NOTHING did not advance to
+                    # `end` either. The aggregate rates it as a failure, over
+                    # the whole universe; per bucket it is a hole on `end`,
+                    # or an exchange that went dark reads ~6% and passes
+                    # (follow-up money review r3, M5). A closed exchange is
+                    # not this: the one-day revision window re-requests the
+                    # last stored day, so a holiday still serves a frame.
+                    by_date = holes_by_exchange.setdefault(
+                        hole_bucket(symbol, crypto_bucket), {}
+                    )
+                    by_date[end.isoformat()] = by_date.get(end.isoformat(), 0) + 1
                 else:
                     unresolved.append(symbol)
             else:
@@ -1226,7 +1241,7 @@ def main() -> int:
             )
             print(
                 f"\nFAILED: exchange-wide hole — {listed} came back with no "
-                f"close (limit {MAX_HOLE_RATE:.0%} of an "
+                f"close or served nothing (limit {MAX_HOLE_RATE:.0%} of an "
                 "exchange's or asset class's covered symbols, or more than "
                 f"{SMALL_BUCKET_HOLE_SHARE:.0%} of a small one). The store "
                 "did not advance for that date there; a session tonight "

@@ -1449,6 +1449,57 @@ class TestExchangeWideHole:
         us = [f"US{i}" for i in range(600)]
         assert self._run_symbols(monkeypatch, us + self.FX, set(self.FX[:3])) == 0
 
+    # --- follow-up review r3, M5: an exchange that serves NOTHING ---------
+
+    def _run_empty(self, monkeypatch, us: int, exchange: str, listed: int, dark: int) -> int:
+        covered = [f"US{i}" for i in range(us)] + [f"EU{i}{exchange}" for i in range(listed)]
+        _cover(covered)
+        d = _fetch_end().isoformat()
+        dark_set = {f"EU{i}{exchange}" for i in range(dark)}
+        frames = {s: {d: [1, 2, 0.5, 1.5, 1.5, 100]} for s in covered if s not in dark_set}
+        monkeypatch.setattr(fo, "_fetch_symbol", _make_fake_fetch_symbol(frames))
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+        return _run_main(monkeypatch, ["--symbols", ",".join(covered)])
+
+    def test_an_exchange_that_serves_nothing_fails_the_run(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
+    ) -> None:
+        """Regression: follow-up money review r3, M5. The per-exchange rule
+        counted only dates served with a NaN close. A vendor serving EMPTY
+        frames for every `.PA` name was only `covered_failures`, rated over
+        the whole universe (20 of 220 = 9.1% here, 74 of ~1,300 live), and the
+        run exited 0 while those books priced a day stale. A covered symbol
+        that served nothing lacks `end` just the same, so it counts there."""
+        rc = self._run_empty(monkeypatch, us=200, exchange=".PA", listed=20, dark=20)
+        assert rc == fo.EXIT_VENDOR_OUTAGE
+        assert ".PA" in capsys.readouterr().err
+
+    def test_one_dark_name_on_an_exchange_does_not_fire(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Control: a single delisted-looking name is routine.
+        assert self._run_empty(monkeypatch, us=200, exchange=".PA", listed=20, dark=1) == 0
+
+    def test_a_bank_holiday_on_one_exchange_stays_green(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """2026-08-31, UK Summer bank holiday: London was shut, Yahoo served no
+        row for it, and every `.L` frame carried only the day before (the
+        one-day revision window). A closed exchange is not a hole and not an
+        empty frame; this must stay green whatever the rule counts."""
+        end = _fetch_end()
+        before = (end - timedelta(days=1)).isoformat()
+        us = [f"US{i}" for i in range(200)]
+        ldn = [f"LN{i}.L" for i in range(40)]
+        for sym in ldn:
+            _write_raw(get_config().ohlcv_dir / f"{sym}.jsonl", [_tight_line(before, 1.5)])
+        _cover(us)
+        frames = {s: {end.isoformat(): [1, 2, 0.5, 1.5, 1.5, 100]} for s in us}
+        frames.update({s: {before: [1, 2, 0.5, 1.5, 1.5, 100]} for s in ldn})
+        monkeypatch.setattr(fo, "_fetch_symbol", _make_fake_fetch_symbol(frames))
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+        assert _run_main(monkeypatch, ["--symbols", ",".join(us + ldn)]) == 0
+
     # --- follow-up review r2, N1: a near-total hole on a small exchange ---
 
     def test_a_near_total_hole_on_a_small_exchange_fires(
