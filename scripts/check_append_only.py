@@ -44,7 +44,9 @@ own in the body. That is not a bypass — it is the disclosure requirement made
 mechanical: a restatement that has to be declared is a restatement somebody has
 to think about.
 
-**Only those two positions declare** (2026-09-25, J6 money review I1). The
+**Only those two positions declare, and only from a human author**
+(2026-09-25, J6 money reviews I1 and N1). An automated writer never declares:
+see ``AUTOMATED_AUTHORS``. The
 gate used to accept the token anywhere in the message, and since the session
 commit carries model-written `Concerns:` trailers, a concern that merely named
 the token ("this would need [restate]") switched the freeze off for exactly
@@ -68,6 +70,20 @@ WATCHED_GLOBS = (
 )
 
 RESTATE_TRAILER = "[restate]"
+
+#: Author emails of the desk's automated writers: the cloud session (every
+#: `chore: weekday session` commit), github-actions[bot] (scheduled writers,
+#: fallback merges), and the one early local session identity. None of them
+#: may declare a restatement — the session model writes its own subject, body
+#: and Concerns: trailers, so any position it can reach it can fill with the
+#: token (money review round 2, N1).
+AUTOMATED_AUTHORS = frozenset(
+    {
+        "noreply@anthropic.com",
+        "41898282+github-actions[bot]@users.noreply.github.com",
+        "midas@noreply",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -181,18 +197,28 @@ def find_violations(base: str, head: str) -> list[Violation]:
     return violations
 
 
-def _commit_messages(base: str, head: str) -> list[str]:
-    raw = _git("log", "--format=%B%x00", f"{base}..{head}")
-    return [m.strip("\n") for m in raw.split("\x00") if m.strip()]
+def _commits(base: str, head: str) -> list[tuple[str, str]]:
+    """(author email, message) for every commit in ``base..head``."""
+    raw = _git("log", "--format=%ae%x1f%B%x00", f"{base}..{head}")
+    commits = []
+    for record in raw.split("\x00"):
+        if not record.strip():
+            continue
+        author, _, message = record.strip("\n").partition("\x1f")
+        commits.append((author.strip(), message.strip("\n")))
+    return commits
 
 
-def declares_restatement(message: str) -> bool:
-    """True when a human declared a restatement in this commit message.
+def declares_restatement(message: str, author_email: str = "") -> bool:
+    """True when a human declared a restatement in this commit.
 
     The subject starts with ``[restate]``, or a body line is exactly
-    ``[restate]``. A mention anywhere else — a model-written ``Concerns:``
-    trailer, prose about the marker — is not a declaration.
+    ``[restate]`` — and the commit is not authored by an automated writer
+    (``AUTOMATED_AUTHORS``). A mention anywhere else, a model-written
+    ``Concerns:`` trailer included, is not a declaration either.
     """
+    if author_email.strip().lower() in AUTOMATED_AUTHORS:
+        return False
     lines = message.splitlines()
     if not lines:
         return False
@@ -234,7 +260,8 @@ def main() -> int:
 
     try:
         declared = any(
-            declares_restatement(m) for m in _commit_messages(args.base, args.head)
+            declares_restatement(message, author)
+            for author, message in _commits(args.base, args.head)
         )
         violations = find_violations(args.base, args.head)
     except subprocess.CalledProcessError as exc:

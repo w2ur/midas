@@ -257,7 +257,18 @@ tries. Only a live fallback can prove the bot token's dispatch is accepted;
   model-written `Concerns:` trailers, and a concern naming the token used to
   switch the freeze off for the very commit that moved a row. Several real
   commits also mention the token in prose, so `git log --grep='\[restate\]'`
-  over-matches; the declarations are the subjects that start with it. Deliberately a post-hoc detector, not a merge gate:
+  over-matches; the declarations are the subjects that start with it. **And
+  only a human author declares** (round 2, N1): the session model writes its
+  whole message, and a newline inside a trailer value put the token alone on
+  a line, so `check_append_only.AUTOMATED_AUTHORS` (the cloud session's
+  `noreply@anthropic.com`, `github-actions[bot]`, the early `midas@noreply`)
+  can never declare, and Step 10 now commits through `step_commit_session`,
+  which flattens every concern to one line. a4dc9dce2, the one real
+  row-moving restatement, is human-authored and still declares
+  (`TestAutomatedWritersCannotDeclare` checks it where history exists). A
+  squash-merged PR whose restating commit is not the PR title loses the
+  declaration (it becomes a `* [restate] …` body bullet): title such a PR
+  `[restate] …`, or main goes red after the fact. Deliberately a post-hoc detector, not a merge gate:
   `auto-merge-session.yml` runs its own inline copy of the artifact rules, so
   this cannot hold a session hostage. Calibrated by replaying it over real
   history, not only fixtures — the gate's ability to fire is pinned against

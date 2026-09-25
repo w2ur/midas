@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: 36f644ead6971c87a49f272c4d4d2ca4ce958f4af34323754bb54f02d73c9acf
+PROMPT_SHA256: 73f1f1823a17adf19e661dd7b9c1d624b2a1cae60abe09d05c171ca59dd64da6
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -541,20 +541,20 @@ keep reading data/output/{today}.json. Reuses the `leaderboard` variable
 computed in Step 5 — do NOT recompute.
 
 # Step 10 — Commit and push
-Commit data/ first, with the richer message, and one `--trailer` per
-concern you will put in your final report (a step that looked wrong, a
-helper that looked buggy, a PROMPT DRIFT line) — one sentence each, no
-newline inside. With no concern, pass no trailer:
-    git add data/
-    git commit -m "chore: weekday session {today}" \
-        --trailer "Concerns: <one sentence>"
+Commit data/ through the helper, passing every concern you will put in
+your final report (a step that looked wrong, a helper that looked buggy,
+a PROMPT DRIFT line) as one sentence each. With no concern, pass none:
+    from scripts.daily_session import step_commit_session
+    step_commit_session(today, concerns=["<one sentence>", ...])
+Do NOT run `git commit` yourself: the helper fixes the subject and turns
+each concern into one single-line `Concerns:` trailer.
 # session-integrity.yml reads these trailers from main and files them as a
 # `session concerns {today}` issue. On 2026-09-23 two real defects were
 # "reported rather than fixed" in a final message nothing stores.
 Then ALWAYS hand the push off to the helper:
     from scripts.daily_session import step_git_commit_push
     step_git_commit_push(dry_run=False)
-The helper sees nothing staged (you already committed) and pushes HEAD
+The helper sees nothing staged (the commit is already made) and pushes HEAD
 to origin/main with an explicit refspec.
 
 **DO NOT run `git push` yourself.** RemoteTrigger sessions check out a

@@ -243,6 +243,72 @@ class TestRestateDeclaration:
         assert _gate(repo).returncode == 1
 
 
+class TestAutomatedWritersCannotDeclare:
+    """Money review round 2, N1. The session model writes the whole commit
+    message, so a Concerns: trailer holding a newline put `[restate]` alone
+    on a line — a position d4bfa1294 still accepted. No automated writer
+    may restate: a declaration counts only from a human-authored commit."""
+
+    SESSION = "Claude <noreply@anthropic.com>"
+
+    def _moved_row(self, repo):
+        _write_snapshots(repo, [ROW_A])
+        _commit(repo, "seed")
+        _write_snapshots(repo, [dict(ROW_A, session_date="2026-09-25", cash=3.0)])
+
+    def test_a_session_authored_standalone_restate_line_still_trips(self, repo):
+        self._moved_row(repo)
+        _run_git(repo, "add", "-A")
+        _run_git(
+            repo, "commit", "-q", "--author", self.SESSION,
+            "-m", "chore: weekday session 2026-09-25",
+            "-m", "Concerns: step X moved a row; needs\n[restate]",
+        )
+        assert _gate(repo).returncode == 1
+
+    def test_a_session_authored_restate_subject_still_trips(self, repo):
+        self._moved_row(repo)
+        _run_git(repo, "add", "-A")
+        _run_git(repo, "commit", "-q", "--author", self.SESSION, "-m", "[restate] x")
+        assert _gate(repo).returncode == 1
+
+    def test_the_bot_cannot_declare_either(self, repo):
+        self._moved_row(repo)
+        _run_git(repo, "add", "-A")
+        _run_git(
+            repo, "commit", "-q",
+            "--author", "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+            "-m", "[restate] x",
+        )
+        assert _gate(repo).returncode == 1
+
+    def test_a_human_standalone_line_still_declares(self, repo):
+        # Control: the same message, human-authored, is a declaration.
+        self._moved_row(repo)
+        _commit(repo, "fix(data): restate\n\n[restate]")
+        assert _gate(repo).returncode == 0
+
+    def test_the_one_real_restatement_still_declares(self):
+        """a4dc9dce2 is the only commit in history that moved published rows
+        under a declaration (861 rows). Needs full history, which CI's
+        fetch-depth: 1 checkout does not have — skipped there, run locally."""
+        sha = "a4dc9dce2"
+        probe = subprocess.run(
+            ["git", "cat-file", "-e", f"{sha}^{{commit}}"], cwd=REPO_ROOT, capture_output=True
+        )
+        if probe.returncode != 0:
+            pytest.skip("a4dc9dce2 not in this checkout (shallow clone)")
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        import check_append_only as cao
+
+        fmt = subprocess.run(
+            ["git", "log", "-1", "--format=%ae%x1f%B", sha],
+            cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+        ).stdout
+        author, _, message = fmt.partition("\x1f")
+        assert cao.declares_restatement(message.strip("\n"), author)
+
+
 class TestOutOfScope:
     def test_unrelated_files_are_ignored(self, repo):
         (repo / "data" / "portfolios" / "book" / "portfolio.json").write_text("{}")
