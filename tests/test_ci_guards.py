@@ -3914,27 +3914,61 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         "scripts/refresh_leaderboard.py",
     )
 
-    def test_every_recorded_writer_pushes_only_through_a_recording_path(self):
-        """The action dispatches only what the run recorded as landed, so a
-        writer in record mode that pushed main any other way would land a
-        commit nothing checks. Derived over the same writer list."""
-        checked = 0
-        for name in _main_writers():
-            steps = [s for job in _workflow_specs()[name]["jobs"].values() for s in job["steps"]]
+    @classmethod
+    def _audit_recording(cls, specs: dict[str, dict], writers: list[str]) -> None:
+        """Every record-mode writer pushes main ONLY through a recording path,
+        and pushes through at least one of them."""
+        record_mode, inspected = set(), set()
+        for name in writers:
+            steps = [s for job in specs[name]["jobs"].values() for s in job["steps"]]
             dispatch = next(s for s in steps if s.get("uses") == DISPATCH_USES)
             if "sha" in dispatch.get("with", {}):
                 continue  # explicit mode names its own sha (auto-merge-session)
+            record_mode.add(name)
             for step in steps:
                 text = f"{step.get('run', '')}\n{step.get('uses', '')}"
                 markers = {m for m in _MAIN_PUSH_MARKERS if m in text}
                 if not markers:
                     continue
-                checked += 1
-                assert markers <= set(self.RECORDING_PUSH_PATHS), (
+                assert markers <= set(cls.RECORDING_PUSH_PATHS), (
                     f"{name}: step {step.get('name')!r} pushes main through "
-                    f"{sorted(markers - set(self.RECORDING_PUSH_PATHS))}, which records nothing"
+                    f"{sorted(markers - set(cls.RECORDING_PUSH_PATHS))}, which records nothing"
                 )
-        assert checked, "no recorded writer pushes main at all — the scan checks nothing"
+                if markers & set(cls.RECORDING_PUSH_PATHS):
+                    inspected.add(name)
+        assert record_mode, "no writer is in record mode — the audit checks nothing"
+        # Per writer, not a global count (follow-up review r3, M4): a writer
+        # that pushes through a path no marker names is never inspected, and
+        # at runtime its commit reads "landed nothing" — unchecked, unfiled.
+        missing = record_mode - inspected
+        assert not missing, (
+            f"{sorted(missing)} dispatch in record mode but push main through "
+            "no recording path — their commits would never be dispatched"
+        )
+
+    def test_every_recorded_writer_pushes_only_through_a_recording_path(self):
+        """The action dispatches only what the run recorded as landed, so a
+        writer in record mode that pushed main any other way would land a
+        commit nothing checks. Derived over the same writer list."""
+        self._audit_recording(_workflow_specs(), _main_writers())
+
+    def test_a_writer_pushing_through_an_unknown_script_is_caught(self):
+        """Regression: follow-up money review r3, M4. The audit skipped any
+        step with no marker and asserted only a global `checked > 0`, so a
+        new writer pushing from `python scripts/new_writer.py` (which records
+        nothing) was never inspected, and the other seven satisfied the count."""
+        specs = dict(_workflow_specs())
+        specs["new-writer.yml"] = {
+            "permissions": {"contents": "write", "actions": "write"},
+            "jobs": {"w": {"steps": [
+                {"id": "before", "if": "always()", "run": "echo sha=x"},
+                {"name": "Write", "run": "python scripts/new_writer.py"},
+                {"uses": DISPATCH_USES, "if": "always()",
+                 "with": {"before": "${{ steps.before.outputs.sha }}"}},
+            ]}},
+        }
+        with pytest.raises(AssertionError, match="new-writer.yml"):
+            self._audit_recording(specs, [*_main_writers(), "new-writer.yml"])
 
     # --- the action itself, executed ---------------------------------------
 
