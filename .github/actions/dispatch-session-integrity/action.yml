@@ -34,8 +34,18 @@ description: >
 
 inputs:
   before:
-    description: "HEAD's sha immediately before this run wrote anything."
-    required: true
+    description: "HEAD's sha immediately before this run wrote anything (writers that commit)."
+    required: false
+    default: ""
+  sha:
+    description: >
+      The exact commit this run landed on main, when the caller knows it —
+      auto-merge-session, whose merge may fast-forward (HEAD then equals the
+      branch tip, so a `before` comparison sees no movement) or fail after
+      checking out main (HEAD is then a tip it never pushed). Takes precedence
+      over `before`.
+    required: false
+    default: ""
   token:
     description: "Token with actions: write and issues: write on this repository."
     required: false
@@ -49,9 +59,36 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.token }}
         BEFORE: ${{ inputs.before }}
+        SHA: ${{ inputs.sha }}
         REPO: ${{ github.repository }}
       run: |
         set -uo pipefail
+        dispatch() {
+          local sha=$1
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          for attempt in 1 2 3; do
+            if gh workflow run session-integrity.yml --repo "$REPO" --ref main -f sha="$sha"; then
+              echo "Dispatched session-integrity for $sha."
+              echo "result=dispatched" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep $((attempt * 10))
+          done
+          echo "::error::Could not dispatch session-integrity for $sha after 3 attempts."
+          echo "result=failed" >> "$GITHUB_OUTPUT"
+          exit 0
+        }
+        # Explicit mode (round 4, M-1): the caller names the commit it landed.
+        if [[ -n "$SHA" ]]; then
+          if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]] || ! git fetch -q --depth=50 origin main \
+             || ! git merge-base --is-ancestor "$SHA" FETCH_HEAD; then
+            echo "::error::'$SHA' was reported as landed but is not a commit on main."
+            echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            echo "result=failed" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          dispatch "$SHA"
+        fi
         head=$(git rev-parse HEAD)
         if [[ ! "$BEFORE" =~ ^[0-9a-f]{40}$ ]]; then
           echo "::error::dispatch-session-integrity: 'before' is not a sha ('$BEFORE') — cannot tell whether this run landed a commit."
@@ -81,18 +118,7 @@ runs:
           echo "result=none" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        head="$landed"
-        echo "sha=$head" >> "$GITHUB_OUTPUT"
-        for attempt in 1 2 3; do
-          if gh workflow run session-integrity.yml --repo "$REPO" --ref main -f sha="$head"; then
-            echo "Dispatched session-integrity for $head."
-            echo "result=dispatched" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          sleep $((attempt * 10))
-        done
-        echo "::error::Could not dispatch session-integrity for $head after 3 attempts."
-        echo "result=failed" >> "$GITHUB_OUTPUT"
+        dispatch "$landed"
 
     - name: Report the dispatch
       if: steps.dispatch.outputs.result != 'none'

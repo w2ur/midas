@@ -576,6 +576,7 @@ jobs:
           echo "main touched neither the order nor the book this branch fills — not stale."
 
       - name: Merge sandbox session into main
+        id: merge_session
         if: steps.inspect.outputs.kind == 'session' && steps.inspect.outputs.already_merged != 'true'
         run: |
           set -euo pipefail
@@ -594,6 +595,9 @@ jobs:
             -m "Auto-merged by .github/workflows/auto-merge-session.yml — main push from cloud sandbox blocked by harness, session commit landed on sandbox branch and this workflow took it the rest of the way."
 
           git push origin main
+          # The exact commit this run landed — the dispatch at the end checks
+          # this sha, never "wherever HEAD ended up" (round 4, M-1).
+          echo "merged_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # Fast-forward when main has not moved, a merge commit when it has,
       # never a rebase: the commits on the branch carry the `executed_sha`
@@ -620,6 +624,7 @@ jobs:
       # workflow from every watcher run, and the whole pipeline — scope, stale,
       # merge — then re-verifies against the new tip.
       - name: Merge watcher fallback branch into main
+        id: merge_watcher
         if: steps.inspect.outputs.kind == 'triggers' && steps.inspect.outputs.already_merged != 'true' && steps.blackout.outputs.deferred != 'true'
         env:
           HEAD_SHA: ${{ github.sha }}
@@ -669,6 +674,9 @@ jobs:
           # unverified tip be overwritten rather than reported.
           if git push origin main; then
             echo "Merged $branch_name into main at verified tip $VERIFIED_MAIN."
+            # A fast-forward leaves HEAD at the branch tip, a merge at the
+            # merge commit: either way HEAD is what this push landed.
+            echo "merged_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "::error::Push of the merge of $branch_name was rejected — main moved after the checks passed. Nothing was merged. retry-fallback-merges.yml re-dispatches this merge within hours (and every watcher run does too) and every check re-runs against the new tip."
@@ -793,11 +801,14 @@ jobs:
 
       # A GITHUB_TOKEN push starts no `on: push` run, so session-integrity
       # would never see the merge (no run exists on 982dc191c, b63617d8b,
-      # 0cd1d815c). `before` is the branch tip: HEAD moves onto main only when
-      # a merge step merged and pushed. After the reporter on purpose: see
+      # 0cd1d815c). Dispatched on the EXACT sha a merge step pushed, not on
+      # "did HEAD move": a fast-forward watcher merge leaves HEAD at the branch
+      # tip (it looked like no movement), and a merge that failed after
+      # `checkout main` leaves HEAD on a tip this run never pushed (round 4,
+      # M-1). No merge pushed, no dispatch. After the reporter on purpose: see
       # .github/actions/dispatch-session-integrity.
       - name: Dispatch session-integrity on the commit this run pushed
-        if: always()
+        if: always() && (steps.merge_session.outputs.merged_sha != '' || steps.merge_watcher.outputs.merged_sha != '')
         uses: ./.github/actions/dispatch-session-integrity
         with:
-          before: ${{ github.sha }}
+          sha: ${{ steps.merge_session.outputs.merged_sha || steps.merge_watcher.outputs.merged_sha }}

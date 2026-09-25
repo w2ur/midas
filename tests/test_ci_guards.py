@@ -3786,6 +3786,12 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
             # commit landed, and it must run even when the writer went red
             # after pushing (fetch-ohlcv's committable exits).
             assert steps[-1] is step, f"{name}: the dispatch must follow the reporter"
+            if name == "auto-merge-session.yml":
+                # Explicit mode: the exact sha a merge step pushed (round 4, M-1).
+                assert step["if"].startswith("always() && ("), name
+                assert "merged_sha" in step["with"]["sha"], name
+                assert "before" not in step["with"], name
+                continue
             assert step.get("if") == "always()", name
             before = step["with"]["before"]
             if before == "${{ steps.before.outputs.sha }}":
@@ -3808,7 +3814,7 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
     def _action(self) -> dict:
         return yaml.safe_load(DISPATCH_ACTION.read_text())
 
-    def _run(self, repo: Path, tmp_path: Path, before: str, gh_rc: int = 0):
+    def _run(self, repo: Path, tmp_path: Path, before: str = "", gh_rc: int = 0, sha: str = ""):
         bindir = tmp_path / "bin"
         bindir.mkdir(exist_ok=True)
         log = tmp_path / "gh.log"
@@ -3824,6 +3830,7 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
             "PATH": f"{bindir}:/usr/bin:/bin:/usr/local/bin",
             "GITHUB_OUTPUT": str(out),
             "BEFORE": before,
+            "SHA": sha,
             "REPO": "w2ur/midas",
             "GH_TOKEN": "x",
         }
@@ -3879,6 +3886,58 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         _, out, calls = self._run(repo, tmp_path, before=before)
         assert out["result"] == "dispatched"
         assert calls.strip().endswith(f"-f sha={a}")
+
+    # --- auto-merge-session: the exact sha a merge step pushed (M-1) -------
+
+    def _watcher_merge(self, tmp_path: Path, main_moves: bool):
+        repo, tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        if main_moves:
+            _advance_main(tmp_path, "chore: weekday session 2026-09-05",
+                          {"data/market/ohlcv/BTC-EUR.jsonl": "{}\n"})
+        result = _run_auto_merge_step(
+            "Merge watcher fallback branch into main", repo, tip, tmp_path,
+            VERIFIED_MAIN=_bare_main(tmp_path),
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        merged = dict(
+            line.split("=", 1) for line in _outputs(tmp_path).splitlines() if "=" in line
+        ).get("merged_sha", "")
+        return repo, tip, merged
+
+    def test_a_fast_forward_watcher_merge_is_dispatched(self, tmp_path):
+        """Round 4, M-1 face 1: main had not moved, the merge fast-forwarded,
+        HEAD stayed at the branch tip == github.sha, and `before: github.sha`
+        read that as "landed nothing" — the fill reached main unchecked."""
+        repo, tip, merged = self._watcher_merge(tmp_path, main_moves=False)
+        assert merged == tip == _bare_main(tmp_path)
+        _, out, calls = self._run(repo, tmp_path, sha=merged)
+        assert out["result"] == "dispatched"
+        assert calls.strip().endswith(f"-f sha={tip}")
+
+    def test_a_true_merge_dispatches_the_merge_commit(self, tmp_path):
+        repo, tip, merged = self._watcher_merge(tmp_path, main_moves=True)
+        assert merged == _bare_main(tmp_path) and merged != tip
+        _, out, calls = self._run(repo, tmp_path, sha=merged)
+        assert out["result"] == "dispatched"
+        assert calls.strip().endswith(f"-f sha={merged}")
+
+    def test_a_conflicted_merge_exports_nothing_to_dispatch(self, tmp_path):
+        """M-1 face 2: a merge that fails after `checkout -B main` leaves HEAD
+        on main's tip; it must not be dispatched as if this run landed it."""
+        repo, tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
+        _advance_main(tmp_path, "chore: weekday session 2026-09-05",
+                      {"data/orders/inbox/2026-09-05.jsonl": '{"order_id":"ord_9"}\n'})
+        result = _run_auto_merge_step(
+            "Merge watcher fallback branch into main", repo, tip, tmp_path,
+            VERIFIED_MAIN=_bare_main(tmp_path),
+        )
+        assert result.returncode == 1
+        assert "merged_sha" not in _outputs(tmp_path)
+
+    def test_a_named_sha_not_on_main_is_a_failure(self, tmp_path):
+        repo, tip = _fallback_branch_repo(tmp_path, [("x", {"data/b.json": "{}"})], branch="w")
+        _, out, calls = self._run(repo, tmp_path, sha=tip)
+        assert out["result"] == "failed" and calls == ""
 
     def test_a_dispatch_that_cannot_be_made_is_a_failure(self, tmp_path):
         repo, tip = _fallback_branch_repo(
