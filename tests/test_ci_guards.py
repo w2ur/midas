@@ -3487,7 +3487,9 @@ class TestSessionConcernsAreFiled:
         steps = spec["jobs"]["concerns"]["steps"]
         return next(s["run"] for s in steps if s.get("id") == "read")
 
-    def _run(self, tmp_path: Path, message_args: list[str]) -> dict[str, str]:
+    def _run(
+        self, tmp_path: Path, message_args: list[str], merge_as: str | None = None
+    ) -> dict[str, str]:
         repo = tmp_path / "repo"
         repo.mkdir()
         env = {
@@ -3501,9 +3503,25 @@ class TestSessionConcernsAreFiled:
         subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True, env=env)
         (repo / "f.txt").write_text("x")
         subprocess.run(["git", "add", "-A"], cwd=repo, check=True, env=env)
+        if merge_as is not None:
+            # main moves on, the session lands on a side branch, and the
+            # fallback merges it --no-ff: the shape auto-merge-session makes.
+            subprocess.run(["git", "commit", "-q", "-m", "base"], cwd=repo, check=True, env=env)
+            subprocess.run(["git", "checkout", "-q", "-b", "claude/x"], cwd=repo, check=True, env=env)
+            (repo / "s.txt").write_text("session")
+            subprocess.run(["git", "add", "-A"], cwd=repo, check=True, env=env)
         subprocess.run(
             ["git", "commit", "-q", *message_args], cwd=repo, check=True, env=env
         )
+        if merge_as is not None:
+            subprocess.run(["git", "checkout", "-q", "main"], cwd=repo, check=True, env=env)
+            (repo / "g.txt").write_text("y")
+            subprocess.run(["git", "add", "-A"], cwd=repo, check=True, env=env)
+            subprocess.run(["git", "commit", "-q", "-m", "chore(triggers): x"], cwd=repo, check=True, env=env)
+            subprocess.run(
+                ["git", "merge", "-q", "--no-ff", "-m", merge_as, "claude/x"],
+                cwd=repo, check=True, env=env,
+            )
         out = tmp_path / "gh_output"
         out.write_text("")
         subprocess.run(
@@ -3560,6 +3578,24 @@ class TestSessionConcernsAreFiled:
             ["-m", "docs: unrelated", "--trailer", "Concerns: not a session"],
         )
         assert out == {"found": "false"}
+
+    def test_a_session_landed_by_merge_commit_is_still_read(self, tmp_path):
+        """Money review round 1, M1: on the 403 fallback, auto-merge-session
+        lands the session with `git merge --no-ff`, so HEAD's subject is
+        "Merge sandbox session claude/…" and the trailers sit on HEAD^2."""
+        out = self._run(
+            tmp_path,
+            [
+                "-m",
+                "chore: weekday session 2026-09-04",
+                "--trailer",
+                "Concerns: the main push was refused",
+            ],
+            merge_as="Merge sandbox session claude/x: chore: weekday session 2026-09-04",
+        )
+        assert out["found"] == "true"
+        assert out["day"] == "2026-09-04"
+        assert out["list"] == "- the main push was refused"
 
     def test_filing_is_gated_on_found_and_never_reports_success(self):
         spec = yaml.safe_load(SESSION_INTEGRITY.read_text())

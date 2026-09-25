@@ -272,13 +272,28 @@ jobs:
   concerns:
     runs-on: ubuntu-latest
     steps:
+      # Depth 2: on the 403 fallback path auto-merge-session lands the session
+      # as a `--no-ff` merge, and the session commit is then HEAD^2. Caveat:
+      # auto-merge-session pushes that merge with GITHUB_TOKEN, which triggers
+      # no `on: push` run, so on that path this job may not run at all and the
+      # concerns can still go unfiled. Reading HEAD^2 covers a merge pushed by
+      # a credential that does trigger runs (a human landing the branch).
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
 
       - name: Read the session's Concerns trailers
         id: read
         run: |
           set -euo pipefail
-          subject=$(git log -1 --format=%s)
+          # The session commit itself: HEAD, or HEAD^2 when HEAD is the merge
+          # auto-merge-session made ("Merge sandbox session …"), whose own
+          # subject and body carry neither the date nor the trailers.
+          commit=HEAD
+          if git rev-parse -q --verify 'HEAD^2' >/dev/null; then
+            commit='HEAD^2'
+          fi
+          subject=$(git log -1 --format=%s "$commit")
           re='^chore: weekday session ([0-9]{4}-[0-9]{2}-[0-9]{2})'
           if [[ ! "$subject" =~ $re ]]; then
             echo "Not a weekday session commit — nothing to read."
@@ -286,7 +301,7 @@ jobs:
             exit 0
           fi
           day="${BASH_REMATCH[1]}"
-          concerns=$(git log -1 --format='%(trailers:key=Concerns,valueonly)' | sed '/^[[:space:]]*$/d')
+          concerns=$(git log -1 --format='%(trailers:key=Concerns,valueonly)' "$commit" | sed '/^[[:space:]]*$/d')
           if [[ -z "$concerns" ]]; then
             echo "Session $day reported no concerns."
             echo "found=false" >> "$GITHUB_OUTPUT"
