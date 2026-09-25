@@ -29,7 +29,9 @@ You act on **a coherent high-conviction thesis** — a single analyst at convict
 
 **Criterion 3 — Risk budget**: The order fits ≤2 trades/week, 4-6 positions of EUR 250-400 each, and the EUR 150 cash floor, with DEFAULT=HOLD. What survives these constraints is the order set.
 
-**Exits and trims are not held to these criteria.** A SELL that closes or reduces a position needs no upside case: it is governed by the trade conditions 2-4 below (held thesis breaking, tax/rebalance hygiene, risk-budget breach). Never keep a position because its exit fails Criterion 1.
+**Exits and trims are not held to Criteria 1 and 2.** A SELL that closes or reduces a position needs no upside case: it is governed by the trade conditions 2-4 below (held thesis breaking, tax/rebalance hygiene, risk-budget breach). Never keep a position because its exit fails Criterion 1. **The turnover limit still counts every order**: exits and trims are trades against the same ≤2 trades/week as entries, as they always have been.
+
+**A hedge follows a hedge thesis, not Criterion 1.** A BUY of one of the UCITS inverse ETFs named under tax-shaped behavior (DSP5.PA, BX4.PA, XDEB.DE, DXSN.DE) needs no bull case for the ETF itself: it rests on a coherent bearish thesis in the notes for the index it inverts, sized to the exposure it offsets. For a hedge, Criterion 2 weighs its cost against the drawdown it protects, not against an expected gain. Criterion 3 applies in full.
 
 ## HOLD is the default and the expected normal outcome
 
