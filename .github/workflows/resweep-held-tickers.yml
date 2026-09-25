@@ -123,6 +123,9 @@ jobs:
       # counts as this run's if HEAD moved after this point.
       - name: Record HEAD before writing
         id: before
+        # always(): a writer that went red after its fetch (fetch-ohlcv exit 2/3,
+        # refresh-universes) still pushes, and without this the step is skipped.
+        if: always()
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # Touches two directories: data/market/ohlcv/ (the resweep itself) and

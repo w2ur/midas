@@ -14,7 +14,9 @@ description: >
 # 3, I-1; 4becbbe5d rewrote every baseline file). workflow_dispatch is exempt
 # from that rule, so the writer dispatches it with the sha it pushed.
 #
-# `before` is the sha HEAD held just before the writing step. The commit
+# `before` is the sha HEAD held just before the writing step, recorded by a
+# step that is `if: always()` like this one: a writer that went red after its
+# fetch still pushes, and a skipped record step lost that commit (round 4, I-A). The commit
 # under test is HEAD now, and it is dispatched only when this run moved HEAD
 # AND HEAD is on main — a run that committed nothing, or whose commit went to a
 # `triggers/*` fallback branch (auto-merge-session dispatches when it merges

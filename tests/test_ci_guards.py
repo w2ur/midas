@@ -3789,8 +3789,17 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
             assert step.get("if") == "always()", name
             before = step["with"]["before"]
             if before == "${{ steps.before.outputs.sha }}":
-                ids = [s.get("id") for s in steps]
-                assert "before" in ids, f"{name}: dispatch reads a step that does not exist"
+                record = [s for s in steps if s.get("id") == "before"]
+                assert record, f"{name}: dispatch reads a step that does not exist"
+                # Money review round 4, I-A: with no `if:` the record step
+                # defaults to success() and is SKIPPED after fetch-ohlcv's
+                # deliberate exit 2/3 or refresh-universes' partial failure —
+                # the very runs that still push. The commit then went
+                # undispatched and a run that pushed nothing filed a false
+                # "unchecked commit" issue. It must run whenever the push can.
+                assert record[0].get("if") == "always()", (
+                    f"{name}: the record step must be `if: always()`, got {record[0].get('if')!r}"
+                )
             else:
                 assert before == "${{ github.sha }}", f"{name}: unexpected before {before!r}"
 
