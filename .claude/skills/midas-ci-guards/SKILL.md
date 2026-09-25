@@ -279,7 +279,15 @@ workflow-shape and executed-action tests cover the rest:
   (`TestAutomatedWritersCannotDeclare` checks it where history exists). A
   squash-merged PR whose restating commit is not the PR title loses the
   declaration (it becomes a `* [restate] …` body bullet): title such a PR
-  `[restate] …`, or main goes red after the fact. Deliberately a post-hoc detector, not a merge gate:
+  `[restate] …`, or main goes red after the fact. **A cloud Claude Code session
+  commits as `noreply@anthropic.com` even when a human directs it**, so its
+  `[restate]` is refused too (round 3, M-C — kept: a false red is the safe side;
+  three earlier non-session commits carry that author, one of them the
+  restatement-shaped "leaderboard math anchored to €10k inception"). A human
+  declares under their own identity: commit locally, or land the change as a
+  squash-merged PR titled `[restate] …`, which GitHub authors as the account. A
+  merge-commit PR does not declare (its body holds `[restate] <title>`, not the
+  token alone on a line). Deliberately a post-hoc detector, not a merge gate:
   `auto-merge-session.yml` runs its own inline copy of the artifact rules, so
   this cannot hold a session hostage. Calibrated by replaying it over real
   history, not only fixtures — the gate's ability to fire is pinned against

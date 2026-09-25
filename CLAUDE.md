@@ -74,7 +74,11 @@ were never checked. **A dated row in `data/portfolios/*/snapshots.json`
 or `data/baselines/**` that already exists at `HEAD^` must be byte-identical at
 `HEAD`, or a human declares a restatement** — `[restate]` opening the subject of a
 commit a person authored. **An automated writer can never declare one** (the
-session, the bot): the check ignores their commits' declarations. Mechanics and
+session, the bot): the check ignores their commits' declarations. That includes a
+human-directed commit from a cloud Claude Code session, which is authored
+`noreply@anthropic.com` — refused on purpose, since a false red is the safe side.
+**To declare, commit under your own identity**: locally, or as a squash-merged PR
+titled `[restate] …` (GitHub authors it as you). Mechanics and
 calibration are in the **`midas-ci-guards`** skill.
 
 **Restatement requires disclosure up front** (`engine/disclosure.py`).

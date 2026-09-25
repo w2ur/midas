@@ -441,9 +441,11 @@ jobs:
               a book's `initial_capital + replay(trades)` no longer equals its
               recorded cash. Treat as a data incident, not a flaky test.
             - `append-only` — a dated row in `data/portfolios/*/snapshots.json`
-              or `data/baselines/**` moved without a `[restate]` subject (or a
-              `[restate]` line of its own). Either the move was unintended, or
-              the disclosure is missing.
+              or `data/baselines/**` moved without a human-authored `[restate]`
+              subject (or `[restate]` line of its own); the session, the bot and
+              a cloud Claude Code session cannot declare. Either the move was
+              unintended, or the disclosure is missing — a human re-lands it
+              under their own identity.
             - `check` — a session or weekend-refresh commit skipped a
               load-bearing step (journals, baselines, manager-review,
               `current.json` on a refresh).
