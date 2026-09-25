@@ -53,6 +53,7 @@ on:
         default: ""
 
 permissions:
+  actions: write  # dispatch session-integrity on the commit this run pushes
   contents: write  # needed to commit news digests back to main
   issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
@@ -102,6 +103,12 @@ jobs:
         id: today
         run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
+      # The sha the dispatch step at the end compares against: a commit only
+      # counts as this run's if HEAD moved after this point.
+      - name: Record HEAD before writing
+        id: before
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Commit and push updates
         uses: ./.github/actions/push-with-retry
         with:
@@ -127,3 +134,12 @@ jobs:
             **Where to look**
             - The fetch step's log for a provider error or rate limit.
             - Whether the session that followed consumed a stale digest.
+
+      # A GITHUB_TOKEN push starts no `on: push` run, so session-integrity
+      # would never see this run's commit. After the reporter on purpose: see
+      # .github/actions/dispatch-session-integrity.
+      - name: Dispatch session-integrity on the commit this run pushed
+        if: always()
+        uses: ./.github/actions/dispatch-session-integrity
+        with:
+          before: ${{ steps.before.outputs.sha }}

@@ -95,6 +95,7 @@ on:
         default: "false"
 
 permissions:
+  actions: write  # dispatch session-integrity on the commit this run pushes
   contents: write  # needed to commit OHLCV updates back to main
   issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
@@ -206,6 +207,12 @@ jobs:
         if: ${{ !cancelled() }}
         run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
+      # The sha the dispatch step at the end compares against: a commit only
+      # counts as this run's if HEAD moved after this point.
+      - name: Record HEAD before writing
+        id: before
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       # data/market/quarantine/ travels with the store: a row the ingest
       # tripwire refused is evidence, and evidence that only exists on an
       # ephemeral runner is no evidence at all.
@@ -261,3 +268,12 @@ jobs:
             - A push that lost a race with another scheduled writer.
             - `scripts/fetch_ohlcv.py --dry-run` locally to confirm symbol
               resolution still works.
+
+      # A GITHUB_TOKEN push starts no `on: push` run, so session-integrity
+      # would never see this run's commit. After the reporter on purpose: see
+      # .github/actions/dispatch-session-integrity.
+      - name: Dispatch session-integrity on the commit this run pushed
+        if: always()
+        uses: ./.github/actions/dispatch-session-integrity
+        with:
+          before: ${{ steps.before.outputs.sha }}

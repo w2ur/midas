@@ -149,6 +149,12 @@ jobs:
           git reset --hard FETCH_HEAD
           echo "evaluating against $(git rev-parse HEAD)"
 
+      # The sha the dispatch step at the end compares against: a commit only
+      # counts as this run's if HEAD moved after this point.
+      - name: Record HEAD before writing
+        id: before
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Run watcher (crypto only)
         run: .venv/bin/python scripts/check_triggers.py --crypto-only
 
@@ -232,3 +238,12 @@ jobs:
 
             Degradation: the affected orders are picked up by the daily 13:00
             UTC sweep, which evaluates every asset class.
+
+      # A GITHUB_TOKEN push starts no `on: push` run, so session-integrity
+      # would never see this run's commit. After the reporter on purpose: see
+      # .github/actions/dispatch-session-integrity.
+      - name: Dispatch session-integrity on the commit this run pushed
+        if: always()
+        uses: ./.github/actions/dispatch-session-integrity
+        with:
+          before: ${{ steps.before.outputs.sha }}

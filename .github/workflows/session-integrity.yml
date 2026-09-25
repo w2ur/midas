@@ -21,13 +21,15 @@ name: session-integrity
 
 # Two triggers, one commit under test each (`needs.target.outputs.sha`):
 #  - push to main — every direct push, the ordinary session path.
-#  - workflow_dispatch with `sha` — dispatched by auto-merge-session after a
-#    FALLBACK merge. That merge is pushed with GITHUB_TOKEN, and GitHub creates
-#    no `on: push` run for a push that token makes, so until 2026-09-25 no job
-#    here ever ran on a fallback-landed session: the Actions API shows no
-#    session-integrity run on 982dc191c (09-04), b63617d8b (08-05) or
-#    0cd1d815c (08-03), against a `push` run on every direct-push session
-#    (J6 money review round 2, N2). A dispatch is exempt from that rule.
+#  - workflow_dispatch with `sha` — dispatched by EVERY workflow that pushes
+#    main with GITHUB_TOKEN (.github/actions/dispatch-session-integrity; the
+#    writer list is derived in tests/test_ci_guards.py, never typed). GitHub
+#    creates no `on: push` run for a push that token makes, so until
+#    2026-09-25 no job here ever ran on a bot-pushed commit: no run exists on
+#    the fallback merges 982dc191c, b63617d8b, 0cd1d815c (J6 money review
+#    round 2, N2) nor on any weekend refresh — 4becbbe5d rewrote every
+#    baseline file unchecked (round 3, I-1). A dispatch is exempt from that
+#    rule.
 on:
   push:
     branches: [main]

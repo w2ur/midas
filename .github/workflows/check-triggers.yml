@@ -153,6 +153,12 @@ jobs:
           git reset --hard FETCH_HEAD
           echo "evaluating against $(git rev-parse HEAD)"
 
+      # The sha the dispatch step at the end compares against: a commit only
+      # counts as this run's if HEAD moved after this point.
+      - name: Record HEAD before writing
+        id: before
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Run watcher
         run: .venv/bin/python scripts/check_triggers.py
 
@@ -252,3 +258,12 @@ jobs:
             A refused push on its own is NOT here: the fill went to a
             `triggers/*` branch, the run exited 0 with a `::warning::`, and
             `auto-merge-session.yml` merges it.
+
+      # A GITHUB_TOKEN push starts no `on: push` run, so session-integrity
+      # would never see this run's commit. After the reporter on purpose: see
+      # .github/actions/dispatch-session-integrity.
+      - name: Dispatch session-integrity on the commit this run pushed
+        if: always()
+        uses: ./.github/actions/dispatch-session-integrity
+        with:
+          before: ${{ steps.before.outputs.sha }}

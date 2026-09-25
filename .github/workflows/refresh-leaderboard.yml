@@ -15,6 +15,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write  # dispatch session-integrity on the commit this run pushes
   contents: write
   issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
@@ -52,6 +53,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # The sha the dispatch step at the end compares against: a commit only
+      # counts as this run's if HEAD moved after this point.
+      - name: Record HEAD before writing
+        id: before
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Run weekend refresh
         run: python scripts/refresh_leaderboard.py
 
@@ -75,3 +82,12 @@ jobs:
             market date and are immutable, so a late re-run writes the missed
             weekend point only if no later session has already published that
             date.
+
+      # A GITHUB_TOKEN push starts no `on: push` run, so session-integrity
+      # would never see this run's commit. After the reporter on purpose: see
+      # .github/actions/dispatch-session-integrity.
+      - name: Dispatch session-integrity on the commit this run pushed
+        if: always()
+        uses: ./.github/actions/dispatch-session-integrity
+        with:
+          before: ${{ steps.before.outputs.sha }}

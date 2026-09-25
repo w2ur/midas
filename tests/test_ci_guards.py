@@ -3699,64 +3699,181 @@ class TestFallbackMergesAreCheckedByDispatch:
         rc, out = self._pin(repo, tmp_path, EVENT="push", INPUT_SHA="", GITHUB_SHA="a" * 40)
         assert rc == 0 and out.strip() == f"sha={'a' * 40}"
 
-    # --- auto-merge-session dispatches it after a merge it pushed ----------
 
-    def test_auto_merge_may_dispatch_workflows(self):
-        spec = yaml.safe_load(AUTO_MERGE.read_text())
-        assert spec["permissions"]["actions"] == "write"
+# --------------------------------------------------------------------------
+# J6 money review round 3, I-1 + M-A (2026-09-25) — EVERY GITHUB_TOKEN writer
+# of main dispatches session-integrity on the commit it pushed. The weekend
+# refresh (4becbbe5d and five more) had never been checked, for N2's reason.
+# --------------------------------------------------------------------------
 
-    def test_the_dispatch_follows_both_merges_and_names_the_merged_sha(self):
-        step = _auto_merge_step("Dispatch session-integrity on the merged commit")
-        cond = step["if"]
-        assert "steps.merge_session.outputs.merged_sha" in cond
-        assert "steps.merge_watcher.outputs.merged_sha" in cond
-        assert "gh workflow run session-integrity.yml" in step["run"]
-        assert '-f sha="$MERGED_SHA"' in step["run"]
-        assert _auto_merge_step("Merge sandbox session into main")["id"] == "merge_session"
-        assert _auto_merge_step("Merge watcher fallback branch into main")["id"] == "merge_watcher"
+DISPATCH_ACTION = REPO_ROOT / ".github" / "actions" / "dispatch-session-integrity" / "action.yml"
+DISPATCH_USES = "./.github/actions/dispatch-session-integrity"
 
-    def test_a_watcher_merge_exports_the_sha_it_pushed(self, tmp_path):
-        repo, tip = _watcher_branch_repo(tmp_path, [("chore(triggers): x", A_FILL)])
-        _advance_main(tmp_path, "chore: weekday session 2026-09-05", {"data/market/ohlcv/BTC-EUR.jsonl": "{}\n"})
-        result = _run_auto_merge_step(
-            "Merge watcher fallback branch into main",
-            repo, tip, tmp_path, VERIFIED_MAIN=_bare_main(tmp_path),
-        )
-        assert result.returncode == 0, result.stdout + result.stderr
-        assert f"merged_sha={_bare_main(tmp_path)}" in _outputs(tmp_path)
+#: `contents: write` workflows that never push to main, each with its reason.
+#: Anything else holding `contents: write` is a main writer and must dispatch.
+NOT_MAIN_WRITERS = {
+    "attest-ledger.yml": "pushes an annotated attest/* tag, never a branch",
+}
 
-    def _dispatch(self, tmp_path: Path, gh_rc: int) -> tuple[subprocess.CompletedProcess, str]:
+#: Text that means a workflow pushes to main itself or through a helper.
+_MAIN_PUSH_MARKERS = (
+    "HEAD:main",
+    "git push origin main",
+    "./.github/actions/push-with-retry",
+    "scripts/check_triggers.py",
+    "scripts/refresh_leaderboard.py",
+)
+
+
+def _pushes_main(spec: dict) -> bool:
+    """A step's `run` or `uses` pushes main (comments do not count)."""
+    for job in spec["jobs"].values():
+        for step in job["steps"]:
+            text = f"{step.get('run', '')}\n{step.get('uses', '')}"
+            if any(m in text for m in _MAIN_PUSH_MARKERS):
+                return True
+    return False
+
+
+def _workflow_specs() -> dict[str, dict]:
+    return {
+        p.name: yaml.safe_load(p.read_text())
+        for p in sorted((REPO_ROOT / ".github" / "workflows").glob("*.yml"))
+    }
+
+
+def _main_writers() -> list[str]:
+    """Derived, never hand-listed: every workflow granted `contents: write`,
+    minus the named non-writers. A new scheduled writer is in this list the
+    moment it can push, and so has to carry the dispatch step."""
+    return [
+        name
+        for name, spec in _workflow_specs().items()
+        if (spec.get("permissions") or {}).get("contents") == "write"
+        and name not in NOT_MAIN_WRITERS
+    ]
+
+
+class TestEveryBotWriterDispatchesSessionIntegrity:
+    def test_the_derivation_finds_the_writers_we_know(self):
+        # Control that the derivation is not vacuous: an empty list would pass
+        # the per-writer assertions below by checking nothing.
+        writers = set(_main_writers())
+        assert {"refresh-leaderboard.yml", "auto-merge-session.yml", "fetch-ohlcv.yml"} <= writers
+
+    def test_every_workflow_that_pushes_main_is_in_the_derived_list(self):
+        # The derivation keys on the permission; this keys on the text, so a
+        # writer that got `contents: write` some other way still gets caught.
+        writers = set(_main_writers())
+        pushers = [n for n, spec in _workflow_specs().items() if _pushes_main(spec)]
+        assert pushers, "the marker scan found no pusher at all — it is checking nothing"
+        for name in pushers:
+            assert name in writers, f"{name} pushes main but is not a derived writer"
+
+    def test_the_exempt_workflows_really_do_not_push_main(self):
+        for name in NOT_MAIN_WRITERS:
+            assert not _pushes_main(_workflow_specs()[name]), name
+
+    def test_every_writer_dispatches_after_its_reporter(self):
+        for name in _main_writers():
+            spec = _workflow_specs()[name]
+            assert spec["permissions"].get("actions") == "write", f"{name}: cannot dispatch"
+            steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+            dispatch = [s for s in steps if s.get("uses") == DISPATCH_USES]
+            assert len(dispatch) == 1, f"{name}: no session-integrity dispatch step"
+            step = dispatch[0]
+            # Last, and unconditional: the step itself decides whether a
+            # commit landed, and it must run even when the writer went red
+            # after pushing (fetch-ohlcv's committable exits).
+            assert steps[-1] is step, f"{name}: the dispatch must follow the reporter"
+            assert step.get("if") == "always()", name
+            before = step["with"]["before"]
+            if before == "${{ steps.before.outputs.sha }}":
+                ids = [s.get("id") for s in steps]
+                assert "before" in ids, f"{name}: dispatch reads a step that does not exist"
+            else:
+                assert before == "${{ github.sha }}", f"{name}: unexpected before {before!r}"
+
+    # --- the action itself, executed ---------------------------------------
+
+    def _action(self) -> dict:
+        return yaml.safe_load(DISPATCH_ACTION.read_text())
+
+    def _run(self, repo: Path, tmp_path: Path, before: str, gh_rc: int = 0):
         bindir = tmp_path / "bin"
-        bindir.mkdir()
+        bindir.mkdir(exist_ok=True)
         log = tmp_path / "gh.log"
         (bindir / "gh").write_text(f'#!/bin/bash\necho "$@" >> "{log}"\nexit {gh_rc}\n')
         (bindir / "sleep").write_text("#!/bin/bash\nexit 0\n")
         for f in bindir.iterdir():
             f.chmod(0o755)
-        step = _auto_merge_step("Dispatch session-integrity on the merged commit")
-        result = subprocess.run(
-            ["bash", "-c", step["run"]],
-            env={
-                "PATH": f"{bindir}:/usr/bin:/bin",
-                "MERGED_SHA": "b" * 40,
-                "GITHUB_REPOSITORY": "w2ur/midas",
-                "GH_TOKEN": "x",
-            },
-            capture_output=True,
-            text=True,
-        )
-        return result, log.read_text() if log.exists() else ""
+        out = tmp_path / "dispatch_out"
+        out.write_text("")
+        step = next(s for s in self._action()["runs"]["steps"] if s.get("id") == "dispatch")
+        env = {
+            **_git_env(tmp_path),
+            "PATH": f"{bindir}:/usr/bin:/bin:/usr/local/bin",
+            "GITHUB_OUTPUT": str(out),
+            "BEFORE": before,
+            "REPO": "w2ur/midas",
+            "GH_TOKEN": "x",
+        }
+        result = subprocess.run(["bash", "-c", step["run"]], cwd=repo, env=env, capture_output=True, text=True)
+        outputs = dict(line.split("=", 1) for line in out.read_text().splitlines() if "=" in line)
+        return result, outputs, (log.read_text() if log.exists() else "")
 
-    def test_the_dispatch_passes_the_sha_to_session_integrity(self, tmp_path):
-        result, calls = self._dispatch(tmp_path, gh_rc=0)
-        assert result.returncode == 0
-        assert calls.strip() == (
-            f"workflow run session-integrity.yml --repo w2ur/midas --ref main -f sha={'b' * 40}"
-        )
+    def _parent(self, repo: Path, tmp_path: Path) -> str:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD^"], cwd=repo, env=_git_env(tmp_path),
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
 
-    def test_a_dispatch_that_cannot_be_made_fails_the_run(self, tmp_path):
-        # Unchecked must never read as checked: three refusals, then red.
-        result, calls = self._dispatch(tmp_path, gh_rc=1)
-        assert result.returncode == 1
+    def test_a_commit_this_run_landed_on_main_is_dispatched(self, tmp_path):
+        repo, tip = _fallback_branch_repo(
+            tmp_path, [("chore: weekend refresh 2026-09-20", {"data/b.json": "{}"})],
+            branch="w", landed_on_main=True,
+        )
+        result, out, calls = self._run(repo, tmp_path, before=self._parent(repo, tmp_path))
+        assert result.returncode == 0, result.stderr
+        assert out["result"] == "dispatched"
+        assert calls.strip() == f"workflow run session-integrity.yml --repo w2ur/midas --ref main -f sha={tip}"
+
+    def test_a_run_that_wrote_nothing_dispatches_nothing(self, tmp_path):
+        repo, tip = _fallback_branch_repo(tmp_path, [], branch="w", landed_on_main=True)
+        _, out, calls = self._run(repo, tmp_path, before=tip)
+        assert out["result"] == "none" and calls == ""
+
+    def test_a_commit_that_went_to_a_fallback_branch_is_left_to_the_merge(self, tmp_path):
+        repo, _tip = _fallback_branch_repo(
+            tmp_path, [("chore(triggers): x", A_FILL)], branch="triggers/x", landed_on_main=False,
+        )
+        _, out, calls = self._run(repo, tmp_path, before=self._parent(repo, tmp_path))
+        assert out["result"] == "none" and calls == ""
+
+    def test_a_dispatch_that_cannot_be_made_is_a_failure(self, tmp_path):
+        repo, tip = _fallback_branch_repo(
+            tmp_path, [("chore: weekend refresh 2026-09-20", {"data/b.json": "{}"})],
+            branch="w", landed_on_main=True,
+        )
+        _, out, calls = self._run(repo, tmp_path, before=self._parent(repo, tmp_path), gh_rc=1)
+        assert out["result"] == "failed" and out["sha"] == tip
         assert len(calls.strip().splitlines()) == 3
-        assert "UNCHECKED" in result.stdout
+
+    def test_an_unreadable_before_is_a_failure_not_a_skip(self, tmp_path):
+        repo, _tip = _fallback_branch_repo(tmp_path, [], branch="w", landed_on_main=True)
+        _, out, _ = self._run(repo, tmp_path, before="")
+        assert out["result"] == "failed"
+
+    def test_a_failure_files_its_own_issue_and_fails_the_step(self):
+        """M-A: the dispatching job must go red AND reach a consumer, with a
+        body that is true (the writer's own reporter ran first, on its own
+        outcome, so it never describes a missing check as its own failure)."""
+        steps = self._action()["runs"]["steps"]
+        report = next(s for s in steps if s.get("uses") == "./.github/actions/failure-issue")
+        assert report["if"] == "steps.dispatch.outputs.result != 'none'"
+        assert "'success' || 'failure'" in report["with"]["outcome"]
+        assert "session-integrity was not dispatched" in report["with"]["title"]
+        assert "github.workflow" in report["with"]["title"]
+        fail = steps[-1]
+        assert fail["if"] == "steps.dispatch.outputs.result == 'failed'"
+        assert "exit 1" in fail["run"]

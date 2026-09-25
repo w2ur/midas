@@ -64,9 +64,13 @@ Warnings are errors, with the third-party exceptions named and justified in `pyp
 **Published data is guarded in CI, not only in application code** —
 `session-integrity.yml` runs ledger-integrity, ledger cash-replay, baseline
 freshness (one-sided, reads the published *state*, never the diff) and
-append-only on every push to main — and, because a GITHUB_TOKEN push starts no
-run, on a fallback-landed merge only because `auto-merge-session` dispatches it
-with the merged sha. **A dated row in `data/portfolios/*/snapshots.json`
+append-only on every commit that reaches main: a direct push triggers it, and
+every workflow that pushes main with GITHUB_TOKEN (which triggers nothing)
+dispatches it on the sha it pushed through `.github/actions/dispatch-session-integrity`.
+**A new bot writer of main must end with that step** — `tests/test_ci_guards.py`
+derives the writer list from `contents: write` and fails on one that does not.
+Commits pushed before 2026-09-25 by a bot (weekend refreshes, fallback merges)
+were never checked. **A dated row in `data/portfolios/*/snapshots.json`
 or `data/baselines/**` that already exists at `HEAD^` must be byte-identical at
 `HEAD`, or a human declares a restatement** — `[restate]` opening the subject of a
 commit a person authored. **An automated writer can never declare one** (the

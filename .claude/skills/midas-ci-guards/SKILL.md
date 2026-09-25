@@ -217,14 +217,25 @@ main, none of which existed as a standing gate before. **A fallback-landed
 commit was never a push that ran them** (J6 money review round 2, N2):
 `auto-merge-session` pushes its merge with GITHUB_TOKEN, GitHub creates no
 `on: push` run for that, and the Actions API shows no session-integrity run on
-982dc191c, b63617d8b or 0cd1d815c. Since 2026-09-25 the merge step exports
-`merged_sha` and the workflow's last step dispatches session-integrity with it
-(`workflow_dispatch` is exempt from the token rule); a `target` job pins that
-sha and refuses one not on main, every guard checks it out, `check` and
+982dc191c, b63617d8b or 0cd1d815c — **and neither was any weekend refresh**
+(round 3, I-1: six refresh commits 07-04..09-20, 4becbbe5d rewriting every
+baseline file, none with a run). Since 2026-09-25 every GITHUB_TOKEN writer of
+main ends with `.github/actions/dispatch-session-integrity`: it records HEAD
+before the writing step, and after the workflow's own reporter dispatches
+session-integrity on HEAD when this run moved it AND it is on main
+(`workflow_dispatch` is exempt from the token rule). A run that wrote nothing,
+or whose commit went to a `triggers/*` branch, dispatches nothing — the merge
+dispatches later. A dispatch that cannot be made files **its own** issue
+("session-integrity was not dispatched after <workflow>") and fails the job;
+it sits after the writer's reporter so the writer's issue always describes the
+writer's own outcome (round 3, M-A). In session-integrity a `target` job pins
+the sha and refuses one not on main, every guard checks it out, `check` and
 `concerns` read HEAD^2 behind a merge, and the alert counts a SKIPPED guard as a
-failure. A dispatch that cannot be made fails the auto-merge run after three
-tries. Only a live fallback can prove the bot token's dispatch is accepted;
-`TestFallbackMergesAreCheckedByDispatch` covers the rest:
+failure. **The writer list is derived** (every `contents: write` workflow minus
+`NOT_MAIN_WRITERS`, cross-checked against the push markers in step scripts) in
+`TestEveryBotWriterDispatchesSessionIntegrity`, so a new writer cannot skip the
+step. Only a live bot push can prove GitHub accepts the dispatch; the
+workflow-shape and executed-action tests cover the rest:
 - **ledger-integrity** — every filled inbox row has a matching trade (existence).
 - **ledger cash-replay** (`tests/test_ledger_cash.py`) — `initial_capital +
   replay(trades) == live cash`, per book. The existence check cannot see a trade

@@ -66,6 +66,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write  # dispatch session-integrity on the commit this run pushes
   contents: write  # needed to commit OHLCV/portfolio updates back to main
   issues: write    # failure has to reach a human — see .github/actions/failure-issue
 
@@ -118,6 +119,12 @@ jobs:
         if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' }}
         run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
+      # The sha the dispatch step at the end compares against: a commit only
+      # counts as this run's if HEAD moved after this point.
+      - name: Record HEAD before writing
+        id: before
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       # Touches two directories: data/market/ohlcv/ (the resweep itself) and
       # data/portfolios/ (only when a split was actually detected and a held
       # position adjusted — most weeks this is empty). That second one is why
@@ -158,3 +165,12 @@ jobs:
             - A lost push: this job's commit can carry `data/portfolios/`
               adjustments from `PortfolioManager.apply_split`, so a discarded
               push discards a real portfolio correction.
+
+      # A GITHUB_TOKEN push starts no `on: push` run, so session-integrity
+      # would never see this run's commit. After the reporter on purpose: see
+      # .github/actions/dispatch-session-integrity.
+      - name: Dispatch session-integrity on the commit this run pushed
+        if: always()
+        uses: ./.github/actions/dispatch-session-integrity
+        with:
+          before: ${{ steps.before.outputs.sha }}

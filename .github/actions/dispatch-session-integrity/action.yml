@@ -1,0 +1,113 @@
+name: Dispatch session-integrity
+description: >
+  Run by every workflow that pushes to main with GITHUB_TOKEN, after its
+  push: dispatch session-integrity.yml on the commit this run landed, and
+  file an issue if that dispatch cannot be made.
+
+# Why this exists: GitHub starts no `on: push` run for a push made with
+# GITHUB_TOKEN, and every scheduled writer of main pushes with it. So until
+# 2026-09-25 session-integrity (ledger-integrity, cash-replay, append-only,
+# the session/refresh artifact check, concerns) had never run on a single
+# bot-pushed commit: not the fallback session merges (982dc191c, b63617d8b,
+# 0cd1d815c — J6 money review round 2, N2) and not one weekend refresh
+# (4becbbe5d, 58763ae00, 013ecead7, ace2b71ea, d799598f4, f7e96fc70 — round
+# 3, I-1; 4becbbe5d rewrote every baseline file). workflow_dispatch is exempt
+# from that rule, so the writer dispatches it with the sha it pushed.
+#
+# `before` is the sha HEAD held just before the writing step. The commit
+# under test is HEAD now, and it is dispatched only when this run moved HEAD
+# AND HEAD is on main — a run that committed nothing, or whose commit went to a
+# `triggers/*` fallback branch (auto-merge-session dispatches when it merges
+# that), dispatches nothing. A multi-commit run (a watcher with several
+# fires) dispatches its last commit: the ledger checks read state, so they
+# cover the rest; append-only's HEAD^..HEAD window covers the last only, and
+# the watcher writes no append-only path.
+#
+# A dispatch that cannot be made — or a main that cannot be read — files an
+# issue under its own title and then fails the step. Put this step AFTER the
+# workflow's own `Report outcome`: the writer's issue then describes the
+# writer's own outcome truthfully, and this one describes the missing check.
+# A later successful dispatch from the same workflow closes it.
+
+inputs:
+  before:
+    description: "HEAD's sha immediately before this run wrote anything."
+    required: true
+  token:
+    description: "Token with actions: write and issues: write on this repository."
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - id: dispatch
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        BEFORE: ${{ inputs.before }}
+        REPO: ${{ github.repository }}
+      run: |
+        set -uo pipefail
+        head=$(git rev-parse HEAD)
+        echo "sha=$head" >> "$GITHUB_OUTPUT"
+        if [[ ! "$BEFORE" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "::error::dispatch-session-integrity: 'before' is not a sha ('$BEFORE') — cannot tell whether this run landed a commit."
+          echo "result=failed" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if [[ "$head" == "$BEFORE" ]]; then
+          echo "This run landed no commit on main — nothing to dispatch."
+          echo "result=none" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if ! git fetch -q --depth=50 origin main; then
+          echo "::error::Could not read origin/main to confirm $head landed there."
+          echo "result=failed" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if ! git merge-base --is-ancestor "$head" FETCH_HEAD; then
+          echo "$head is not on main (a fallback branch, or a push that did not land) — nothing to dispatch; whatever merges it dispatches then."
+          echo "result=none" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        for attempt in 1 2 3; do
+          if gh workflow run session-integrity.yml --repo "$REPO" --ref main -f sha="$head"; then
+            echo "Dispatched session-integrity for $head."
+            echo "result=dispatched" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sleep $((attempt * 10))
+        done
+        echo "::error::Could not dispatch session-integrity for $head after 3 attempts."
+        echo "result=failed" >> "$GITHUB_OUTPUT"
+
+    - name: Report the dispatch
+      if: steps.dispatch.outputs.result != 'none'
+      uses: ./.github/actions/failure-issue
+      with:
+        token: ${{ inputs.token }}
+        outcome: ${{ steps.dispatch.outputs.result == 'dispatched' && 'success' || 'failure' }}
+        title: "session-integrity was not dispatched after ${{ github.workflow }}"
+        body: |
+          `${{ github.workflow }}` pushed a commit to `main` with GITHUB_TOKEN,
+          which starts no `on: push` run, and then could not dispatch
+          `session-integrity.yml` on it. That commit is on `main` UNCHECKED:
+          ledger-integrity, cash-replay, append-only, the session/refresh
+          artifact check and the concerns filing have not run on it.
+
+          Nothing in the writer's own work failed — its own outcome is
+          reported separately. Run the check by hand on the sha below:
+
+              gh workflow run session-integrity.yml --ref main -f sha=<sha>
+
+          then close this issue (a later successful dispatch from this
+          workflow also closes it).
+        details: "Commit left unchecked: `${{ steps.dispatch.outputs.sha }}`"
+
+    - name: Fail when the check was not dispatched
+      if: steps.dispatch.outputs.result == 'failed'
+      shell: bash
+      run: |
+        echo "::error::session-integrity was not dispatched on ${{ steps.dispatch.outputs.sha }} — see the issue this step filed."
+        exit 1
