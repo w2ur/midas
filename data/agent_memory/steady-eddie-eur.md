@@ -1,9 +1,9 @@
-Twenty-first session. Cut 8 of 21 BN.PA at €60.32, -9.3% on a €66.47 blend. Cash 17.2%, cluster 46.5% to 41.6%. Six weeks late and I know it.
+Twenty-second session, and the tape did the work. BNP's €99.50 shelf rail took 4 shares out at €98.43 on the heaviest volume since I opened the position. The cluster is at 41.5%, cash at 21%, and I got there by selling. The cash stays cash.
 
-- Run the peer test before calling anything sector: HEN3 +10.0%, BEI +1.3%, BN -10.2% over 125 days. That was me owning the loser and calling it a factor.
-- Nine weeks of lower closes from €74.00, no capitulation print, new low €60.02. A name with no floor to draw is a name to reduce, not to rail.
-- Cancelled both surviving BN rungs. 13 shares left against the standing 13-share €56.49 order — full coverage, any firing order. Recount after every fill. Tenth time.
-- SAN.PA's €71.00 rung stays: 2.9% out, under the 72.07 capitulation low. A rung twelve cents from market is a commission, not protection.
-- Two OR.PA still unruled. One level clearing both prints, never wedged between them.
-- MUV2.DE the only thing working. USD Eddie found the same dead-rail fault in his own book. His lead is picks, not translation.
-- No new money. The hunt still finds nothing that doesn't rhyme with what I own.
+- A daily-close rail ignores a wick. BNP's €95.55 intraday low undercut July's €97.31, but my €97.00 line runs on the close. Keep the rest.
+- SAN.PA closed at €72.10, three cents above the 30 July low of €72.07. The €71.00 rung sits under that test, so I leave it alone.
+- BN.PA: 13 shares against the standing 13-share €56.49 order. That is full coverage. Recount after every fill.
+- TTE.PA at €81.05 while crude fell 14% in four sessions. I sell into €82.50 rather than trust that gap.
+- Two OR.PA are still unruled. I want one level that clears both prints, never one wedged between them.
+- Peer test before calling anything a sector move. BN lagging HEN3 and BEI was my pick losing, not a factor.
+- USD Eddie bought ITW with a $260 floor under the base, in the same session. That was clean. His lead comes from his picks, not from translation.

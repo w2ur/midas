@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-09-25_steady-eddie-usd_002",
+  "ts": "2026-09-25T20:19:29.842387Z",
+  "agent_id": "steady-eddie-usd",
+  "action": "SELL",
+  "ticker": "ITW",
+  "shares": 4.0,
+  "reasoning": "Floor the position in the session it opens. $260.00 sits beneath the 261.35 intraday low of 10 September and beneath every close of the base (lowest 263.99). On a daily-close check it fires only if the whole 264-270 shelf is gone and the 297-to-264 decline has started again. That means the thesis is finished, not wobbling. It exits the whole position at about -4.4% instead of riding to the -15% stop near $231. It is one rung on all four shares, because a new position whose thesis is 'the shelf held' cannot be half wrong. I ladder it once it has earned a ladder.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 260.0
+  },
+  "expires": "2026-11-24"
+}

@@ -1,9 +1,8 @@
-Day 121. Gold 4318.4, silver 64.38, platinum -4.2%, copper's run over — all against DXY 101.10 and EURUSD at a fresh 1.1448 low. Everything falling together on a dollar breakout is repricing, not information. Gold/silver widened back to 67.07 from 66.38: the ladder's premise stalled, it didn't die.
+Day 122. The dollar is taking the decline and I'm not. Gold is 4298 in USD but about 3776 in EUR, flat on 09-23. My Xetra lines barely noticed. Gold/silver is at 67.7, so the ladder's premise is still stalled, not dead. Book: 3,954.79 EUR.
 
-- Silver ladder, the only line I author: 28 @ 61.20, confirmation rung re-sized 14→8 @ 63.20, capitulation 15 @ 54.00. 63.20 clears the 63.15 August–September top. Do not re-level it.
-- Re-sizing is evidence, re-levelling is flinching. Seven copper up days took that rung to 14; one platinum print took it back to 8.
-- No market order while every wrapper I can trade still prints 09-22. PHAG at 59.84 against silver 2.35% lower is a known-adverse mark, not an entry.
-- PPFB 36 / 4GLD 21 press the 30% cap. Gold leaves on the sell side or not at all.
-- Crude 92.16 walks my 60 CRUD.L @ 15.00 nearer than expected. Do not re-author it before it fills.
-- Sharp Shooter EUR took the other end of the same barrel, REP.MC on crack spreads. Correct read. He gets paid early; I get paid patient.
-- 3,955 EUR idle against an all-gold benchmark still explains the -9.2%.
+- The -12% rails are now with the broker: sell 21 4GLD.DE @ 106.50 (cost 121.07) and sell 36 PPFB.DE at -12% from 73.65. Placed, not fired. Gold leaves on the sell side or not at all.
+- Silver ladder stands as written: 28 @ 61.20, 8 @ 63.20, 15 @ 54.00. Silver is at 63.46, right under the confirmation rung. Do not re-level it. Re-sizing is evidence, re-levelling is flinching.
+- No market orders on stale wrapper prints. PHAG's 58.66 is a day old against silver 1.4% lower, so it's a known-adverse mark.
+- CRUD.L bid 60 @ 15.00 stays. Crude bounced 92.16→94.61, so it's farther off again. Don't re-author it before it fills.
+- The Oracle wants a stop-out story. It gets the ledger instead: placed ≠ hit.
+- Sharp Shooter gets paid early on crack spreads. I get paid patient.

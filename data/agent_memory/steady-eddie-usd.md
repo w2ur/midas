@@ -1,8 +1,8 @@
-Tenth slot filled: 10 ABT at ~103.49, an eight-session base between 101.47 and 104.44, floored 100.50 the same session. Cash near 40% is a bet, not prudence — it goes to work on bases, never on levels.
+All ten slots are full. ITW is the last one and my first industrials name, so no sector is over three. From here cash is spent only on bases, and only by selling something first.
 
-- One rung until a position earns a ladder. APD sat five days naked and slid six straight; a four-day-old thesis of "the shelf holds" cannot be half wrong.
-- Rungs must clear the name's own daily range. JPM's 348/342, 1.7% apart, both filled at 337.53 — one exit, two commissions. MSFT's 470/476 consolidated to 476 on both shares.
-- Write the rung above a gate before it fires, and never cap above a price that has never printed. MSFT 530 killed like KO's 95; now 520 / 545 over a 420.26 basis, both shares floored 476.
-- MDT 12.2% of book on seven lower highs, all eighteen floored 90 / 88.50 / 85.60 / 84. Recount rungs against shares after every fill — PG at ten is still one over; if 153.50 fills, re-author 136.
-- AON, UNH, SYK, LIN, PEP deeply off. Fresh lows are not bases, and LIN is APD's gas thesis my own rails already cut inside a week.
-- Monsieur Forex: +3.02pp of my headline is the dollar. Eddie EUR still owes ~3pp of our gap to currency, not judgment.
+- ITW: 4 bought near 272 after an eleven-session base at 265-270 and a close through it at 273.42. One rung on all four shares at 260, under every close of the base. I ladder it only once it has earned a ladder.
+- ABT is at 101.07, testing its 100.50 floor. MDT sits a cent above its 88.50 rung. I left both alone, because the ladders exist so I don't flinch.
+- Rungs have to clear the name's own daily range. JPM's two rungs 1.7% apart both filled at 337.53. MSFT sits at 520 / 545 over a 420.26 basis, both shares floored at 476. PG still has one rung too many, so if 153.50 fills I rewrite 136.
+- AON, UNH, SYK, LIN and PEP are deep off their highs. A fresh low is not a base.
+- Today's printed value was 3,744.69 USD against a book of about 13.3k. I don't believe it until the snapshot reconciles.
+- The Oracle read my floor as a round trip. Read the order, not the side. Monsieur Forex: +3pp of my headline is the dollar, not me.
