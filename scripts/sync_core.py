@@ -21,6 +21,9 @@ CORE_SCRIPTS = [
     "__init__.py",
     "daily_session.py",
     "check_triggers.py",
+    # Imported by check_triggers: the landed-commit record the session-integrity
+    # dispatch reads.
+    "landed_on_main.py",
     "session_state.py",
     "fetch_market_data.py",
     # Price-data bootstrap for forks: config-driven (no live-cast coupling), it

@@ -98,6 +98,13 @@ runs:
           if git push origin HEAD:main; then
             echo "Pushed on attempt ${attempt}."
             echo "pushed=true" >> "$GITHUB_OUTPUT"
+            # What dispatch-session-integrity dispatches: the sha main took,
+            # never inferred from history (J6 money review round 5, M-a —
+            # scripts/landed_on_main.py is the Python twin). Best effort: a
+            # failed write means no dispatch, never a false one.
+            if [[ -n "${RUNNER_TEMP:-}" ]]; then
+              git rev-parse HEAD > "$RUNNER_TEMP/landed-on-main.sha" || true
+            fi
             exit 0
           fi
           if [[ "$attempt" -eq "$INPUT_ATTEMPTS" ]]; then

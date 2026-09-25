@@ -232,12 +232,18 @@ commit was never a push that ran them** (J6 money review round 2, N2):
 982dc191c, b63617d8b or 0cd1d815c — **and neither was any weekend refresh**
 (round 3, I-1: six refresh commits 07-04..09-20, 4becbbe5d rewriting every
 baseline file, none with a run). Since 2026-09-25 every GITHUB_TOKEN writer of
-main ends with `.github/actions/dispatch-session-integrity`: it records HEAD
-before the writing step, and after the workflow's own reporter dispatches
-session-integrity on HEAD when this run moved it AND it is on main
-(`workflow_dispatch` is exempt from the token rule). A run that wrote nothing,
-or whose commit went to a `triggers/*` branch, dispatches nothing — the merge
-dispatches later. A dispatch that cannot be made files **its own** issue
+main ends with `.github/actions/dispatch-session-integrity`, which, after the
+workflow's own reporter, dispatches session-integrity (`workflow_dispatch` is
+exempt from the token rule) on **the sha the run recorded as landed**: every
+push path writes it to `$RUNNER_TEMP/landed-on-main.sha` the moment
+`git push … HEAD:main` succeeds (push-with-retry in shell,
+`scripts/landed_on_main.py` for the watcher and the weekend refresh). It used
+to *infer* it — "the newest commit on main ahead of the HEAD recorded before
+writing" — and after a refused rebase-and-retry that inferred **another
+writer's** commit and re-filed its concerns (round 5, M-a). No record, no
+dispatch: a run that wrote nothing, whose commit went to a `triggers/*` branch
+(the merge dispatches later), or whose push was refused. `before` stays as a
+cross-check: a record that is not on main after `before` is a failure. A dispatch that cannot be made files **its own** issue
 ("session-integrity was not dispatched after <workflow>") and fails the job;
 it sits after the writer's reporter so the writer's issue always describes the
 writer's own outcome (round 3, M-A). In session-integrity a `target` job pins

@@ -47,6 +47,46 @@ def test_push_retries_on_rejection_then_succeeds(monkeypatch):
     assert len(rebases) == 1, "should rebase on origin/main between attempts"
 
 
+def test_a_landed_push_is_recorded_once(monkeypatch):
+    """J6 money review round 5, M-a: the dispatch step dispatches only the
+    sha the run recorded as landed. The refresh records it after the push
+    main took — not after a refused one, whose rebase put HEAD on top of
+    another writer's commit."""
+    from scripts import refresh_leaderboard
+
+    calls, recorded = [], []
+    monkeypatch.setattr(
+        refresh_leaderboard.subprocess,
+        "run",
+        _make_fake_run(calls, push_returncodes=[1, 0]),
+    )
+    monkeypatch.setattr(
+        refresh_leaderboard, "record_landed_on_main", lambda cwd: recorded.append(len(calls))
+    )
+
+    refresh_leaderboard._push_with_rebase_retry(max_attempts=3)
+
+    assert recorded == [len(calls)], "recorded once, after the push that landed"
+
+
+def test_a_refused_refresh_records_nothing(monkeypatch):
+    from scripts import refresh_leaderboard
+
+    calls, recorded = [], []
+    monkeypatch.setattr(
+        refresh_leaderboard.subprocess,
+        "run",
+        _make_fake_run(calls, push_returncodes=[1, 1, 1]),
+    )
+    monkeypatch.setattr(
+        refresh_leaderboard, "record_landed_on_main", lambda cwd: recorded.append(cwd)
+    )
+
+    with pytest.raises(RuntimeError):
+        refresh_leaderboard._push_with_rebase_retry(max_attempts=3)
+    assert recorded == []
+
+
 def test_push_raises_after_max_attempts(monkeypatch):
     """If every push is rejected, give up loudly after max_attempts (no rebase
     after the final attempt)."""

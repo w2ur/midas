@@ -26,6 +26,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from scripts.landed_on_main import LANDED_FILENAME
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WATCHDOG = REPO_ROOT / ".github" / "workflows" / "session-watchdog.yml"
 
@@ -562,6 +564,8 @@ def pushable_repo(tmp_path):
 def _run_push(repo: Path, tmp_path: Path, paths: str) -> subprocess.CompletedProcess:
     output = tmp_path / "github-output.txt"
     output.touch()
+    runner_temp = tmp_path / "runner-temp"
+    runner_temp.mkdir(exist_ok=True)
     return subprocess.run(
         ["bash", "-c", _push_with_retry_script()],
         cwd=repo,
@@ -569,6 +573,7 @@ def _run_push(repo: Path, tmp_path: Path, paths: str) -> subprocess.CompletedPro
             "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
             "HOME": str(tmp_path),
             "GITHUB_OUTPUT": str(output),
+            "RUNNER_TEMP": str(runner_temp),
             "INPUT_PATHS": paths,
             "INPUT_MESSAGE": "[data] test commit",
             "INPUT_ATTEMPTS": "3",
@@ -594,6 +599,43 @@ def test_absent_pathspec_does_not_kill_the_push(pushable_repo, tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert "MSFT.jsonl" in _git(pushable_repo, "show", "--stat", "origin/main")
+
+
+def test_a_landed_push_records_the_sha_main_holds(pushable_repo, tmp_path):
+    """J6 money review round 5, M-a: dispatch-session-integrity dispatches
+    only a sha the run recorded as landed, so the push must record it — and
+    only once main has taken it."""
+    (pushable_repo / "data" / "store" / "MSFT.jsonl").write_text('{"date": "x"}\n')
+
+    result = _run_push(pushable_repo, tmp_path, "data/store/")
+
+    assert result.returncode == 0, result.stderr
+    record = tmp_path / "runner-temp" / LANDED_FILENAME
+    assert record.read_text().strip() == _git(pushable_repo, "rev-parse", "origin/main").strip()
+
+
+def test_nothing_to_commit_records_nothing(pushable_repo, tmp_path):
+    result = _run_push(pushable_repo, tmp_path, "data/store/")
+
+    assert result.returncode == 0, result.stderr
+    assert not (tmp_path / "runner-temp" / LANDED_FILENAME).exists()
+
+
+def test_a_push_main_refuses_records_nothing(pushable_repo, tmp_path):
+    # The M-a shape through the action itself: every attempt is refused
+    # after a rebase onto another writer's commit. Nothing landed, so
+    # nothing is recorded for the dispatch to pick up.
+    remote = tmp_path / "remote.git"
+    hook = remote / "hooks" / "pre-receive"
+    hook.write_text("#!/bin/sh\necho 'GH006: refused' >&2\nexit 1\n")
+    hook.chmod(0o755)
+    (pushable_repo / "data" / "store" / "MSFT.jsonl").write_text('{"date": "x"}\n')
+
+    result = _run_push(pushable_repo, tmp_path, "data/store/")
+
+    assert result.returncode == 1
+    assert "lost with the runner" in result.stderr
+    assert not (tmp_path / "runner-temp" / LANDED_FILENAME).exists()
 
 
 def test_the_absent_path_is_the_only_thing_skipped(pushable_repo, tmp_path):
@@ -3838,12 +3880,60 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
             else:
                 assert before == "${{ github.sha }}", f"{name}: unexpected before {before!r}"
 
+    #: Push paths that record the sha main took (round 5, M-a). Each is
+    #: pinned by an executed test: push-with-retry here, _push_head in
+    #: test_check_triggers, _push_with_rebase_retry in test_refresh_leaderboard.
+    RECORDING_PUSH_PATHS = (
+        "./.github/actions/push-with-retry",
+        "scripts/check_triggers.py",
+        "scripts/refresh_leaderboard.py",
+    )
+
+    def test_every_recorded_writer_pushes_only_through_a_recording_path(self):
+        """The action dispatches only what the run recorded as landed, so a
+        writer in record mode that pushed main any other way would land a
+        commit nothing checks. Derived over the same writer list."""
+        checked = 0
+        for name in _main_writers():
+            steps = [s for job in _workflow_specs()[name]["jobs"].values() for s in job["steps"]]
+            dispatch = next(s for s in steps if s.get("uses") == DISPATCH_USES)
+            if "sha" in dispatch.get("with", {}):
+                continue  # explicit mode names its own sha (auto-merge-session)
+            for step in steps:
+                text = f"{step.get('run', '')}\n{step.get('uses', '')}"
+                markers = {m for m in _MAIN_PUSH_MARKERS if m in text}
+                if not markers:
+                    continue
+                checked += 1
+                assert markers <= set(self.RECORDING_PUSH_PATHS), (
+                    f"{name}: step {step.get('name')!r} pushes main through "
+                    f"{sorted(markers - set(self.RECORDING_PUSH_PATHS))}, which records nothing"
+                )
+        assert checked, "no recorded writer pushes main at all — the scan checks nothing"
+
     # --- the action itself, executed ---------------------------------------
 
     def _action(self) -> dict:
         return yaml.safe_load(DISPATCH_ACTION.read_text())
 
-    def _run(self, repo: Path, tmp_path: Path, before: str = "", gh_rc: int = 0, sha: str = ""):
+    def _run(
+        self,
+        repo: Path,
+        tmp_path: Path,
+        before: str = "",
+        gh_rc: int = 0,
+        sha: str = "",
+        landed: str | None = None,
+    ):
+        """Run the action's dispatch script. ``landed`` is what the writer's
+        push path recorded in `$RUNNER_TEMP/landed-on-main.sha` (None: the
+        run recorded nothing, because nothing it pushed reached main)."""
+        runner_temp = tmp_path / "runner-temp"
+        runner_temp.mkdir(exist_ok=True)
+        record = runner_temp / LANDED_FILENAME
+        record.unlink(missing_ok=True)
+        if landed is not None:
+            record.write_text(landed + "\n")
         bindir = tmp_path / "bin"
         bindir.mkdir(exist_ok=True)
         log = tmp_path / "gh.log"
@@ -3858,6 +3948,7 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
             **_git_env(tmp_path),
             "PATH": f"{bindir}:/usr/bin:/bin:/usr/local/bin",
             "GITHUB_OUTPUT": str(out),
+            "RUNNER_TEMP": str(runner_temp),
             "BEFORE": before,
             "SHA": sha,
             "REPO": "w2ur/midas",
@@ -3878,7 +3969,9 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
             tmp_path, [("chore: weekend refresh 2026-09-20", {"data/b.json": "{}"})],
             branch="w", landed_on_main=True,
         )
-        result, out, calls = self._run(repo, tmp_path, before=self._parent(repo, tmp_path))
+        result, out, calls = self._run(
+            repo, tmp_path, before=self._parent(repo, tmp_path), landed=tip
+        )
         assert result.returncode == 0, result.stderr
         assert out["result"] == "dispatched"
         assert calls.strip() == f"workflow run session-integrity.yml --repo w2ur/midas --ref main -f sha={tip}"
@@ -3912,9 +4005,61 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         before = subprocess.run(["git", "rev-parse", "HEAD~2"], cwd=repo, env=env,
                                 capture_output=True, text=True, check=True).stdout.strip()
         subprocess.run(["git", "push", "-q", "origin", f"{a}:main"], cwd=repo, env=env, check=True)
-        _, out, calls = self._run(repo, tmp_path, before=before)
+        # The watcher recorded A when its push landed; B's refusal wrote nothing.
+        _, out, calls = self._run(repo, tmp_path, before=before, landed=a)
         assert out["result"] == "dispatched"
         assert calls.strip().endswith(f"-f sha={a}")
+
+    def test_a_push_refused_after_a_rebase_dispatches_nothing(self, tmp_path):
+        """Regression: J6 money review round 5, M-a. The run committed C on
+        S (= before); another writer landed M' on main; the push was refused,
+        `pull --rebase` put C on top of M', and the retry was refused too.
+        HEAD's parent is now M' — on main and ahead of `before` — and the
+        action dispatched M', a commit this run never touched: its concerns
+        were re-filed, a human-closed issue re-opened, and the writer's own
+        "not dispatched" issue closed by a run that landed nothing. Only a sha
+        the run recorded as landed is dispatched now; it recorded none."""
+        repo, _tip = _fallback_branch_repo(
+            tmp_path, [("chore(triggers): execute C", {"data/c.json": "{}"})], branch="w",
+        )
+        before = self._parent(repo, tmp_path)
+        other = _advance_main(tmp_path, "chore: weekday session 2026-09-24", {"data/m.json": "{}"})
+        env = _git_env(tmp_path)
+        subprocess.run(["git", "pull", "-q", "--rebase", "origin", "main"], cwd=repo, env=env, check=True)
+        assert self._parent(repo, tmp_path) == other  # the M-a shape exactly
+        _, out, calls = self._run(repo, tmp_path, before=before)
+        assert out["result"] == "none", out
+        assert calls == ""
+
+    def test_the_same_rebase_with_a_landed_record_dispatches_that_record(self, tmp_path):
+        # Control for the one above: the rebased history is not what refuses
+        # the dispatch — the missing record is. With a record, it dispatches.
+        repo, _tip = _fallback_branch_repo(
+            tmp_path, [("chore(triggers): execute C", {"data/c.json": "{}"})], branch="w",
+        )
+        before = self._parent(repo, tmp_path)
+        _advance_main(tmp_path, "chore: weekday session 2026-09-24", {"data/m.json": "{}"})
+        env = _git_env(tmp_path)
+        subprocess.run(["git", "pull", "-q", "--rebase", "origin", "main"], cwd=repo, env=env, check=True)
+        subprocess.run(["git", "push", "-q", "origin", "HEAD:main"], cwd=repo, env=env, check=True)
+        head = _bare_main(tmp_path)
+        _, out, calls = self._run(repo, tmp_path, before=before, landed=head)
+        assert out["result"] == "dispatched"
+        assert calls.strip().endswith(f"-f sha={head}")
+
+    def test_a_recorded_sha_that_is_not_on_main_is_a_failure(self, tmp_path):
+        # A record the run cannot back up is a contradiction to report, not a
+        # commit to dispatch or to drop silently.
+        repo, tip = _fallback_branch_repo(tmp_path, [("x", {"data/b.json": "{}"})], branch="w")
+        _, out, calls = self._run(repo, tmp_path, before=self._parent(repo, tmp_path), landed=tip)
+        assert out["result"] == "failed" and calls == ""
+
+    def test_the_action_reads_the_file_the_push_paths_write(self):
+        run = next(
+            s for s in self._action()["runs"]["steps"] if s.get("id") == "dispatch"
+        )["run"]
+        assert f'"$RUNNER_TEMP/{LANDED_FILENAME}"' in run
+        assert f'"$RUNNER_TEMP/{LANDED_FILENAME}"' in _push_with_retry_script()
 
     # --- auto-merge-session: the exact sha a merge step pushed (M-1) -------
 
@@ -3973,7 +4118,9 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
             tmp_path, [("chore: weekend refresh 2026-09-20", {"data/b.json": "{}"})],
             branch="w", landed_on_main=True,
         )
-        _, out, calls = self._run(repo, tmp_path, before=self._parent(repo, tmp_path), gh_rc=1)
+        _, out, calls = self._run(
+            repo, tmp_path, before=self._parent(repo, tmp_path), gh_rc=1, landed=tip
+        )
         assert out["result"] == "failed" and out["sha"] == tip
         assert len(calls.strip().splitlines()) == 3
 

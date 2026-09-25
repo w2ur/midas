@@ -33,6 +33,7 @@ from scripts.daily_session import (
     step_fetch_market_data as _step_fetch_market_data,
     step_update_snapshots as _step_update_snapshots,
 )
+from scripts.landed_on_main import record_landed_on_main
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,10 @@ def _push_with_rebase_retry(max_attempts: int = 3) -> None:
     for attempt in range(1, max_attempts + 1):
         push = subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=_PROJECT_ROOT)
         if push.returncode == 0:
+            # What the workflow's session-integrity dispatch checks: the sha
+            # main took, never one inferred from history after a rebase onto
+            # another writer's commit (money review round 5, M-a).
+            record_landed_on_main(_PROJECT_ROOT)
             return
         if attempt == max_attempts:
             raise RuntimeError(

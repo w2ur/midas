@@ -14,17 +14,26 @@ description: >
 # 3, I-1; 4becbbe5d rewrote every baseline file). workflow_dispatch is exempt
 # from that rule, so the writer dispatches it with the sha it pushed.
 #
+# The commit under test is the one the run SAYS it landed: every push path
+# writes the sha main took to `$RUNNER_TEMP/landed-on-main.sha` right after
+# `git push … HEAD:main` succeeds (push-with-retry in shell,
+# scripts/landed_on_main.py for check_triggers and refresh_leaderboard). No
+# record, no dispatch: a run that committed nothing, or whose every commit
+# went to a `triggers/*` fallback branch (auto-merge-session dispatches when
+# it merges that), or whose push was refused. This used to be INFERRED — "the
+# newest commit on main ahead of `before`" — and that is wrong after a rebase
+# (money review round 5, M-a): a refused push, `pull --rebase` onto another
+# writer's commit M', a refused retry, and HEAD's parent M' was dispatched as
+# if this run had landed it. A multi-commit run (a watcher with several fires)
+# records, and dispatches, its last landed commit: the ledger checks read
+# state, so they cover the rest; append-only's HEAD^..HEAD window covers the
+# last only, and the watcher writes no append-only path.
+#
 # `before` is the sha HEAD held just before the writing step, recorded by a
 # step that is `if: always()` like this one: a writer that went red after its
-# fetch still pushes, and a skipped record step lost that commit (round 4, I-A). The commit
-# under test is the newest commit of this run that is on main — HEAD when
-# every push landed — and it is dispatched only when this run moved HEAD
-# AND landed something. A run that committed nothing, or whose every commit
-# went to a `triggers/*` fallback branch (auto-merge-session dispatches when
-# it merges that), dispatches nothing. A multi-commit run (a watcher with several
-# fires) dispatches its last commit: the ledger checks read state, so they
-# cover the rest; append-only's HEAD^..HEAD window covers the last only, and
-# the watcher writes no append-only path.
+# fetch still pushes, and a skipped record step lost that commit (round 4,
+# I-A). It is now a cross-check: a recorded sha must be on main and a
+# descendant of `before`, or the record contradicts the run and is reported.
 #
 # A dispatch that cannot be made — or a main that cannot be read — files an
 # issue under its own title and then fails the step. Put this step AFTER the
@@ -100,22 +109,23 @@ runs:
           echo "result=none" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        if ! git fetch -q --depth=50 origin main; then
-          echo "::error::Could not read origin/main to confirm what this run landed."
-          echo "sha=$head" >> "$GITHUB_OUTPUT"
-          echo "result=failed" >> "$GITHUB_OUTPUT"
+        # What this run's push paths recorded as landed (money review round
+        # 5, M-a). The last fill before a watcher fell back to a `triggers/*`
+        # branch is recorded too (round 4, M-2), so it is still checked.
+        record="$RUNNER_TEMP/landed-on-main.sha"
+        landed=$(tail -n 1 "$record" 2>/dev/null | tr -d '[:space:]' || true)
+        if [[ -z "$landed" ]]; then
+          echo "HEAD moved to $head but no push of this run reached main (nothing recorded in $record: a fallback branch, or a push that was refused) — nothing to dispatch; whatever merges it dispatches then."
+          echo "result=none" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        # The newest commit of this run that is on main: HEAD itself when
-        # every push landed, or the last fill before a watcher fell back to a
-        # `triggers/*` branch (round 4, M-2: fire A on main, fire B on the
-        # branch with A as its parent — A must still be checked). A result at
-        # or behind `before` means this run landed nothing on main.
-        landed=$(git merge-base "$head" FETCH_HEAD 2>/dev/null || true)
-        if [[ -z "$landed" || "$landed" == "$BEFORE" ]] \
+        echo "sha=$landed" >> "$GITHUB_OUTPUT"
+        if [[ ! "$landed" =~ ^[0-9a-f]{40}$ ]] || ! git fetch -q --depth=50 origin main \
+           || ! git merge-base --is-ancestor "$landed" FETCH_HEAD \
+           || [[ "$landed" == "$BEFORE" ]] \
            || ! git merge-base --is-ancestor "$BEFORE" "$landed"; then
-          echo "$head is not on main and this run landed nothing before it (a fallback branch, or a push that did not land) — nothing to dispatch; whatever merges it dispatches then."
-          echo "result=none" >> "$GITHUB_OUTPUT"
+          echo "::error::This run recorded '$landed' as landed, but it is not a commit on main that follows $BEFORE."
+          echo "result=failed" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         dispatch "$landed"
