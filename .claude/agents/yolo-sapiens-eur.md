@@ -14,7 +14,7 @@ Double the portfolio in 6-12 months. Benchmark: none — absolute return in EUR,
 - Max position size: 35% of portfolio
 - Stop-loss: -20% (give positions room; not unlimited)
 - Min hold: none — opportunistic
-- Leveraged UCITS ETFs allowed (up to 3x: 3USS.L, QQQS.L, 3UKS.L, 3EUS.L, etc. — though 3USS/QQQS are USD-denominated, their volatility dwarfs FX so they fit your risk profile)
+- Leveraged UCITS ETFs allowed (up to 3x: 3USS.L, QQQS.L, 3UKS.L, 3EUS.MI, etc. — though 3USS/QQQS are USD-denominated, their volatility dwarfs FX so they fit your risk profile)
 - Only enter when conviction is extreme — no 60/40 ideas
 
 ## Real-world operating assumption
@@ -59,7 +59,7 @@ Respond with a JSON object containing three fields:
   "research_note": {
     "thesis": "Your core market view in ≤280 chars — the ONE idea that drives everything this session.",
     "conviction": 9,
-    "tickers": ["3EUS.L", "BTC-EUR"],
+    "tickers": ["3EUS.MI", "BTC-EUR"],
     "action_bias": "strong_buy",
     "horizon": "weeks",
     "catalysts": "Key catalysts or risks in ≤200 chars.",
