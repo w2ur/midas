@@ -232,13 +232,26 @@ def test_the_sgln_mi_missed_days_are_what_the_store_shows() -> None:
     assert sum(d < claim["thinned"] for d in missed) == int(claim["before"])
 
 
+#: The `[data]` commit that recorded the accepted pre-day-one gaps. Pinned
+#: rather than read live (follow-up review r8 M2, r9 M2): a later full run can
+#: close out a departed symbol's entry, and the prose describes this commit.
+ACCEPT_COMMIT = "dc26dffdd"
+
+
+@pytest.mark.skipif(_is_shallow(), reason="shallow clone has no history to derive from")
 def test_the_accepted_pre_day_one_count_is_the_ledgers() -> None:
-    """Follow-up review r8 (r4 I1): the days found by reading null rows."""
+    """Follow-up review r8 (r4 I1): the days found by reading null rows, as
+    the ledger held them at `ACCEPT_COMMIT`."""
     import json
 
     claim = re.search(r"(?P<n>\d+) of them are recorded in `data/market/store_gaps.json` as accepted", _entry())
     assert claim, "the entry must state how many were accepted"
-    ledger = json.loads((REPO_ROOT / "data" / "market" / "store_gaps.json").read_text(encoding="utf-8"))
+    ledger = json.loads(
+        subprocess.run(
+            ["git", "show", f"{ACCEPT_COMMIT}:data/market/store_gaps.json"],
+            cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+        ).stdout
+    )
     found = [
         (s, d) for s, gaps in ledger.items() for d, e in gaps.items()
         if isinstance(e, dict) and "follow-up review r8" in e.get("reason", "")
@@ -246,3 +259,16 @@ def test_the_accepted_pre_day_one_count_is_the_ledgers() -> None:
     assert found, "the derivation found nothing — it checks nothing"
     assert len(found) == int(claim["n"])
     assert all(d < "2026-04-17" for _, d in found), "the entry says they are all before day one"
+
+    # Follow-up review r8: "found the same way" overstated four of them.
+    # Proven trading days are the entries whose reason cites the hourly bars
+    # showing trading; the rest had no hourly bars at all.
+    words = {"four": 4, "thirty-eight": 38}
+    split = re.search(r"(?P<proven>[\w-]+) were shown to be trading days by their hourly bars; "
+                      r"the other (?P<unproven>\w+), `VEND\.OL`", _entry())
+    assert split, "the entry must say how many were proven trading days"
+    reasons = [ledger[s][d]["reason"] for s, d in found]
+    proven = sum("1h bars show trading" in r for r in reasons)
+    assert words[split["proven"].lower()] == proven
+    assert words[split["unproven"].lower()] == len(found) - proven
+    assert {s for s, d in found if "1h bars show trading" not in ledger[s][d]["reason"]} == {"VEND.OL"}

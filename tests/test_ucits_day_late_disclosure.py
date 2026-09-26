@@ -80,13 +80,6 @@ def test_every_named_fund_is_a_ucits_universe_member() -> None:
     assert _named() <= ucits
 
 
-def _dates_now(symbol: str) -> list[str]:
-    path = REPO_ROOT / "data" / "market" / "ohlcv" / f"{symbol}.jsonl"
-    if not path.exists():
-        return []
-    return sorted(json.loads(l)["date"] for l in path.read_text(encoding="utf-8").splitlines() if l.strip())
-
-
 def _day_late(dates_of) -> set[str]:
     reference = [dates_of(s) for s in REFERENCE]
     assert all(reference), "a reference symbol is missing from the store"
@@ -96,11 +89,21 @@ def _day_late(dates_of) -> set[str]:
     return {s for s in ucits if (dates := dates_of(s)) and dates[-1] == previous}
 
 
-def test_the_named_set_is_what_the_current_store_shows_one_day_behind() -> None:
-    """Derived from the CURRENT universes and store (follow-up review r8,
-    r6 N-M2): pinned to the entry's commit, the test could not see 3EUS.MI,
-    which joined `bearish-etfs-ucits` a day later and is day-late too."""
-    day_late = _day_late(_dates_now)
+#: The data commit the named set is held to: the store as it stood when
+#: 3EUS.MI was added to the entry. Pinned rather than read live (follow-up
+#: review r8 M1, r9 M2): the nightly fetch rewrites the store, so after any
+#: US-only holiday the reference symbols disagree about "the previous
+#: trading day" and a live derivation goes red with nothing wrong in the prose.
+DATA_COMMIT = "dc26dffdd"
+
+
+@pytest.mark.skipif(_is_shallow(), reason="shallow clone has no history to derive from")
+def test_the_named_set_is_what_the_store_showed_one_day_behind_at_the_data_commit() -> None:
+    """Derived from the current universes and the store at `DATA_COMMIT`
+    (follow-up review r8, r6 N-M2): pinned to the entry's first commit, the
+    test could not see 3EUS.MI, which joined `bearish-etfs-ucits` a day later
+    and is day-late too."""
+    day_late = _day_late(lambda s: _dates_at(DATA_COMMIT, s))
     assert day_late, "the derivation found no day-late fund — it checks nothing"
     assert _named() == day_late
 
