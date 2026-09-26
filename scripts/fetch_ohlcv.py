@@ -53,6 +53,7 @@ from engine.store_gaps import (
     Verdict,
     accepted_entry,
     bucket_traded,
+    intraday_traded,
     is_accepted,
     lookback_start,
     parse_ledger,
@@ -389,10 +390,19 @@ def _fetch_symbol(
             auto_adjust=False,  # keep raw Close + Adj Close separately
             progress=False,
             threads=False,
+            # yfinance drops a row whose prices and volume are all NaN/0 by
+            # default. That is how the vendor serves a real trading day it has
+            # no price for (all 24 `.CO` files on 2026-03-23, a full session on
+            # the 1h bars), and dropped, it read as a holiday everywhere:
+            # "closed" to the store-gap probe and invisible to the nightly hole
+            # check (follow-up review r8, r4 I1). Kept, then filtered below.
+            keepna=True,
         )
     except Exception as exc:
         print(f"  ! {symbol}: download error — {exc}", file=sys.stderr)
         return None
+    if df is not None and not df.empty:
+        df = _drop_uninformative_null_rows(symbol, flatten_columns(df))
     if df is None or df.empty:
         # Silent until 2026-08-07 (W2.5). An empty frame is how a delisting, a
         # renamed symbol and a vendor-side outage all present, and they are
@@ -402,6 +412,85 @@ def _fetch_symbol(
         print(f"  ! {symbol}: vendor returned no rows", file=sys.stderr)
         return None
     return _normalise_vendor_units(symbol, flatten_columns(df), vendor_unit=vendor_unit)
+
+
+def _is_null_row(close: object, volume: object) -> bool:
+    """The vendor's null row: no close and no volume."""
+    return bool(pd.isna(close)) and (bool(pd.isna(volume)) or volume == 0)
+
+
+def _drop_uninformative_null_rows(symbol: str, df: pd.DataFrame) -> pd.DataFrame:
+    """Drop the null rows that carry no signal, as yfinance's default did.
+
+    A null row is kept only for a cash listing whose frame carries volume: there
+    it is the vendor's presentation of a day it has no price for, and it is
+    either a hole or a holiday, which the 1h bars settle
+    (`_fetch_intraday_volume`). It is dropped, and reads as no daily bar at all,
+    for:
+
+    - futures (`=F`): a daily bar is a settlement convention. On Juneteenth
+      2025, CME traded (GC=F's 1h volume at 0.90 of its median) while NYSE was
+      shut, and the vendor served the futures a null daily row. Keeping it
+      would hold every CME-open US holiday red.
+    - FX (`=X`), indices (`^`), and any frame with no positive volume anywhere
+      (DX-Y.NYB): their volume is always zero, so neither the row nor the 1h
+      bars can tell 12-25 from a trading day, and the null row there is a
+      holiday as often as not (FX 12-25 and 01-01, ^VIX 07-04).
+    """
+    if "Close" not in df.columns or "Volume" not in df.columns:
+        return df
+    null = [_is_null_row(c, v) for c, v in zip(df["Close"], df["Volume"])]
+    if not any(null):
+        return df
+    informative = (
+        not symbol.endswith(("=F", "=X"))
+        and not symbol.startswith("^")
+        and bool((df["Volume"].fillna(0) > 0).any())
+    )
+    if informative:
+        return df
+    return df[[not n for n in null]]
+
+
+def _fetch_intraday_volume(symbol: str, end: date) -> dict[str, float] | None:
+    """date -> the vendor's 1h volume for ``symbol``, or None if unavailable.
+
+    One request over the vendor's whole 1h horizon (730 days back). It settles
+    a daily null row (`engine.store_gaps.intraday_traded`); a failure here
+    leaves the day undecided, which holds it, and is never read as a holiday.
+    """
+    try:
+        df = yf.download(
+            symbol,
+            # The vendor's 1h horizon counts back from NOW, not from `end`:
+            # asked from `end` - 729 days it refused the whole request ("must
+            # be within the last 730 days") for every symbol on 2026-09-26.
+            start=str(date.today() - timedelta(days=INTRADAY_HORIZON_DAYS)),
+            end=str(end + timedelta(days=1)),
+            interval="1h",
+            auto_adjust=False,
+            progress=False,
+            threads=False,
+        )
+    except Exception as exc:
+        print(f"  ! {symbol}: 1h download error — {exc}", file=sys.stderr)
+        return None
+    if df is None or df.empty:
+        return None
+    df = flatten_columns(df)
+    if "Volume" not in df.columns:
+        return None
+    volume = df["Volume"].fillna(0)
+    by_day: dict[str, float] = {}
+    for ts, v in volume.items():
+        key = ts.date().isoformat()
+        by_day[key] = by_day.get(key, 0.0) + float(v)
+    return by_day
+
+
+#: The vendor serves 1h bars for the last 730 days, counted from today. Five
+#: days of margin: 730 exactly was refused at the boundary (time zones).
+INTRADAY_HORIZON_DAYS = 725
 
 
 #: Price columns yfinance serves in the vendor's quote unit. `Volume` is a
@@ -800,11 +889,20 @@ class StoreGapReport(NamedTuple):
     ledger_readable: bool
 
 
-def _served_closes(df: pd.DataFrame | None) -> dict[str, bool] | None:
-    """date -> whether the vendor served a close for it, for `verdict`."""
+def _served_closes(df: pd.DataFrame | None) -> dict[str, bool | None] | None:
+    """date -> True (a close), False (no close, some volume), None (a null row).
+
+    See `engine.store_gaps.verdict`.
+    """
     if df is None or "Close" not in df.columns:
         return None
-    return {ts.date().isoformat(): bool(pd.notna(close)) for ts, close in df["Close"].items()}
+    volume = df["Volume"] if "Volume" in df.columns else pd.Series(0, index=df.index)
+    return {
+        ts.date().isoformat(): (
+            True if pd.notna(close) else (None if _is_null_row(close, vol) else False)
+        )
+        for ts, close, vol in zip(df.index, df["Close"], volume)
+    }
 
 
 def _heal_store_gaps(
@@ -897,7 +995,21 @@ def _heal_store_gaps(
     frames: dict[str, pd.DataFrame | None] = {}
     served: dict[str, dict[str, bool] | None] = {}
 
-    def serve(symbol: str) -> dict[str, bool] | None:
+    intraday: dict[str, dict[str, float] | None] = {}
+
+    def judge(symbol: str, d: str) -> Verdict:
+        """`verdict`, with a null row settled by the symbol's own 1h bars."""
+        v = verdict(serve(symbol), d)
+        if v is not Verdict.UNDECIDED:
+            return v
+        if symbol not in intraday:
+            intraday[symbol] = _fetch_intraday_volume(symbol, end)
+        traded = intraday_traded(intraday[symbol], d)
+        if traded is None:
+            return Verdict.UNFETCHED
+        return Verdict.NO_CLOSE if traded else Verdict.NOT_TRADED
+
+    def serve(symbol: str) -> dict[str, bool | None] | None:
         if symbol not in frames:
             oldest = date.fromisoformat(min(asked[symbol]))
             window_start = oldest - timedelta(days=HEAL_WINDOW_DAYS)
@@ -909,7 +1021,7 @@ def _heal_store_gaps(
     # members are asked first; a closed day is one their series runs across.
     closed: list[str] = []
     for (bucket, d), lacking in bucket_candidates.items():
-        traded = bucket_traded([verdict(serve(s), d) for s in lacking[:PROBE_SIZE]])
+        traded = bucket_traded([judge(s, d) for s in lacking[:PROBE_SIZE]])
         if traded is False:
             closed.append(f"{bucket or 'US'} {d}")
             continue
@@ -927,7 +1039,7 @@ def _heal_store_gaps(
     # appends those after the existing lines, which it rewrites verbatim.
     no_revision = (end + timedelta(days=1)).isoformat()
     for symbol in sorted(candidates):
-        verdicts = {d: verdict(serve(symbol), d) for d in sorted(candidates[symbol])}
+        verdicts = {d: judge(symbol, d) for d in sorted(candidates[symbol])}
         for d, v in verdicts.items():
             if v in OPEN_VERDICTS:
                 open_gaps.setdefault(symbol, {})[d] = v.value
