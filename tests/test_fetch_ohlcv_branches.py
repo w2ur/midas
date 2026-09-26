@@ -1839,6 +1839,35 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
         assert self._run(monkeypatch, series) == fo.EXIT_STORE_GAP
         assert self._ledger() == {"EU0.DE": {missing: "no-close"}}
 
+    def test_a_failed_holiday_probe_does_not_fan_out(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Regression: follow-up review r8 (r4 M1). When every probe of a
+        # bucket-wide candidate failed, each lacking member got its own wide
+        # refetch: 579 requests for US Labor Day, 719 `unfetched` entries
+        # with every fetch failing, inside a job whose cancellation files no
+        # issue. The candidate is held on its probes alone, and stays red.
+        dates = _weekdays_to_end(4)
+        holiday = dates[1]
+        self._seed(self.US, dates, holiday)
+        series = {s: {d: _ROW for d in dates if not (s in self.US and d == holiday)} for s in self.US + self.DE}
+        narrow = _gap_vendor(series, {})
+        wide_calls: list[str] = []
+
+        def vendor(symbol, start, end, *, vendor_unit=None):
+            if (end - start).days >= 30:
+                wide_calls.append(symbol)
+                if symbol in self.US:
+                    return None  # the vendor is down for the probe window
+            return narrow(symbol, start, end)
+
+        monkeypatch.setattr(fo, "_fetch_symbol", vendor)
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+        assert _run_main(monkeypatch, ["--symbols", ",".join(self.US + self.DE)]) == fo.EXIT_STORE_GAP
+        assert len(wide_calls) <= fo.PROBE_SIZE
+        assert 0 < len(self._ledger()) <= fo.PROBE_SIZE
+        assert all(g == {holiday: "unfetched"} for g in self._ledger().values())
+
     def test_a_bank_holiday_the_vendor_confirms_stays_green(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -1876,7 +1905,9 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
         monkeypatch.setattr(fo, "_fetch_symbol", vendor)
         monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
         assert _run_main(monkeypatch, ["--symbols", ",".join(self.US + self.DE)]) == fo.EXIT_STORE_GAP
-        assert self._ledger() == {s: {missing: "unfetched"} for s in self.DE}
+        # Held on its probes alone (r8, r4 M1), not fanned out to every member.
+        assert 0 < len(self._ledger()) <= fo.PROBE_SIZE
+        assert all(g == {missing: "unfetched"} for g in self._ledger().values())
 
     def test_a_thin_name_that_did_not_trade_stays_green(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch

@@ -1035,10 +1035,23 @@ def _heal_store_gaps(
     # A date the bucket lacks wholesale: a holiday or a hole. The best-covered
     # members are asked first; a closed day is one their series runs across.
     closed: list[str] = []
+    undecided: list[str] = []
     for (bucket, d), lacking in bucket_candidates.items():
-        traded = bucket_traded([judge(s, d) for s in lacking[:PROBE_SIZE]])
+        probes = lacking[:PROBE_SIZE]
+        traded = bucket_traded([judge(s, d) for s in probes])
         if traded is False:
             closed.append(f"{bucket or 'US'} {d}")
+            continue
+        if traded is None:
+            # No probe could be asked: the vendor is unavailable, which says
+            # nothing about the date. It is held, on the probes alone, rather
+            # than fanned out to every lacking member: that was 579 wide
+            # requests for US Labor Day and 719 `unfetched` entries with the
+            # vendor down, inside a job whose cancellation files no issue
+            # (follow-up review r8, r4 M1). The next night re-probes.
+            undecided.append(f"{bucket or 'US'} {d}")
+            for symbol in probes:
+                candidates.setdefault(symbol, set()).add(d)
             continue
         for symbol in lacking:
             candidates.setdefault(symbol, set()).add(d)
@@ -1123,6 +1136,7 @@ def _heal_store_gaps(
         + (f"; {quarantined} refused by the ingest tripwire, held" if quarantined else "")
         + (f"; {len(accepted)} accepted as unfillable, green" if accepted else "")
         + (f"; closed: {', '.join(closed)}" if closed else "")
+        + (f"; undecided (probe failed, held): {', '.join(undecided)}" if undecided else "")
         + "."
     )
     if open_gaps:
