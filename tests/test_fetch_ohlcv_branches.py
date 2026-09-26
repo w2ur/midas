@@ -1708,8 +1708,8 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_refetched_row_the_tripwire_refuses_is_held_for_a_human(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # The BYND shape: the store's 08-12 is on the pre-split basis and the
-        # vendor serves 08-13 on the post-split one. The refetch is insert-only;
+        # Regression: 913a114a3 — the BYND shape: the store's 08-12 is on the
+        # pre-split basis and the vendor serves 08-13 on the post-split one. The refetch is insert-only;
         # it must not hand the refusal to the adjudication pass, whose
         # explained branch re-merges two years of history with the tripwire off.
         dates = _weekdays_to_end(4)

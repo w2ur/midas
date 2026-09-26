@@ -1064,13 +1064,14 @@ def test_merge_rows_reports_holes_it_did_not_fill(tmp_path) -> None:
 
 
 class TestAnInteriorNewRowIsCheckedAgainstItsOwnPredecessor:
-    """The store-gap refetch (follow-up review r6, I1) inserts a missing date
-    INSIDE the stored series. The new-row tripwire compared it with the
-    store's newest close: GBF.DE 2026-09-07, served at 81.65 between 82.50
-    (09-04) and 81.55 (09-08), was refused at x1.472 against 09-25's 55.45 —
-    a real ~30% fall that happened after the date being filled. The reference
-    for a new row is the latest stored close BEFORE its own date; for the
-    nightly append that is the same close as before."""
+    """Regression: 58e9ed240 — the store-gap refetch (follow-up review r6, I1)
+    inserts a missing date INSIDE the stored series. The new-row tripwire
+    compared it with the store's newest close: GBF.DE 2026-09-07, served at
+    81.65 between 82.50 (09-04) and 81.55 (09-08), was refused at x1.472
+    against 09-25's 55.45 — a real ~30% fall that happened after the date
+    being filled. The reference for a new row is the latest stored close
+    BEFORE its own date; for the nightly append that is the same close as
+    before."""
 
     def test_an_interior_insert_consistent_with_its_neighbours_lands(self, tmp_path):
         from engine.ohlcv_ingest import merge_rows
