@@ -1287,7 +1287,7 @@ class TestVendorWideHole:
     outage exit (committable, red, issue filed)."""
 
     def _run(self, monkeypatch, covered: list[str], holed: int, capsys=None) -> int:
-        _cover(covered)
+        _cover(covered, on=(_fetch_end() - timedelta(days=1)).isoformat())
         d = _fetch_end().isoformat()
         nan = float("nan")
         frames = {
@@ -1370,7 +1370,7 @@ class TestExchangeWideHole:
 
     def _run(self, monkeypatch, us: int, exchange: str, listed: int, holed: int) -> int:
         covered = [f"US{i}" for i in range(us)] + [f"EU{i}{exchange}" for i in range(listed)]
-        _cover(covered)
+        _cover(covered, on=(_fetch_end() - timedelta(days=1)).isoformat())
         d = _fetch_end().isoformat()
         nan = float("nan")
         eu_holed = {f"EU{i}{exchange}" for i in range(holed)}
@@ -1460,7 +1460,7 @@ class TestExchangeWideHole:
 
     def _run_empty(self, monkeypatch, us: int, exchange: str, listed: int, dark: int) -> int:
         covered = [f"US{i}" for i in range(us)] + [f"EU{i}{exchange}" for i in range(listed)]
-        _cover(covered)
+        _cover(covered, on=(_fetch_end() - timedelta(days=1)).isoformat())
         d = _fetch_end().isoformat()
         dark_set = {f"EU{i}{exchange}" for i in range(dark)}
         frames = {s: {d: [1, 2, 0.5, 1.5, 1.5, 100]} for s in covered if s not in dark_set}
@@ -1733,6 +1733,68 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
         assert self._run(monkeypatch, series) == fo.EXIT_STORE_GAP
         assert missing not in fo._existing_dates(get_config().ohlcv_dir / "EU0.DE.jsonl")
         assert len(quarantine.read_text().splitlines()) == 1
+
+    # --- follow-up review r7, I-1: the reference can share the hole ---
+
+    def test_a_us_hole_that_takes_spy_with_it_is_held_red(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Regression: the whole US bucket, SPY included, lacks D and the
+        # vendor still serves it without a close. SPY lacking D used to read
+        # as a holiday before any vendor probe: exit 0, "Recovered".
+        dates = _weekdays_to_end(4)
+        missing = dates[1]
+        self._seed(self.US, dates, missing)
+        series = {s: {d: _ROW for d in dates} for s in self.US + self.DE}
+        for sym in self.US:
+            series[sym][missing] = _NAN_ROW
+
+        assert self._run(monkeypatch, series) == fo.EXIT_STORE_GAP
+        assert self._ledger() == {s: {missing: "no-close"} for s in self.US}
+
+    def test_a_us_hole_that_takes_spy_with_it_is_refilled(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        dates = _weekdays_to_end(4)
+        missing = dates[1]
+        self._seed(self.US, dates, missing)
+        series = {s: {d: _ROW for d in dates} for s in self.US + self.DE}
+
+        assert self._run(monkeypatch, series, wide_only={s: {missing} for s in self.US}) == 0
+        assert all(
+            missing in fo._existing_dates(get_config().ohlcv_dir / f"{s}.jsonl")
+            for s in self.US
+        )
+
+    def test_a_pan_equity_hole_is_held_red(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # No equity bucket holds D, so no bucket can vouch for it.
+        dates = _weekdays_to_end(4)
+        missing = dates[1]
+        self._seed(self.US + self.DE, dates, missing)
+        series = {s: {d: _ROW for d in dates} for s in self.US + self.DE}
+        for sym in self.US + self.DE:
+            series[sym][missing] = _NAN_ROW
+
+        assert self._run(monkeypatch, series) == fo.EXIT_STORE_GAP
+        assert set(self._ledger()) == set(self.US + self.DE)
+
+    def test_a_us_holiday_the_vendor_confirms_stays_green(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # The control: Labor Day. The store lacks it everywhere in the US,
+        # SPY included, and the vendor's own series runs across it.
+        dates = _weekdays_to_end(4)
+        holiday = dates[1]
+        before = self._seed(self.US, dates, holiday)
+        series = {s: {d: _ROW for d in dates} for s in self.US + self.DE}
+        for sym in self.US:
+            del series[sym][holiday]
+
+        assert self._run(monkeypatch, series) == 0
+        assert self._ledger() == {}
+        assert (get_config().ohlcv_dir / "SPY.jsonl").read_bytes() == before["SPY"]
 
     def test_a_bank_holiday_the_vendor_confirms_stays_green(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
