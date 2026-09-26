@@ -279,7 +279,9 @@ jobs:
             - A store gap: the log says `store gap` and names the trading days
               the stored series still skips after the run refetched them over
               a wide window. They are held in `data/market/store_gaps.json`,
-              and this issue stays open until the store holds each one.
+              and this issue stays open until the store holds each one. A date
+              that cannot be filled insert-only is accepted by a human:
+              `scripts/fetch_ohlcv.py --accept-gap SYMBOL:DATE --reason "..."`.
             - A push that lost a race with another scheduled writer.
             - `scripts/fetch_ohlcv.py --dry-run` locally to confirm symbol
               resolution still works.
