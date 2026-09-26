@@ -926,6 +926,15 @@ def _heal_store_gaps(scope: set[str], end: date, crypto: frozenset[str]) -> Stor
         for d, v in verdicts.items():
             if v in OPEN_VERDICTS:
                 open_gaps.setdefault(symbol, {})[d] = v.value
+            elif (
+                v is Verdict.NOT_TRADED
+                and held.get(symbol, {}).get(d) == Verdict.NO_CLOSE.value
+            ):
+                # The vendor already served this date as a trading day (with
+                # no close). A later series that omits it is the request-shape
+                # inconsistency in the other direction, not a holiday: the
+                # gap stays held (follow-up review r7; r2 M-1, r3 M1).
+                open_gaps.setdefault(symbol, {})[d] = Verdict.NO_CLOSE.value
             elif v is Verdict.NOT_TRADED:
                 not_traded += 1
         fill = {d for d, v in verdicts.items() if v is Verdict.FILLED}

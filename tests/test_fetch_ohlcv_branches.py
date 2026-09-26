@@ -1796,6 +1796,24 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
         assert self._ledger() == {}
         assert (get_config().ohlcv_dir / "SPY.jsonl").read_bytes() == before["SPY"]
 
+    def test_a_held_no_close_gap_is_not_dropped_by_a_later_not_traded(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Regression: follow-up review r7 (r2 M-1, r3 M1). The ledger holds
+        # `no-close`: the vendor once served the date as a trading day. A
+        # later wide refetch that simply omits the row is the request-shape
+        # inconsistency in the other direction, not evidence of a holiday.
+        dates = _weekdays_to_end(4)
+        missing = dates[1]
+        self._seed(["EU0.DE"], dates, missing)
+        ledger = get_config().data_dir / "data" / "market" / "store_gaps.json"
+        ledger.write_text(json.dumps({"EU0.DE": {missing: "no-close"}}) + "\n")
+        series = {s: {d: _ROW for d in dates} for s in self.US + self.DE}
+        del series["EU0.DE"][missing]
+
+        assert self._run(monkeypatch, series) == fo.EXIT_STORE_GAP
+        assert self._ledger() == {"EU0.DE": {missing: "no-close"}}
+
     def test_a_bank_holiday_the_vendor_confirms_stays_green(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
