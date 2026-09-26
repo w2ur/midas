@@ -100,7 +100,9 @@ jobs:
       # Same exit-code contract as fetch-ohlcv.yml — this runs the same script,
       # so it inherits the same deliberate refusals. It matters more here: the
       # held set is ~39 tickers and all of them are store-covered, so four
-      # vendor misses is already 10.3% and trips the failure-rate exit.
+      # vendor misses is already 10.3% and trips the failure-rate exit. (4, a
+      # store gap, is listed for the shared constant: a resweep never scans
+      # for one, so it cannot exit 4.)
       - name: Resweep held tickers (split detection)
         id: fetch
         run: |
@@ -109,8 +111,8 @@ jobs:
           rc=$?
           set -e
           case "$rc" in
-            0|2|3) echo "committable=true"  >> "$GITHUB_OUTPUT" ;;
-            *)     echo "committable=false" >> "$GITHUB_OUTPUT" ;;
+            0|2|3|4) echo "committable=true"  >> "$GITHUB_OUTPUT" ;;
+            *)       echo "committable=false" >> "$GITHUB_OUTPUT" ;;
           esac
           exit "$rc"
 

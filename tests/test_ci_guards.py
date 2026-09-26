@@ -1475,6 +1475,44 @@ class TestAdjudicationLedgerIsCommitted:
         )
 
 
+class TestStoreGapLedgerIsCommitted:
+    """The store-gap ledger must leave the runner (follow-up review r6, I1).
+
+    `fetch_ohlcv.py` exits 4 while `data/market/store_gaps.json` holds a
+    trading day the stored series skips, and that exit is what keeps the
+    failure issue open. A ledger that died with the runner would be empty
+    again the next night: a held gap older than the 30-trading-day scan would
+    vanish, the run would go green, and `failure-issue` would close the issue
+    as "Recovered" on a store that still lacks the date — the defect itself.
+    """
+
+    LEDGER = "data/market/store_gaps.json"
+
+    def test_the_nightly_fetch_stages_the_ledger(self):
+        spec = yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / "fetch-ohlcv.yml").read_text(
+                encoding="utf-8"
+            )
+        )
+        steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+        paths = " ".join(
+            str(s["with"]["paths"])
+            for s in steps
+            if str(s.get("uses", "")).endswith("actions/push-with-retry")
+        )
+        assert self.LEDGER in paths.split(), (
+            f"fetch-ohlcv.yml does not stage {self.LEDGER}; a held store gap "
+            "would be forgotten and the next green run would close its issue"
+        )
+
+    def test_the_script_writes_the_path_the_workflow_stages(self):
+        from engine.config import get_config
+        from scripts.fetch_ohlcv import _store_gaps_path
+
+        rel = _store_gaps_path().relative_to(get_config().data_dir)
+        assert rel.as_posix() == self.LEDGER
+
+
 class TestCryptoWatcherIsDispatchOnly:
     """The hourly crypto cron must stay retired (2026-08-18).
 

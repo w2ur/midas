@@ -187,7 +187,8 @@ jobs:
           fi
           # Capture the exit code rather than letting `set -e` end the step, so
           # the commit gate below can distinguish the script's DELIBERATE
-          # refusals (2 = a row quarantined, 3 = a vendor outage; both mean
+          # refusals (2 = a row quarantined, 3 = a vendor outage, 4 = the
+          # stored series still skips a trading day after a refetch; all mean
           # "commit what arrived, then go red") from an unhandled traceback,
           # which exits 1 partway through the loop. Committing a crashed run's
           # half-written store would publish one immutable snapshot per book at
@@ -197,8 +198,8 @@ jobs:
           rc=$?
           set -e
           case "$rc" in
-            0|2|3) echo "committable=true"  >> "$GITHUB_OUTPUT" ;;
-            *)     echo "committable=false" >> "$GITHUB_OUTPUT" ;;
+            0|2|3|4) echo "committable=true"  >> "$GITHUB_OUTPUT" ;;
+            *)       echo "committable=false" >> "$GITHUB_OUTPUT" ;;
           esac
           exit "$rc"
 
@@ -238,11 +239,18 @@ jobs:
       # added to a universe never acquired an entry, and since the layer-3
       # heuristic now returns None for an unenumerated suffix, the agent's
       # order died at the broker with CURRENCY_UNRESOLVED.
+      #
+      # data/market/store_gaps.json holds the trading days the stored series
+      # still skips after the script refetched them (exit 4). It is what keeps
+      # this job red, and so the failure issue open, until the store holds
+      # each date: without it a gap ages out of the script's lookback and the
+      # next green run closes the issue as "Recovered" on a store that still
+      # lacks the day (follow-up money review r6, I1).
       - name: Commit and push updates
         if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' }}
         uses: ./.github/actions/push-with-retry
         with:
-          paths: data/market/ohlcv/ data/market/quarantine/ data/market/corporate_actions.jsonl data/portfolios/ data/tickers.json
+          paths: data/market/ohlcv/ data/market/quarantine/ data/market/corporate_actions.jsonl data/market/store_gaps.json data/portfolios/ data/tickers.json
           message: "[data] ${{ steps.today.outputs.date }} OHLCV update"
 
       - name: Report outcome
@@ -268,6 +276,10 @@ jobs:
             - A vendor-wide hole: the log says `vendor-wide hole` and names the
               date most symbols came back without a close. Re-run with
               `--resweep` over a longer window before the 20:00 session.
+            - A store gap: the log says `store gap` and names the trading days
+              the stored series still skips after the run refetched them over
+              a wide window. They are held in `data/market/store_gaps.json`,
+              and this issue stays open until the store holds each one.
             - A push that lost a race with another scheduled writer.
             - `scripts/fetch_ohlcv.py --dry-run` locally to confirm symbol
               resolution still works.
