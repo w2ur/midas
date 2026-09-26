@@ -1739,7 +1739,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_us_hole_that_takes_spy_with_it_is_held_red(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Regression: the whole US bucket, SPY included, lacks D and the
+        # Regression: 82adee88d — the whole US bucket, SPY included, lacks D and the
         # vendor still serves it without a close. SPY lacking D used to read
         # as a holiday before any vendor probe: exit 0, "Recovered".
         dates = _weekdays_to_end(4)
@@ -1799,7 +1799,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_held_no_close_gap_is_not_dropped_by_a_later_not_traded(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Regression: follow-up review r7 (r2 M-1, r3 M1). The ledger holds
+        # Regression: 294f9725c — follow-up review r7 (r2 M-1, r3 M1). The ledger holds
         # `no-close`: the vendor once served the date as a trading day. A
         # later wide refetch that simply omits the row is the request-shape
         # inconsistency in the other direction, not evidence of a holiday.
@@ -1908,7 +1908,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_full_run_closes_out_the_gaps_of_a_symbol_that_left_the_universe(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
-        # Regression: follow-up review r7 (r2 M-2). An entry for a symbol no
+        # Regression: 196ab0db7 — follow-up review r7 (r2 M-2). An entry for a symbol no
         # run fetches any more (3EUS.L after the swap) was kept forever and
         # never made anything red: an open gap parked in silence. A
         # full-universe run is the one that knows the symbol has left, so it

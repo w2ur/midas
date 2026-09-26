@@ -132,7 +132,7 @@ class TestBucketCandidates:
         assert set(scan.bucket_candidates[("", "2026-09-22")]) == {f"US{i}" for i in range(5)}
 
     def test_a_us_date_spy_also_lacks_is_undecided_not_a_holiday(self) -> None:
-        # Regression: follow-up review r7, I-1. A US holiday (Labor Day) and a
+        # Regression: 82adee88d — follow-up review r7, I-1. A US holiday (Labor Day) and a
         # vendor hole that took SPY with it (09-22, had SPY not come back on
         # its own) are the same input here. SPY lacking the date used to mean
         # "closed", before any vendor probe; now it is a candidate, and the
@@ -155,7 +155,7 @@ class TestBucketCandidates:
         assert set(scan.bucket_candidates) == {(".L", "2026-09-17")}
 
     def test_a_date_no_other_equity_bucket_traded_is_still_undecided(self) -> None:
-        # Regression: follow-up review r7, I-1. A hole across every equity
+        # Regression: 82adee88d — follow-up review r7, I-1. A hole across every equity
         # bucket, or a European hole on a US holiday that also hits `.L`, left
         # no bucket holding the date, and it read as a holiday. A weekday a
         # non-calendar bucket lacks wholesale is undecided: both buckets go to
