@@ -1602,13 +1602,13 @@ def _gap_vendor(series: dict[str, dict[str, list]], wide_only: dict[str, set[str
 
 
 class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
-    """Regression: follow-up money review r6, I1. On night N the vendor served
-    `.DE` with no close for D and the run went red; on night N+1 the store's
-    last date was D-1, the one-day revision window asked for D-1..D+1, the
-    vendor answered that short window with NO row for D, D+1 was appended, the
-    run exited 0, and `failure-issue` closed the issue as "Recovered". D stayed
-    missing for good: SAP.DE went 2026-09-16, 2026-09-18 in the store until the
-    2026-09-26 backfill."""
+    """Regression: 634222b53 — follow-up money review r6, I1. On night N the
+    vendor served `.DE` with no close for D and the run went red; on night N+1
+    the store's last date was D-1, the one-day revision window asked for
+    D-1..D+1, the vendor answered that short window with NO row for D, D+1 was
+    appended, the run exited 0, and `failure-issue` closed the issue as
+    "Recovered". D stayed missing for good: SAP.DE went 2026-09-16, 2026-09-18
+    in the store until the 2026-09-26 backfill."""
 
     DE = [f"EU{i}.DE" for i in range(20)]
     US = ["SPY"] + [f"US{i}" for i in range(19)]

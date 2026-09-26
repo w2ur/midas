@@ -1,11 +1,11 @@
 """Store-level gap detection (`engine.store_gaps`).
 
-Follow-up money review r6, I1: a hole was detected only from the rows the
-vendor served inside the night's own window. On the next night the one-day
-revision window never asked for that date again, the run exited 0, and
-`failure-issue` closed the alert as "Recovered" while the date stayed missing
-from the store for good. These tests pin the detector that reads the STORED
-series instead.
+Regression: 634222b53 — follow-up money review r6, I1: a hole was detected
+only from the rows the vendor served inside the night's own window. On the
+next night the one-day revision window never asked for that date again, the
+run exited 0, and `failure-issue` closed the alert as "Recovered" while the
+date stayed missing from the store for good. These tests pin the detector that
+reads the STORED series instead.
 """
 
 from __future__ import annotations
