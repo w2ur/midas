@@ -1905,6 +1905,28 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
         assert self._run(monkeypatch, series) == 0
         assert self._ledger() == {"ELSEWHERE.PA": {dates[1]: "no-close"}}
 
+    def test_a_full_run_closes_out_the_gaps_of_a_symbol_that_left_the_universe(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
+    ) -> None:
+        # Regression: follow-up review r7 (r2 M-2). An entry for a symbol no
+        # run fetches any more (3EUS.L after the swap) was kept forever and
+        # never made anything red: an open gap parked in silence. A
+        # full-universe run is the one that knows the symbol has left, so it
+        # closes the entry out, saying so in the log.
+        dates = _weekdays_to_end(4)
+        self._seed([], dates, dates[1])
+        ledger = get_config().data_dir / "data" / "market" / "store_gaps.json"
+        ledger.write_text(json.dumps({"GONE.PA": {dates[1]: "no-close"}}) + "\n")
+        series = {s: {d: _ROW for d in dates} for s in self.US + self.DE}
+        monkeypatch.setattr(fo, "_fetch_symbol", _gap_vendor(series, {}))
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+        monkeypatch.setattr(fo, "_all_symbols", lambda: sorted(self.US + self.DE))
+
+        assert _run_main(monkeypatch, []) == 0
+        assert self._ledger() == {}
+        out = capsys.readouterr().out
+        assert "GONE.PA" in out and "left the universe" in out and dates[1] in out
+
     def test_an_unreadable_ledger_is_never_green(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
