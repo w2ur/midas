@@ -1042,7 +1042,13 @@ def _heal_store_gaps(
         verdicts = {d: judge(symbol, d) for d in sorted(candidates[symbol])}
         for d, v in verdicts.items():
             if v in OPEN_VERDICTS:
-                open_gaps.setdefault(symbol, {})[d] = v.value
+                # Evidence is never downgraded: once the vendor has served the
+                # date as a trading day with no close, one empty refetch must
+                # not rewrite it `unfetched`, which a later "not traded" would
+                # clear green (follow-up review r8; r5 M1, r6 N-M1).
+                held_reason = held.get(symbol, {}).get(d)
+                keep = held_reason == Verdict.NO_CLOSE.value
+                open_gaps.setdefault(symbol, {})[d] = held_reason if keep else v.value
             elif (
                 v is Verdict.NOT_TRADED
                 and held.get(symbol, {}).get(d) == Verdict.NO_CLOSE.value

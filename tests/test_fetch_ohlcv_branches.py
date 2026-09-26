@@ -1814,6 +1814,31 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
         assert self._run(monkeypatch, series) == fo.EXIT_STORE_GAP
         assert self._ledger() == {"EU0.DE": {missing: "no-close"}}
 
+    def test_a_held_no_close_gap_is_not_downgraded_by_an_empty_refetch(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Regression: follow-up review r8 (r5 M1, r6 N-M1). Night 1 the
+        # vendor serves the symbol nothing (UNFETCHED) and the entry was
+        # rewritten `unfetched`, erasing the evidence; night 2 its series
+        # omits the date and the `unfetched` entry cleared green.
+        dates = _weekdays_to_end(4)
+        missing = dates[1]
+        self._seed(["EU0.DE"], dates, missing)
+        ledger = get_config().data_dir / "data" / "market" / "store_gaps.json"
+        ledger.write_text(json.dumps({"EU0.DE": {missing: "no-close"}}) + "\n")
+        series = {s: {d: _ROW for d in dates} for s in self.US + self.DE}
+
+        # Night 1: the vendor serves EU0.DE nothing at all.
+        empty = _gap_vendor({s: v for s, v in series.items() if s != "EU0.DE"}, {})
+        monkeypatch.setattr(fo, "_fetch_symbol", empty)
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+        assert _run_main(monkeypatch, ["--symbols", ",".join(self.US + self.DE)]) == fo.EXIT_STORE_GAP
+        assert self._ledger() == {"EU0.DE": {missing: "no-close"}}
+
+        del series["EU0.DE"][missing]  # night 2: the series omits the date
+        assert self._run(monkeypatch, series) == fo.EXIT_STORE_GAP
+        assert self._ledger() == {"EU0.DE": {missing: "no-close"}}
+
     def test_a_bank_holiday_the_vendor_confirms_stays_green(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
