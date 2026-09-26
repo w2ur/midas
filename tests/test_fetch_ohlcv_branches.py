@@ -1945,12 +1945,38 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
         series = {s: {d: _ROW for d in dates} for s in self.US + self.DE}
         monkeypatch.setattr(fo, "_fetch_symbol", _gap_vendor(series, {}))
         monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
-        monkeypatch.setattr(fo, "_all_symbols", lambda: sorted(self.US + self.DE))
+        monkeypatch.setattr(fo, "_UNIVERSE_RESOLVERS", (lambda: self.US + self.DE,))
 
         assert _run_main(monkeypatch, []) == 0
         assert self._ledger() == {}
         out = capsys.readouterr().out
         assert "GONE.PA" in out and "left the universe" in out and dates[1] in out
+
+    def test_a_resolver_failure_closes_nothing_out(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
+    ) -> None:
+        # Regression: follow-up review r8 (r5 M2). A resolver that raises
+        # (stoxx600.json missing, a corrupt universe file) is swallowed, and
+        # every symbol only it names looked "departed": the full run deleted
+        # their ledger entries, a human's accepted ones included, for good.
+        dates = _weekdays_to_end(4)
+        self._seed([], dates, dates[1])
+        ledger = get_config().data_dir / "data" / "market" / "store_gaps.json"
+        held = {"EU0.DE": {dates[1]: "no-close"}}
+        ledger.write_text(json.dumps(held) + "\n")
+        series = {s: {d: _ROW for d in dates} for s in self.US + self.DE}
+        monkeypatch.setattr(fo, "_fetch_symbol", _gap_vendor(series, {}))
+        monkeypatch.setattr(fo, "_fetch_ticker_info", lambda symbol: None)
+
+        def stoxx600():
+            raise FileNotFoundError("data/universes/stoxx600.json")
+
+        others = [s for s in self.US + self.DE if s != "EU0.DE"]
+        monkeypatch.setattr(fo, "_UNIVERSE_RESOLVERS", (lambda: others, stoxx600))
+
+        _run_main(monkeypatch, [])
+        assert self._ledger() == held
+        assert "closed out" not in capsys.readouterr().out
 
     def test_an_unreadable_ledger_is_never_green(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys

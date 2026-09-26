@@ -174,35 +174,50 @@ def _collect_holdings() -> set[str]:
     return holdings
 
 
+#: Every declared universe resolver, in the order they are asked.
+_UNIVERSE_RESOLVERS = (
+    get_sp500_tickers,
+    get_dow30_tickers,
+    get_nasdaq100_tickers,
+    get_cac40_tickers,
+    get_dax_tickers,
+    get_ftse100_tickers,
+    get_stoxx600_tickers,
+    get_crypto_tickers,
+    get_crypto_eur_tickers,
+    get_forex_tickers,
+    get_metals_tickers,
+    get_voo_only,
+    get_classic_60_40,
+    get_bearish_etf_tickers,
+    get_bearish_etf_ucits_tickers,
+    get_commodities_eur_tickers,
+    get_congressional_tickers,
+    get_insider_tickers,
+    get_high_short_tickers,
+)
+
+
+#: The resolvers that raised during the last `_collect_universe_symbols`, or
+#: None when it has not run in this process. A full run may close out a
+#: departed symbol's ledger entries only when this is an empty list: a failed
+#: resolver makes every symbol only it names look departed (follow-up review
+#: r8, r5 M2), and a close-out older than the lookback is permanent.
+_resolver_failures: list[str] | None = None
+
+
 def _collect_universe_symbols() -> set[str]:
     """Union of every ticker across every declared universe resolver."""
+    global _resolver_failures
+    failures: list[str] = []
     symbols: set[str] = set()
-    resolvers = [
-        get_sp500_tickers,
-        get_dow30_tickers,
-        get_nasdaq100_tickers,
-        get_cac40_tickers,
-        get_dax_tickers,
-        get_ftse100_tickers,
-        get_stoxx600_tickers,
-        get_crypto_tickers,
-        get_crypto_eur_tickers,
-        get_forex_tickers,
-        get_metals_tickers,
-        get_voo_only,
-        get_classic_60_40,
-        get_bearish_etf_tickers,
-        get_bearish_etf_ucits_tickers,
-        get_commodities_eur_tickers,
-        get_congressional_tickers,
-        get_insider_tickers,
-        get_high_short_tickers,
-    ]
-    for resolver in resolvers:
+    for resolver in _UNIVERSE_RESOLVERS:
         try:
             symbols.update(resolver())
         except Exception as exc:
+            failures.append(getattr(resolver, "__name__", repr(resolver)))
             print(f"  ! {resolver.__name__} failed: {exc}", file=sys.stderr)
+    _resolver_failures = failures
     symbols.update(_ETF_SECTORS)
     symbols.update(_ETF_BROAD)
     return symbols
@@ -1135,6 +1150,23 @@ def _heal_store_gaps(
     return StoreGapReport(open_gaps, filled, quarantined, readable)
 
 
+def _universe_is_complete(args: argparse.Namespace) -> bool:
+    """Whether this run's scope is the whole universe, resolved without error.
+
+    A targeted or crypto-only run's scope is narrow by design. A full run whose
+    universe resolution swallowed an error is narrow by accident, and says so.
+    """
+    if args.symbols or args.crypto_only:
+        return False
+    if _resolver_failures:
+        print(
+            f"WARN: universe resolution failed for {', '.join(_resolver_failures)}; "
+            "no store-gap ledger entry is closed out this run.",
+            file=sys.stderr,
+        )
+    return _resolver_failures == []
+
+
 def _accept_gap(parser: argparse.ArgumentParser, target: str, reason: str | None) -> int:
     """``--accept-gap SYMBOL:DATE --reason TEXT``: record a human's acceptance.
 
@@ -1274,6 +1306,9 @@ def main() -> int:
     if args.resweep_held and args.backfill:
         parser.error("--resweep-held and --backfill are mutually exclusive")
 
+    # Only THIS run's resolution may license a close-out (`_resolver_failures`).
+    global _resolver_failures
+    _resolver_failures = None
     if args.symbols:
         symbols = sorted({s.strip() for s in args.symbols.split(",") if s.strip()})
     elif args.resweep_held:
@@ -1554,7 +1589,7 @@ def main() -> int:
             set(symbols),
             end,
             crypto_bucket,
-            full_universe=not (args.symbols or args.crypto_only),
+            full_universe=_universe_is_complete(args),
         )
         total_new += store_gaps.filled
 
