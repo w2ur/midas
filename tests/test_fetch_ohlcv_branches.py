@@ -1845,11 +1845,11 @@ def test_the_store_gap_exit_is_deliberate_and_committable() -> None:
 
 
 class TestAnAcceptedGapIsGreen:
-    """A gap a human has accepted as unfillable is green, with its reason on
-    record. BYND 2026-08-13 is the first: the vendor serves it on the
-    post-split basis against a pre-split 08-12, so filling it needs a basis
-    rebase of the history, and that is not insert-only. Without an accepted
-    state such a gap keeps the nightly red for good."""
+    """Regression: 579af1cd4 — a gap a human has accepted as unfillable is
+    green, with its reason on record. BYND 2026-08-13 is the first: the vendor
+    serves it on the post-split basis against a pre-split 08-12, so filling it
+    needs a basis rebase of the history, and that is not insert-only. Without
+    an accepted state such a gap keeps the nightly red for good."""
 
     DE = TestStoreGapsAreHeldUntilTheStoreHoldsThem.DE
     US = TestStoreGapsAreHeldUntilTheStoreHoldsThem.US

@@ -233,6 +233,8 @@ class TestLedger:
 
 
 class TestAcceptedEntries:
+    """Regression: 579af1cd4 — an acceptance must carry its reason."""
+
     ACCEPTED = {"status": "accepted", "reason": "split-basis rebase", "accepted_on": "2026-09-26"}
 
     def test_an_accepted_entry_round_trips(self) -> None:
