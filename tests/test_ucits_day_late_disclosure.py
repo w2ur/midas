@@ -80,13 +80,35 @@ def test_every_named_fund_is_a_ucits_universe_member() -> None:
     assert _named() <= ucits
 
 
-@pytest.mark.skipif(_is_shallow(), reason="shallow clone has no history to derive from")
-def test_the_named_set_is_what_the_store_shows_one_day_behind() -> None:
-    reference = [_dates_at(STORE_COMMIT, s) for s in REFERENCE]
-    assert all(reference), "a reference symbol is missing at the store commit"
+def _dates_now(symbol: str) -> list[str]:
+    path = REPO_ROOT / "data" / "market" / "ohlcv" / f"{symbol}.jsonl"
+    if not path.exists():
+        return []
+    return sorted(json.loads(l)["date"] for l in path.read_text(encoding="utf-8").splitlines() if l.strip())
+
+
+def _day_late(dates_of) -> set[str]:
+    reference = [dates_of(s) for s in REFERENCE]
+    assert all(reference), "a reference symbol is missing from the store"
     latest = max(d[-1] for d in reference)
     previous = max(d for d in reference[0] if d < latest)
     ucits = set(get_bearish_etf_ucits_tickers()) | set(get_commodities_eur_tickers())
-    day_late = {s for s in ucits if (dates := _dates_at(STORE_COMMIT, s)) and dates[-1] == previous}
+    return {s for s in ucits if (dates := dates_of(s)) and dates[-1] == previous}
+
+
+def test_the_named_set_is_what_the_current_store_shows_one_day_behind() -> None:
+    """Derived from the CURRENT universes and store (follow-up review r8,
+    r6 N-M2): pinned to the entry's commit, the test could not see 3EUS.MI,
+    which joined `bearish-etfs-ucits` a day later and is day-late too."""
+    day_late = _day_late(_dates_now)
     assert day_late, "the derivation found no day-late fund — it checks nothing"
     assert _named() == day_late
+
+
+@pytest.mark.skipif(_is_shallow(), reason="shallow clone has no history to derive from")
+def test_the_set_at_the_entrys_commit_is_the_named_set_less_later_members() -> None:
+    at_commit = _day_late(lambda s: _dates_at(STORE_COMMIT, s))
+    assert at_commit, "the derivation found no day-late fund — it checks nothing"
+    assert at_commit <= _named()
+    for later in _named() - at_commit:
+        assert _dates_at(STORE_COMMIT, later) == [], f"{later} was in the store at the entry's commit"

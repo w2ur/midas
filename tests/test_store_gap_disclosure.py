@@ -122,7 +122,7 @@ def test_the_sgln_mi_exposure_is_what_the_ledger_and_store_show() -> None:
     from datetime import date
 
     claim = re.search(
-        r"`(?P<book>[a-z-]+)` did hold `SGLN\.MI`.*?held (?P<shares>\d+) shares from (?P<since>\d{4}-\d{2}-\d{2})"
+        r"`(?P<book>[a-z-]+)` did hold `SGLN\.MI`.*?(?P<shares>\d+) shares from (?P<since>\d{4}-\d{2}-\d{2})"
         r".*?after (?P<thinned>\d{4}-\d{2}-\d{2}).*?sold all (?P<sold>\d+) on (?P<exit>\d{4}-\d{2}-\d{2}) "
         r"at (?P<price>[\d.]+), €(?P<value>[\d,.]+), which is the stored close of (?P<mark>\d{4}-\d{2}-\d{2})",
         _entry(),
@@ -193,3 +193,56 @@ def test_the_3eus_consolidation_claims_are_what_the_store_shows() -> None:
     # Every stored bar is on one basis: no step anywhere near the factor.
     days = sorted(stored)
     assert max(stored[b] / stored[a] for a, b in zip(days, days[1:])) < 2
+
+
+def test_the_sgln_mi_missed_days_are_what_the_store_shows() -> None:
+    """Follow-up review r8 (r5 M3): the entry said the series "thinned from a
+    row a day ... after 2026-08-14", but it had been missing Milan trading
+    days since mid-June. A missed day is a weekday most in-span `.MI` files
+    hold and SGLN.MI lacks, inside the book's holding window."""
+    from datetime import date, timedelta
+
+    claim = re.search(
+        r"held the line from (?P<opened>\d{4}-\d{2}-\d{2}),.*?missed (?P<missed>\d+) days the Milan "
+        r"market traded, the first on (?P<first>\d{4}-\d{2}-\d{2}): (?P<before>\d+) of them,.*?"
+        r"after (?P<thinned>\d{4}-\d{2}-\d{2})",
+        _entry(),
+        re.S,
+    )
+    assert claim, "the entry must state the missed Milan days"
+    trades = _trades("SGLN.MI")["goldfinger"]
+    opened, exited = trades[0]["timestamp"][:10], trades[-1]["timestamp"][:10]
+    assert opened == claim["opened"]
+    peers = {p.stem: set(_store_closes(p.stem)) for p in OHLCV.glob("*.MI.jsonl") if p.stem != "SGLN.MI"}
+    own = set(_store_closes("SGLN.MI"))
+
+    def milan_traded(d: str) -> bool:
+        span = [s for s, ds in peers.items() if ds and min(ds) <= d <= max(ds)]
+        return 2 * sum(d in peers[s] for s in span) > len(span)
+
+    missed, day = [], date.fromisoformat(opened)
+    while day.isoformat() <= exited:
+        d = day.isoformat()
+        if day.weekday() < 5 and d not in own and milan_traded(d):
+            missed.append(d)
+        day += timedelta(days=1)
+    assert missed, "the derivation found nothing — it checks nothing"
+    assert len(missed) == int(claim["missed"])
+    assert missed[0] == claim["first"]
+    assert sum(d < claim["thinned"] for d in missed) == int(claim["before"])
+
+
+def test_the_accepted_pre_day_one_count_is_the_ledgers() -> None:
+    """Follow-up review r8 (r4 I1): the days found by reading null rows."""
+    import json
+
+    claim = re.search(r"(?P<n>\d+) of them are recorded in `data/market/store_gaps.json` as accepted", _entry())
+    assert claim, "the entry must state how many were accepted"
+    ledger = json.loads((REPO_ROOT / "data" / "market" / "store_gaps.json").read_text(encoding="utf-8"))
+    found = [
+        (s, d) for s, gaps in ledger.items() for d, e in gaps.items()
+        if isinstance(e, dict) and "follow-up review r8" in e.get("reason", "")
+    ]
+    assert found, "the derivation found nothing — it checks nothing"
+    assert len(found) == int(claim["n"])
+    assert all(d < "2026-04-17" for _, d in found), "the entry says they are all before day one"
