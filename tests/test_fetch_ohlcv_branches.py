@@ -1817,7 +1817,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_held_no_close_gap_is_not_downgraded_by_an_empty_refetch(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Regression: follow-up review r8 (r5 M1, r6 N-M1). Night 1 the
+        # Regression: 180656fcc — follow-up review r8 (r5 M1, r6 N-M1). Night 1 the
         # vendor serves the symbol nothing (UNFETCHED) and the entry was
         # rewritten `unfetched`, erasing the evidence; night 2 its series
         # omits the date and the `unfetched` entry cleared green.
@@ -1842,7 +1842,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_failed_holiday_probe_does_not_fan_out(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Regression: follow-up review r8 (r4 M1). When every probe of a
+        # Regression: b11a112a1 — follow-up review r8 (r4 M1). When every probe of a
         # bucket-wide candidate failed, each lacking member got its own wide
         # refetch: 579 requests for US Labor Day, 719 `unfetched` entries
         # with every fetch failing, inside a job whose cancellation files no
@@ -1986,7 +1986,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_resolver_failure_closes_nothing_out(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
-        # Regression: follow-up review r8 (r5 M2). A resolver that raises
+        # Regression: 808be83d2 — follow-up review r8 (r5 M2). A resolver that raises
         # (stoxx600.json missing, a corrupt universe file) is swallowed, and
         # every symbol only it names looked "departed": the full run deleted
         # their ledger entries, a human's accepted ones included, for good.
@@ -2188,7 +2188,7 @@ _NULL_ROW = [float("nan")] * 5 + [0]
 
 
 class TestTheVendorsNullRowIsNotAHoliday:
-    """Regression: follow-up review r8 (r4 I1). The vendor serves a real
+    """Regression: 06e202664 — follow-up review r8 (r4 I1). The vendor serves a real
     trading day it has no price for as a NaN-close, zero-volume row, and
     yfinance's default `keepna=False` drops it. All 24 `.CO` files lack
     2026-03-23; the 1h bars show full Copenhagen sessions that day; the heal
