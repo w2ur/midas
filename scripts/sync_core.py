@@ -66,6 +66,9 @@ LIVE_ONLY_TESTS = {
     # Holds METHODOLOGY.md prose to the live price store at a pinned commit;
     # core ships neither the document nor the store history.
     "test_ucits_day_late_disclosure.py",
+    # Holds the METHODOLOGY store-gap entry to the counts the backfill commit
+    # inserted; core ships neither the document nor the store history.
+    "test_store_gap_disclosure.py",
     # Import a live-only script that core does not ship.
     "test_attest_ledger.py",
     "test_attest_verify.py",
