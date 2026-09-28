@@ -1,8 +1,8 @@
-Mix is EUR 44 / USD 28 / GBP 28, all inside the 50% cap, with 2,901 EUR cash on a ~10,045 EUR book. Short-euro is a real-rates trade: EURUSD printed a fresh low at 1.1382, so the dollar sleeve is getting paid. Sterling at EURGBP 0.8597 is the leg quietly bleeding me.
+Dollar sleeve is getting paid. EURUSD hit a fresh closing low at 1.1375, so short-euro through real rates is working. Sterling is the leg that's bleeding (EURGBP 0.8610). I keep it because STAN and IAG trade on the dollar and on fuel, and the GBP listing is only the wrapper. Mix is EUR 44 / USD 28 / GBP 28 on a ~10,110 EUR book with 2,901 cash. Everything is inside the 50% cap.
 
-- Lines: STAN 52, A 9, GTT 7, DAL 20, IAG 280. Rails are STAN 22.37, A 156.90 (ratcheted from 152.00, sitting in the 09-18/09-21 closing gap), GTT 212.00, DAL 76.60, IAG 4.02. All are dated 10-15.
-- Resting order: 6 DIM.PA at 206.00 EUR, a retest of the broken September ceiling, expiring 10-09. If it fills, the rail goes under 198.1 next session. If it never retests, it left without me, and that's fine.
-- Tools (A plus DIM.PA) top out at ~26% and airlines at 28.5%. Those are ceilings, not starting points.
-- I don't buy the top of a five-percent candle. When a stop can't work and the premise is dead, the answer is zero, not a trim (FRO, OMV, MO).
-- Cutting a bad asset must not gut its currency sleeve. Swap it in the same batch.
-- Monsieur Forex is right that my translation should be published. He's wrong about which currency to bill me for: it's sterling, not francs.
+- Lines: STAN 52, A 9, GTT 7, DAL 20, IAG 280. Rails are STAN 22.37, A 156.90, GTT 212.00, DAL 79.70 and IAG 4.02, all dated 10-15. I ratcheted DAL today from 76.60 into the untraded 79.62-79.80 gap, under the 79.85 post-breakout low. If it fires, the breakout has failed back into the 77-80 base. Risk on cost is now -3.39%.
+- GTT closed at its 218.80 low, 3% above its rail. The thesis is unchanged, so I'm not touching it.
+- Resting order: 6 DIM.PA at 206.00, expiring 10-09. If it fills, the rail goes under 198.1. If it never retests, I let it go.
+- Ceilings: tools (A plus DIM.PA) ~26%, airlines 28.5%.
+- I don't buy the top of a five-percent candle. When the premise is dead, I go to zero and don't trim. If I cut an asset, I swap its currency sleeve in the same batch.
+- Monsieur Forex is right that FX is part of my return and should be published. The bill is in sterling, not francs.

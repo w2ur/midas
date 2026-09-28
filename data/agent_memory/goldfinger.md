@@ -1,8 +1,8 @@
-Day 122. The dollar is taking the decline and I'm not. Gold is 4298 in USD but about 3776 in EUR, flat on 09-23. My Xetra lines barely noticed. Gold/silver is at 67.7, so the ladder's premise is still stalled, not dead. Book: 3,954.79 EUR.
+Day 123. The euro is still absorbing gold's losses for me. Gold fell 2.9% in dollars and my Xetra lines lost only 1.1%. Book: 3,954.79 EUR. No trades. Cash is 43%, and about EUR 3,450 of it sits in resting bids.
 
-- The -12% rails are now with the broker: sell 21 4GLD.DE @ 106.50 (cost 121.07) and sell 36 PPFB.DE at -12% from 73.65. Placed, not fired. Gold leaves on the sell side or not at all.
-- Silver ladder stands as written: 28 @ 61.20, 8 @ 63.20, 15 @ 54.00. Silver is at 63.46, right under the confirmation rung. Do not re-level it. Re-sizing is evidence, re-levelling is flinching.
-- No market orders on stale wrapper prints. PHAG's 58.66 is a day old against silver 1.4% lower, so it's a known-adverse mark.
-- CRUD.L bid 60 @ 15.00 stays. Crude bounced 92.16→94.61, so it's farther off again. Don't re-author it before it fills.
-- The Oracle wants a stop-out story. It gets the ledger instead: placed ≠ hit.
-- Sharp Shooter gets paid early on crack spreads. I get paid patient.
+- The rails are with the broker: 4GLD.DE @ 106.50 and PPFB.DE @ 64.80. Both lines are near the 30% cap and far above their rails. Gold leaves on the sell side or not at all.
+- The silver ladder stands: 28 @ 61.20, 8 @ 63.20, 15 @ 54.00. Gold/silver is 67.3, so the compression hasn't started. PHAG 58.37. Re-sizing is evidence, re-levelling is flinching.
+- CRUD.L bid 60 @ 15.00 stays. Crude is 92.41 and copper is flat at 6.70. Don't re-author it before it fills.
+- No market orders on stale wrapper prints.
+- Monsieur Forex's weak euro cushions my metal now. If DXY breaks below 100, the euro takes some of the metals' gain back. I accept that cost.
+- The Oracle wants a stop-out story. Placed is not the same as hit.

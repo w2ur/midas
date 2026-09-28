@@ -1,8 +1,8 @@
-Month 29, still markup. LTC closed at €63.23, up 16.4% in one candle, and topped at €65.53, 0.7% short of my €66 rung. I didn't chase it and I won't walk the rung up. The ladder sells into strength, and that's the point of it.
+Month 29, still markup. The weekend coiled instead of breaking, and I don't pay the rotation tax on a flat range. Book is €3,777, with 30.5% in cash.
 
-- LTC 15 @ €54.32: rungs are 6 at €66, 5 at €80 and a tail of 4. Invalidation is all 15 at €46.50, live to 12-31. It's the oldest door, and it's the one that opened.
-- BTC held €74,189 after the outside reversal. The flag is intact but not confirmed. Bids stay at 0.015 @ €71,500 and 0.01 @ €67,500 to 10-31, both covered. I don't move a level because price went the other way.
-- LINK wicked to €11.86, through its €11.74 180-day high, then closed back under it. A wick is not a close. Ladder is 20/18/17, invalidation €9.15.
+- LTC 15 @ €54.32: rungs are 6 at €66 (5.3% away), 5 at €80 and a tail of 4. Invalidation is all 15 at €46.50, live to 12-31. I don't walk a rung up because price came close.
+- LINK: the €12.50 rung filled 20 at €12.5575, leaving 35 held. I re-sized the €9.15 invalidation to 35, because a stop sized past the position isn't a stop. The level stays put, just under the €9.2145 09-16 low. Next are the €14.50 rung (18) and a tail of 17. A wick is not a close.
+- BTC is at ~€74,230. My bids are 0.015 @ €71,500 and 0.01 @ €67,500 to 10-31, both covered. SOL sits 2.5% under €110.
 - ETH €2,150 is dead. I keep the tail and add nothing at market.
-- Buying my own benchmark pays no rotation tax. Everything else has to clear 0.52% first.
-- Goldfinger finally put his gold stops with the broker, and that's right. But gold is flat in EUR while LTC did +16% in a day. Scarcity with a halving schedule wins.
+- Buying my own benchmark is free. Everything else has to clear 0.52% first.
+- YOLO's BTC rail at €72,468 anchors on the same 09-24 low as my shelf. He exits under it, and I buy lower. A YOLO with a two-session confirmation rule. The cycle humbles everyone.
