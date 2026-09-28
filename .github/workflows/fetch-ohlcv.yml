@@ -4,13 +4,32 @@ name: fetch-ohlcv
 # data/market/ohlcv/. The sandboxed agent reads from the committed repo,
 # so this workflow is what keeps it running autonomously.
 #
-# Schedule: 06:00 UTC, every day, in two modes. THE MODE IS KEYED ON WHICH
-# CRON FIRED (`github.event.schedule`), never on the runner's clock:
+# Schedule: 06:00 UTC, every day, in two modes, plus two same-evening CLOSE
+# RUNS on weekdays that are dispatched, never scheduled here. THE MODE IS
+# KEYED ON WHICH CRON FIRED (`github.event.schedule`), never on the runner's
+# clock:
 #   - `0 6 * * 2-6`  Tue-Sat — full universe (equities + ETFs + forex +
 #     crypto). Captures the PREVIOUS calendar day's closes: Tuesday's run
 #     stores Monday, Saturday's run stores Friday.
 #   - `0 6 * * 0,1`  Sun-Mon — crypto-only subset, for the two days no cash
 #     market trades.
+#   - `close_run: eu` / `close_run: us` (a workflow_dispatch input, since
+#     2026-09-28) — TODAY's cash-equity closes for one bucket, asked for the
+#     same evening after that bucket's markets have closed. Dispatched by the
+#     Cloudflare Worker at workers/trigger-gate/ (crons 19:15 and 21:20 UTC,
+#     Mon-Fri), never by a cron here: a GitHub cron has no deadline — this
+#     file's 06:00 cron started 4 h 06 to 6 h 57 late on every run from
+#     2026-09-17 to 09-28 — and a close run has one, the 22:00 UTC session.
+#     Why the evening at all: the vendor publishes a day's close the same
+#     evening and WITHDRAWS it overnight (eu-close-probe.yml, measured
+#     2026-08-14..18: populated ~17:00-20:18 UTC for Europe, a null row by
+#     22:23, still null at 07:22 — the US included — and restored the next
+#     afternoon). The 06:00 run sat inside that withdrawal, and its late real
+#     start on the restoration edge, which is where the random one-day holes
+#     of 09-17 and 09-22 came from. A close run keeps the morning run's exit
+#     codes and reporter, and its store-gap pass refills the morning's holes
+#     the same day. tests/test_ci_guards.py pins that no cron here selects a
+#     close run and that the input the Worker dispatches exists.
 #
 # The mode gate read `date -u +%u` until 2026-08-12 — Mon-Fri full, Sat-Sun
 # crypto-only — and the crons above moved on 2026-08-12 without it. Saturday,
@@ -32,34 +51,40 @@ name: fetch-ohlcv
 #
 # Do not move this later than the session start minus the scheduler's typical
 # lateness. GitHub's scheduler is never on time: measured across this repo's
-# scheduled jobs it typically lands 40 min to 2 h 45 late, with a tail past
-# 5 h. The session runs at 20:00 UTC today and moves to 11:00 UTC; at 06:00
-# the margin is 5 h even after that move, and 14 h until then — so the
-# typical case clears and the tail does not. The tail is deliberately NOT
-# covered by the margin: a run landing after the session simply leaves that
-# session pricing on the previous close, which is inside the 4 calendar days
-# `MAX_EQUITY_STALENESS_DAYS` allows (scripts/fetch_market_data.py), and only
-# a store that has genuinely stopped advancing aborts the session. The margin
-# is what keeps a lost day of freshness rare; the staleness guard is what
-# makes it survivable.
+# scheduled jobs it landed 40 min to 2 h 45 late in August 2026, and 4 h 06
+# to 6 h 57 late on every fetch-ohlcv run from 2026-09-17 to 09-28. The
+# session runs at 22:00 UTC (since 2026-09-28; 20:00 before), so at 06:00
+# the margin is 16 h and even that tail clears. The margin is what keeps a
+# lost day of freshness rare; the staleness guard is what makes it
+# survivable: a run landing after the session leaves that session pricing on
+# the previous close, inside the 4 calendar days `MAX_EQUITY_STALENESS_DAYS`
+# allows (scripts/fetch_market_data.py), and only a store that has genuinely
+# stopped advancing aborts the session. Since the close runs, the morning
+# run's deadline matters less: the cash closes it used to be the sole carrier
+# of arrive the evening before, and what it alone carries is crypto, FX and
+# futures, whose bars complete at 00:00 UTC.
 #
-# NO FORMING BAR IS EVER STORED. `scripts/fetch_ohlcv.py` sets its `end` to
-# YESTERDAY, not today. Asking for today costs nothing on a cash market — the
-# day has not opened — but Yahoo serves a daily bar for a 24/7 instrument
-# (crypto, FX, futures on Globex) the moment the UTC day opens (verified
-# 2026-08-12: a same-day BTC-USD close is returned at 07:49 UTC), so at 06:00
-# that row would be about six hours old. The 20:00 session publishes whatever
-# the store holds and `PortfolioManager.add_snapshot` freezes it, so a partial
-# captured at 06:00 would become a permanent published mark. Under the old
-# 22:30 cron the same row was ~22.5 h formed — wrong more cheaply, not right.
-# Ending at yesterday makes every stored bar complete, on every instrument,
-# and the published crypto/FX mark a final close.
+# NO FORMING BAR IS EVER STORED. The scheduled runs set `end` to YESTERDAY,
+# not today. Asking for today costs nothing on a cash market — the day has not
+# opened — but Yahoo serves a daily bar for a 24/7 instrument (crypto, FX,
+# futures on Globex) the moment the UTC day opens (verified 2026-08-12: a
+# same-day BTC-USD close is returned at 07:49 UTC), so at 06:00 that row
+# would be about six hours old. The session publishes whatever the store
+# holds and `PortfolioManager.add_snapshot` freezes it, so a partial captured
+# at 06:00 would become a permanent published mark. Under the old 22:30 cron
+# the same row was ~22.5 h formed — wrong more cheaply, not right. Ending at
+# yesterday makes every stored bar complete, on every instrument, and the
+# published crypto/FX mark a final close. A close run asks for TODAY, and
+# only for a bucket whose bell has rung — complete by construction, the one
+# case the rule above does not cover.
 #
-# The snapshot dating does not move with it: at 06:00 on day D the store
-# advances to D-1, and the 20:00 session on D publishes a D-1-dated row —
-# exactly what the 22:30 cron on D-1 produced. Verified against the live
-# record, where the 08-04 session published 08-03 and the 08-05 session
-# published 08-04.
+# Snapshot dating: at 06:00 on day D the morning run advances the store to
+# D-1, and until 2026-09-28 the 20:00 session on D published a D-1-dated row
+# — exactly what the 22:30 cron on D-1 produced (the 08-04 session published
+# 08-03, the 08-05 session 08-04). Since the close runs land D's cash closes
+# on D's evening, the 22:00 session on D publishes a D-dated row; crypto, FX
+# and futures inside it are marked at D-1's completed bar, and the bundle's
+# `mixed_dates` note says so.
 #
 # Revisions: EVERY symbol runs with a 1-day revision window, not just crypto.
 # It no longer catches partial bars — there are none — it catches the vendor
@@ -93,6 +118,12 @@ on:
         description: "Restrict to crypto pairs (for manual weekend refresh)"
         required: false
         default: "false"
+      close_run:
+        description: "Same-evening close pass for ONE cash-equity bucket, asking for today's bar: eu or us. Dispatched by workers/trigger-gate/; none = the scheduled modes."
+        required: false
+        type: choice
+        options: ["none", "eu", "us"]
+        default: "none"
 
 permissions:
   actions: write  # dispatch session-integrity on the commit this run pushes
@@ -131,6 +162,7 @@ jobs:
         env:
           HISTORY_DAYS: ${{ github.event.inputs.history_days || '730' }}
           MANUAL_CRYPTO_ONLY: ${{ github.event.inputs.crypto_only || 'false' }}
+          CLOSE_RUN: ${{ github.event.inputs.close_run || 'none' }}
           SCHEDULE: ${{ github.event.schedule }}
         run: |
           # Sanitize: only accept digits. Anything else → fall back to default.
@@ -172,14 +204,39 @@ jobs:
           # it on 2026-08-16 as "Recovered" without fetching a single one of
           # those equities. Emitted AFTER the manual override, so it names the
           # run that actually happened rather than the one the cron implied.
-          if [[ "$CRYPTO_ONLY" == "true" ]]; then
-            echo "mode=crypto-only" >> "$GITHUB_OUTPUT"
+          #
+          # A close run is a third mode, reachable only by dispatch: no cron
+          # here selects it (tests/test_ci_guards.py pins that); the Worker at
+          # workers/trigger-gate/ does, through the `close_run` input. It
+          # narrows the run to one cash-equity bucket and asks the script for
+          # TODAY's bar. Combined with crypto-only it would mean two different
+          # things about `end`, so that is refused rather than resolved.
+          if [[ "$CLOSE_RUN" == "eu" || "$CLOSE_RUN" == "us" ]]; then
+            if [[ "$CRYPTO_ONLY" == "true" ]]; then
+              echo "::error::close_run=${CLOSE_RUN} cannot be combined with crypto_only"
+              exit 1
+            fi
+            MODE="${CLOSE_RUN}-close"
+          elif [[ "$CRYPTO_ONLY" == "true" ]]; then
+            MODE="crypto-only"
           else
-            echo "mode=full universe" >> "$GITHUB_OUTPUT"
+            MODE="full universe"
+          fi
+          echo "mode=${MODE}" >> "$GITHUB_OUTPUT"
+          # The commit subject names a close run, so `git log` tells the
+          # evening passes from the morning one. The morning subject stays
+          # byte-identical: tooling greps for it.
+          if [[ "$MODE" == *-close ]]; then
+            echo "subject_suffix= (${CLOSE_RUN} close)" >> "$GITHUB_OUTPUT"
+          else
+            echo "subject_suffix=" >> "$GITHUB_OUTPUT"
           fi
 
           FLAGS=(--history-days "$HISTORY_DAYS")
-          if [[ "$CRYPTO_ONLY" == "true" ]]; then
+          if [[ "$MODE" == *-close ]]; then
+            echo "Close run (${CLOSE_RUN}): today's closes for one bucket."
+            FLAGS+=(--close-run "$CLOSE_RUN")
+          elif [[ "$CRYPTO_ONLY" == "true" ]]; then
             echo "Crypto-only run (schedule='${SCHEDULE}', manual=${MANUAL_CRYPTO_ONLY})."
             FLAGS+=(--crypto-only)
           else
@@ -251,7 +308,23 @@ jobs:
         uses: ./.github/actions/push-with-retry
         with:
           paths: data/market/ohlcv/ data/market/quarantine/ data/market/corporate_actions.jsonl data/market/store_gaps.json data/portfolios/ data/tickers.json
-          message: "[data] ${{ steps.today.outputs.date }} OHLCV update"
+          message: "[data] ${{ steps.today.outputs.date }} OHLCV update${{ steps.fetch.outputs.subject_suffix }}"
+
+      # The weekend valuation refresh reads the crypto bars this run just
+      # landed, so it has to run AFTER them. Its own Sat/Sun 20:00 UTC cron is
+      # kept as a fallback, but since the session prices its own day
+      # (2026-09-28) the Friday-dated row is the session's, and a refresh
+      # valued on Saturday's store publishes nothing new: the two weekend
+      # points come from the Sun-Mon crypto-only runs, and a cron cannot be
+      # relied on to land after them (this file's cron ran 4-7 h late all
+      # September). A failed dispatch is a warning; the crons still run.
+      - name: Dispatch the weekend refresh on the crypto bars this run landed
+        if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' && steps.fetch.outputs.mode == 'crypto-only' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run refresh-leaderboard.yml --ref main \
+            || echo "::warning::could not dispatch refresh-leaderboard.yml — its Sat/Sun 20:00 UTC cron is the fallback"
 
       - name: Report outcome
         if: always()
@@ -275,7 +348,7 @@ jobs:
               per-symbol failure count).
             - A vendor-wide hole: the log says `vendor-wide hole` and names the
               date most symbols came back without a close. Re-run with
-              `--resweep` over a longer window before the 20:00 session.
+              `--resweep` over a longer window before the 22:00 session.
             - A store gap: the log says `store gap` and names the trading days
               the stored series still skips after the run refetched them over
               a wide window. They are held in `data/market/store_gaps.json`,

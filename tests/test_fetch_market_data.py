@@ -274,3 +274,119 @@ class TestEquityFreshnessGate:
         )
         assert payload["date"] == payload["equity_date"] == "2026-04-24"
         assert "mixed_dates" not in payload["notes"]
+
+
+# ---------------------------------------------------------------------------
+# Same-evening close runs (2026-09-28): the other mixed-dates direction, and
+# per-exchange freshness
+# ---------------------------------------------------------------------------
+
+
+class TestEquitiesFresherThanCrypto:
+    """With the cash closes collected the same evening, the equity benchmarks
+    carry today's close while BTC and gold are at the previous completed UTC
+    bar. The row is dated on the equity close (the max), and the note says
+    which positions are a bar behind — the mirror of the weekend case."""
+
+    def test_the_inverse_mixed_dates_case_is_recorded(
+        self, tmp_store: Path, tmp_path: Path
+    ) -> None:
+        from scripts.fetch_market_data import fetch_and_save
+
+        _seed_all(tmp_store, equity="2026-04-27", crypto="2026-04-26")
+        _write_ohlcv(tmp_store, "GC=F", [{"date": "2026-04-26", "close": 4700.0}])
+
+        payload = fetch_and_save(
+            output_path=tmp_path / "out.json",
+            allow_network=False,
+            today=_REFERENCE_TODAY,
+        )
+        assert payload["date"] == payload["equity_date"] == "2026-04-27"
+        note = payload["notes"]["mixed_dates"]
+        assert "equity close" in note
+        assert "btc at 2026-04-26" in note and "gold at 2026-04-26" in note
+
+    def test_the_weekend_direction_is_unchanged(
+        self, tmp_store: Path, tmp_path: Path
+    ) -> None:
+        """The control: the original wording survives for the original case."""
+        from scripts.fetch_market_data import fetch_and_save
+
+        _seed_all(tmp_store, equity="2026-04-24", crypto="2026-04-26")
+
+        payload = fetch_and_save(
+            output_path=tmp_path / "out.json",
+            allow_network=False,
+            today=_REFERENCE_TODAY,
+        )
+        assert payload["notes"]["mixed_dates"].startswith("snapshot dated 2026-04-26 (crypto/gold)")
+
+
+class TestExchangeDates:
+    """`exchange_dates` answers which close each exchange's positions were
+    marked at, which one US-listed `equity_date` cannot."""
+
+    def _seed_exchange(self, store: Path, suffix: str, dates: list[str]) -> None:
+        for i, d in enumerate(dates):
+            _write_ohlcv(store, f"X{i}{suffix}", [{"date": d, "close": 10.0}])
+
+    def test_reports_the_close_at_least_half_the_bucket_holds(self, tmp_store: Path) -> None:
+        from scripts.fetch_market_data import exchange_dates
+
+        # 4 of 6 at 04-27, 2 day-late funds at 04-24: the exchange is at 04-27.
+        self._seed_exchange(tmp_store, ".DE", ["2026-04-27"] * 4 + ["2026-04-24"] * 2)
+        # One first-ingest file ahead of the other five must NOT speak for `.PA`.
+        self._seed_exchange(tmp_store, ".PA", ["2026-04-27"] + ["2026-04-24"] * 5)
+        assert exchange_dates(tmp_store) == {".DE": "2026-04-27", ".PA": "2026-04-24"}
+
+    def test_small_buckets_and_non_cash_instruments_are_left_out(self, tmp_store: Path) -> None:
+        from scripts.fetch_market_data import exchange_dates
+
+        self._seed_exchange(tmp_store, ".F", ["2026-04-27"])
+        for sym in ("GC=F", "EURUSD=X", "^VIX", "BTC-USD", "ADA-EUR"):
+            _write_ohlcv(tmp_store, sym, [{"date": "2026-04-27", "close": 1.0}])
+        assert exchange_dates(tmp_store) == {}
+
+    def test_us_listings_form_the_us_bucket_dashes_included(self, tmp_store: Path) -> None:
+        from scripts.fetch_market_data import exchange_dates
+
+        for sym in ("AAPL", "MSFT", "BRK-B", "BF-B", "SPY"):
+            _write_ohlcv(tmp_store, sym, [{"date": "2026-04-27", "close": 1.0}])
+        assert exchange_dates(tmp_store) == {"US": "2026-04-27"}
+
+    def test_an_exchange_behind_the_equity_date_is_named_in_the_payload(
+        self, tmp_store: Path, tmp_path: Path
+    ) -> None:
+        """The evening pass landed the US close but not London's: the LSE books
+        are marked a day behind the row, and the bundle says so."""
+        from scripts.fetch_market_data import fetch_and_save
+
+        _seed_all(tmp_store, equity="2026-04-27")
+        self._seed_exchange(tmp_store, ".L", ["2026-04-24"] * 5)
+        for sym in ("AAPL", "MSFT", "BRK-B", "BF-B", "QQQ"):
+            _write_ohlcv(tmp_store, sym, [{"date": "2026-04-27", "close": 1.0}])
+
+        payload = fetch_and_save(
+            output_path=tmp_path / "out.json", allow_network=False, today=_REFERENCE_TODAY
+        )
+        assert payload["notes"]["exchange_dates"] == {".L": "2026-04-24", "US": "2026-04-27"}
+        assert ".L at 2026-04-24" in payload["notes"]["exchange_behind"]
+        assert "exchange_ahead" not in payload["notes"]
+
+    def test_an_exchange_ahead_of_the_row_date_is_named_as_a_mislabel(
+        self, tmp_store: Path, tmp_path: Path
+    ) -> None:
+        """A session that ran after the European pass but before the US one:
+        the row is dated on the US benchmarks (yesterday) while the European
+        positions inside it carry today's close. Said out loud, because the
+        row is immutable once published."""
+        from scripts.fetch_market_data import fetch_and_save
+
+        _seed_all(tmp_store, equity="2026-04-24")
+        self._seed_exchange(tmp_store, ".PA", ["2026-04-27"] * 5)
+
+        payload = fetch_and_save(
+            output_path=tmp_path / "out.json", allow_network=False, today=_REFERENCE_TODAY
+        )
+        assert payload["date"] == "2026-04-24"
+        assert ".PA at 2026-04-27" in payload["notes"]["exchange_ahead"]

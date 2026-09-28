@@ -1,7 +1,11 @@
 """Valuation-only refresh: snapshots + baselines + current.json.
 
-Run on weekends (Sat/Sun 20:00 UTC) via .github/workflows/refresh-leaderboard.yml
-to keep the live leaderboard widget honest without dispatching agents.
+Run on weekends via .github/workflows/refresh-leaderboard.yml to keep the live
+leaderboard widget honest without dispatching agents: dispatched by the Sun-Mon
+crypto-only fetch-ohlcv run once it has landed the crypto bars (2026-09-28), with
+the Sat/Sun 20:00 UTC crons kept as a fallback. Snapshot rows are dated on the
+store, so a run that finds nothing newer than the last session's row publishes
+nothing — the designed no-op, not a failure.
 
 Same idempotent helpers as the weekday session — just without
 step_author_orders, step_build_post_prompts, step_save_memories, etc.

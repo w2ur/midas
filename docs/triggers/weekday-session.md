@@ -1,6 +1,6 @@
 # Weekday Session — RemoteTrigger Prompt
 
-**Cron:** `0 20 * * 1-5` (Mon-Fri 20:00 UTC)
+**Cron:** `0 22 * * 1-5` (Mon-Fri 22:00 UTC — since 2026-09-28, after the 21:20 UTC US close run has landed the day's cash closes; `0 20 * * 1-5` before)
 **Roster:** 10 trading agents + The Oracle.
 **Cadence-invariant pipeline:** identical helpers as the weekend session, only the roster differs.
 

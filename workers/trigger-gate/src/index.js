@@ -23,6 +23,19 @@ const REPO = `${OWNER}/${REPO_NAME}`;
 const WORKFLOW_FILE = "check-triggers-crypto.yml";
 const ISSUE_TITLE = "trigger-gate worker failing";
 
+// The same-evening close runs (2026-09-28): cron string -> the `close_run`
+// input fetch-ohlcv.yml is dispatched with. Keyed on the literal cron that
+// fired, never on the clock — fetch-ohlcv.yml's own mode gate learned on
+// 2026-08-12 that a clock test flips its own mode when a run lands late.
+// Why they are here rather than on a GitHub cron, and why the evening: see
+// wrangler.toml. tests/test_trigger_gate_parity.py pins these against the
+// crons declared there and against the session start.
+const FETCH_WORKFLOW_FILE = "fetch-ohlcv.yml";
+export const CLOSE_RUNS = {
+  "15 19 * * 1-5": "eu",
+  "20 21 * * 1-5": "us",
+};
+
 // Both pending channels: the public one and the allocator's. Kept in step with
 // roster.yaml's allocator channels_prefix by tests/test_trigger_gate_parity.py
 // — a channel missing here is a silent under-dispatch, which looks exactly like
@@ -176,9 +189,37 @@ async function closeFailureIssue(env) {
   });
 }
 
+/**
+ * Dispatch fetch-ohlcv.yml's same-evening close pass for one bucket.
+ *
+ * Nothing is decided here: the workflow runs the real scripts/fetch_ohlcv.py
+ * with the ingest tripwire, the hole check and the store-gap pass, and files
+ * its own issue when it goes red. This only starts the runner on time, which
+ * a GitHub cron cannot do.
+ */
+export async function dispatchCloseRun(env, closeRun) {
+  await gh(env, `/repos/${REPO}/actions/workflows/${FETCH_WORKFLOW_FILE}/dispatches`, {
+    method: "POST",
+    body: JSON.stringify({ ref: "main", inputs: { close_run: closeRun } }),
+  });
+  console.log(`dispatched ${FETCH_WORKFLOW_FILE} close_run=${closeRun}`);
+}
+
 export default {
   async scheduled(event, env, ctx) {
     try {
+      // A close-run cron dispatches the fetch and consults no gate: the gate
+      // is the hourly job, and the two share this handler only because a
+      // Worker has one `scheduled` entry point.
+      const closeRun = CLOSE_RUNS[event && event.cron];
+      if (closeRun) {
+        await dispatchCloseRun(env, closeRun);
+        await closeFailureIssue(env).catch((e) =>
+          console.error("could not close the failure issue:", String(e)),
+        );
+        return;
+      }
+
       const today = new Date().toISOString().slice(0, 10);
       const candidates = gateable(await pendingOrders(env), today);
       if (candidates.length === 0) {

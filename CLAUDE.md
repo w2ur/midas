@@ -209,7 +209,7 @@ Same Brain/Hands invariant: safety rails live in the broker, at market-fill time
 - **Source of truth**: `data/market/ohlcv/{SYMBOL}.jsonl`, one row per trading day, **committed to git** — the sandboxed session has no outbound HTTP.
 - **Every read path takes the raw `close`; nothing reads `adj_close`.** This is a money-path invariant, not a preference.
 - **Restating a baseline series requires a changelog anchor too** — a restatement without disclosure is the failure mode the append-only gate exists to catch.
-- **`end` is YESTERDAY, never today.** A mid-day manual run writes no partial bar at all.
+- **`end` is YESTERDAY, never today, on the scheduled runs.** A mid-day manual run writes no partial bar at all. **The two same-evening close runs are the one exception** (`--close-run eu|us`, 2026-09-28): today's bar, for one cash-equity bucket whose markets have all closed, because the vendor publishes a day's close the same evening and withdraws it overnight — the measured cause of the store's one-day holes. Dispatch-only, from the Cloudflare Worker; no GitHub cron may select one.
 - **`merge_rows` is the only place holding the ingest anomaly tripwire.** A quarantined row is adjudicated against the vendor's own action calendar, never waved through.
 - **Not to be confused**: `scripts/fetch_market_data.py` writes a single benchmark snapshot; `scripts/fetch_ohlcv.py` populates the store.
 
@@ -217,7 +217,7 @@ Schedules, the revision window, corporate actions and split detection, the unit-
 
 ## Session Cadence (RemoteTriggers + Workflows)
 
-- **Snapshots are keyed on the market date and are immutable across sessions.**
+- **Snapshots are keyed on the market date and are immutable across sessions.** Since 2026-09-28 the session runs at 22:00 UTC behind the close runs and prices the day it runs on; crypto, FX and futures inside the row mark at the previous completed UTC bar.
 - **Cross-currency positions must be converted before summing, on EVERY pricing path.** A book holding more than one currency is silently wrong otherwise.
 - **The session refuses to price against a store that stopped advancing** (`assert_session_fresh`). A stale store is unknown, never healthy.
 - **The trading session has no outbound HTTP dependency.** Prices and benchmarks come from the committed store. Anything that adds a network call to the session path breaks the sandbox contract.

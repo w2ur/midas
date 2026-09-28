@@ -13,8 +13,8 @@ const CURRENT_PATH = path.join(DATA_DIR, "leaderboard", "current.json");
 
 /**
  * Live leaderboard artifact. Written by three update paths:
- *   - Weekday session (every Mon-Fri 20:00 UTC)
- *   - Weekend valuation refresh (Sat/Sun 20:00 UTC)
+ *   - Weekday session (every Mon-Fri 22:00 UTC since 2026-09-28; 20:00 before)
+ *   - Weekend valuation refresh (dispatched after the Sun/Mon crypto fetch; Sat/Sun 20:00 UTC crons as fallback)
  *   - Trigger watcher when a conditional order fires: crypto whenever the
  *     Cloudflare Worker gate (workers/trigger-gate/) sees a pending trigger at
  *     its level and dispatches check-triggers-crypto.yml; everything else at
