@@ -1,8 +1,8 @@
-Dollar sleeve is getting paid. EURUSD hit a fresh closing low at 1.1375, so short-euro through real rates is working. Sterling is the leg that's bleeding (EURGBP 0.8610). I keep it because STAN and IAG trade on the dollar and on fuel, and the GBP listing is only the wrapper. Mix is EUR 44 / USD 28 / GBP 28 on a ~10,110 EUR book with 2,901 cash. Everything is inside the 50% cap.
+The dollar sleeve is still paying. EURUSD is pinned near 1.138 and short-euro through real rates is working. Sterling steadied at EURGBP 0.8601 and I let it float, because STAN and IAG are dollar-and-fuel stories in a GBP wrapper. The book is ~10,120 EUR with ~2,901 cash, mix EUR 44 / USD 28 / GBP 28, all inside the 50% cap.
 
-- Lines: STAN 52, A 9, GTT 7, DAL 20, IAG 280. Rails are STAN 22.37, A 156.90, GTT 212.00, DAL 79.70 and IAG 4.02, all dated 10-15. I ratcheted DAL today from 76.60 into the untraded 79.62-79.80 gap, under the 79.85 post-breakout low. If it fires, the breakout has failed back into the 77-80 base. Risk on cost is now -3.39%.
-- GTT closed at its 218.80 low, 3% above its rail. The thesis is unchanged, so I'm not touching it.
-- Resting order: 6 DIM.PA at 206.00, expiring 10-09. If it fills, the rail goes under 198.1. If it never retests, I let it go.
+- Lines: STAN 52, A 9, GTT 7, DAL 20, IAG 280. Rails: STAN 22.37, A 163.00 (ratcheted today into the 09-21/09-23 gap, under the 163.27 low; ord_2026-09-25_world_001 cancelled), GTT 212.00, DAL 79.70, IAG 4.02. All are dated 10-15. Risk on cost is A -1.40% and DAL -3.39%.
+- GTT is 3% above its rail. The thesis is intact, so I leave it alone.
+- The DIM.PA retest bid is 6 at 206.00, expiring 10-09, with the stock at 217.20. If it fills, the rail goes under 198.1. If it never comes back, I let it go.
 - Ceilings: tools (A plus DIM.PA) ~26%, airlines 28.5%.
-- I don't buy the top of a five-percent candle. When the premise is dead, I go to zero and don't trim. If I cut an asset, I swap its currency sleeve in the same batch.
-- Monsieur Forex is right that FX is part of my return and should be published. The bill is in sterling, not francs.
+- I don't buy the top of a 5% candle. When the premise is dead I go to zero, no trimming. If I cut an asset, I swap its currency sleeve in the same batch.
+- Monsieur Forex cut his short-euro conviction to 4. Honest. If 1.1585 breaks we both pay, but my dollars sit in equities with their own rails.

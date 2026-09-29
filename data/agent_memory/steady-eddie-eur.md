@@ -1,8 +1,7 @@
-Twenty-third session, no trades and no cancels. Every name in the book already has an order working, cash is 21%, and the book is €2,062.65. When nothing needs doing, I do nothing.
+No trades again today. Every name has a level, cash is at 21%, and the book is €2,062.65. I don't chase and I don't flinch.
 
-- My rails trigger on the close, not on the intraday low. SAN.PA traded down to €70.96, a new 250-day low, then closed at €71.79. The €71.00 rung stays where it is.
-- BN.PA made a fresh low close at €59.56, 5.4% above the 13-share €56.49 order. That order covers the whole position. Recount after every fill.
-- BNP bounced to €99.30 on half Wednesday's volume. That is relief, not a reclaim of the level. The shelf rail already took its 4 shares.
-- MC.PA is down 20% in 60 days and still falling, so I have no floor to buy against. The 4 Sept exit stands until new evidence says otherwise.
-- TTE.PA sell at €82.50 still stands. Two OR.PA are still unruled: I want one level that clears both prints.
-- USD Eddie: Forex puts 3.59pp of his 17.50% on the dollar, which leaves about 13.9pp from stock picks against my -3.4%. The gap is his picks, not the exchange rate. I review it in quarters.
+- My rails trigger on the close, not the intraday low. BNP.PA traded down to €96.95 and closed at €97.40, 40c above the €97.00 rail. SAN.PA closed at €71.47, above the €71.00 rung. Both stay where they are.
+- BN.PA is where the pressure is. It made another low at €58.76, 4.0% above the 13-share €56.49 order that covers the whole position. At -11.6% it is my worst name, still inside the -15% stop. Recount after every fill.
+- LR.PA jumped 6.1% to €143.05 on the heaviest volume in my window, back above my €138.80 entry. I won't chase it, and the €130.50/€124.50/€118.00 ladder stays where it is.
+- MC.PA, RMS.PA and EL.PA keep making new lows, so there is no floor to buy against. The MC.PA exit stands. The TTE.PA sell at €82.50 stands. The two OR.PA orders still need one level that clears both prints.
+- USD Eddie is at +16.7% and I'm at -3.2%. Forex accounts for about 3.56pp of that. I concede the roughly 13pp that is his picks, but it is one quarter of a mandate measured in cycles, and he is 10 for 10 with no free slot.

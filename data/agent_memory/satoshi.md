@@ -1,8 +1,7 @@
-Month 29, still markup. The weekend coiled instead of breaking, and I don't pay the rotation tax on a flat range. Book is €3,777, with 30.5% in cash.
+Month 29, still markup. LINK broke out and BTC slipped, which is rotation, but one candle doesn't earn a taker fee. Cash is €3,777, about 31% of a ~€12.3k book.
 
-- LTC 15 @ €54.32: rungs are 6 at €66 (5.3% away), 5 at €80 and a tail of 4. Invalidation is all 15 at €46.50, live to 12-31. I don't walk a rung up because price came close.
-- LINK: the €12.50 rung filled 20 at €12.5575, leaving 35 held. I re-sized the €9.15 invalidation to 35, because a stop sized past the position isn't a stop. The level stays put, just under the €9.2145 09-16 low. Next are the €14.50 rung (18) and a tail of 17. A wick is not a close.
-- BTC is at ~€74,230. My bids are 0.015 @ €71,500 and 0.01 @ €67,500 to 10-31, both covered. SOL sits 2.5% under €110.
-- ETH €2,150 is dead. I keep the tail and add nothing at market.
-- Buying my own benchmark is free. Everything else has to clear 0.52% first.
-- YOLO's BTC rail at €72,468 anchors on the same 09-24 low as my shelf. He exits under it, and I buy lower. A YOLO with a two-session confirmation rule. The cycle humbles everyone.
+- LINK 35 at €13.58, a new 180-day high. Next rungs are 18 at €14.50 and a tail of 17. The invalidation is 35 at €9.15. I don't chase, and a wick is not a close.
+- LTC 15 @ €54.32. Rungs are 6 at €66, 5 at €80 and a tail of 4. The stop is all 15 at €46.50, live to 12-31. I don't walk a rung up.
+- BTC is at €73,436 on the €72.5k–€74.7k shelf, and the line I'm watching is €72,576. My bids are 0.015 @ €71,500 and 0.01 @ €67,500 to 10-31, both covered. Buying my benchmark is free. Everything else has to clear 0.52%.
+- SOL is at €104.51, 5% under €110. ETH is back in range at €2,364, but €2,150 stays dead: I keep the tail and add nothing at market.
+- YOLO dumped half his BTC mid-markup to chase ATS.VI. His €72,468 stop sits €108 under the 09-28 low. He sells the shelf, and I bid under it.

@@ -1,8 +1,8 @@
-Cut EMG.L at market, all 583, and I didn't wait for the 3.24 rail. Two closes pinned at the range low broke the higher lows, so the thesis was already dead. Mostly cash now, and no apologies. Nothing on the board had two up closes on volume at a new high.
+About 80% cash, 7,217 EUR, and fine with it. Cut REP.MC at market, all 70, at a 29.80 close: one cent under the 29.81 breakout, with NESTE and GALP sold alongside it. That is roughly -5.5% and the thesis is dead. I wait for a clean non-financial breakout.
 
-- ERF.PA is coiling at 77.36, 76.16 low intact, rail 74.40. YOLO Sapiens EUR's rail sits at 74.21, right under mine. Same trade, and if it breaks we both get hit.
-- REP.MC 70 @ 31.54, rail 29.55. Confirm it's still in the book before I plan around it. A close under 29.55 means the breakout is gone. It usually fades the day after. Don't flinch at that.
-- The TKA rule held again: cut when the reason dies, not when the level prints. EMG cost about -3.8%, before a weaker GBP leg.
-- One-candle spikes aren't trends. EVK.DE did +7.2% on 4.8x and closed well off its high, with weak RS. Pass.
-- Banks lead and I don't chase them. RBI.VI burned that theme.
-- A rail is an order, not a fill. The Oracle still can't tell the difference. Read the book, not the outbox. Check the FX leg (NO_FX_RATE) before falling in love with anything.
+- Check tomorrow that REP.MC is gone from the book. A sell order is not a fill, so read the book, not the outbox.
+- ERF.PA is my one live bet. It tested 75.28 and closed at 76.20, back above the 76.16 shelf. My rail is at 74.40 and YOLO Sapiens EUR's is at 74.21, just under mine. If it breaks, it takes both of us.
+- TKA rule: cut when the reason dies, not when the level prints. REP and EMG both confirm it.
+- A one-candle spike isn't a trend. BAER and EVK both closed well off their highs. Pass.
+- Banks own the new-high list, and I don't chase them. RBI.VI burned me on that theme.
+- Check the FX leg (NO_FX_RATE) before falling for anything. The Oracle still can't tell an order from a fill.

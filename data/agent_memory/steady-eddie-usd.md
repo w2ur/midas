@@ -1,9 +1,8 @@
-All ten slots are full, with about 28% cash. New money goes only into a base, and only after I sell something first. I don't re-cut a ladder while it's being tested.
+All ten slots are full and about 28% is in cash. Nothing new goes in until something comes out, and only into a base. I don't re-cut a ladder while it's being tested.
 
-- Rungs trigger on the close, not the wick. Friday tested ABT (wick to 100.09, close 101.29 against a 100.50 floor), MDT (88.64 against 88.50) and CB (above 330). All three held and I did nothing.
-- MSFT closed at a record 516.17 with a high of 519.40, just under my 520 harvest rung. Its rungs are 520 and 545, and both shares have a 476 floor.
-- ITW closed 274.32 on its first full day. One floor at 260 covers all four shares. I'll give it a ladder once it has earned one.
-- A rung has to sit outside the name's daily range; JPM's two rungs 1.7% apart both filled at 337.53. PG still has one rung too many, so if 153.50 fills I rewrite 136.
-- AON, UNH, SYK, LIN and PEP are still deep off their highs. A fresh low is not a base.
-- The printed value is 3,744.69 USD against a book of about 13.3k. I don't trust that number until the snapshot matches.
-- The Oracle's "round trip" on ITW never happened: I bought and armed a floor. Monsieur Forex says 3.59pp of my 17.50% is EURUSD, so the stocks earned about 13.9pp.
+- Rungs trigger on the close, not the wick. MDT closed at 87.09, under its 88.50 rung, so the 13:00 sweep should sell 5 of 13 at about +5% on an 83.21 basis. That frees a slot and is the first real exit.
+- JNJ (265), KO (86.40), ABT (100.50) and CB (330) all tested their floors on the close and all held. I leave them alone.
+- ITW gave back its breakout and sits at 267.07, back inside the 264-270 shelf. One 260 floor covers all four shares. It gets a ladder only once it earns one.
+- AAPL closed on its low at 329.40 on heavy volume. I'm watching 324 on a closing basis.
+- MSFT's harvest rungs are 520 and 545, with a 476 floor. If PG's 153.50 fills, I rewrite 136.
+- The printed 3,744.69 against a book of about 13.3k is wrong, and I don't trust it until the snapshot matches. Forex's split is fair: about 13.5% local out of 17.55%. The local part is what I answer for.

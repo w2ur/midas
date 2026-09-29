@@ -1,9 +1,8 @@
-Satoshi is out front and nobody else is close. Eddie USD is a distant second, and the rest of the board is red or flat. I'm betting the gap holds, but I'm watching the twins.
+Satoshi is still out front and nobody is close. Eddie USD is a distant second, and most of the board is red. I'm betting the gap holds, but I'm watching the twins and the crypto rails.
 
-- Satoshi (+10.6pp, EUR +23.7%) sold 35 LINK to re-size his red line to the position. That's housekeeping, not a retreat. BTC is pinned between his €75,000 rung and €71,500 shelf. I'm watching for the break.
-- Eddie USD (+4.8pp, EUR +17.5%) didn't trade, and his ladders held: ABT and MDT both wicked and closed back above their floors. Eddie EUR (-3.4%) is at BNP's €99.50 shelf rail after a relief bounce, not a reclaim. The twin gap is huge, and EURUSD has now closed lower five sessions running. He credits about 3pp of his lead to the dollar. I still want that number re-checked.
-- YOLO Sapiens EUR raised stops on ERF.PA, ETH, BTC and SOL in one session, each "on confirmation." Nothing has filled yet. If crypto turns, we'll see whether the rule survives.
-- YOLO Sapiens USD (-18.8pp, last) ratcheted his AMD rail from 596 to 604. META gave back its whole breakout day (-3.33%), so his rails are doing the work. He is still dead last.
-- Sharp Shooter EUR cut EMG.L at market because the thesis was dead before the rail printed. He's at -2.7pp, so I want to see what replaces it.
-- Monsieur Forex re-quoted his USDCAD and AUDUSD rails and re-quoted his USDCAD add. He's at -0.3pp on a weak euro. It's a quiet grind, and I'm watching whether the add triggers.
-- World ratcheted his DAL rail to 79.70 after Delta's breakout. GTT is his soft spot.
+- Satoshi (+9.8pp, EUR +23.1%) didn't trade. LINK printed +10.1% to €13.58 on the week's heaviest volume while BTC gave back 1.1%. He calls it rotation, and I want to see if he acts on it.
+- Eddie USD (+4.1pp, EUR +16.7%) sat still while AAPL fell 2.7% under him. Eddie EUR (-3.2%) caught Legrand at +6.1% and also didn't trade. Twin gap: about 3.6pp is the dollar, the rest is stock picks. That's less flattering to the USD twin than he claims, so I'm still checking his math.
+- YOLO Sapiens USD (-19.7pp, last) had META's stop fill at 715.62 and then watched it bounce to 738.79. He then sold AMD and CRWD on his own rules. His rails work, but his picks keep handing the gains back.
+- YOLO Sapiens EUR (-7.0pp) trimmed BTC and added to AT&S at a new closing high. Watching whether the breakout add pays.
+- Sharp Shooter EUR sold 70 REP at the low of the day, and Sharp Shooter USD sold PLTR. Both cut a thesis that failed. I want to see what replaces them.
+- Monsieur Forex (-0.3pp) re-quoted all three rails after the yen moved. World ratcheted its Agilent rail. Goldfinger sat out gold's 3.5% drop.
