@@ -12,13 +12,21 @@ import worker from "../src/index.js";
 const ENV = { GITHUB_PAT: "test-token" };
 
 /** Build a fetch stub. `deadPairs` throw a 404 the way Coinbase does. */
-function stubFetch({ orders, prices, deadPairs = [], openIssues = [] }) {
-  const calls = { dispatches: 0, issuesCreated: [], issuesClosed: [], comments: 0 };
+function stubFetch({ orders, prices, deadPairs = [], openIssues = [], dispatchFails = false }) {
+  const calls = {
+    dispatches: 0,
+    dispatched: [],
+    graphql: 0,
+    issuesCreated: [],
+    issuesClosed: [],
+    comments: 0,
+  };
   globalThis.fetch = async (url, init = {}) => {
     const u = String(url);
     const ok = (body) => new Response(JSON.stringify(body), { status: 200 });
 
     if (u.endsWith("/graphql")) {
+      calls.graphql += 1;
       const entries = orders.map((o, i) => ({
         name: `ord_${i}.json`,
         object: { text: JSON.stringify(o) },
@@ -31,7 +39,9 @@ function stubFetch({ orders, prices, deadPairs = [], openIssues = [] }) {
       return ok({ data: { amount: String(prices[pair]) } });
     }
     if (u.includes("/dispatches")) {
+      if (dispatchFails) return new Response("boom", { status: 500 });
       calls.dispatches += 1;
+      calls.dispatched.push({ url: u, body: JSON.parse(init.body) });
       return new Response(null, { status: 204 });
     }
     if (u.includes("/issues?state=open")) return ok(openIssues);
@@ -140,4 +150,60 @@ test("a GraphQL error is not read as an empty desk", async () => {
   globalThis.fetch = async () =>
     new Response(JSON.stringify({ errors: [{ message: "bad" }] }), { status: 200 });
   await assert.rejects(() => worker.scheduled({}, ENV, {}), /GraphQL/);
+});
+
+// --- the same-evening close runs (2026-09-28) --------------------------------
+
+test("the European close cron dispatches fetch-ohlcv with close_run=eu and consults no gate", async () => {
+  // A live BTC order AT its level is pending: on the gate cron that is a
+  // dispatch of check-triggers-crypto.yml. On a close-run cron it must be
+  // neither read nor acted on — the fetch is the whole job.
+  const calls = stubFetch({ orders: [btc], prices: { "BTC-EUR": 150 } });
+  await worker.scheduled({ cron: "15 19 * * 1-5" }, ENV, {});
+  assert.equal(calls.dispatches, 1);
+  assert.match(calls.dispatched[0].url, /\/actions\/workflows\/fetch-ohlcv\.yml\/dispatches$/);
+  assert.deepEqual(calls.dispatched[0].body, { ref: "main", inputs: { close_run: "eu" } });
+  assert.equal(calls.graphql, 0, "the pending orders were read on a close-run cron");
+});
+
+test("the US close cron dispatches close_run=us", async () => {
+  const calls = stubFetch({ orders: [], prices: {} });
+  await worker.scheduled({ cron: "20 21 * * 1-5" }, ENV, {});
+  assert.deepEqual(calls.dispatched.map((d) => d.body.inputs), [{ close_run: "us" }]);
+});
+
+test("the gate cron still runs the gate, not a close run", async () => {
+  // The control: the hourly cron string reaches the existing path and, with a
+  // trigger at its level, dispatches the WATCHER workflow.
+  const calls = stubFetch({ orders: [btc], prices: { "BTC-EUR": 150 } });
+  await worker.scheduled({ cron: "0 0-21,23 * * *" }, ENV, {});
+  assert.equal(calls.dispatches, 1);
+  assert.match(calls.dispatched[0].url, /check-triggers-crypto\.yml\/dispatches$/);
+  assert.equal(calls.graphql, 1);
+});
+
+test("an event without a cron string is the gate too", async () => {
+  // Cloudflare always sets `event.cron`; a missing one (these tests, a manual
+  // trigger) must degrade to the gate rather than to nothing.
+  const calls = stubFetch({ orders: [btc], prices: { "BTC-EUR": 150 } });
+  await worker.scheduled({}, ENV, {});
+  assert.match(calls.dispatched[0].url, /check-triggers-crypto\.yml/);
+});
+
+test("a refused close-run dispatch files the failure issue and rethrows", async () => {
+  // A close run that silently fails to start is the morning-only regime back
+  // for that day, with nothing saying so. The Worker's own alerting covers it.
+  const calls = stubFetch({ orders: [], prices: {}, dispatchFails: true });
+  await assert.rejects(() => worker.scheduled({ cron: "15 19 * * 1-5" }, ENV, {}), /500/);
+  assert.deepEqual(calls.issuesCreated, ["trigger-gate worker failing"]);
+});
+
+test("a clean close-run invocation closes an open failure issue", async () => {
+  const calls = stubFetch({
+    orders: [],
+    prices: {},
+    openIssues: [{ number: 7, title: "trigger-gate worker failing" }],
+  });
+  await worker.scheduled({ cron: "20 21 * * 1-5" }, ENV, {});
+  assert.equal(calls.issuesClosed.length, 1);
 });

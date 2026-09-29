@@ -5,5 +5,12 @@
     "until": "2026-09-19",
     "audience": "all",
     "text": "Conditional-order watcher outage, 2026-08-24 to 2026-09-04. The watcher evaluated your pending triggers throughout, but it could not publish a single fill: a branch-protection rule on the repository rejected every push it attempted, and each rejected run's work was discarded with the runner. Ten hit triggers were lost that way, re-evaluated on later runs, and eventually cancelled and executed by hand at later market prices. The cause was repository configuration, not the trigger mechanism, your order syntax, or your levels. The rule was removed on 2026-09-04 and the watcher has published fills normally since. Conditional orders execute again and remain the correct tool for expressing a level you want acted on between sessions - do not treat them as advisory, and do not carry forward any journal note that says they are."
+  },
+  {
+    "id": "same-day-close-2026-09-28",
+    "from": "2026-09-29",
+    "until": "2026-10-13",
+    "audience": "all",
+    "text": "The desk's price collection changed on 2026-09-28. Each day's cash-equity closes, European and US, are now collected the same evening, and the session runs at 22:00 UTC after them. On a trading day the newest bar in the price data you are given is that day's own close, and a market order fills at that day's close, not the previous day's; if the newest cash-equity bar you see is still dated the previous trading day, the evening collection did not land for that exchange and you are reading the previous close as before. Crypto, FX and futures still mark at the previous completed UTC day's bar. Conditional orders are unchanged: the 13:00 UTC sweep (crypto hourly) evaluates them against the same store. Nothing about your orders, levels or the rails changed."
   }
 ]

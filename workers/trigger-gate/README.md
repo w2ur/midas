@@ -15,6 +15,20 @@ do ~5 seconds of work, projecting ~1,150–1,200 of the account's 2,000 monthly
 minutes (measured 2026-08-18). Reading and comparing are cheap; only *firing*
 needs a runner.
 
+## Close runs (since 2026-09-28)
+
+The same Worker carries two more crons, `15 19 * * 1-5` and `20 21 * * 1-5`,
+which `workflow_dispatch` `fetch-ohlcv.yml` with `close_run=eu` and
+`close_run=us`: the same-evening collection of each day's cash-equity closes,
+one bucket per pass, after that bucket's markets have closed. They are here
+because a GitHub cron has no deadline (fetch-ohlcv's 06:00 cron started 4-7 h
+late on every run in late September 2026) and a close run has one, the 22:00
+UTC session. `src/index.js` keys the job on the literal `event.cron` that
+fired; `wrangler.toml` says why those hours; `tests/test_trigger_gate_parity.py`
+pins both against the session start. Nothing is decided here — the dispatched
+workflow runs the real `scripts/fetch_ohlcv.py` with every guard, and files its
+own issue when it goes red.
+
 ## Deploy
 
 ```bash

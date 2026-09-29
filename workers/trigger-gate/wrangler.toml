@@ -7,14 +7,32 @@ compatibility_date = "2026-08-01"
 workers_dev = false
 
 [triggers]
-# Mirrors the GitHub cron this replaced, hour-20 skip included.
+# Three jobs on one Worker, told apart by `event.cron` in src/index.js.
 #
-# Hour 20 falls inside the watcher's own 19:55-21:00 UTC blackout
-# (scripts/check_triggers.py), so a run then can only exit early. Hour 21 is
-# deliberately NOT skipped even though it is inside the blackout today:
-# BLACKOUT_END tracks the daily session start and has already moved three times
-# (20:30 -> 21:00 -> 21:30 -> 21:00). Hour 20 is inside the window for every
-# value it has ever held; hour 21 is not. Encoding the movable edge here would
-# create a second place to update whenever the session moves — the script's own
-# check stays the single source of truth.
-crons = ["0 0-19,21-23 * * *"]
+# 1. The crypto trigger gate, hourly, skipping the SESSION HOUR (22, since the
+#    session moved to 22:00 UTC on 2026-09-28; 20 before). That hour falls
+#    inside the watcher's own 21:55-23:00 UTC blackout
+#    (scripts/check_triggers.py), so a run then can only exit early. Hour 23 is
+#    deliberately NOT skipped even though 23:00 is inside the blackout today:
+#    BLACKOUT_END tracks the session start and has moved four times
+#    (20:30 -> 21:00 -> 21:30 -> 21:00 -> 23:00). Encoding the movable end here
+#    would create a second place to update whenever the session moves — the
+#    script's own check stays the single source of truth. What IS pinned is the
+#    skipped hour: tests/test_trigger_gate_parity.py reads it against
+#    SESSION_START, so a session move that forgets this file fails the suite.
+# 2. The European close run, 19:15 UTC Mon-Fri: dispatches fetch-ohlcv.yml with
+#    close_run=eu. Every European venue in scripts/fetch_ohlcv.py's
+#    EU_CLOSE_SUFFIXES has closed by 16:30 UTC on a winter day, and the vendor
+#    publishes the day's bar from ~1.5 h after the bell until at least 20:18 UTC
+#    (.github/workflows/eu-close-probe.yml, measured 2026-08-14..17), then
+#    withdraws it overnight. 19:15 sits inside that window with margin on both
+#    sides; the first weeks' run logs calibrate it.
+# 3. The US close run, 21:20 UTC Mon-Fri: close_run=us. The US cash close is
+#    20:00 UTC in summer and 21:00 UTC in winter; 21:20 is after both, and
+#    leaves ~10 min of fetch before the 22:00 UTC session reads the store.
+#
+# The close runs live here and not on a GitHub cron because a GitHub cron has
+# no deadline: fetch-ohlcv.yml's 06:00 cron started 4 h 06 to 6 h 57 late on
+# every run from 2026-09-17 to 09-28. Cloudflare's cron fires to the minute,
+# and a workflow_dispatch starts within one.
+crons = ["0 0-21,23 * * *", "15 19 * * 1-5", "20 21 * * 1-5"]

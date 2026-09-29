@@ -2910,31 +2910,42 @@ class TestAutoMergeDefersInsideTheSessionWindow:
         # that drifted twice already (see BLACKOUT_END's own history).
         assert not re.search(r"time\(\s*\d+\s*,\s*\d+\s*\)", script), script
 
+    # Minutes from SESSION_START, so the boundaries follow the session when it
+    # moves (20:00 -> 22:00 on 2026-09-28) instead of silently becoming a
+    # test of the quiet middle of the night. Absolute hours are the two
+    # far-away controls.
     @pytest.mark.parametrize(
-        "hh,mm",
+        "offset,absolute",
         [
-            (19, 54),
-            (19, 55),  # the watcher's blackout opens; the MERGE must not defer
-            (19, 59),
-            (20, 0),
-            (20, 30),
-            (20, 59),
-            (21, 0),
-            (21, 1),
-            (3, 0),
-            (13, 0),
+            (-6, None),
+            (-5, None),  # the watcher's blackout opens; the MERGE must not defer
+            (-1, None),
+            (0, None),
+            (30, None),
+            (59, None),
+            (60, None),  # BLACKOUT_END, inclusive
+            (61, None),
+            (None, (3, 0)),
+            (None, (13, 0)),
         ],
     )
     def test_the_workflow_agrees_with_merge_deferred_at_the_boundaries(
-        self, tmp_path, hh, mm
+        self, tmp_path, offset, absolute
     ):
         """Parity, executed: the step's own script against the constants it
         claims to read, at both inclusive edges and either side of them."""
-        from datetime import datetime, timezone
+        from datetime import date, datetime, timedelta, timezone
 
         from scripts import check_triggers as ct
 
-        now = datetime(2026, 9, 5, hh, mm, tzinfo=timezone.utc)
+        if absolute is not None:
+            now = datetime(2026, 9, 5, *absolute, tzinfo=timezone.utc)
+        else:
+            start = datetime.combine(date(2026, 9, 5), ct.SESSION_START, tzinfo=timezone.utc)
+            assert datetime.combine(date(2026, 9, 5), ct.BLACKOUT_END) == datetime.combine(
+                date(2026, 9, 5), ct.SESSION_START
+            ) + timedelta(minutes=60), "the offsets above assume a 60-minute window"
+            now = start + timedelta(minutes=offset)
         result = subprocess.run(
             ["bash", "-c", self._step()["run"]],
             cwd=REPO_ROOT,
@@ -2958,7 +2969,7 @@ class TestAutoMergeDefersInsideTheSessionWindow:
     def test_the_parity_check_can_fail(self, tmp_path):
         """Falsifiable control: the same script pointed at a checkout whose
         constants differ must disagree with the real `in_blackout`."""
-        from datetime import datetime, timezone
+        from datetime import date, datetime, timezone
 
         from scripts import check_triggers as ct
 
@@ -2969,7 +2980,11 @@ class TestAutoMergeDefersInsideTheSessionWindow:
             "SESSION_START = time(1, 0)\n"
             "BLACKOUT_END = time(2, 0)\n"
         )
-        now = datetime(2026, 9, 5, 20, 30, tzinfo=timezone.utc)
+        from datetime import timedelta
+
+        now = datetime.combine(
+            date(2026, 9, 5), ct.SESSION_START, tzinfo=timezone.utc
+        ) + timedelta(minutes=30)
         assert ct.merge_deferred(now)
         result = subprocess.run(
             ["bash", "-c", self._step()["run"]],
@@ -4506,3 +4521,85 @@ class TestSessionIntegrityAlertsByScope:
         _report(tmp_path, _render(title, self.A), "failure")
         _report(tmp_path, _render(title, self.B), "success")
         assert title not in store.read_text().splitlines()
+
+
+class TestCloseRunsAreDispatchOnly:
+    """fetch-ohlcv's same-evening close runs (2026-09-28) are reached only by
+    dispatch, from the Cloudflare Worker, never by a cron in this file.
+
+    A GitHub cron has no deadline — this workflow's 06:00 cron started 4 h 06
+    to 6 h 57 late on every run from 2026-09-17 to 09-28 — and a close run has
+    one: the 22:00 UTC session. A cron here that selected a close run would
+    land it, on most days, after the session it exists to feed, or worse, in
+    the vendor's overnight withdrawal window, where every symbol comes back
+    with a null close and the run goes red for nothing. Asserted in both
+    directions, like the schedule guard above: no cron maps to a close run,
+    AND the dispatch input the Worker uses exists and reaches the script.
+    """
+
+    WORKFLOW = REPO_ROOT / ".github" / "workflows" / "fetch-ohlcv.yml"
+
+    def _spec(self) -> dict:
+        return yaml.safe_load(self.WORKFLOW.read_text(encoding="utf-8"))
+
+    def _fetch_run(self) -> str:
+        steps = [s for job in self._spec()["jobs"].values() for s in job["steps"]]
+        return next(s for s in steps if s.get("id") == "fetch")["run"]
+
+    def test_no_cron_selects_a_close_run(self):
+        arms = re.findall(r'^\s*"([^"]*)"\)\s*CRYPTO_ONLY=', self._fetch_run(), re.M)
+        text = self.WORKFLOW.read_text(encoding="utf-8")
+        for cron in re.findall(r'^\s*-\s*cron:\s*"([^"]+)"', text, re.M):
+            assert cron in arms, cron
+        # The close-run branch keys on the dispatch input alone.
+        assert 'if [[ "$CLOSE_RUN" == "eu" || "$CLOSE_RUN" == "us" ]]' in self._fetch_run()
+        assert "SCHEDULE" not in self._fetch_run().split('"$CLOSE_RUN" == "eu"')[1].split("MODE=")[0]
+
+    def test_the_dispatch_input_reaches_the_script(self):
+        on = self._spec()[True] if True in self._spec() else self._spec()["on"]
+        inp = on["workflow_dispatch"]["inputs"]["close_run"]
+        assert set(inp["options"]) == {"none", "eu", "us"}
+        assert inp["default"] == "none"
+        assert '--close-run "$CLOSE_RUN"' in self._fetch_run()
+
+    def test_a_close_run_carries_its_mode_into_the_alert_title(self):
+        """Idempotency of the failure issue is per title; an evening pass that
+        shared the morning run's title would close the morning's alert as
+        "Recovered" without fetching a single one of its symbols."""
+        assert 'MODE="${CLOSE_RUN}-close"' in self._fetch_run()
+        assert 'echo "mode=${MODE}"' in self._fetch_run()
+
+    def test_a_close_run_refuses_crypto_only(self):
+        run = self._fetch_run()
+        branch = run.split('"$CLOSE_RUN" == "eu"')[1].split("MODE=")[0]
+        assert 'if [[ "$CRYPTO_ONLY" == "true" ]]' in branch and "exit 1" in branch
+
+
+class TestTheWeekendRefreshFollowsTheCryptoBars:
+    """The Sun-Mon crypto-only fetch dispatches refresh-leaderboard.yml after
+    its push (2026-09-28). Since the session prices its own day, the Friday row
+    is the session's, and the two weekend points come from the crypto bars
+    those runs land — a refresh scheduled by cron cannot be relied on to run
+    after them (the fetch cron ran 4-7 h late all September)."""
+
+    WORKFLOW = REPO_ROOT / ".github" / "workflows" / "fetch-ohlcv.yml"
+
+    def test_the_dispatch_is_gated_on_a_committed_crypto_run(self):
+        spec = yaml.safe_load(self.WORKFLOW.read_text(encoding="utf-8"))
+        steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+        step = next(s for s in steps if "refresh-leaderboard.yml" in (s.get("run") or ""))
+        cond = step["if"]
+        assert "steps.fetch.outputs.mode == 'crypto-only'" in cond
+        assert "steps.fetch.outputs.committable == 'true'" in cond
+        assert "gh workflow run refresh-leaderboard.yml" in step["run"]
+        # It must sit after the push and before the reporter: the refresh reads
+        # main, and the reporter/dispatch pair must stay last.
+        names = [s.get("name") for s in steps]
+        assert names.index("Commit and push updates") < names.index(step["name"]) < names.index("Report outcome")
+
+    def test_the_refresh_workflow_can_be_dispatched(self):
+        spec = yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / "refresh-leaderboard.yml").read_text(encoding="utf-8")
+        )
+        on = spec[True] if True in spec else spec["on"]
+        assert "workflow_dispatch" in on

@@ -1,7 +1,12 @@
 name: refresh-leaderboard
 
-# Weekend valuation-only refresh. No agent dispatch — runs Sat/Sun 20:00 UTC
-# to advance snapshots, refresh baselines, and write data/leaderboard/current.json.
+# Weekend valuation-only refresh. No agent dispatch — advances snapshots,
+# refreshes baselines, and writes data/leaderboard/current.json. Since
+# 2026-09-28 it is DISPATCHED by fetch-ohlcv.yml's Sun-Mon crypto-only run
+# once that run has landed the crypto bars (the session now prices its own day,
+# so the Friday row is the session's and the weekend points are the Saturday
+# and Sunday crypto bars, which only exist after those runs); the Sat/Sun 20:00
+# UTC crons below stay as a fallback and publish nothing when nothing is newer.
 # Weekday equivalents are handled inside scripts/daily_session.py (via the
 # weekday RemoteTrigger session prose at docs/triggers/weekday-session.md).
 #

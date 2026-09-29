@@ -5,12 +5,16 @@ name: fetch-sentiment
 # repo (no network), so this workflow is what keeps sentiment data fresh.
 #
 # Schedule: Mon-Fri 09:00 UTC. It was 19:00 until 2026-08-07, then 18:00
-# until 2026-08-12. The session runs at 20:00 UTC today and moves to
-# 11:00 UTC in a later change; 09:00 is chosen for the schedule the session
-# is MOVING TO, not the one it has — 09:00 -> 11:00 after the move is a 2 h
-# margin, matching what 18:00 -> 20:00 gave before. Until the session moves,
-# the margin is 11 h and the digest a treatment agent reads at 20:00 is
-# collected before the US session opens.
+# until 2026-08-12, when it moved to 09:00 for a planned 11:00 UTC session
+# that never happened. The session moved the other way instead, to 22:00 UTC
+# on 2026-09-28, behind the same-evening close runs that land the day's cash
+# closes — and that is what makes a 09:00 collection right: the digest a
+# treatment agent reads is same-day, assembled before the US open (it lands
+# 13:00-17:00 UTC in practice, 4-8 h late), and the price the agent fills at
+# is that day's CLOSE, which postdates every headline in it. Under the 20:00
+# session the fill price was the PREVIOUS day's close, so a midday headline
+# ("stocks slide") was read against a price that already predated it — the
+# structural look-ahead the METHODOLOGY disclosed on 2026-08-14.
 #
 # The collector must commit BEFORE the session reads the repo, and its
 # digests must be dated the SAME DAY as the session: step_check_sentiment_
@@ -20,8 +24,8 @@ name: fetch-sentiment
 # single day.
 #
 # What the arm assertion CANNOT see is that the digest's content changed with
-# the hour: a 09:00 collection read by a 20:00 session misses the whole US
-# trading day, where an 18:00 one did not. The label stays correct and the
+# the hour: a 09:00 collection read by an evening session misses the whole
+# US trading day, where an 18:00 one did not. The label stays correct and the
 # treatment behind it does not. Disclosed in METHODOLOGY.md.
 #
 # Measured scheduler lag (`gh run list`, 14 scheduled fetch-sentiment runs,

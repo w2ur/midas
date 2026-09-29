@@ -33,8 +33,10 @@ name: attest-ledger
 # on tag immutability here (the run log itself is immutable and records both
 # the old and new hash if a re-run happens).
 #
-# Schedule: 23:00 UTC — after the 20:00 UTC session and clear of the
-# 19:55–20:30 watcher blackout.
+# Schedule: 23:00 UTC — after the 22:00 UTC session's measured tail (commit
+# ~start+30, auto-merge ~start+45), and in practice 1-2 h later than that,
+# GitHub's scheduler being what it is. It pushes a tag, not main, so the
+# 21:55-23:00 watcher blackout does not concern it.
 
 on:
   schedule:

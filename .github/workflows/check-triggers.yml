@@ -1,11 +1,12 @@
 name: check-triggers
 
 # Runs scripts/check_triggers.py once a day over ALL pending conditional
-# orders. The script blacks itself out during 19:55-21:00 UTC to avoid
-# commit-races with the daily session. The end was 20:30 until 2026-08-07;
-# measured session tails (commit 20:09-20:39, auto-merge to 20:45) ran past
-# it. See BLACKOUT_END in scripts/check_triggers.py for the measurements and
-# the caveat.
+# orders. The script blacks itself out during 21:55-23:00 UTC to avoid
+# commit-races with the 22:00 UTC daily session (the window tracks the session
+# start, which moved from 20:00 on 2026-09-28). The end was start+30 until
+# 2026-08-07; measured session tails (commit start+9..39, auto-merge to
+# start+45) ran past it. See BLACKOUT_END in scripts/check_triggers.py for the
+# measurements and the caveat.
 #
 # THIS RAN */15, 24/7, UNTIL 2026-08-17, on a header comment that read
 # "Midas is a public repo → unlimited GitHub Actions minutes, so a 15-min
@@ -61,7 +62,7 @@ on:
     # on time: measured across this repo, runs typically land 40 min to 2 h 45
     # late with a tail past 5 h. A 30-minute gap would routinely lose the race
     # and evaluate yesterday's store. 13:00 clears the documented tail and
-    # still sits well before the 19:55 blackout.
+    # still sits well before the 21:55 blackout.
     #
     # Losing that race is not a correctness failure — the sweep would read the
     # previous close, which is what it read all of the previous day anyway, and

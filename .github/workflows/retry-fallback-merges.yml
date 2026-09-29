@@ -2,7 +2,7 @@ name: retry-fallback-merges
 
 # Re-dispatch auto-merge-session.yml for every `triggers/*` fallback branch
 # still on origin, on a schedule of its own, BETWEEN the 13:00 UTC watcher
-# sweep and the 20:00 UTC session.
+# sweep and the 22:00 UTC session.
 #
 # Why this exists (round-5 review, 2026-09-05). Every one of
 # auto-merge-session.yml's non-fatal outcomes — a deferral, a rejected push
@@ -14,7 +14,7 @@ name: retry-fallback-merges
 # workflow_dispatch the Cloudflare gate fires only when a crypto trigger is
 # near its level, i.e. never on most days). So the next re-dispatch after the
 # 13:00 sweep was the 13:00 sweep of the FOLLOWING day — and the merge has a
-# hard deadline of tonight's 20:00 session, because the session appends to the
+# hard deadline of tonight's session (22:00 UTC since 2026-09-28), because the session appends to the
 # same dated inbox file and republishes every book, at which point the stale
 # step refuses the branch permanently (a book is one conflict key, so a
 # session's snapshots.json always overlaps a fill's portfolio.json).
@@ -52,7 +52,7 @@ name: retry-fallback-merges
 on:
   schedule:
     # Strictly after check-triggers.yml's `0 13 * * *` sweep and well before
-    # SESSION_START (20:00 UTC, scripts/check_triggers.py). tests/test_ci_guards.py
+    # SESSION_START (22:00 UTC, scripts/check_triggers.py). tests/test_ci_guards.py
     # reads both ends and asserts these sit between them, so a cadence change
     # on either side fails the suite rather than silently reopening the gap.
     - cron: "20 14 * * *"
@@ -100,7 +100,7 @@ jobs:
           body: |
             This sweep re-dispatches `auto-merge-session.yml` for every
             `triggers/*` fallback branch still on origin, between the 13:00 UTC
-            watcher sweep and the 20:00 UTC session. It failed, which means
+            watcher sweep and the 22:00 UTC session. It failed, which means
             either origin's branches could not be listed or the dispatch itself
             was refused — so a fill the watcher could not push to `main` may now
             have **nothing scheduled to merge it before tonight's session**.
