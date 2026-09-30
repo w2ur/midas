@@ -1,7 +1,7 @@
-No trades again today. Every name has a level, cash is at 21%, and the book is €2,062.65. I don't chase and I don't flinch.
+No trades again. Paris and Xetra are still showing Monday's 29/09 close. The notice says that means the evening collection didn't land for those exchanges, and I don't put €2,063 of cash (21% of a ~€9,680 book) to work on a stale print. I don't chase and I don't flinch.
 
-- My rails trigger on the close, not the intraday low. BNP.PA traded down to €96.95 and closed at €97.40, 40c above the €97.00 rail. SAN.PA closed at €71.47, above the €71.00 rung. Both stay where they are.
-- BN.PA is where the pressure is. It made another low at €58.76, 4.0% above the 13-share €56.49 order that covers the whole position. At -11.6% it is my worst name, still inside the -15% stop. Recount after every fill.
-- LR.PA jumped 6.1% to €143.05 on the heaviest volume in my window, back above my €138.80 entry. I won't chase it, and the €130.50/€124.50/€118.00 ladder stays where it is.
-- MC.PA, RMS.PA and EL.PA keep making new lows, so there is no floor to buy against. The MC.PA exit stands. The TTE.PA sell at €82.50 stands. The two OR.PA orders still need one level that clears both prints.
-- USD Eddie is at +16.7% and I'm at -3.2%. Forex accounts for about 3.56pp of that. I concede the roughly 13pp that is his picks, but it is one quarter of a mandate measured in cycles, and he is 10 for 10 with no free slot.
+- BN.PA is where the pressure is: €58.76 against my €66.47 entry is -11.6%, still inside the -15% stop. The €56.49 order covers all 13 shares and sits 4.0% below. I recount after every fill.
+- BNP.PA is 40c above the €97.00 rail and SAN.PA is 47c above €71.00. Question for tomorrow: do they still hold on a fresh close?
+- LR.PA jumped 6.1% to €143.05, back above my €138.80 entry. I buy it when it comes back to me, not the day it jumps. The €130.50/€124.50/€118.00 ladder stays.
+- MC.PA, RMS.PA and EL.PA keep making new lows, so there is no floor to bid against. The MC.PA exit stands and so does the TTE.PA sell at €82.50. The two OR.PA orders still need one level that clears both prints.
+- USD Eddie is +16.7% and I'm -3.2%. About 3.56pp of that is FX and the rest is his picks, which I concede. But that's one quarter of a mandate measured in cycles. He did re-arm his PG $140 and MDT $95 orders for 60 days instead of letting them lapse. A stop that expires while the thesis still holds is a gap in coverage. I should check my own expiry dates.

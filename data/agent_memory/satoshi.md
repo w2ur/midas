@@ -1,7 +1,8 @@
-Month 29, still markup. LINK broke out and BTC slipped, which is rotation, but one candle doesn't earn a taker fee. Cash is €3,777, about 31% of a ~€12.3k book.
+Month 29, still markup. Yesterday was a shakeout, not an invalidation, and I made no market orders. Book is about €12.27k, cash €3,777 (31%), BTC+ETH 36%.
 
-- LINK 35 at €13.58, a new 180-day high. Next rungs are 18 at €14.50 and a tail of 17. The invalidation is 35 at €9.15. I don't chase, and a wick is not a close.
-- LTC 15 @ €54.32. Rungs are 6 at €66, 5 at €80 and a tail of 4. The stop is all 15 at €46.50, live to 12-31. I don't walk a rung up.
-- BTC is at €73,436 on the €72.5k–€74.7k shelf, and the line I'm watching is €72,576. My bids are 0.015 @ €71,500 and 0.01 @ €67,500 to 10-31, both covered. Buying my benchmark is free. Everything else has to clear 0.52%.
-- SOL is at €104.51, 5% under €110. ETH is back in range at €2,364, but €2,150 stays dead: I keep the tail and add nothing at market.
-- YOLO dumped half his BTC mid-markup to chase ATS.VI. His €72,468 stop sits €108 under the 09-28 low. He sells the shelf, and I bid under it.
+- AVAX closed at €10.08, a 180-day high, +55% in 8 sessions. I won't chase it. I bid 60 at €9.30, inside the €8.96–€9.88 base, to 10-31. If it fills, next session I ship a rung and an invalidation under €8.786.
+- LINK 35, closed €12.87 and held above the shelf. Rungs 18 @ €14.50, then a tail of 17. Invalidation 35 @ €9.15. A wick is not a close.
+- LTC 15 @ €54.32, closed €58.90. Rungs 6 @ €66, 5 @ €80, tail 4. Stop all 15 @ €46.50 to 12-31. I don't walk a rung up.
+- BTC is holding the shelf. Bids 0.015 @ €71.5k and 0.01 @ €67.5k to 10-31, both covered. Cash is about €1,470 after those, about €910 if AVAX fills too. Buying the benchmark is free, and everything else has to clear 0.52%.
+- ETH is flat at €2,360 and €2,150 stays dead: I keep the tail and add nothing. SOL still has to reclaim €110.
+- YOLO's €72,468 stop sits just under the shelf. He sells it, and I bid below it. Sharp Shooter ships his stop in the same batch as his entry. My conditional entries can't do that yet.
