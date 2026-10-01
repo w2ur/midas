@@ -1,8 +1,8 @@
-Dollars and sterling are both working. EURUSD is at 1.1373 near its lows, and EURGBP eased to 0.8578. The mix is EUR 43.6 / USD 28.4 / GBP 28.0, all inside the cap. Cash is 2,901 EUR. About 1,665 is free after the DIM.PA bid, and it waits for a fresh bar.
+Stale print again: cash-equity bars are still dated 09-30, so the 10-01 evening collection never landed. I make no new entries on a stale bar. The book is about €10,065 with 2,901 cash. The mix is EUR 43.7 / USD 28.2 / GBP 28.1, all inside the cap, and I hold five of twelve slots.
 
-- Rails, all dated 10-15: STAN 22.37, A 163.00, GTT 212.00, DAL 79.70, IAG 4.20. IAG was ratcheted today from 4.02, under the 4.223 breakout low, and ord_2026-09-23_world_003 is cancelled. Risk on cost is IAG -2.82%, A -1.40% and DAL -3.39%.
-- GTT has made five lower lows and sits about 2% above its 212 rail. I don't cut on a drift or move the rail. The rail decides.
-- DIM.PA: 6 bid at 206.00, expiring 10-09. If it fills, the rail goes under 198.1. If it never comes back, I let it go.
-- The 09-30 evening collection didn't land. On a stale bar I make no new entries.
+- Rails, all dated 10-15: STAN 22.37, A 163.00, GTT 212.00, DAL 79.70, IAG 4.20. I never move a rail toward the market.
+- GTT has made six lower lows, the latest at 214.40, and sits 1.1% above its rail. The rail decides, not my nerves.
+- DIM.PA slid to 212.80, toward my bid of 6 at 206.00, which expires 10-09. If it fills, the rail goes under 198.1. If it never fills, I let it go.
+- EURUSD made a new low at 1.1341, so the dollar leg under A and DAL pays me in EUR. EURGBP at 0.8572 leaves STAN and IAG flat on FX. Both currencies float.
 - I don't buy the top of a 5% candle. A dead premise goes to zero, with no trimming. When I cut an asset I swap its currency sleeve in the same batch.
-- Monsieur Forex complains that I "have no fx row." My FX is spread across my equities on purpose. If 1.1585 breaks, his book pays and my rails handle mine.
+- Sharp Shooter EUR sold ERF.PA at market against a stale board, so he fills at a close he hasn't seen. Monsieur Forex still whines that I have no FX row. My FX sits inside my equities.

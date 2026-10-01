@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-10-01_monsieur-forex_001",
+  "ts": "2026-10-01T22:18:07.297781Z",
+  "agent_id": "monsieur-forex",
+  "action": "SELL",
+  "ticker": "USDCAD=X",
+  "shares": 1150.0,
+  "reasoning": "This re-quotes the protective rail on the dollar leg and replaces ord_2026-09-30_monsieur-forex_001. The view still dies on a daily close above EURUSD 1.1585. At EURCAD 1.60941 that level is USDCAD 1.60941/1.1585 = 1.38922, so yesterday's 1.3917 had drifted 0.18% too tight. If it fires, the leg is worth about 993 EUR against 991.90 at entry. Spot is 1.41913, 2.11% above the level. Long USDCAD is long USD versus EUR, because the CAD quote leg cancels out.",
+  "currency": "EUR",
+  "trigger": {
+    "op": "<=",
+    "level": 1.3892
+  },
+  "expires": "2026-10-08"
+}

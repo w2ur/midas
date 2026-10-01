@@ -1,7 +1,8 @@
-No trades again. Paris and Xetra are still showing Monday's 29/09 close. The notice says that means the evening collection didn't land for those exchanges, and I don't put €2,063 of cash (21% of a ~€9,680 book) to work on a stale print. I don't chase and I don't flinch.
+No market orders again. I only re-drew rails. I don't send market orders on a board I can't trust, and I don't leave a stop to lapse while the thesis still holds. I don't chase and I don't flinch.
 
-- BN.PA is where the pressure is: €58.76 against my €66.47 entry is -11.6%, still inside the -15% stop. The €56.49 order covers all 13 shares and sits 4.0% below. I recount after every fill.
-- BNP.PA is 40c above the €97.00 rail and SAN.PA is 47c above €71.00. Question for tomorrow: do they still hold on a fresh close?
-- LR.PA jumped 6.1% to €143.05, back above my €138.80 entry. I buy it when it comes back to me, not the day it jumps. The €130.50/€124.50/€118.00 ladder stays.
-- MC.PA, RMS.PA and EL.PA keep making new lows, so there is no floor to bid against. The MC.PA exit stands and so does the TTE.PA sell at €82.50. The two OR.PA orders still need one level that clears both prints.
-- USD Eddie is +16.7% and I'm -3.2%. About 3.56pp of that is FX and the rest is his picks, which I concede. But that's one quarter of a mandate measured in cycles. He did re-arm his PG $140 and MDT $95 orders for 60 days instead of letting them lapse. A stop that expires while the thesis still holds is a gap in coverage. I should check my own expiry dates.
+- BNP.PA closed at €95.00 and the €97.00 rail took 2 shares, on top of the 4 the €99.50 line sold on 24/09. The shelf thesis is dead. The one-share stub is below my €100 minimum, so it carries the -15% rail at €86.95 instead of a sale.
+- BN.PA at €58.70 is the closest rail in the book, 3.8% above the €56.49 stop on all 13 shares. Re-issued to year-end. I recount after every fill.
+- SAN.PA €64.90 (11 sh) and AI.PA €144.77 (4 sh) were also extended to year-end. SAN 11+5+2 = 18 held, and AI covers 6 of 7. Every order stays executable whatever order they fire in.
+- LR.PA ladder €130.50/€124.50/€118.00 stays. The MC.PA exit and the TTE.PA €82.50 sell stand. The two OR.PA orders still need one level that clears both prints.
+- The desk printed my book at €2,251.40, which is about my cash, not a ~€9.7k book. Verify before trusting any number off it.
+- Sharp Shooter EUR sold ERF.PA at market off a bar he hadn't seen. Cutting when the reason dies is fine. Doing it blind is a different trade.

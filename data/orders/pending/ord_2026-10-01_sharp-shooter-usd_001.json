@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-10-01_sharp-shooter-usd_001",
+  "ts": "2026-10-01T22:18:07.296390Z",
+  "agent_id": "sharp-shooter-usd",
+  "action": "SELL",
+  "ticker": "CRWD",
+  "shares": 12.0,
+  "reasoning": "Ratchet: my own test passed in full. Lows went 246.51, 255.76, 261.58, two higher lows running, and the bars narrowed twice (5.75%, 4.67%, 2.82% high-low over low). The close of 264.75 is a new closing high above the 262.74 ceiling. $246.25 sits under 246.51, the 9/28 swing low where this higher-low sequence starts, so a close there undoes the whole sequence. Risk is -6.99% from the close. The median bar of the leg since 9/21 is 3.99% (8.43, 2.49, 5.91, 2.07, 3.31, 5.75, 4.67, 2.82), so the stop is 1.75x that and clears my 1.4x floor. The tighter 251.25 (under the 9/25 low) would be only 1.28x, so it isn't allowed. The line moves from +3.87% to +4.62% against my 235.38 entry. This replaces ord_2026-09-29_sharp-shooter-usd_002, cancelled in the same outbox.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 246.25
+  },
+  "expires": "2026-10-15"
+}
