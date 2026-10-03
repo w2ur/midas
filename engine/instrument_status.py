@@ -22,9 +22,14 @@ which instruments are broken cannot vouch for any of them, and the cost of
 that answer (no trade fills until a human repairs the file) is visible the
 same night, where the opposite answer is silent. A *missing* file is an empty
 registry, like the corporate-action ledger, because a fork or a fresh data
-root has never refused a row; the committed file's presence is held by
-``tests/test_instrument_status_live.py`` instead. Writers never overwrite a
-file they could not read.
+root has never refused a row, **unless the quarantine beside it holds any row**:
+every tripwire refusal writes a quarantine row and a registry entry, and no
+writer ever deletes the file, so a quarantine with no registry means the file
+was lost, and ``status_of`` fails closed exactly as for an unreadable one. The
+desk's own CI test (``tests/test_instrument_status_live.py``) is advisory; this
+is what holds a deleted registry at runtime. Writers never overwrite a file
+they could not read, and a missing file is still an empty one to them, so the
+next refusal recreates it.
 
 The paper broker refuses BUY and SELL on any recorded status
 (``INSTRUMENT_SUSPENDED``, `engine.paper_broker._instrument_suspended`). Engine
@@ -141,12 +146,32 @@ def load(path: Path | None = None) -> dict[str, Entry]:
     return _parse(text)
 
 
+def _lost(path: Path) -> bool:
+    """The registry is absent although the quarantine beside it is not."""
+    if path.exists():
+        return False
+    quarantine = path.parent / "quarantine"
+    return quarantine.is_dir() and any(quarantine.glob("*.jsonl"))
+
+
 def status_of(symbol: str, path: Path | None = None) -> str | None:
     """The symbol's status, or ``None`` when nothing is recorded against it.
 
-    Fails closed: an unreadable registry answers ``suspended`` for every
-    symbol, and says why in the log.
+    Fails closed: an unreadable registry, or a missing one beside a non-empty
+    quarantine (`_lost`), answers ``suspended`` for every symbol, and says why
+    in the log.
     """
+    path = path if path is not None else registry_path()
+    if _lost(path):
+        logger.error(
+            "instrument status registry %s is missing although %s holds refused "
+            "rows; treating %s as suspended (rebuild it with "
+            "`python -m engine.instrument_status seed`)",
+            path,
+            path.parent / "quarantine",
+            symbol,
+        )
+        return SUSPENDED
     try:
         entries = load(path)
     except RegistryUnreadable as exc:
