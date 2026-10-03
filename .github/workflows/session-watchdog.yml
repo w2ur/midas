@@ -62,7 +62,6 @@ jobs:
 
           yesterday=$(date -u -d 'yesterday' +%Y-%m-%d)
           dow=$(date -u -d 'yesterday' +%u)  # 1=Mon..7=Sun
-          window_end=$(date -u -d 'today' +%Y-%m-%d)
 
           if [[ "$dow" -lt 1 || "$dow" -gt 5 ]]; then
             echo "Yesterday ($yesterday) was a weekend — no weekday session expected. Skipping."
