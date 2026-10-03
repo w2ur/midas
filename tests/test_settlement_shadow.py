@@ -111,6 +111,23 @@ def test_shadow_flag_refuses_to_combine_with_other_modes(monkeypatch):
         fo.main()
 
 
+def test_shadow_flag_refuses_accept_gap_before_it_writes_anything(monkeypatch):
+    # Regression: the combination check ran AFTER the --accept-gap early
+    # return, so `--settlement-shadow --accept-gap ...` wrote store_gaps.json
+    # instead of being refused. The accept path must never be reached.
+    def boom(*a, **k):
+        raise AssertionError("_accept_gap ran")
+
+    monkeypatch.setattr(fo, "_accept_gap", boom)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["fetch_ohlcv.py", "--settlement-shadow", "--accept-gap", "AAA:2026-09-22", "--reason", "x"],
+    )
+    with pytest.raises(SystemExit) as e:
+        fo.main()
+    assert e.value.code == 2
+
+
 DIFF = """\
 diff --git a/data/market/ohlcv/AAA.jsonl b/data/market/ohlcv/AAA.jsonl
 --- a/data/market/ohlcv/AAA.jsonl

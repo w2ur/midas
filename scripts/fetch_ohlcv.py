@@ -1549,6 +1549,23 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    if args.settlement_shadow and (
+        args.symbols
+        or args.crypto_only
+        or args.close_run
+        or args.resweep
+        or args.resweep_held
+        or args.backfill
+        or args.names_only
+        or args.dry_run
+        or args.accept_gap is not None
+        or args.reason is not None
+    ):
+        parser.error(
+            "--settlement-shadow measures the full universe on its own; it "
+            "cannot be combined with any other mode"
+        )
+
     if args.accept_gap is not None:
         return _accept_gap(parser, args.accept_gap, args.reason)
     if args.reason is not None:
@@ -1576,21 +1593,6 @@ def main() -> int:
             "--close-run resolves its own bucket and asks for today's bar; it "
             "cannot be combined with --symbols, --crypto-only, --resweep, "
             "--resweep-held, --backfill or --names-only"
-        )
-
-    if args.settlement_shadow and (
-        args.symbols
-        or args.crypto_only
-        or args.close_run
-        or args.resweep
-        or args.resweep_held
-        or args.backfill
-        or args.names_only
-        or args.dry_run
-    ):
-        parser.error(
-            "--settlement-shadow measures the full universe on its own; it "
-            "cannot be combined with any other mode"
         )
 
     # Only THIS run's resolution may license a close-out (`_resolver_failures`).
