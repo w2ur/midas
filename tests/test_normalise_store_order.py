@@ -84,6 +84,20 @@ def test_verify_passes_after_normalisation_and_fails_on_a_changed_value(repo: Pa
     assert "differs" in capsys.readouterr().err
 
 
+def test_verify_accepts_the_documented_collapse_of_an_identical_duplicate(tmp_path: Path, monkeypatch, repo: Path) -> None:
+    """Regression (review 2026-10-03): the normaliser collapses a byte-identical
+    repeat; the verifier compared multisets and flagged that as re-serialised."""
+    ohlcv = repo / "data/market/ohlcv"
+    dup = _line("2026-01-02")
+    (ohlcv / "A.jsonl").write_text(dup + "\n" + dup + "\n")
+    run = lambda *a: subprocess.run(["git", "-C", str(repo), *a], check=True, capture_output=True)  # noqa: E731
+    run("add", "-A")
+    run("commit", "-qm", "dup")
+    assert norm.main(["--dir", str(ohlcv), "--apply"]) == 0
+    assert (ohlcv / "A.jsonl").read_text() == dup + "\n"
+    assert verify.main(["--against", "HEAD", "--dir", str(ohlcv)]) == 0
+
+
 def test_verify_unknown_ref_is_unknown_not_healthy(repo: Path) -> None:
     assert verify.main(["--against", "no-such-ref", "--dir", str(repo / "data/market/ohlcv")]) == 2
 
