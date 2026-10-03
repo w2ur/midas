@@ -153,3 +153,100 @@ def test_compare_flags_a_row_the_window_missed_and_ignores_older_ones():
 def test_compare_control_identical_sets_report_no_miss():
     shadow = {"window_start": "2026-09-18", "inserts": {"AAA": ["2026-09-25"]}}
     assert compare({("AAA", "2026-09-25")}, shadow)["missing_from_shadow"] == []
+
+
+# --- review fixes: what `compare` may call a miss ---------------------------
+
+
+def test_regression_a_symbol_first_ingested_that_night_is_not_a_miss():
+    # Regression: the shadow skips a symbol with no store file on purpose, but
+    # compare() blamed it for the real run's first-ingest rows -> false exit 1.
+    shadow = {
+        "window_start": "2026-09-18",
+        "end": "2026-10-02",
+        "inserts": {},
+        "skipped_no_store": ["NEWCO.L"],
+    }
+    real = {("NEWCO.L", "2026-09-29"), ("NEWCO.L", "2026-10-02")}
+    r = compare(real, shadow)
+    assert r["missing_from_shadow"] == []
+    assert r["skipped_first_ingest"] == sorted(real)
+    # Control: the same rows for a symbol the shadow DID cover are a miss.
+    shadow["skipped_no_store"] = []
+    assert compare(real, shadow)["missing_from_shadow"] == sorted(real)
+
+
+def test_regression_rows_after_the_shadows_end_are_not_a_miss():
+    # Regression: a --head taken after the evening close runs adds today-dated
+    # rows the shadow (end = yesterday) could never insert.
+    shadow = {"window_start": "2026-09-18", "end": "2026-10-02", "inserts": {}}
+    r = compare({("AAA", "2026-10-03")}, shadow)
+    assert r["missing_from_shadow"] == []
+    assert compare({("AAA", "2026-10-02")}, shadow)["missing_from_shadow"] == [("AAA", "2026-10-02")]
+
+
+def test_tripwire_added_is_the_shadows_hits_beyond_the_real_runs():
+    # Regression: the plan asks what the wider window ADDS; only the absolute
+    # shadow count was reported.
+    shadow = {
+        "window_start": "2026-09-18",
+        "inserts": {},
+        "quarantined": [
+            {"symbol": "AAA", "date": "2026-09-24"},
+            {"symbol": "BBB", "date": "2026-09-25"},
+            {"symbol": "CCC", "date": "2026-09-26"},
+        ],
+    }
+    real_q = {("AAA", "2026-09-24"), ("BBB", "2026-09-25")}
+    r = compare(set(), shadow, real_q)
+    assert (r["tripwire_hits"], r["real_quarantined"], r["tripwire_added"]) == (3, 2, 1)
+    assert compare(set(), shadow, set())["tripwire_added"] == 3
+
+
+def test_parse_quarantined_reads_the_real_runs_quarantine_appends():
+    from scripts.compare_settlement_shadow import parse_quarantined
+
+    diff = (
+        "diff --git a/data/market/quarantine/APH.jsonl b/data/market/quarantine/APH.jsonl\n"
+        "--- a/data/market/quarantine/APH.jsonl\n"
+        "+++ b/data/market/quarantine/APH.jsonl\n"
+        "@@ -2,0 +3 @@\n"
+        '+{"symbol": "APH", "date": "2026-09-02", "kind": "new-row"}\n'
+    )
+    assert parse_quarantined(diff) == {("APH", "2026-09-02")}
+    # Quarantine files are not mistaken for store inserts.
+    assert parse_diff(diff) == (set(), set())
+
+
+def test_shadow_report_records_the_base_sha_and_run(tmp_path, monkeypatch):
+    ohlcv = tmp_path / "ohlcv"
+    ohlcv.mkdir()
+    _store(ohlcv / "AAA.jsonl", {"2026-09-21": 10.0})
+
+    class Cfg:
+        ohlcv_dir = ohlcv
+
+    monkeypatch.setattr(fo, "get_config", lambda: Cfg)
+    monkeypatch.setattr(fo, "_fetch_symbol", lambda *a, **k: _frame({"2026-09-21": 10.0}))
+    monkeypatch.setenv("GITHUB_SHA", "abc123")
+    monkeypatch.setenv("GITHUB_RUN_ID", "42")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "schedule")
+    fo.run_settlement_shadow(["AAA"], date(2026, 10, 2), tmp_path / "s")
+    [f] = (tmp_path / "s").glob("*.json")
+    rep = json.loads(f.read_text())
+    assert (rep["base_sha"], rep["run_id"], rep["event"]) == ("abc123", "42", "schedule")
+
+
+def test_an_unknown_night_is_refused_by_the_comparison_cli(tmp_path, monkeypatch):
+    # Regression: an exit-2 night still uploads a served=0 artifact; counting
+    # it as a sample would pad the ten-night evidence with unknowns.
+    import scripts.compare_settlement_shadow as cs
+
+    rep = tmp_path / "r.json"
+    rep.write_text(json.dumps({"window_start": "2026-09-18", "inserts": {}, "served": 0}))
+    monkeypatch.setattr("sys.argv", ["c", str(rep), "--base", "a", "--head", "b"])
+    monkeypatch.setattr(cs, "_git_diff", lambda b, h: "")
+    assert cs.main() == 2
+    # Control: with symbols served the same inputs are a clean night.
+    rep.write_text(json.dumps({"window_start": "2026-09-18", "inserts": {}, "served": 5}))
+    assert cs.main() == 0
