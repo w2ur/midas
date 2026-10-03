@@ -59,10 +59,13 @@ from engine.config import get_config  # noqa: E402
 from engine.fees import classify_ticker  # noqa: E402
 from engine.quotes import ticker_currency  # noqa: E402
 from engine.store_gaps import is_accepted, parse_ledger, scan_store  # noqa: E402
+from scripts import fetch_ohlcv  # noqa: E402
 from scripts.fetch_ohlcv import (  # noqa: E402
     _all_symbols,
     _collect_holdings,
     _crypto_symbols,
+    get_crypto_eur_tickers,
+    get_crypto_tickers,
     hole_bucket,
 )
 
@@ -147,6 +150,31 @@ def _ordered_tickers(orders_dir: Path) -> set[str]:
             if t:
                 seen.add(t)
     return seen
+
+
+def _resolved_universe() -> tuple[set[str], frozenset[str]]:
+    """(fetch universe, crypto set), refusing a partial one.
+
+    The fetch helpers print a warning and carry on when a resolver raises; the
+    populator checks `_resolver_failures` before acting. A partial universe here
+    would reclassify whole indices as retired and drop crypto pairs into the US
+    bucket, with a normal-looking report, so it is unknown (exit 2) instead.
+    """
+    universe = set(_all_symbols())
+    failed = list(fetch_ohlcv._resolver_failures or [])
+    if fetch_ohlcv._resolver_failures is None:
+        failed.append("(universe resolvers did not run)")
+    crypto = frozenset(_crypto_symbols())
+    for resolver in (get_crypto_tickers, get_crypto_eur_tickers):
+        try:
+            resolver()
+        except Exception:
+            failed.append(resolver.__name__)
+    if failed:
+        raise RuntimeError(
+            f"universe resolution failed for {', '.join(failed)}: unknown, not clean"
+        )
+    return universe, crypto
 
 
 def _benchmark_tickers() -> set[str]:
@@ -375,7 +403,7 @@ def build_rows(
     if not store:
         raise RuntimeError("the OHLCV store is empty: unknown, not clean")
 
-    universe = set(_all_symbols())
+    universe, crypto = _resolved_universe()
     held = _collect_holdings()
     ordered = _ordered_tickers(cfg.orders_dir)
     bench = _benchmark_tickers()
@@ -391,7 +419,6 @@ def build_rows(
     if end is None or end < since:
         raise RuntimeError("no date in the window is held by half the store")
 
-    crypto = frozenset(_crypto_symbols())
     bucket_of = _bucketer(crypto)
     scan = scan_store(dates, bucket_of=bucket_of, scope=dates, start=since, end=end)
 
