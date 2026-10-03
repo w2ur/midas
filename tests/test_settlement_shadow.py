@@ -369,3 +369,11 @@ def test_regression_shadow_run_exits_unknown_over_the_failure_rate(tmp_path, mon
     rc = fo.run_settlement_shadow(["AAA", "BBB", "CCC"], date(2026, 10, 2), tmp_path / "s")
     assert rc == fo.EXIT_SHADOW_NO_DATA
 
+
+def test_regression_rows_after_the_shadows_end_are_not_outside_window():
+    # Regression: a later close run's today-dated bars landed in `outside_window`,
+    # which means "older than the window".
+    shadow = {"window_start": "2026-09-18", "end": "2026-10-02", "inserts": {}}
+    r = compare({("X", "2026-10-03"), ("Y", "2026-09-01")}, shadow)
+    assert r["after_shadow_end"] == [("X", "2026-10-03")]
+    assert r["outside_window"] == [("Y", "2026-09-01")]
