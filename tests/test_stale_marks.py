@@ -243,3 +243,61 @@ def test_bundle_summary_claims_nothing_for_a_row_without_the_field(
     summary = build_portfolio_summaries()[_book()]
     assert "stale_marks" not in summary
     assert "marked_on" not in summary
+
+
+# ---------------------------------------------------------------------------
+# A restatement recomputes it
+# ---------------------------------------------------------------------------
+
+
+def _restate_fixture(midas_data_root, stale_marks):
+    """goldfinger's 2026-09-30 row, written while the store lacked 4GLD.DE's
+    09-30 close; the store now holds it."""
+    store = get_config().ohlcv_dir
+    _de_bucket(store, BUCKET_DAYS)
+    _write(store, "4GLD.DE", {**GOLD_4GLD, "2026-09-30": 121.0})
+    manager = PortfolioManager(base_dir=get_config().portfolios_dir)
+    manager.initialize("book", initial_capital=10_000.0, currency="EUR")
+    _buy(manager, "book", "4GLD.DE", 10, 100.0)
+    row = {
+        "date": "2026-09-30",
+        "portfolio_value": 9_000.0 + 10 * GOLD_4GLD["2026-09-29"],
+        "cash": 9_000.0,
+        "positions_value": 10 * GOLD_4GLD["2026-09-29"],
+        "benchmarks": {},
+        "session_date": "2026-09-30",
+    }
+    if stale_marks is not None:
+        row["stale_marks"] = stale_marks
+    manager._snapshots_path("book").write_text(json.dumps([row]))  # noqa: SLF001
+    return manager
+
+
+def test_a_restated_row_recomputes_its_stale_marks(midas_data_root, monkeypatch) -> None:
+    """Regression (review of feat/stage1-asof-reads, 2026-10-04): restatement
+    copied the row and recomputed only its values, so a row restated after the
+    missing close landed was valued at 09-30 and still disclosed a 09-29 mark:
+    the published number and its own disclosure contradicted each other."""
+    import scripts.restate_valuations as rv
+
+    monkeypatch.setattr(rv, "_benchmarks_as_of", lambda d: {})
+    manager = _restate_fixture(
+        midas_data_root, [{"ticker": "4GLD.DE", "price_date": "2026-09-29"}]
+    )
+
+    result = rv.restate_agent("book", manager)
+
+    (row,) = result.new_rows
+    assert row["positions_value"] == pytest.approx(1210.0)
+    assert row["stale_marks"] == []
+
+
+def test_a_restated_row_without_the_field_does_not_gain_it(midas_data_root, monkeypatch) -> None:
+    # A row from before the check existed stays a row from before the check.
+    import scripts.restate_valuations as rv
+
+    monkeypatch.setattr(rv, "_benchmarks_as_of", lambda d: {})
+    manager = _restate_fixture(midas_data_root, None)
+
+    (row,) = rv.restate_agent("book", manager).new_rows
+    assert "stale_marks" not in row
