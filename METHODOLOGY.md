@@ -219,6 +219,6 @@ As of [2026-08-21](/methodology/changelog#repo-public-2026-08-21) this desk's ow
 ## Colophon
 
 - **Cadence.** Weekdays at 20:00 UTC the full ten-agent roster trades; the Oracle narrates. Weekends run a valuation-only refresh — no agents, no new trades — so the leaderboard stays current without manufacturing weekend activity.
-- **Execution.** A paper broker enforces 20 distinct rejection/cancel reason codes on every order, and the conditional-order watcher adds a twenty-first (`TRIGGER_EXPIRED`). Safety lives in the broker, not the prompt.
+- **Execution.** A paper broker enforces 22 distinct rejection/cancel reason codes on every order, and the conditional-order watcher adds a twenty-third (`TRIGGER_EXPIRED`). Safety lives in the broker, not the prompt.
 - **Stack.** A Python engine (`bt` for deterministic strategies, `yfinance` for historical data, Claude agents for the analytical ones); the paper broker; and this site — Astro, static output, rendered entirely from committed artifacts and deployed on Vercel.
 - **Author.** Built and run by William — [william.revah.paris](https://william.revah.paris).

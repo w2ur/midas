@@ -38,7 +38,7 @@ from engine.corporate_actions import (
     explain_quarantine,
     ratios_agree,
 )
-from engine.fees import classify_ticker
+from engine.market_calendar import bucket_of
 from engine import instrument_status
 from engine.quotes import vendor_unit_scale
 from engine.ohlcv_ingest import (
@@ -311,26 +311,10 @@ MIN_SMALL_BUCKET_POPULATION = 5
 SMALL_BUCKET_HOLE_SHARE = 0.5
 
 
-def hole_bucket(symbol: str, crypto: frozenset[str] = frozenset()) -> str:
-    """The population ``symbol``'s missing closes are rated within.
-
-    A Yahoo exchange suffix (``".PA"``: what follows the LAST dot, so
-    ``BT.A.L`` is ``.L``) when there is one. Otherwise the instrument class, by
-    the repo's own classifier (`engine.fees.classify_ticker`): ``"crypto"``,
-    also for any pair in ``crypto`` (the set this script fetches in its
-    crypto-only mode, which carries pairs such as HBAR-USD that the fee
-    allowlist does not), ``"fx"``, and ``""`` for the rest — US listings and
-    the handful of `=F` futures. Money review r1 (J6 follow-ups), M1: crypto
-    and FX folded into the US bucket, where a hole across all 34 crypto pairs
-    read 5.3% and passed.
-    """
-    head, dot, tail = symbol.rpartition(".")
-    if dot and head and tail:
-        return f".{tail}"
-    if symbol in crypto:
-        return "crypto"
-    asset_class = classify_ticker(symbol)
-    return "" if asset_class == "equity" else asset_class
+#: The population ``symbol``'s missing closes are rated within. One definition,
+#: in the engine since 2026-10-03 because the broker's STALE_PRICE rail judges a
+#: price's age within the same bucket (`engine.market_calendar.bucket_of`).
+hole_bucket = bucket_of
 
 
 #: The exchange suffixes the `--close-run eu` evening pass collects. Every

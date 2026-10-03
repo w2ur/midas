@@ -181,6 +181,78 @@ def test_the_price_band_would_not_have_refused_any_committed_fill():
     assert refused == [], f"the band would have refused real fills: {refused}"
 
 
+#: Committed fills the STALE_PRICE rail WOULD have refused, each judged by a
+#: human (plan 2026-10-03, 1.3). Order id -> why the refusal is right.
+JUDGED_STALE_REFUSALS = {
+    # goldfinger bought SGLN.MI on 2026-09-16 at 73.05, its 2026-09-11 close:
+    # since 2026-09 the vendor served SGLN.MI one row (today's quote) for any
+    # window, so the store froze while Milan traded on. Replayed at the fill's
+    # own executed_sha (efedd4088) the bucket stood at 09-15, two sessions on;
+    # against today's store, three. A stale fill the rail exists to refuse. The
+    # ticker left the universe on 2026-09-26 for PPFB.DE.
+    "ord_2026-09-16_goldfinger_001",
+}
+
+
+def test_the_stale_rail_would_refuse_only_the_judged_committed_fills():
+    """Replay: every committed fill through STALE_PRICE, at its trade date.
+
+    Against TODAY's store, not the one the broker saw: later refills only
+    shorten a lag, so this can miss a refusal the rail would have made then,
+    never invent one. The faithful replay (each fill's own executed_sha, buckets
+    sampled to 40 members, 52 s) was run once on 2026-10-03: 411 fills carry a
+    sha, 395 read lag 0, 15 lag 1, and the only refusal is the one above.
+    """
+    from engine.market_calendar import bucket_lag, MAX_BUCKET_LAG_DAYS
+
+    fills = _filled_fills()
+    assert len(fills) > 100, f"expected the full committed ledger, joined {len(fills)}"
+
+    refused, judged = [], 0
+    for order_id, trade_date, ticker, _price in fills:
+        quote = latest_price(ticker, trade_date)
+        if quote is None:
+            continue
+        lag = bucket_lag(ticker, quote.as_of, trade_date)
+        if lag.lag is not None:
+            judged += 1
+        if lag.lag is not None and lag.lag > MAX_BUCKET_LAG_DAYS:
+            refused.append(order_id)
+
+    assert judged > 0.9 * len(fills), "the rail abstained on most of the ledger"
+    assert sorted(refused) == sorted(JUDGED_STALE_REFUSALS), (
+        "the stale rail would refuse committed fills nobody has judged: "
+        f"{sorted(set(refused) - JUDGED_STALE_REFUSALS)}"
+    )
+
+
+def test_no_committed_fill_is_on_a_suspended_instrument():
+    """The registry as committed would have refused no fill the desk booked."""
+    from engine.instrument_status import load
+
+    suspended = set(load())
+    hit = [f for f in _filled_fills() if f[2] in suspended]
+    assert hit == [], f"committed fills on instruments now suspended: {hit}"
+
+
+def test_the_stale_rail_can_judge_every_held_and_pending_ticker():
+    """No live position or armed order sits in a bucket too small to judge,
+    where the rail would silently abstain. Measured 2026-10-03: 37 held and
+    38 pending tickers, every one judged."""
+    from engine.market_calendar import bucket_lag
+
+    today = date.today()
+    unjudged = []
+    for ticker in sorted(_held_tickers() | {o["ticker"] for o in _pending_orders()}):
+        quote = latest_price(ticker, today)
+        if quote is None:
+            continue
+        lag = bucket_lag(ticker, quote.as_of, today)
+        if lag.lag is None:
+            unjudged.append((ticker, lag.bucket, lag.population))
+    assert unjudged == [], f"held/pending tickers the stale rail cannot judge: {unjudged}"
+
+
 def test_every_live_pending_order_is_inside_the_trigger_band():
     """Same control for TRIGGER_LEVEL_IMPLAUSIBLE, against the armed orders.
 
