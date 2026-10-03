@@ -47,7 +47,7 @@ name: check-triggers
 # and check_triggers.py refuses on exactly that mismatch.
 #
 # Daily is the correct cadence for THIS workflow because non-crypto triggers
-# cannot change more often than that: engine.triggers.get_current_price reads
+# cannot change more often than that: engine.triggers.get_current_quote reads
 # them from the committed OHLCV store via latest_close_on_or_before, and
 # fetch-ohlcv.yml refreshes that store once a day. Crypto is the only class
 # that moves intraday (live ccxt fetch, 24/7) and it now has its own hourly

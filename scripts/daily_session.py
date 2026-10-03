@@ -700,7 +700,8 @@ def step_build_baseline_manager(
     def _price_lookup(ticker: str, on: date) -> float | None:
         from engine.ohlcv_store import latest_close_on_or_before as _lcob
 
-        return _lcob(ticker, on, store=resolved_ohlcv_store)
+        dated = _lcob(ticker, on, store=resolved_ohlcv_store)
+        return dated.close if dated is not None else None
 
     trades = rebalance(
         portfolio=portfolio_dict,
@@ -909,12 +910,16 @@ def step_build_manager_prompt(
     price_lookup: dict[str, tuple[float, str, str]] = {}
     for ticker in scope:
         if resolved_store is not None:
-            close = _lcob(ticker, trade_date, store=resolved_store)
+            dated = _lcob(ticker, trade_date, store=resolved_store)
         else:
-            close = _lcob(ticker, trade_date)
+            dated = _lcob(ticker, trade_date)
         ccy = ticker_currency(ticker)
-        if close is not None and ccy is not None:
-            price_lookup[ticker] = (close, trade_date.isoformat(), ccy)
+        if dated is not None and ccy is not None:
+            # The middle field is the session date, not `dated.as_of`, and
+            # that is a known gap rather than a choice: rendering the row's
+            # own date changes the Manager's prompt, which is Stage 1.3/1.4's
+            # disclosure decision, not this value-neutral read change.
+            price_lookup[ticker] = (dated.close, trade_date.isoformat(), ccy)
 
     active_triggers = list_pending(
         pending_dir=_trigger_channel_dir(alloc.channels_prefix, "pending")

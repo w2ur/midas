@@ -217,10 +217,10 @@ def _benchmarks_as_of(market_date: date) -> dict[str, float]:
     benchmarks: dict[str, float] = {}
     for name, sources in _BENCHMARK_SOURCES.items():
         for ticker, multiplier, _label in sources:
-            price = latest_close_on_or_before(ticker, market_date)
-            if price is None:
+            dated = latest_close_on_or_before(ticker, market_date)
+            if dated is None:
                 continue
-            value = price * multiplier
+            value = dated.close * multiplier
             benchmarks[name] = round(value, 4 if name == "msci_world" else 2)
             break
         else:
