@@ -335,3 +335,41 @@ class TestOrderedTickers:
             (tmp_path / ch / "ord_x.json").write_text(json.dumps({"ticker": t}, indent=2))
         (tmp_path / "pending" / "ord_bad.json").write_text("{not json")
         assert audit._ordered_tickers(tmp_path) == {"AAA", "BBB", "CCC"}
+
+
+class TestPartialUniverse:
+    def _patch(self, monkeypatch, failures, crypto_raises=False):
+        monkeypatch.setattr(audit, "_all_symbols", lambda: ["AAPL"])
+        monkeypatch.setattr(audit, "_crypto_symbols", lambda: ["BTC-USD"])
+        monkeypatch.setattr(audit.fetch_ohlcv, "_resolver_failures", failures)
+
+        def crypto():
+            if crypto_raises:
+                raise ValueError("boom")
+            return ["BTC-USD"]
+
+        crypto.__name__ = "get_crypto_tickers"
+        monkeypatch.setattr(audit, "get_crypto_tickers", crypto)
+        monkeypatch.setattr(audit, "get_crypto_eur_tickers", lambda: [])
+
+    def test_control_a_complete_universe_resolves(self, monkeypatch):
+        self._patch(monkeypatch, [])
+        universe, crypto = audit._resolved_universe()
+        assert universe == {"AAPL"} and crypto == {"BTC-USD"}
+
+    def test_a_failed_universe_resolver_is_unknown_not_a_smaller_universe(self, monkeypatch):
+        # Regression: a raising resolver was printed and skipped, so the audit
+        # exited 0 over a universe missing the whole STOXX 600.
+        self._patch(monkeypatch, ["get_stoxx600_tickers"])
+        with pytest.raises(RuntimeError, match="get_stoxx600_tickers"):
+            audit._resolved_universe()
+
+    def test_a_failed_crypto_resolver_is_unknown(self, monkeypatch):
+        self._patch(monkeypatch, [], crypto_raises=True)
+        with pytest.raises(RuntimeError, match="get_crypto_tickers"):
+            audit._resolved_universe()
+
+    def test_main_exits_2_on_a_failed_resolver(self, monkeypatch, capsys):
+        self._patch(monkeypatch, ["get_stoxx600_tickers"])
+        assert audit.main([]) == audit.EXIT_UNKNOWN
+        assert "could not run" in capsys.readouterr().err
