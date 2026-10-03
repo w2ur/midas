@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import sys
 import tempfile
@@ -1317,6 +1318,12 @@ def run_settlement_shadow(symbols: list[str], end: date, out_dir: Path) -> int:
         "end": end.isoformat(),
         "window_start": start.isoformat(),
         "window_bdays": SETTLEMENT_WINDOW_BDAYS,
+        # Provenance, so a night's report names the main it measured and the
+        # run that produced it; the comparison needs no hand-built --base.
+        # Absent outside Actions.
+        "base_sha": os.environ.get("GITHUB_SHA"),
+        "run_id": os.environ.get("GITHUB_RUN_ID"),
+        "event": os.environ.get("GITHUB_EVENT_NAME"),
         "requested": len(symbols),
         "skipped_no_store": [],
         "failed": [],
