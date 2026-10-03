@@ -4917,7 +4917,13 @@ class TestSettlementShadowIsASeparateJob:
         job = spec["jobs"]["settlement-shadow"]
         assert job["needs"] == "fetch"
         assert str(job["if"]).lstrip("${} ").startswith("always()")
-        assert isinstance(job["timeout-minutes"], int) and job["timeout-minutes"] > 0
+        timeout = job["timeout-minutes"]
+        # Either a literal, or the dispatch-overridable expression whose
+        # fallback (the schedule path) is a positive number of minutes.
+        if not isinstance(timeout, int):
+            assert "shadow_timeout_minutes || '25'" in str(timeout), timeout
+        else:
+            assert timeout > 0
         # Its failure must not turn the run red or file an issue.
         assert job["continue-on-error"] is True
         assert job["permissions"] == {"contents": "read"}
@@ -4980,3 +4986,37 @@ class TestSettlementShadowIsASeparateJob:
             s for s in spec["jobs"]["fetch"]["steps"] if s.get("name") == "Commit and push updates"
         )
         assert "settlement_shadow" not in push["with"]["paths"]
+
+
+    def test_the_gate_literal_is_the_mode_the_fetch_step_assigns(self):
+        """Renaming MODE ('full universe' feeds the failure-issue title) must
+        not silently turn the shadow off for good."""
+        import re
+
+        spec = self._spec()
+        gate = str(spec["jobs"]["settlement-shadow"]["if"])
+        literals = re.findall(r"needs\.fetch\.outputs\.mode == '([^']+)'", gate)
+        assert len(literals) == 1, gate
+        fetch_step = next(s for s in spec["jobs"]["fetch"]["steps"] if s.get("id") == "fetch")
+        assigned = set(re.findall(r'^\s*MODE="([^"$]+)"', fetch_step["run"], re.M))
+        assert literals[0] in assigned, (literals[0], assigned)
+
+    def test_the_gate_pin_can_fail(self):
+        import re
+
+        spec = self._spec()
+        fetch_step = next(s for s in spec["jobs"]["fetch"]["steps"] if s.get("id") == "fetch")
+        renamed = fetch_step["run"].replace('MODE="full universe"', 'MODE="full-universe"')
+        assert renamed != fetch_step["run"]
+        assigned = set(re.findall(r'^\s*MODE="([^"$]+)"', renamed, re.M))
+        gate = str(spec["jobs"]["settlement-shadow"]["if"])
+        literal = re.findall(r"mode == '([^']+)'", gate)[0]
+        assert literal not in assigned
+
+    def test_a_forced_shadow_timeout_is_reachable_by_dispatch(self):
+        spec = self._spec()
+        on = spec[True] if True in spec else spec["on"]
+        inp = on["workflow_dispatch"]["inputs"]["shadow_timeout_minutes"]
+        assert inp["default"] == "25"
+        # The fetch job's own deadline must not be a function of that input.
+        assert spec["jobs"]["fetch"]["timeout-minutes"] == 30
