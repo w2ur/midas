@@ -82,6 +82,9 @@ LIVE_ONLY_TESTS = {
     "test_backfill_snapshots.py",
     "test_fetch_sentiment.py",
     "test_refresh_leaderboard.py",
+    # Drives normalise_store_order.py / verify_store_canonical.py, live-store
+    # tooling over the committed OHLCV store that core does not ship.
+    "test_normalise_store_order.py",
     # Read the committed OHLCV store (data/market/ohlcv), not shipped to core.
     "test_fetch_market_data.py",
     "test_manager_session.py",
