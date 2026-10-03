@@ -1373,6 +1373,14 @@ def run_settlement_shadow(symbols: list[str], end: date, out_dir: Path) -> int:
     if report["served"] == 0:
         print("::warning::settlement shadow served no symbol; report is UNKNOWN", file=sys.stderr)
         return EXIT_SHADOW_NO_DATA
+    asked = report["served"] + len(report["failed"])
+    if len(report["failed"]) / asked > MAX_FAILURE_RATE:
+        print(
+            f"::warning::settlement shadow fetch failed for {len(report['failed'])} of {asked} "
+            f"symbols (limit {MAX_FAILURE_RATE:.0%}); report is UNKNOWN",
+            file=sys.stderr,
+        )
+        return EXIT_SHADOW_NO_DATA
     return 0
 
 

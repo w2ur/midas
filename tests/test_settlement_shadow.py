@@ -331,3 +331,41 @@ def test_regression_the_script_run_by_path_can_read_holdings(tmp_path):
     )
     assert p.returncode == 0, p.stderr
     assert "holdings unreadable" not in p.stderr, p.stderr
+
+
+def test_regression_a_brown_out_night_is_unknown_not_a_sample(tmp_path, monkeypatch):
+    # Regression: served=1, failed=999 moved every failed symbol's rows out of
+    # scope, so 1000 real inserts compared clean (exit 0) and counted as one of
+    # the ten clean nights.
+    import scripts.compare_settlement_shadow as cs
+
+    failed = [f"S{i}" for i in range(999)]
+    rep = tmp_path / "r.json"
+    shadow = {"window_start": "2026-09-18", "end": "2026-10-02", "inserts": {}, "served": 1, "failed": failed}
+    rep.write_text(json.dumps(shadow))
+    diff = "".join(
+        f'+++ b/data/market/ohlcv/{s}.jsonl\n+{{"date": "2026-09-30", "close": 1}}\n' for s in failed
+    )
+    monkeypatch.setattr("sys.argv", ["c", str(rep), "--base", "a", "--head", "b"])
+    monkeypatch.setattr(cs, "_git_diff", lambda b, h: diff)
+    monkeypatch.setattr(cs, "_held", lambda: set())
+    assert cs.main() == 2
+    # Control: a handful of failures is the normal night.
+    rep.write_text(json.dumps({**shadow, "served": 999, "failed": failed[:2]}))
+    assert cs.main() in (0, 1)
+
+
+def test_regression_shadow_run_exits_unknown_over_the_failure_rate(tmp_path, monkeypatch):
+    ohlcv = tmp_path / "ohlcv"
+    ohlcv.mkdir()
+    for s in ("AAA", "BBB", "CCC"):
+        _store(ohlcv / f"{s}.jsonl", {"2026-09-21": 10.0})
+
+    class Cfg:
+        ohlcv_dir = ohlcv
+
+    monkeypatch.setattr(fo, "get_config", lambda: Cfg)
+    monkeypatch.setattr(fo, "_fetch_symbol", lambda s, a, b, **k: _frame({"2026-09-21": 10.0}) if s == "AAA" else None)
+    rc = fo.run_settlement_shadow(["AAA", "BBB", "CCC"], date(2026, 10, 2), tmp_path / "s")
+    assert rc == fo.EXIT_SHADOW_NO_DATA
+
