@@ -385,6 +385,9 @@ def test_cast_tests_reclaimed_into_manifest():
         "test_backfill_snapshots.py",
         "test_fetch_sentiment.py",
         "test_refresh_leaderboard.py",
+        # Drives the live-store order tooling (normalise_store_order,
+        # verify_store_canonical), which core does not ship.
+        "test_normalise_store_order.py",
         "test_fetch_market_data.py",
         "test_manager_session.py",
         "test_sync_core.py",
