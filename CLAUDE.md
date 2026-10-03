@@ -129,6 +129,7 @@ is not listed is ordinary code; read it rather than a description of it.
 - `roster.yaml` — the cast: agents, voices, schedule, universes, benchmarks, per-agent safety rails. **`max_order_notional_pct` is a percentage of current book value and takes precedence over the absolute `max_order_notional`**, re-scaling as the book moves; they were once `1_000_000 / 100 / -95` on €10,000 books, a per-order cap 100x the whole portfolio.
 - `scripts/session_state.py` — resumable step markers, **scoped to the session anchor's `base_sha`, not just the UTC date**
 - `scripts/prompt_hash.py` — hashes the fenced prompt block in `docs/triggers/weekday-session.md`, excluding the self-referential `PROMPT_SHA256:` line
+- `scripts/audit_universe_reliability.py` — read-only: per symbol since a date, store gaps, quarantines, corporate actions and late rows against median traded value, with the incident count of a top-N cut that always keeps held, ever-ordered and benchmark symbols. Writes nothing; exit 2 is unknown, never clean.
 - `scripts/bootstrap_venv.sh` — builds the Python 3.12 venv at image-build time, or verifies it (`--check`) in Step 0
 - `data/portfolios/`, `data/orders/`, `data/agent_memory/`, `data/baselines/`, `data/universes/` — **all committed**, because the remote agent runs sandboxed and cannot fetch
 - `data/orders/dropped/` — Brain-side audit ledger for agent trades that were not valid orders

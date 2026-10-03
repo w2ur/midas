@@ -379,6 +379,7 @@ def test_cast_tests_reclaimed_into_manifest():
     assert sync_core.LIVE_ONLY_TESTS == {
         # Imports app/, the Streamlit dashboard, which core does not ship.
         "test_app_formatting.py",
+        "test_audit_universe_reliability.py",
         "test_attest_ledger.py",
         "test_attest_verify.py",
         "test_backfill_snapshots.py",
