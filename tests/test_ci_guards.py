@@ -261,6 +261,181 @@ def test_watchdog_issue_names_the_rate_limit_cause(tmp_path):
 
 
 # --------------------------------------------------------------------------
+# Close-run effect check (Stage 0.2, 2026-10-03)
+# --------------------------------------------------------------------------
+# The Worker that fires the same-evening close runs was deployed with a stale
+# cron list from 2026-09-28 and no close run ever fired by itself. CI cannot
+# read the deployed schedule, so the watchdog checks the effect: a close run
+# that fires lands a `(eu close)` / `(us close)` commit on main.
+
+CLOSE_DAY = "2026-10-02"  # a Friday
+
+
+def _close_runs_script() -> str:
+    workflow = yaml.safe_load(WATCHDOG.read_text())
+    steps = workflow["jobs"]["close-runs"]["steps"]
+    scripts = [s["run"] for s in steps if "run" in s]
+    assert len(scripts) == 1, "expected a single run block in close-runs"
+    return scripts[0]
+
+
+def _dated_repo(tmp_path: Path, commits: list[tuple[str, str]]) -> Path:
+    """A fixture repo from (iso timestamp, subject) pairs, tip last."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    base = {
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+        "PATH": "/usr/bin:/bin:/usr/local/bin",
+        "HOME": str(tmp_path),
+    }
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True, env=base)
+    for i, (stamp, subject) in enumerate(commits):
+        (repo / f"f{i}.txt").write_text(subject)
+        env = {**base, "GIT_AUTHOR_DATE": stamp, "GIT_COMMITTER_DATE": stamp}
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True, env=env)
+        subprocess.run(["git", "commit", "-q", "-m", subject], cwd=repo, check=True, env=env)
+    subprocess.run(
+        ["git", "update-ref", "refs/remotes/origin/main", "HEAD"],
+        cwd=repo,
+        check=True,
+        env=base,
+    )
+    return repo
+
+
+def _run_close_check(repo: Path, tmp_path: Path) -> tuple[int, str, str]:
+    """Run the workflow's own script against `repo`, with `gh` recorded.
+
+    Only the two `date -d yesterday` lines are replaced (BSD date has no
+    `-d`); everything after them is the workflow's text, unmodified.
+    """
+    script = _close_runs_script()
+    script = re.sub(
+        r"^yesterday=\$\(date .*\)$", f'yesterday="{CLOSE_DAY}"', script, flags=re.M
+    )
+    script = re.sub(r"^dow=\$\(date .*$", "dow=5", script, flags=re.M)
+    assert CLOSE_DAY in script and "dow=5" in script, "date lines were not substituted"
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    gh_log = tmp_path / "gh.log"
+    gh = bin_dir / "gh"
+    gh.write_text(f'#!/bin/bash\necho "$@" >> {gh_log}\n'
+                  '[[ "$1 $2" == "issue create" ]] && echo https://example.invalid/issues/1\nexit 0\n')
+    gh.chmod(0o755)
+    result = subprocess.run(
+        ["bash", "-c", script],
+        cwd=repo,
+        env={
+            "RUNNER_TEMP": str(tmp_path),
+            "RUN_URL": "https://example.invalid/run",
+            "GH_TOKEN": "x",
+            "PATH": f"{bin_dir}:/usr/bin:/bin:/usr/local/bin",
+            "HOME": str(tmp_path),
+        },
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode, result.stdout + result.stderr, gh_log.read_text() if gh_log.exists() else ""
+
+
+_FILLER = [(f"2026-10-02T0{i}:00:00+0000", f"chore: filler {i}") for i in range(1, 6)]
+_SESSION_ONLY = [
+    ("2026-10-02T06:10:00+0000", "[data] 2026-10-02 OHLCV update"),
+    ("2026-10-02T22:20:00+0000", "chore: weekday session 2026-10-02"),
+]
+
+
+def test_close_run_check_is_red_on_a_day_without_close_commits(tmp_path):
+    """The Worker never fired: the morning fetch and the session landed, no close run did."""
+    repo = _dated_repo(tmp_path, [*_FILLER, *_SESSION_ONLY])
+    code, out, gh = _run_close_check(repo, tmp_path)
+    assert code == 1, out
+    assert "issue create" in gh and "Missing close-run commits 2026-10-02" in gh
+    assert "::error::" in out
+
+
+def test_close_run_check_is_green_with_both_close_commits(tmp_path):
+    repo = _dated_repo(
+        tmp_path,
+        [
+            *_FILLER,
+            ("2026-10-02T19:20:00+0000", "[data] 2026-10-02 OHLCV update (eu close)"),
+            ("2026-10-02T21:25:00+0000", "[data] 2026-10-02 OHLCV update (us close)"),
+        ],
+    )
+    code, out, gh = _run_close_check(repo, tmp_path)
+    assert code == 0, out
+    assert "issue create" not in gh and "eu=1 us=1" in out
+
+
+def test_close_run_check_counts_a_commit_landing_after_midnight(tmp_path):
+    """The scheduler has no deadline: a close run started 4-7 h late commits
+    on D+1 with D+1 in its subject. It must still count for D."""
+    repo = _dated_repo(
+        tmp_path,
+        [
+            *_FILLER,
+            ("2026-10-03T00:30:00+0000", "[data] 2026-10-03 OHLCV update (eu close)"),
+            ("2026-10-03T01:10:00+0000", "[data] 2026-10-03 OHLCV update (us close)"),
+        ],
+    )
+    code, out, _ = _run_close_check(repo, tmp_path)
+    assert code == 0, out
+
+
+def test_close_run_check_ignores_close_commits_before_the_window(tmp_path):
+    """Control against a window that opens too early: the PREVIOUS evening's
+    close commits, including one that landed after midnight, must not satisfy
+    the checked day's."""
+    repo = _dated_repo(
+        tmp_path,
+        [
+            # The previous evening's runs, one of them landing late after
+            # midnight on the checked day itself.
+            ("2026-10-01T19:20:00+0000", "[data] 2026-10-01 OHLCV update (eu close)"),
+            ("2026-10-02T00:30:00+0000", "[data] 2026-10-02 OHLCV update (us close)"),
+            *_SESSION_ONLY,
+        ],
+    )
+    code, out, _ = _run_close_check(repo, tmp_path)
+    assert code == 1, out
+
+
+def test_close_run_check_warns_without_failing_on_a_single_close_commit(tmp_path):
+    """A one-sided market holiday looks like one lost dispatch: warn, no issue."""
+    repo = _dated_repo(
+        tmp_path,
+        [*_FILLER, ("2026-10-02T19:20:00+0000", "[data] 2026-10-02 OHLCV update (eu close)")],
+    )
+    code, out, gh = _run_close_check(repo, tmp_path)
+    assert code == 0, out
+    assert "::warning::" in out and "issue create" not in gh
+
+
+def test_close_run_issue_body_renders_through_bash(tmp_path):
+    """Backticks in the heredoc are command substitutions if unescaped."""
+    lines = _close_runs_script().splitlines()
+    start = next(i for i, ln in enumerate(lines) if ln.startswith('cat > "$body_file" <<EOF'))
+    end = next(i for i in range(start + 1, len(lines)) if lines[i] == "EOF")
+    script = "\n".join(
+        [
+            "set -euo pipefail",
+            f'yesterday="{CLOSE_DAY}"',
+            'RUN_URL="https://example.invalid/run"',
+            f'body_file="{tmp_path}/body.md"',
+            *lines[start : end + 1],
+        ]
+    )
+    subprocess.run(["bash", "-c", script], check=True, capture_output=True, text=True)
+    body = (tmp_path / "body.md").read_text()
+    assert "`(eu close)`" in body and "`workers/trigger-gate/`" in body
+    assert "`wrangler.toml`" in body
+
+
+# --------------------------------------------------------------------------
 # W2.4 — the failure-issue action's branching
 # --------------------------------------------------------------------------
 
