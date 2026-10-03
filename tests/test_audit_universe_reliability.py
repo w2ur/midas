@@ -241,6 +241,20 @@ class TestEventCounting:
         assert audit._quarantine_counts(qdir, "2026-08-01") == {"MNST": 2}
 
 
+class TestQuarantineOverlap:
+    def test_a_quarantined_day_already_ledgered_or_gapped_is_one_event(self):
+        # Regression: BYND 2026-08-13 was accepted in the ledger AND quarantined,
+        # so the one missing day was reported as two events.
+        q = {"2026-08-13", "2026-08-14", "2026-08-17"}
+        assert audit._unledgered_quarantine(q, frozenset({"2026-08-17"}), {"2026-08-13": {}}) == 1
+        # control: nothing overlapping still counts in full
+        assert audit._unledgered_quarantine(q, frozenset(), {}) == 3
+
+    def test_quarantine_dates_keep_the_dates_not_just_the_count(self, tmp_path):
+        (tmp_path / "BYND.jsonl").write_text(json.dumps({"symbol": "BYND", "date": "2026-08-13"}) + "\n")
+        assert audit._quarantine_dates(tmp_path, "2026-08-01") == {"BYND": {"2026-08-13"}}
+
+
 class TestFloorExtra:
     def test_unrankable_symbols_are_not_ranked_below_n(self):
         # Regression: rank_of.get(sym, 10**9) counted the 12 FX pairs as ranked below n.

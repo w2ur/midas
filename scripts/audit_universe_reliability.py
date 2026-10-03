@@ -15,7 +15,8 @@ Per symbol, since ``--since`` (default 2026-08-01):
 - ``accepted``  entries in `data/market/store_gaps.json` on or after the
                 window that a human accepted; ``open`` are the unaccepted ones.
 - ``quar``      distinct quarantined (symbol, date) pairs in `data/market/quarantine/`
-                dated in the window (repeat fetch attempts count once).
+                dated in the window (repeat fetch attempts count once), minus days
+                already counted as a gap or a ledger entry.
 - ``acts``      corporate actions in `data/market/corporate_actions.jsonl`
                 effective in the window.
 - ``late``      stored rows dated in the window that first reached the repo
@@ -305,6 +306,23 @@ def _unledgered_gaps(member_gaps: frozenset[str], ledger_entries: dict) -> int:
 
 def _quarantine_counts(quarantine_dir: Path, since: str) -> dict[str, int]:
     """symbol -> distinct quarantined dates >= since (not repeat fetch attempts)."""
+    return {s: len(ds) for s, ds in _quarantine_dates(quarantine_dir, since).items()}
+
+
+def _unledgered_quarantine(
+    quarantined: set[str], member_gaps: frozenset[str], ledger_entries: dict
+) -> int:
+    """Quarantined dates not already counted as a gap or a ledger entry.
+
+    A quarantined row is never stored, so its day is also a scan gap or a ledger
+    entry (BYND 2026-08-13 is accepted AND quarantined): one missing day is one
+    event, not two.
+    """
+    return len(set(quarantined) - set(member_gaps) - set(ledger_entries))
+
+
+def _quarantine_dates(quarantine_dir: Path, since: str) -> dict[str, set[str]]:
+    """symbol -> distinct quarantined dates >= since."""
     seen: dict[str, set[str]] = defaultdict(set)
     for path in quarantine_dir.glob("*.jsonl"):
         for line in path.read_text().splitlines():
@@ -314,7 +332,7 @@ def _quarantine_counts(quarantine_dir: Path, since: str) -> dict[str, int]:
                 continue
             if r.get("date", "") >= since:
                 seen[r.get("symbol", path.stem)].add(r["date"])
-    return {sym: len(ds) for sym, ds in seen.items()}
+    return dict(seen)
 
 
 def _bucket_newest(
@@ -357,7 +375,7 @@ def build_rows(
     scan = scan_store(dates, bucket_of=bucket_of, scope=dates, start=since, end=end)
 
     ledger = parse_ledger((cfg.ohlcv_dir.parent / "store_gaps.json").read_text())
-    quarantine = _quarantine_counts(cfg.ohlcv_dir.parent / "quarantine", since)
+    quarantine = _quarantine_dates(cfg.ohlcv_dir.parent / "quarantine", since)
     actions: dict[str, int] = defaultdict(int)
     actions_path = cfg.ohlcv_dir.parent / "corporate_actions.jsonl"
     for line in actions_path.read_text().splitlines():
@@ -389,14 +407,15 @@ def build_rows(
         except NoFxRate as exc:
             r.no_fx = True
             missing_fx.setdefault(exc.currency, []).append(s)
-        r.gaps = _unledgered_gaps(scan.member_gaps.get(s, frozenset()), ledger.get(s, {}))
+        member_gaps = scan.member_gaps.get(s, frozenset())
+        r.gaps = _unledgered_gaps(member_gaps, ledger.get(s, {}))
         for d, entry in ledger.get(s, {}).items():
             if d >= since:
                 if is_accepted(entry):
                     r.accepted += 1
                 else:
                     r.open += 1
-        r.quar = quarantine.get(s, 0)
+        r.quar = _unledgered_quarantine(quarantine.get(s, set()), member_gaps, ledger.get(s, {}))
         r.acts = actions.get(s, 0)
         r.late = late.get(s, 0)
         # A retired symbol is stale by construction; counting it would be noise.
