@@ -83,7 +83,12 @@ from engine.disclosure import (
     UndisclosedRestatementError,
     require_changelog_entry,
 )
-from engine.restatement import MissingPriceError, replay_holdings, revalue_snapshot
+from engine.restatement import (
+    MissingPriceError,
+    replay_holdings,
+    revalue_snapshot_with_marks,
+)
+from engine.stale_marks import find_stale_marks
 from scripts.fetch_market_data import _BENCHMARK_SOURCES
 
 # A replayed cash figure within this many currency units of the recorded
@@ -332,7 +337,7 @@ def restate_agent(agent_id: str, manager: PortfolioManager) -> AgentResult:
             positions, _cash_delta = replay_holdings(trades, session_date)
             # Pricing stays anchored to the row's own market date — only the
             # holdings clock changed, not the pricing clock.
-            new_pv, new_positions_value = revalue_snapshot(
+            new_pv, new_positions_value, marks = revalue_snapshot_with_marks(
                 positions, recorded_cash, row_date, currency
             )
             new_benchmarks = _benchmarks_as_of(row_date)
@@ -347,6 +352,11 @@ def restate_agent(agent_id: str, manager: PortfolioManager) -> AgentResult:
         new_row["portfolio_value"] = new_pv
         new_row["positions_value"] = new_positions_value
         new_row["benchmarks"] = new_benchmarks
+        # The disclosure follows the prices the restated value used: a close
+        # that has landed since is no longer a stale mark, and one the store
+        # lost is. A row without the key predates the check and stays so.
+        if "stale_marks" in row:
+            new_row["stale_marks"] = find_stale_marks(marks, row_date)
         new_rows.append(new_row)
 
         old_pv = row["portfolio_value"]
