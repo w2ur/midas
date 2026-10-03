@@ -447,8 +447,9 @@ def test_a_malformed_registry_currency_falls_back_to_the_heuristic(
 def test_latest_price_carries_the_store_rows_date(midas_data_root: Path) -> None:
     """`Quote.as_of` is the row's date, not the date asked about (2026-10-03).
 
-    The broker filled CTVA on 2026-10-02 at its 09-30 close: `latest_price`
-    answered a price and nothing else, so no rail could see the quote was two
+    A CTVA order on 2026-10-02 would have filled at its 09-30 close (a
+    what-if; no CTVA order was placed): `latest_price` answered a price and
+    nothing else, so no rail could see the quote was two
     sessions old. Asked for 06-03 against a store whose newest row is 06-01,
     the quote must say 06-01.
     """
