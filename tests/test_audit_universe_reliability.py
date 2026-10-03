@@ -160,6 +160,14 @@ class TestMissingFx:
         assert audit._median_value_eur("X", [("2026-09-01", 1.0, None)], 60) is None
 
 
+class TestEventCounting:
+    def test_a_ledgered_missing_day_is_one_event_not_two(self):
+        # Regression: BYND 2026-08-13 sat in both member_gaps and the ledger.
+        assert audit._unledgered_gaps(frozenset({"2026-08-13"}), {"2026-08-13": {}}) == 0
+        # control: an unledgered gap still counts
+        assert audit._unledgered_gaps(frozenset({"2026-08-13", "2026-08-14"}), {"2026-08-13": {}}) == 1
+
+
 class TestReport:
     def test_avoided_share_is_the_events_on_dropped_symbols(self):
         rows = [
