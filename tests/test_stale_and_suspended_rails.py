@@ -461,6 +461,42 @@ def test_two_days_behind_its_exchange_is_refused(broker_env):
     assert [f.reason for f in fill_day(on, pm)] == ["STALE_PRICE"]
 
 
+def test_a_market_sell_refused_stale_names_the_holders(broker_env):
+    """Regression (review of feat/stage1-asof-reads, 2026-10-04): the concern
+    covered INSTRUMENT_SUSPENDED inbox rows and armed orders, but not a
+    same-session STALE_PRICE refusal of a market SELL. For a symbol frozen
+    without tripping the tripwire (SGLN.MI) that refusal is the only one there
+    is, so the holder could not exit night after night and only an inbox row
+    said so. A refused BUY traps no one and stays unnamed."""
+    from engine.paper_broker import fill_day, instrument_refusal_concerns
+
+    on = date(2026, 10, 2)
+    _seed_bucket(broker_env["ohlcv"], DE_PEERS, _weekdays(date(2026, 9, 14), on))
+    _seed_ohlcv(
+        broker_env["ohlcv"],
+        "4GLD.DE",
+        [(d, 120.0) for d in _weekdays(date(2026, 9, 14), on - timedelta(days=3))],
+    )
+    _write_config(broker_env["config_dir"], "agent1")
+    pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=10_000.0, currency="EUR")
+    _init_portfolio(broker_env["pm_base"], "agent2", cash=10_000.0, currency="EUR")
+    _hold(pm, "agent1", "4GLD.DE", 4, 120.0)
+    append_order(on, _make_order("o_exit", "agent1", "SELL", "4GLD.DE", 4, "EUR"))
+    append_order(on, _make_order("o_entry", "agent2", "BUY", "4GLD.DE", 1, "EUR"))
+
+    fills = fill_day(on, pm)
+    assert sorted((f.order_id, f.reason) for f in fills) == [
+        ("o_entry", "STALE_PRICE"),
+        ("o_exit", "STALE_PRICE"),
+    ]
+
+    concerns = instrument_refusal_concerns(on, portfolios_dir=broker_env["pm_base"])
+    assert len(concerns) == 1
+    assert concerns[0].startswith("STALE_PRICE refused o_exit")
+    assert "SELL 4GLD.DE" in concerns[0] and "2026-09-29" in concerns[0]
+    assert "held by agent1;" in concerns[0]
+
+
 def test_a_whole_exchange_holiday_fills(broker_env):
     """Xetra was closed on 2026-05-01 (Labour Day): a session that day sees
     every .DE name at 04-30. Nobody is behind anybody: the bucket did not
