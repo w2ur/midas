@@ -22,7 +22,8 @@ as `missing_held`, from the portfolios in the checkout it runs in, so the human
 judging the stop condition does not cross-reference by hand. A real insert the
 real run explained from the vendor's action calendar (it sits in BOTH quarantines)
 was handled, not missed, and is reported as `adjudicated_by_real_run`. Rows older than the window are reported separately as `outside_window`;
-the window cannot be asked for them, and that is not a miss.
+the window cannot be asked for them, and that is not a miss. Rows dated after
+the shadow's `end` are `after_shadow_end`, a separate bucket.
 
 Usage:
     python scripts/compare_settlement_shadow.py SHADOW.json --base <sha> --head <sha>
@@ -145,10 +146,16 @@ def compare(
         "adjudicated_by_real_run": sorted(adjudicated),
         "skipped_first_ingest": sorted(p for p in real_inserts if p[0] in skipped),
         "shadow_fetch_failed": sorted(p for p in real_inserts if p[0] in failed and p[0] not in skipped),
+        # Older than the window: what the gap pass reaches and the window cannot.
         "outside_window": sorted(
+            p for p in real_inserts - in_window if p[0] not in unreached and p[1] < window_start
+        ),
+        # Dated after the shadow's `end`: a later close run's bars, a different
+        # question from a pre-window heal and never mixed into that bucket.
+        "after_shadow_end": sorted(
             p
             for p in real_inserts - in_window
-            if p[0] not in unreached
+            if p[0] not in unreached and end is not None and p[1] > end
         ),
         "extra_in_shadow": sorted(shadow_inserts - real_inserts),
         "tripwire_hits": len(shadow_q),
