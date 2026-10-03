@@ -391,6 +391,7 @@ def test_cast_tests_reclaimed_into_manifest():
         # Holds METHODOLOGY.md prose to the live store at a pinned commit.
         "test_ucits_day_late_disclosure.py",
         "test_store_gap_disclosure.py",
+        "test_close_runs_disclosure.py",
         # Asserts on this repo's .github/ and backtester/, neither of which
         # core has (core ships its own .github/ as a core-native file).
         "test_ci_guards.py",
