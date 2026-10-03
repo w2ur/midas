@@ -212,7 +212,11 @@ def _late_rows(
     repo: Path = _PROJECT_ROOT,
     crypto: frozenset[str] = frozenset(),
 ) -> dict[str, int]:
-    """symbol -> rows dated >= since that first arrived >= LATE_AFTER_DAYS late."""
+    """symbol -> rows dated >= since that first arrived >= LATE_AFTER_DAYS late.
+
+    A row rewritten in place (``-`` and ``+`` of the same date in one file diff)
+    is never an arrival; only a ``+`` with no matching ``-`` counts.
+    """
     import numpy as np
 
     cmd = [
@@ -223,6 +227,7 @@ def _late_rows(
     commit_day = ""
     path = ""
     new_file = False
+    removed: set[str] = set()  # dates this file's diff removes: a `+` of one is a rewrite
     with subprocess.Popen(
         cmd, stdout=subprocess.PIPE, text=True, errors="replace"
     ) as proc:
@@ -233,16 +238,26 @@ def _late_rows(
                 commit_day = datetime.fromtimestamp(ts, timezone.utc).date().isoformat()
             elif line.startswith("diff --git"):
                 new_file = False
+                removed = set()
             elif line.startswith("new file mode"):
                 new_file = True
             elif line.startswith("+++ b/"):
                 path = Path(line[6:].strip()).stem
+            elif line.startswith('-{"date"'):
+                try:
+                    removed.add(json.loads(line[1:])["date"])
+                except (ValueError, KeyError):
+                    continue
             elif line.startswith('+{"date"') and not new_file:
                 try:
                     d = json.loads(line[1:])["date"]
                 except (ValueError, KeyError):
                     continue
-                if d >= since:
+                # A `+` row whose date the same diff removes is a rewrite
+                # (resweep, restatement, revision), not an arrival: its first
+                # arrival was an earlier commit, a skipped new-file backfill or
+                # a commit before the window.
+                if d >= since and d not in removed:
                     first_seen.setdefault((path, d), commit_day)
         if proc.wait() != 0:
             raise RuntimeError("git log failed")

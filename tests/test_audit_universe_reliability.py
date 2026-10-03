@@ -104,6 +104,24 @@ class TestLateRows:
         self._commit(repo, "2026-08-06T06:00:00Z", OK=["2026-08-05"])
         assert audit._late_rows("2026-08-01", "ohlcv", repo) == {}
 
+    def test_a_rewrite_of_a_backfilled_row_is_not_a_late_arrival(self, repo: Path):
+        # Regression: FRO.jsonl was created by a backfill (new file, skipped),
+        # then a resweep rewrote its rows as -/+ pairs; the `+` was read as the
+        # first arrival and on-time backfilled rows counted as late.
+        self._commit(repo, "2026-09-10T06:00:00Z", FRO=["2026-08-03", "2026-08-04"])
+        path = repo / "ohlcv" / "FRO.jsonl"
+        rows = [json.loads(x) for x in path.read_text().splitlines()]
+        path.write_text("".join(json.dumps({**r, "close": 2.0}) + "\n" for r in rows))
+        _git(repo, "add", "-A")
+        when = "2026-09-21T06:00:00Z"
+        env = {"GIT_AUTHOR_DATE": when, "GIT_COMMITTER_DATE": when,
+               "PATH": __import__("os").environ["PATH"], "HOME": str(repo)}
+        _git(repo, "commit", "-q", "-m", "resweep", env=env)
+        assert audit._late_rows("2026-08-01", "ohlcv", repo) == {}
+        # control: a genuinely new late row in the same file is still counted
+        self._commit(repo, "2026-09-22T06:00:00Z", FRO=["2026-08-05"])
+        assert audit._late_rows("2026-08-01", "ohlcv", repo) == {"FRO": 1}
+
 
 class TestCryptoBucket:
     CRYPTO = frozenset({"HBAR-USD"})
