@@ -420,3 +420,87 @@ def test_a_bucket_too_small_to_judge_abstains(broker_env):
     pm = _init_portfolio(broker_env["pm_base"], "agent1", cash=10_000.0)
     append_order(date(2026, 10, 2), _make_order("o", "agent1", "BUY", "VOO", 1))
     assert [f.status for f in fill_day(date(2026, 10, 2), pm)] == ["filled"]
+
+
+# ---------------------------------------------------------------------------
+# The watcher holds a fire the rails call transient; it does not consume it
+# ---------------------------------------------------------------------------
+
+
+def _arm(order_id: str, ticker: str, level: float):
+    from engine.triggers import save_pending
+
+    order = _make_order(order_id, "agent1", "BUY", ticker, 5)
+    order.trigger = {"op": "<=", "level": level}
+    order.expires = "2026-10-30"
+    save_pending(order)
+    return order
+
+
+@pytest.mark.parametrize(
+    "registry, reason",
+    [(False, "STALE_PRICE"), (True, "INSTRUMENT_SUSPENDED")],
+)
+def test_a_fire_refused_stale_or_suspended_keeps_the_order_armed(
+    ctva_store, monkeypatch, registry, reason
+):
+    """Regression (review of feat/stage1-asof-reads, 2026-10-03): the watcher
+    used to append the STALE_PRICE / INSTRUMENT_SUSPENDED rejection and delete
+    the pending file, so a one-night store hole destroyed an armed order the
+    intake path had deliberately let arm ("staleness is transient"). The order
+    must be carried, like an unavailable quote, and reported as held."""
+    from datetime import datetime, timezone
+
+    from engine import triggers as triggers_mod
+    from engine.ohlcv_store import DatedClose
+    from engine.triggers import list_pending
+    from scripts import check_triggers
+
+    monkeypatch.setattr(check_triggers, "_git_add_commit", lambda *a, **k: "ok")
+    if registry:
+        _seed_registry_from_quarantine({"CTVA": [CTVA_QUARANTINE]})
+    pm = _init_portfolio(ctva_store["pm_base"], "agent1", cash=10_000.0)
+    _arm("o_held", "CTVA", 78.0)
+    monkeypatch.setattr(
+        triggers_mod,
+        "get_current_quote",
+        lambda t, today: DatedClose(77.65, date(2026, 9, 30)),
+    )
+
+    summary = check_triggers.run(
+        now=datetime(2026, 10, 2, 13, 0, tzinfo=timezone.utc), portfolio_manager=pm
+    )
+
+    assert [o.order_id for o in list_pending()] == ["o_held"]
+    assert read_inbox(date(2026, 10, 2)) == []
+    assert (summary["fired"], summary["carried"]) == (0, 1)
+    [entry] = summary["report"]
+    assert (entry["kind"], entry["error"]) == ("held", reason)
+    assert entry["commit"] == check_triggers.REPORT_COMMIT_NONE
+    assert pm.load("agent1").cash == 10_000.0
+
+
+def test_a_fire_refused_for_cash_is_still_consumed(ctva_store, monkeypatch):
+    # Control: a refusal that is NOT transient still retires the order.
+    from datetime import datetime, timezone
+
+    from engine import triggers as triggers_mod
+    from engine.ohlcv_store import DatedClose
+    from engine.triggers import list_pending
+    from scripts import check_triggers
+
+    monkeypatch.setattr(check_triggers, "_git_add_commit", lambda *a, **k: "ok")
+    pm = _init_portfolio(ctva_store["pm_base"], "agent1", cash=0.0)
+    _arm("o_poor", "AAPL", 101.0)
+    monkeypatch.setattr(
+        triggers_mod,
+        "get_current_quote",
+        lambda t, today: DatedClose(100.0, date(2026, 10, 2)),
+    )
+
+    check_triggers.run(
+        now=datetime(2026, 10, 2, 13, 0, tzinfo=timezone.utc), portfolio_manager=pm
+    )
+
+    assert list_pending() == []
+    assert [f.reason for f in read_inbox(date(2026, 10, 2))] == ["INSUFFICIENT_CASH"]
