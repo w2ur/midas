@@ -292,3 +292,27 @@ def test_missing_rows_for_held_symbols_are_marked():
     assert [p[0] for p in r["missing_from_shadow"]] == ["HELD", "SCREEN"]
     assert r["missing_held"] == [("HELD", "2026-09-22")]
     assert compare(real, shadow)["missing_held"] == []
+
+
+def test_regression_the_script_run_by_path_can_read_holdings(tmp_path):
+    # Regression: `python scripts/compare_settlement_shadow.py` puts scripts/ on
+    # sys.path, `from scripts.fetch_ohlcv import` failed, and the broad except
+    # left `missing_held` empty on every real invocation. Run it the documented
+    # way, in a subprocess, from a directory that is not the repo root.
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parents[1] / "scripts" / "compare_settlement_shadow.py"
+    code = (
+        "import runpy, sys\n"
+        "sys.path[:] = [p for p in sys.path if p not in ('', {root!r})]\n"
+        "sys.path.insert(0, {scripts!r})  # what running the file by path gives\n"
+        f"ns = runpy.run_path({str(script)!r}, run_name='cli')\n"
+        "ns['_held']()\n"
+    ).format(root=str(script.parents[1]), scripts=str(script.parent))
+    p = subprocess.run(
+        [sys.executable, "-c", code], cwd=tmp_path, capture_output=True, text=True, env={"PATH": "/usr/bin"}
+    )
+    assert p.returncode == 0, p.stderr
+    assert "holdings unreadable" not in p.stderr, p.stderr
