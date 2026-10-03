@@ -539,3 +539,56 @@ def test_a_fire_refused_for_cash_is_still_consumed(ctva_store, monkeypatch):
 
     assert list_pending() == []
     assert [f.reason for f in read_inbox(date(2026, 10, 2))] == ["INSUFFICIENT_CASH"]
+
+
+# ---------------------------------------------------------------------------
+# The baseline-manager book trades outside the broker; the rails reach it too
+# ---------------------------------------------------------------------------
+
+
+def _bullish(*tickers: str) -> dict:
+    note = {
+        "thesis": "t",
+        "conviction": 8,
+        "tickers": list(tickers),
+        "action_bias": "strong_buy",
+        "horizon": "weeks",
+        "catalysts": "c",
+        "currency": "EUR",
+    }
+    return {"agent-a": {"research_note": note}, "agent-b": {"research_note": note}}
+
+
+@pytest.mark.live_cast
+@pytest.mark.parametrize("registry", [True, False])
+def test_the_baseline_manager_never_buys_a_suspended_or_stale_ticker(
+    broker_env, registry
+):
+    """Regression (review of feat/stage1-asof-reads, 2026-10-03):
+    step_build_baseline_manager priced its rebalance with a bare
+    latest_close_on_or_before and booked it with apply_trade, so the one
+    trading path outside the broker would still buy CTVA at its frozen
+    pre-separation close. Registry seeded: CTVA as the store stood on
+    2026-10-01 (one session behind, suspended). No registry: CTVA two
+    sessions behind its bucket (stale). AAPL is the control and must fill."""
+    from scripts.daily_session import step_build_baseline_manager
+
+    on = date(2026, 10, 1)  # first weekday of October: a rebalance day
+    _seed_bucket(broker_env["ohlcv"], US_PEERS, _weekdays(date(2026, 9, 14), on))
+    if registry:
+        _seed_ohlcv(broker_env["ohlcv"], "CTVA", CTVA_STORE)
+        _seed_registry_from_quarantine({"CTVA": [CTVA_QUARANTINE]})
+    else:
+        _seed_ohlcv(broker_env["ohlcv"], "CTVA", CTVA_STORE[:2])
+
+    step_build_baseline_manager(
+        _bullish("CTVA", "AAPL"),
+        trade_date=on,
+        portfolios_dir=broker_env["pm_base"],
+        ohlcv_store=broker_env["ohlcv"],
+    )
+
+    book = json.loads(
+        (broker_env["pm_base"] / "baseline-manager" / "portfolio.json").read_text()
+    )
+    assert sorted(p["ticker"] for p in book["positions"]) == ["AAPL"]

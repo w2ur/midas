@@ -699,10 +699,29 @@ def step_build_baseline_manager(
     portfolio_dict = manager.load(strategy_id).to_dict()
 
     def _price_lookup(ticker: str, on: date) -> float | None:
+        # This book trades through apply_trade, not the broker, so the two
+        # Stage 1.3 rails are applied here: a suspended instrument or a close
+        # that trails its bucket has no price. `rebalance` then leaves a
+        # target out and cannot sell a holding, which is the broker's own
+        # answer (no BUY at a frozen close, a SELL trapped until adjudicated).
+        from engine import instrument_status
+        from engine.market_calendar import is_stale
         from engine.ohlcv_store import latest_close_on_or_before as _lcob
 
+        status = instrument_status.status_of(ticker)
+        if status is not None:
+            print(f"  [WARN] {strategy_id}: {ticker} is {status}; no price")
+            return None
         dated = _lcob(ticker, on, store=resolved_ohlcv_store)
-        return dated.close if dated is not None else None
+        if dated is None:
+            return None
+        if is_stale(ticker, dated.as_of, on, store=resolved_ohlcv_store):
+            print(
+                f"  [WARN] {strategy_id}: {ticker} close dated {dated.as_of} "
+                "trails its exchange; no price"
+            )
+            return None
+        return dated.close
 
     trades = rebalance(
         portfolio=portfolio_dict,
