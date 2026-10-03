@@ -140,6 +140,26 @@ class TestCryptoBucket:
         assert audit._late_rows("2026-08-01", "ohlcv", repo) == {}  # control
 
 
+class TestMissingFx:
+    ROWS = [("2026-09-01", 10.0, 100.0)]
+
+    def test_refuses_local_units_when_no_rate_exists(self, monkeypatch):
+        # Regression: a None rate fell back to the unconverted local value, so
+        # SEK/NOK/DKK/PLN names ranked 4-11x too high with no symptom.
+        monkeypatch.setattr(audit, "ticker_currency", lambda s: "SEK")
+        monkeypatch.setattr(audit.fx, "to_eur", lambda amount, ccy: None)
+        with pytest.raises(audit.NoFxRate):
+            audit._median_value_eur("ERIC-B.ST", self.ROWS, 60)
+
+    def test_control_a_rate_converts(self, monkeypatch):
+        monkeypatch.setattr(audit, "ticker_currency", lambda s: "SEK")
+        monkeypatch.setattr(audit.fx, "to_eur", lambda amount, ccy: amount / 10)
+        assert audit._median_value_eur("ERIC-B.ST", self.ROWS, 60) == 100.0
+
+    def test_no_volume_is_still_none_not_an_error(self, monkeypatch):
+        assert audit._median_value_eur("X", [("2026-09-01", 1.0, None)], 60) is None
+
+
 class TestReport:
     def test_avoided_share_is_the_events_on_dropped_symbols(self):
         rows = [
