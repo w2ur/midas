@@ -116,9 +116,21 @@ class RestatementError(RuntimeError):
 
 @dataclass
 class RowChange:
+    """One published row the restatement rewrites.
+
+    A row counts when its value moves *or* its ``stale_marks`` disclosure
+    does: ``--apply`` writes both, so a dry run that listed only value moves
+    would let a published disclosure change with nothing naming it.
+    """
+
     row_date: str
     old_value: float
     new_value: float
+    stale_marks_changed: bool = False
+
+    @property
+    def value_changed(self) -> bool:
+        return abs(self.new_value - self.old_value) > 1e-6
 
     @property
     def pct(self) -> float:
@@ -152,9 +164,10 @@ class AgentResult:
 
     @property
     def largest_change(self) -> RowChange | None:
-        if not self.changes:
+        moves = [c for c in self.changes if c.value_changed]
+        if not moves:
             return None
-        return max(self.changes, key=lambda c: abs(c.new_value - c.old_value))
+        return max(moves, key=lambda c: abs(c.new_value - c.old_value))
 
     @property
     def headline_delta_pp(self) -> float:
@@ -359,11 +372,14 @@ def restate_agent(agent_id: str, manager: PortfolioManager) -> AgentResult:
             new_row["stale_marks"] = find_stale_marks(marks, row_date)
         new_rows.append(new_row)
 
-        old_pv = row["portfolio_value"]
-        if abs(new_pv - old_pv) > 1e-6:
-            changes.append(
-                RowChange(row_date=row["date"], old_value=old_pv, new_value=new_pv)
-            )
+        change = RowChange(
+            row_date=row["date"],
+            old_value=row["portfolio_value"],
+            new_value=new_pv,
+            stale_marks_changed=new_row.get("stale_marks") != row.get("stale_marks"),
+        )
+        if change.value_changed or change.stale_marks_changed:
+            changes.append(change)
 
     result = AgentResult(
         agent_id=agent_id,
@@ -404,6 +420,17 @@ def _print_agent_table(result: AgentResult, will_write: bool) -> None:
         for row_date, msg in result.row_errors:
             print(f"    {row_date}: {msg}")
 
+    disclosure_dates = [c.row_date for c in result.changes if c.stale_marks_changed]
+    if disclosure_dates:
+        preview = ", ".join(disclosure_dates[:6])
+        more = (
+            f" (+{len(disclosure_dates) - 6} more)" if len(disclosure_dates) > 6 else ""
+        )
+        print(
+            f"  stale_marks disclosure changed on {len(disclosure_dates)} row(s): "
+            f"{preview}{more}"
+        )
+
     largest = result.largest_change
     if largest is not None:
         flag = (
@@ -415,6 +442,7 @@ def _print_agent_table(result: AgentResult, will_write: bool) -> None:
             f"  largest single move: {largest.row_date}  "
             f"{largest.old_value:.2f} -> {largest.new_value:.2f}  ({largest.pct:+.2f}%){flag}"
         )
+    if result.changes:
         first = result.changes[0]
         last = result.changes[-1]
         print(f"  first affected date: {first.row_date}")

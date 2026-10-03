@@ -301,3 +301,52 @@ def test_a_restated_row_without_the_field_does_not_gain_it(midas_data_root, monk
 
     (row,) = rv.restate_agent("book", manager).new_rows
     assert "stale_marks" not in row
+
+
+def test_a_disclosure_only_restatement_is_listed_in_the_dry_run(
+    midas_data_root, monkeypatch, capsys
+) -> None:
+    """Regression (review of feat/stage1-asof-reads, 2026-10-04): a row whose
+    stale_marks moved while its value did not was missing from ``changes``, so
+    the dry run printed "no rows changed" while ``--apply`` rewrote the row. The
+    changelog entry is written from that dry run, so a published disclosure
+    moved with nothing naming it. Shape: the 09-30 row was written checked-clean
+    on a night `.DE` had no 09-30 majority; the bucket's 09-30 closes landed
+    later, 4GLD.DE's never did."""
+    import scripts.restate_valuations as rv
+
+    monkeypatch.setattr(rv, "_benchmarks_as_of", lambda d: {})
+    store = get_config().ohlcv_dir
+    _de_bucket(store, BUCKET_DAYS)
+    _write(store, "4GLD.DE", GOLD_4GLD)
+    manager = PortfolioManager(base_dir=get_config().portfolios_dir)
+    manager.initialize("book", initial_capital=10_000.0, currency="EUR")
+    _buy(manager, "book", "4GLD.DE", 10, 100.0)
+    row = {
+        "date": "2026-09-30",
+        "portfolio_value": 9_000.0 + 10 * GOLD_4GLD["2026-09-29"],
+        "cash": 9_000.0,
+        "positions_value": 10 * GOLD_4GLD["2026-09-29"],
+        "benchmarks": {},
+        "session_date": "2026-09-30",
+        "stale_marks": [],
+    }
+    manager._snapshots_path("book").write_text(json.dumps([row]))  # noqa: SLF001
+
+    result = rv.restate_agent("book", manager)
+
+    assert result.new_rows[0]["stale_marks"] == [
+        {"ticker": "4GLD.DE", "price_date": "2026-09-29"}
+    ]
+    (change,) = result.changes
+    assert change.row_date == "2026-09-30"
+    assert change.stale_marks_changed
+    assert not change.value_changed
+    # A disclosure-only row is not a value move: no "largest move" of 0.00%.
+    assert result.largest_change is None
+
+    rv._print_agent_table(result, will_write=False)  # noqa: SLF001
+    out = capsys.readouterr().out
+    assert "no rows changed" not in out
+    assert "changed: 1" in out
+    assert "stale_marks disclosure changed on 1 row(s): 2026-09-30" in out
