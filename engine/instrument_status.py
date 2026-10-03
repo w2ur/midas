@@ -28,8 +28,15 @@ writer ever deletes the file, so a quarantine with no registry means the file
 was lost, and ``status_of`` fails closed exactly as for an unreadable one. The
 desk's own CI test (``tests/test_instrument_status_live.py``) is advisory; this
 is what holds a deleted registry at runtime. Writers never overwrite a file
-they could not read, and a missing file is still an empty one to them, so the
-next refusal recreates it.
+they could not read. **A lost registry is rebuilt, never restarted empty**:
+before a writer touches a missing file beside a non-empty quarantine it
+re-seeds from the unadjudicated rows (`seed_entries`, the same rule as the
+``seed`` command), because reading it as empty and writing back one symbol
+would turn the fail-closed state into fail-open for every other suspension
+the lost file held (CTVA, at its frozen 09-30 close). A reconstruction that
+cannot be computed raises ``RegistryUnreadable`` and writes nothing, so the
+fail-closed state holds. On a fresh root the rebuild holds only the symbol
+being refused, so the first refusal still creates the file.
 
 The paper broker refuses BUY and SELL on any recorded status
 (``INSTRUMENT_SUSPENDED``, `engine.paper_broker._instrument_suspended`). Engine
@@ -190,6 +197,35 @@ def _save(entries: dict[str, Entry], path: Path) -> None:
     path.write_text(render(entries), encoding="utf-8")
 
 
+def _load_for_write(path: Path) -> dict[str, Entry]:
+    """What a writer starts from: the registry, or its reconstruction if lost.
+
+    Regression (review of feat/stage1-asof-reads): writers read a lost file as
+    empty, so the next tripwire refusal wrote a registry holding only the new
+    symbol, and every suspension the lost file held (CTVA) silently cleared.
+    """
+    if not _lost(path):
+        return load(path)
+    market = path.parent
+    try:
+        entries = seed_entries(
+            market / "quarantine", market / "corporate_actions.jsonl", market / "ohlcv"
+        )
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        # json.JSONDecodeError and UnicodeDecodeError are ValueErrors.
+        raise RegistryUnreadable(
+            f"{path} is missing beside a non-empty quarantine and cannot be "
+            f"rebuilt from it ({exc!r})"
+        ) from exc
+    logger.error(
+        "instrument status registry %s was missing beside a non-empty quarantine; "
+        "rebuilt %d entr(y/ies) from the unadjudicated rows before writing",
+        path,
+        len(entries),
+    )
+    return entries
+
+
 def mark(
     symbol: str,
     status: str,
@@ -204,7 +240,8 @@ def mark(
     Idempotent: a symbol already carrying the same status keeps its earliest
     ``since`` and its original reason, so a symbol refused night after night
     still says when it froze. Raises ``RegistryUnreadable`` rather than
-    overwriting a file it could not read.
+    overwriting a file it could not read, and rebuilds a lost one rather than
+    restarting it empty (`_load_for_write`).
     """
     if status not in STATUSES:
         raise ValueError(f"unknown status {status!r}")
@@ -212,12 +249,21 @@ def mark(
         raise ValueError("a status needs a reason")
     date.fromisoformat(since)
     path = path if path is not None else registry_path()
-    entries = load(path)
+    rebuilt = _lost(path)
+    entries = _load_for_write(path)
+    if rebuilt:
+        # The caller is the authority on its own symbol: the rebuild's entry
+        # for it is a reconstruction, so only its earlier date survives.
+        seeded = entries.pop(symbol, None)
+        if seeded is not None and seeded.status == status and seeded.since < since:
+            since = seeded.since
     held = entries.get(symbol)
     if held is not None and held.status == status:
-        if since < held.since:
+        changed = since < held.since
+        if changed:
             held = held._replace(since=since)
             entries[symbol] = held
+        if changed or rebuilt:
             _save(entries, path)
         return held
     entry = Entry(status=status, since=since, source=source, reason=reason)
@@ -241,10 +287,12 @@ def clear(symbol: str, *, reason: str, path: Path | None = None) -> Entry | None
     if not reason.strip():
         raise ValueError("clearing a status needs a reason")
     path = path if path is not None else registry_path()
-    entries = load(path)
+    rebuilt = _lost(path)
+    entries = _load_for_write(path)
     removed = entries.pop(symbol, None)
-    if removed is not None:
+    if removed is not None or rebuilt:
         _save(entries, path)
+    if removed is not None:
         logger.info("instrument status: cleared %s (%s)", symbol, reason)
     return removed
 
