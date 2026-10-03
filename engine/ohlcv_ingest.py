@@ -13,7 +13,9 @@ sandboxed agent — preserving it exactly is a hard requirement.
 with one row per date. The writers keep it that way: ``merge_rows`` rewrites
 sorted, and ``append_new_rows`` appends only dates after the newest stored one
 and rewrites the file sorted when a date lands inside the series (the store-gap
-heal). ``scripts/normalise_store_order.py`` brought the history into that form.
+heal). The history was brought into that form by a one-off normaliser that
+lives in the live repo only; a store that is out of order is sorted on its
+first rewrite by either writer.
 """
 
 from __future__ import annotations
