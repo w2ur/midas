@@ -157,6 +157,23 @@ class TestCryptoBucket:
         assert audit._late_rows("2026-08-01", "ohlcv", repo) == {}  # control
 
 
+class TestStaleScoring:
+    def test_an_ordered_symbol_that_left_the_universe_is_not_stale(self):
+        # Regression: SGLN.MI stayed in the pool through `ordered` after the
+        # universe dropped it, and its frozen file was scored as an incident.
+        gone = _row("SGLN.MI", 1.0, ordered=True, in_universe=False)
+        assert not audit._counts_as_stale(gone, "2026-09-25", "2026-10-02")
+
+    def test_control_a_fetched_symbol_with_an_old_newest_row_is_stale(self):
+        live = _row("AAPL", 1.0, in_universe=True)
+        assert audit._counts_as_stale(live, "2026-09-25", "2026-10-02")
+        assert not audit._counts_as_stale(live, "2026-10-02", "2026-10-02")
+
+    def test_a_held_symbol_outside_the_universe_is_still_stale(self):
+        held = _row("OLD", 1.0, held=True, in_universe=False)
+        assert audit._counts_as_stale(held, "2026-09-25", "2026-10-02")
+
+
 class TestMissingFx:
     ROWS = [("2026-09-01", 10.0, 100.0)]
 
