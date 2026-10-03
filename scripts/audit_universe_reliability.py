@@ -90,6 +90,7 @@ class SymbolRow:
     benchmark: bool = False
     in_universe: bool = False
     value_eur: float | None = None  # None: cannot be ranked (no volume, or no FX rate)
+    value_stale: bool = False  # value_eur comes from rows older than the window
     no_fx: bool = False  # value_eur is None because no rate to EUR exists
     gaps: int = 0
     accepted: int = 0
@@ -216,6 +217,17 @@ def _median_value_eur(
             approx_used.add(ccy)
         return local * rate
     return converted
+
+
+def _heaviest(rows: list[SymbolRow], n: int) -> list[SymbolRow]:
+    """The ``n`` rows with the most events, ties by symbol."""
+    return sorted(rows, key=lambda r: (-r.events, r.symbol))[:n]
+
+
+def _value_asof(rows: list[tuple[str, float | None, float | None]], days: int) -> str:
+    """Newest date among the rows `_median_value_eur` ranks on ('' when none)."""
+    recent = sorted(rows)[-days:]
+    return recent[-1][0] if recent else ""
 
 
 def _bucketer(crypto: frozenset[str]):
@@ -404,6 +416,7 @@ def build_rows(
         )
         try:
             r.value_eur = _median_value_eur(s, store[s], value_days, approx_used, crypto)
+            r.value_stale = r.value_eur is not None and _value_asof(store[s], value_days) < since
         except NoFxRate as exc:
             r.no_fx = True
             missing_fx.setdefault(exc.currency, []).append(s)
@@ -499,7 +512,7 @@ def format_report(
     w(f"  audited pool {meta['pool']} symbols; {meta['outside_pool_files']} retired store "
       f"files sit outside it")
     w(f"  {meta['retired_with_events']} of those carry events in the window: "
-      f"{', '.join(f'{r.symbol}({r.events})' for r in retired[:12]) or 'none'}; "
+      f"{', '.join(f'{r.symbol}({r.events})' for r in _heaviest(retired, 12)) or 'none'}; "
       f"{sum(r.events for r in retired)} events in total, not in the cut table "
       f"(no cut can avoid what the universe already shed)")
     w(f"  bucket-wide absences (holiday-ambiguous, not counted as gaps): "
@@ -509,6 +522,10 @@ def format_report(
     if meta.get("approx_fx"):
         w(f"  NOTE: {', '.join(meta['approx_fx'])} have no rate in the store; ranked with fixed "
           f"approximate rates (RANKING_ONLY_EUR_RATES), good enough to order, not to value")
+    stale_val = [r.symbol for r in rows if r.value_stale]
+    if stale_val:
+        w(f"  NOTE: {len(stale_val)} symbols are ranked on rows older than the window "
+          f"(store stopped before {meta['since']}); marked * in the table")
     nofx = sum(1 for r in rows if r.no_fx)
     if nofx:
         w(f"  WARNING: {nofx} symbols have no EUR rate ({meta.get('missing_fx')}); unrankable, "
@@ -577,6 +594,8 @@ def format_report(
         flags = ("H" if r.held else "-") + ("O" if r.ordered else "-") + ("B" if r.benchmark else "-")
         rk = rank_of.get(r.symbol)
         val = f"{r.value_eur:,.0f}" if r.value_eur is not None else "n/a"
+        if r.value_stale:
+            val += "*"
         w(f"{r.symbol:<12}{(r.bucket or 'US'):<7}{(rk if rk else '-'):>6}{val:>15}  {flags:<5}"
           f"{r.gaps:>5}{r.accepted:>6}{r.open:>5}{r.quar:>5}{r.acts:>5}{r.stale:>6}{r.late:>6}")
     w(f"({len(shown)} of {len(rows)} symbols shown, most events first; --top 0 lists all)")
