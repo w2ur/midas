@@ -277,6 +277,32 @@ class TestUnreadableRegistryFailsClosed:
         assert not status.registry_path().exists()
         assert status.status_of("AAPL") is None
 
+    def test_a_missing_registry_beside_a_quarantine_fails_closed(
+        self, midas_data_root, caplog
+    ):
+        """Regression (review of feat/stage1-asof-reads, finding 3): a deleted
+        registry read as an empty one, so the broker, the watcher and the
+        baseline-manager book all accepted CTVA at its frozen 09-30 close; only
+        an advisory CI test noticed. A quarantine row proves a refusal was
+        recorded, so the file's absence is a loss, not a fresh root."""
+        path = status.registry_path()
+        _write_jsonl(path.parent / "quarantine" / "CTVA.jsonl", [{"symbol": "CTVA"}])
+        assert not path.exists()
+        with caplog.at_level(logging.ERROR, logger="engine.instrument_status"):
+            assert status.status_of("CTVA") == status.SUSPENDED
+            assert status.status_of("AAPL") == status.SUSPENDED
+        assert any("is missing" in r.getMessage() for r in caplog.records)
+
+    def test_the_next_refusal_recreates_a_lost_registry(self, midas_data_root):
+        """Writers still read a missing file as empty, so a tripwire refusal
+        is not blocked by the loss it would repair."""
+        path = status.registry_path()
+        _write_jsonl(path.parent / "quarantine" / "CTVA.jsonl", [{"symbol": "CTVA"}])
+        status.mark_suspended("CTVA", since="2026-10-01", source="t", reason="r")
+        assert path.exists()
+        assert status.status_of("AAPL") is None
+        assert status.status_of("CTVA") == status.SUSPENDED
+
 
 # ---------------------------------------------------------------------------
 # 4. Seeding reads only unadjudicated quarantine rows (review SHOULD 4)
