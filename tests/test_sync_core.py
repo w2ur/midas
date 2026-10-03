@@ -565,7 +565,10 @@ def test_no_synced_test_imports_a_live_only_script():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         modules: set[str] = set()
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith(
+            if isinstance(node, ast.ImportFrom) and node.module == "scripts":
+                # `from scripts import x` — each alias is a module.
+                modules.update(a.name for a in node.names)
+            elif isinstance(node, ast.ImportFrom) and (node.module or "").startswith(
                 "scripts."
             ):
                 modules.add(node.module.split(".")[1])
