@@ -114,3 +114,68 @@ def test_price_date_matches_the_store_reader() -> None:
     assert price_date_on_or_before(raw, "2026-09-27") is None
     assert newer_served(raw, "2026-09-28", "2026-09-30") == "2026-09-29"
     assert newer_served(raw, "2026-09-29", "2026-09-30") is None
+
+
+def _same_day_history(tmp_path: Path, *, crypto_store: dict[str, float]) -> Path:
+    """A post-2026-09-28 session: the row is dated on its own session's day."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _write(repo, "data/market/ohlcv/BTC-EUR.jsonl", _store(crypto_store))
+    _write(repo, "data/market/ohlcv/AUDUSD=X.jsonl", _store({"2026-09-28": 0.66}))
+    _write(repo, "data/market/ohlcv/GOLD.DE.jsonl", _store({"2026-09-28": 100.0}))
+    _write(
+        repo,
+        "data/portfolios/book/portfolio.json",
+        json.dumps({"cash": 0.0, "currency": "EUR", "positions": [
+            {"ticker": "BTC-EUR", "shares": 1.0},
+            {"ticker": "AUDUSD=X", "shares": 1.0},
+            {"ticker": "GOLD.DE", "shares": 1.0},
+        ]}),
+    )
+    _write(repo, "data/portfolios/book/snapshots.json", json.dumps([]))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "seed")
+    _write(
+        repo,
+        "data/portfolios/book/snapshots.json",
+        json.dumps([{"date": "2026-09-29", "session_date": "2026-09-29", "portfolio_value": 1.0}]),
+    )
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "chore: weekday session 2026-09-29")
+    # Every bar lands afterwards: the 09-29 crypto/FX bars completed at midnight.
+    later = dict(crypto_store, **{"2026-09-29": 2.0})
+    _write(repo, "data/market/ohlcv/BTC-EUR.jsonl", _store(later))
+    _write(repo, "data/market/ohlcv/AUDUSD=X.jsonl", _store({"2026-09-28": 0.66, "2026-09-29": 0.67}))
+    _write(repo, "data/market/ohlcv/GOLD.DE.jsonl", _store({"2026-09-28": 100.0, "2026-09-29": 101.0}))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "[data] 2026-09-30 OHLCV update")
+    return repo
+
+
+def test_previous_completed_bar_marks_are_by_design_not_stale(tmp_path: Path) -> None:
+    """Regression (review of feat/stage1-asof-reads, finding 1): the 2026-09-29
+    session marked 11 crypto/FX positions at the 09-28 bar, exactly as the
+    2026-09-28 cadence move intends, and the hindsight test counted all 11 in
+    the published stale-mark disclosure with a vendor-hole explanation.
+    Without the fix BTC-EUR and AUDUSD=X are counted stale here."""
+    repo = _same_day_history(tmp_path, crypto_store={"2026-09-28": 1.0})
+    marks, _ = audit(repo, "2026-08-20")
+    by_ticker = {m.ticker: m for m in marks}
+    assert by_ticker["BTC-EUR"].by_design and not by_ticker["BTC-EUR"].stale
+    assert by_ticker["AUDUSD=X"].by_design and not by_ticker["AUDUSD=X"].stale
+    # The control: an equity in the same row, one day late, is still stale.
+    assert by_ticker["GOLD.DE"].stale and not by_ticker["GOLD.DE"].by_design
+
+
+def test_a_crypto_mark_two_bars_behind_is_still_stale(tmp_path: Path) -> None:
+    """The exclusion covers one completed bar, not any crypto lateness: a
+    09-27 mark in a 09-29 row skipped the 09-28 bar the vendor did serve."""
+    repo = _same_day_history(tmp_path, crypto_store={"2026-09-27": 1.0})
+    _write(repo, "data/market/ohlcv/BTC-EUR.jsonl",
+           _store({"2026-09-27": 1.0, "2026-09-28": 1.5, "2026-09-29": 2.0}))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "[data] backfill 09-28")
+    btc = next(m for m in audit(repo, "2026-08-20")[0] if m.ticker == "BTC-EUR")
+    assert btc.price_date == "2026-09-27"
+    assert btc.stale and not btc.by_design

@@ -21,6 +21,15 @@ historical audit; the live check written on new rows since 2026-10-03
 (`engine.stale_marks`) cannot see the future and judges against the bucket
 instead.
 
+One class is excluded from that test because it is late by design, not by the
+vendor: since the 2026-09-28 cadence move a session prices the day it runs on,
+and inside that row crypto, FX and futures mark at the previous completed bar
+(CLAUDE.md, Session Cadence; METHODOLOGY ``#same-day-close-2026-09-28``). Hindsight
+always finds that day's bar later, so a mark of that class, in a row dated on
+its own session's day, priced at the newest close before the row's date, with
+the only newer close being the row's own date, is reported separately as
+``by_design`` and never counted stale.
+
 Nothing is written. Published snapshots are immutable; this script is the
 source of the disclosure in METHODOLOGY (``#stale-marks-2026-10-03``), not a
 restatement. A row written twice (a re-run) is counted once, as last written.
@@ -39,7 +48,12 @@ import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass
+from datetime import date, timedelta
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from engine.market_calendar import store_bucket  # noqa: E402
 
 SESSION_SUBJECT = re.compile(r"^chore: weekday session (\d{4}-\d{2}-\d{2})\b")
 SNAPSHOTS_GLOB = "data/portfolios/*/snapshots.json"
@@ -128,6 +142,35 @@ def newer_served(raw: bytes | None, after: str, on_or_before: str) -> str | None
     return max(dates) if dates else None
 
 
+def marks_at_previous_bar(ticker: str) -> bool:
+    """Crypto, FX and futures: marked at the previous completed bar by design."""
+    return ticker.endswith("=F") or store_bucket(ticker) in ("crypto", "fx")
+
+
+def _day_before(d: str) -> str:
+    return (date.fromisoformat(d) - timedelta(days=1)).isoformat()
+
+
+def is_by_design(
+    ticker: str, snapshot_date: str, session_date: str,
+    price_date: str | None, raw_head: bytes | None,
+) -> bool:
+    """A previous-completed-bar mark the cadence intends, not a vendor hole.
+
+    The row is dated on its own session's day (the post-2026-09-28 cadence),
+    the ticker is of a class marked at the previous completed bar, and hindsight
+    holds no close strictly between ``price_date`` and the row's date: the one
+    newer close is the row's own day, the bar that had not completed when the
+    session ran. A crypto mark two bars behind is still stale.
+    """
+    return (
+        price_date is not None
+        and snapshot_date == session_date
+        and marks_at_previous_bar(ticker)
+        and newer_served(raw_head, price_date, _day_before(snapshot_date)) is None
+    )
+
+
 @dataclass(frozen=True)
 class Mark:
     book: str
@@ -137,10 +180,16 @@ class Mark:
     ticker: str
     price_date: str | None
     served_date: str | None
+    by_design: bool = False
+
+    @property
+    def late(self) -> bool:
+        """Hindsight found a newer close for the row's date than the one used."""
+        return self.price_date is not None and self.served_date is not None
 
     @property
     def stale(self) -> bool:
-        return self.price_date is not None and self.served_date is not None
+        return self.late and not self.by_design
 
 
 def session_commits(git: Git, since: str) -> list[tuple[str, str]]:
@@ -213,12 +262,16 @@ def audit(repo: Path, since: str) -> tuple[list[Mark], int]:
                         path = f"{STORE}/{ticker}.jsonl"
                         priced = price_date_on_or_before(git.blob(sha, path), day)
                         served = None
+                        by_design = False
                         if priced is not None:
                             if ticker not in head_store:
                                 head_store[ticker] = git.blob("HEAD", path)
                             served = newer_served(head_store[ticker], priced, day)
+                            by_design = served is not None and is_by_design(
+                                ticker, day, session, priced, head_store[ticker]
+                            )
                         marks.append(
-                            Mark(book, day, session, sha[:9], ticker, priced, served)
+                            Mark(book, day, session, sha[:9], ticker, priced, served, by_design)
                         )
                     latest[(book, day)] = marks
         return [m for ms in latest.values() for m in ms], len(commits)
@@ -236,6 +289,12 @@ def report(marks: list[Mark], sessions: int, since: str) -> str:
         f"Stale marks (an older close used for a date the vendor did serve): "
         f"{len(stale)} ({100 * len(stale) / len(marks):.1f}%)" if marks else "Stale marks: 0",
     ]
+    by_design = [m for m in marks if m.late and m.by_design]
+    if by_design:
+        lines.append(
+            f"Crypto/FX/futures marks at the previous completed bar by design "
+            f"(not counted stale): {len(by_design)}"
+        )
     if unpriced:
         lines.append(f"Marks with no stored close at all: {len(unpriced)}")
     total_by_book = Counter(m.book for m in marks)
