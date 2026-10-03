@@ -37,6 +37,12 @@ npx wrangler@4 deploy
 npx wrangler@4 secret put GITHUB_PAT   # paste at the prompt — never into a file
 ```
 
+**Deploy from an up-to-date `main`.** From 2026-09-28 the deployed Worker held
+the pre-move cron list while `wrangler.toml` was correct, so neither close-run
+cron ever fired, and no repo test can see a deployed schedule. The `close-runs`
+job of `session-watchdog.yml` checks the effect instead: it goes red on a
+weekday with no `(eu close)` and no `(us close)` OHLCV commit on `main`.
+
 `GITHUB_PAT` is a fine-grained token scoped to `w2ur/midas` only, with
 **Contents: read**, **Actions: read and write**, **Issues: read and write**.
 Contents reads the pending orders, Actions posts the dispatch, Issues is how the
