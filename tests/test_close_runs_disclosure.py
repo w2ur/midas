@@ -20,7 +20,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ANCHOR = "close-runs-never-deployed-2026-09-28"
-WINDOW = (date(2026, 9, 28), date(2026, 10, 1))
+#: Starts 09-29: 2026-09-28 has no row because of the cadence switchover (the
+#: 20:00 session published a 09-27 row, the close-run code reached main on 09-29),
+#: which no Worker deploy could have changed.
+WINDOW = (date(2026, 9, 29), date(2026, 10, 1))
 #: First session at 22:00 UTC; the 09-28 session ran at 20:00 and filled at the
 #: previous close by the old rule, which is not a consequence of the missing runs.
 FILLS_FROM = "2026-09-29"
@@ -94,3 +97,11 @@ def test_every_previous_close_fill_in_the_window_is_named():
     entry = _entry()
     for oid in stale:
         assert oid in entry, f"entry does not name {oid}, which filled at the previous close"
+
+
+def test_switchover_gap_is_not_blamed_on_the_worker():
+    """Regression: the headline attributed the 2026-09-28 gap to the undeployed Worker."""
+    entry = _entry()
+    summary = entry.split("</a>", 1)[1].split("Nothing published was restated")[0]
+    assert "2026-09-28" not in summary, "headline blames the Worker for the switchover gap"
+    assert "switchover" in entry and "2026-09-28" in entry
