@@ -71,6 +71,8 @@ LIVE_ONLY_TESTS = {
     "test_store_gap_disclosure.py",
     # Holds the METHODOLOGY close-runs entry to the live ledger and store.
     "test_close_runs_disclosure.py",
+    # Holds the session-cadence skill to METHODOLOGY; core ships neither.
+    "test_cadence_skill_dates.py",
     # Import a live-only script that core does not ship.
     "test_attest_ledger.py",
     "test_attest_verify.py",
