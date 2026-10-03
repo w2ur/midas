@@ -76,6 +76,9 @@ LIVE_ONLY_TESTS = {
     "test_close_runs_disclosure.py",
     # Holds the session-cadence skill to METHODOLOGY; core ships neither.
     "test_cadence_skill_dates.py",
+    # Imports scripts.compare_settlement_shadow, a live-only measurement tool
+    # for the nightly shadow job in fetch-ohlcv.yml, which core does not ship.
+    "test_settlement_shadow.py",
     # Import a live-only script that core does not ship.
     "test_attest_ledger.py",
     "test_attest_verify.py",
