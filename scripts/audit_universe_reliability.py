@@ -81,7 +81,8 @@ class SymbolRow:
     ordered: bool = False
     benchmark: bool = False
     in_universe: bool = False
-    value_eur: float | None = None  # None: no volume series, cannot be ranked
+    value_eur: float | None = None  # None: cannot be ranked (no volume, or no FX rate)
+    no_fx: bool = False  # value_eur is None because no rate to EUR exists
     gaps: int = 0
     accepted: int = 0
     open: int = 0
@@ -139,9 +140,22 @@ def _benchmark_tickers() -> set[str]:
     return out
 
 
+class NoFxRate(Exception):
+    """A symbol has traded value in a currency with no rate to EUR."""
+
+    def __init__(self, currency: str):
+        super().__init__(currency)
+        self.currency = currency
+
+
 def _median_value_eur(
     symbol: str, rows: list[tuple[str, float | None, float | None]], days: int
 ) -> float | None:
+    """Median daily traded value in EUR; None when there is no volume.
+
+    Raises `NoFxRate` rather than return local units: a wrong currency still
+    ranks, so that failure has no symptom (SEK/NOK ~11x too high).
+    """
     recent = sorted(rows)[-days:]
     values = [c * v for _, c, v in recent if c and v and v > 0]
     if not values:
@@ -151,7 +165,9 @@ def _median_value_eur(
     if ccy in (None, "EUR"):
         return local
     converted = fx.to_eur(local, ccy)
-    return converted if converted is not None else local
+    if converted is None:
+        raise NoFxRate(ccy)
+    return converted
 
 
 def _bucketer(crypto: frozenset[str]):
@@ -228,7 +244,7 @@ def _bucket_newest(
 
 
 def build_rows(
-    since: str, value_days: int
+    since: str, value_days: int, allow_missing_fx: bool = False
 ) -> tuple[list[SymbolRow], list[SymbolRow], dict[str, object]]:
     cfg = get_config()
     store = _read_store(cfg.ohlcv_dir)
@@ -279,6 +295,8 @@ def build_rows(
 
     pool = sorted(set(store) & (universe | held | ordered | bench))
 
+    missing_fx: dict[str, list[str]] = {}
+
     def make_row(s: str, *, retired: bool) -> SymbolRow:
         r = SymbolRow(
             symbol=s,
@@ -288,7 +306,11 @@ def build_rows(
             benchmark=s in bench,
             in_universe=s in universe,
         )
-        r.value_eur = _median_value_eur(s, store[s], value_days)
+        try:
+            r.value_eur = _median_value_eur(s, store[s], value_days)
+        except NoFxRate as exc:
+            r.no_fx = True
+            missing_fx.setdefault(exc.currency, []).append(s)
         r.gaps = len(scan.member_gaps.get(s, ()))
         for d, entry in ledger.get(s, {}).items():
             if d >= since:
@@ -314,7 +336,19 @@ def build_rows(
         if r.events
     ]
 
+    missing_pool = {
+        c: [x for x in syms if x in set(pool)] for c, syms in missing_fx.items()
+    }
+    missing_pool = {c: v for c, v in missing_pool.items() if v}
+    if missing_pool and not allow_missing_fx:
+        detail = ", ".join(f"{c}({len(v)})" for c, v in sorted(missing_pool.items()))
+        raise RuntimeError(
+            f"no EUR rate for {detail}: ranking them in local units would mix "
+            f"currencies; pass --allow-missing-fx to mark them unrankable instead"
+        )
+
     meta = {
+        "missing_fx": {c: len(v) for c, v in sorted(missing_pool.items())},
         "since": since,
         "end": end,
         "store_files": len(store),
@@ -365,8 +399,12 @@ def format_report(
       f"(no cut can avoid what the universe already shed)")
     w(f"  bucket-wide absences (holiday-ambiguous, not counted as gaps): "
       f"{meta['bucket_wide_candidates']} (bucket, date) pairs")
-    unrank = sum(1 for r in rows if r.value_eur is None)
+    unrank = sum(1 for r in rows if r.value_eur is None and not r.no_fx)
     w(f"  {unrank} symbols carry no volume series and cannot be ranked; always kept")
+    nofx = sum(1 for r in rows if r.no_fx)
+    if nofx:
+        w(f"  WARNING: {nofx} symbols have no EUR rate ({meta.get('missing_fx')}); unrankable, "
+          f"always kept, so every cut below OVERSTATES what it keeps and understates avoided")
     w("")
 
     tot_ev = sum(r.events for r in rows)
@@ -442,11 +480,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--since", default=DEFAULT_SINCE)
     p.add_argument("--cuts", default=",".join(str(c) for c in DEFAULT_CUTS))
     p.add_argument("--value-days", type=int, default=DEFAULT_VALUE_DAYS)
+    p.add_argument("--allow-missing-fx", action="store_true",
+                   help="mark symbols with no EUR rate unrankable instead of exiting 2")
     p.add_argument("--top", type=int, default=40, help="symbols listed, most events first; 0 lists all")
     args = p.parse_args(argv)
     try:
         cuts = [int(c) for c in args.cuts.split(",") if c.strip()]
-        rows, retired, meta = build_rows(args.since, args.value_days)
+        rows, retired, meta = build_rows(args.since, args.value_days, args.allow_missing_fx)
     except Exception as exc:  # unknown, never "clean"
         print(f"audit could not run: {exc}", file=sys.stderr)
         return EXIT_UNKNOWN
