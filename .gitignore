@@ -19,6 +19,9 @@ data/market/today.json
 # orphan behind, and fetch-ohlcv.yml does a blanket `git add data/market/ohlcv/`
 # — so without this it would be committed into the store permanently.
 data/market/ohlcv/*.tmp
+# Nightly settlement-window shadow reports (fetch_ohlcv.py --settlement-shadow):
+# measurement output, uploaded as a workflow artifact, never committed.
+data/market/settlement_shadow/
 # Locally-generated backtest grid for the dashboard /backtest + /leaderboard
 # pages; regenerated on demand via scripts/run_all_combos.py.
 data/factor-research.json

@@ -417,6 +417,9 @@ def test_cast_tests_reclaimed_into_manifest():
         # quota infrastructure keyed to this repo's workflow file and allocator
         # channels, neither of which core has.
         "test_trigger_gate_parity.py",
+        # Imports scripts.compare_settlement_shadow, the live-only tool that
+        # reads the nightly shadow artifact; core ships neither.
+        "test_settlement_shadow.py",
     }
     # All reclaimed tests now ship in the code manifest.
     manifest_names = {p.name for p in sync_core.code_manifest()}

@@ -14,13 +14,16 @@ Usage:
     python scripts/fetch_ohlcv.py --dry-run             # list resolved symbols
     python scripts/fetch_ohlcv.py --close-run eu        # tonight's European closes
     python scripts/fetch_ohlcv.py --close-run us        # tonight's US closes
+    python scripts/fetch_ohlcv.py --settlement-shadow   # read-only: what a 10-day window would do
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
+import tempfile
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import NamedTuple
@@ -1244,6 +1247,128 @@ def _heal_store_gaps(
     return StoreGapReport(open_gaps, filled, quarantined, readable)
 
 
+#: The settlement window the shadow measures, in weekdays (plan: Stage 2,
+#: subtask 2.2). A proposal under measurement, not a policy: nothing but
+#: `--settlement-shadow` reads it.
+SETTLEMENT_WINDOW_BDAYS = 10
+
+#: Exit when the shadow could not form a view at all (nothing served). Not 0:
+#: an empty report is "unknown", never "nothing would change".
+EXIT_SHADOW_NO_DATA = 2
+
+
+def settlement_window_start(end: date, bdays: int = SETTLEMENT_WINDOW_BDAYS) -> date:
+    """The date `bdays` weekdays before `end` (weekends skipped, holidays not)."""
+    day = end
+    remaining = bdays
+    while remaining > 0:
+        day -= timedelta(days=1)
+        if day.weekday() < 5:
+            remaining -= 1
+    return day
+
+
+def shadow_merge(path: Path, df: pd.DataFrame, revise_from: str) -> dict:
+    """What `merge_rows` WOULD do to the store file at `path`, without doing it.
+
+    Runs the real `merge_rows` (tripwire on) against a throwaway copy, so the
+    shadow can never drift from the logic it is measuring and can never write
+    the store, the quarantine sidecar or a `.tmp` orphan. Returns the dates it
+    would insert, the rows it would revise (old and new close), the rows the
+    tripwire would refuse, and the dates served with no close.
+    """
+    before = {r.get("date"): r for r in _read_store_rows(path)}
+    with tempfile.TemporaryDirectory(prefix="settlement-shadow-") as tmp:
+        scratch = Path(tmp) / path.name
+        shutil.copyfile(path, scratch)
+        result = merge_rows(
+            scratch, df, revise_from, quarantine=Path(tmp) / "quarantine.jsonl"
+        )
+        after = {r.get("date"): r for r in _read_store_rows(scratch)}
+    inserts = sorted(d for d in after if d not in before)
+    revisions = [
+        {
+            "date": d,
+            "old_close": before[d].get("close"),
+            "new_close": after[d].get("close"),
+        }
+        for d in sorted(after)
+        if d in before and after[d] != before[d]
+    ]
+    return {
+        "inserts": inserts,
+        "revisions": revisions,
+        "quarantined": [r._asdict() for r in result.refused],
+        "holes": list(result.holes),
+    }
+
+
+def run_settlement_shadow(symbols: list[str], end: date, out_dir: Path) -> int:
+    """Request `[end - window, end]` for every store-covered symbol and report.
+
+    READ-ONLY with respect to the store, the ledgers and git: it writes one
+    JSON file under `out_dir` (gitignored, uploaded as a workflow artifact) and
+    nothing else. A symbol with no store file is counted and skipped, because
+    its first ingest is a different code path the window does not change.
+    """
+    start = settlement_window_start(end)
+    ohlcv_dir = get_config().ohlcv_dir
+    report: dict = {
+        "end": end.isoformat(),
+        "window_start": start.isoformat(),
+        "window_bdays": SETTLEMENT_WINDOW_BDAYS,
+        "requested": len(symbols),
+        "skipped_no_store": [],
+        "failed": [],
+        "served": 0,
+        "inserts": {},
+        "revisions": {},
+        "quarantined": [],
+        "holes": {},
+    }
+    for i, symbol in enumerate(symbols, start=1):
+        path = ohlcv_dir / f"{symbol}.jsonl"
+        if not path.exists():
+            report["skipped_no_store"].append(symbol)
+            continue
+        df = _fetch_symbol(symbol, start, end)
+        if df is None:
+            report["failed"].append(symbol)
+            continue
+        report["served"] += 1
+        outcome = shadow_merge(path, df, start.isoformat())
+        if outcome["inserts"]:
+            report["inserts"][symbol] = outcome["inserts"]
+        if outcome["revisions"]:
+            report["revisions"][symbol] = outcome["revisions"]
+        if outcome["quarantined"]:
+            report["quarantined"].extend(outcome["quarantined"])
+        if outcome["holes"]:
+            report["holes"][symbol] = outcome["holes"]
+        if i % 100 == 0:
+            print(f"  shadow: {i}/{len(symbols)} symbols", file=sys.stderr)
+    report["totals"] = {
+        "inserts": sum(len(v) for v in report["inserts"].values()),
+        "revisions": sum(len(v) for v in report["revisions"].values()),
+        "quarantined": len(report["quarantined"]),
+        "failed": len(report["failed"]),
+    }
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / f"{date.today().isoformat()}.json"
+    out.write_text(json.dumps(report, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(
+        f"Settlement shadow: window {start}..{end}, served {report['served']}, "
+        f"would insert {report['totals']['inserts']}, revise "
+        f"{report['totals']['revisions']}, quarantine "
+        f"{report['totals']['quarantined']}, failed {report['totals']['failed']} "
+        f"-> {out}"
+    )
+    if report["served"] == 0:
+        print("::warning::settlement shadow served no symbol; report is UNKNOWN", file=sys.stderr)
+        return EXIT_SHADOW_NO_DATA
+    return 0
+
+
 def _universe_is_complete(args: argparse.Namespace) -> bool:
     """Whether this run's scope is the whole universe, resolved without error.
 
@@ -1328,6 +1453,18 @@ def main() -> int:
             "and futures excluded). Dispatched by the Cloudflare Worker after "
             "that bucket's markets close; the morning run keeps its "
             "previous-day rule for everything else. See `close_run_bucket`."
+        ),
+    )
+    parser.add_argument(
+        "--settlement-shadow",
+        action="store_true",
+        help=(
+            "READ-ONLY measurement for the settlement-window proposal: request "
+            "the last SETTLEMENT_WINDOW_BDAYS weekdays for every store-covered "
+            "symbol and write what merge_rows (tripwire on) WOULD insert or "
+            "revise to data/market/settlement_shadow/YYYY-MM-DD.json. Never "
+            "touches the store, the quarantine, the ledgers or git. Run by the "
+            "`settlement-shadow` job in fetch-ohlcv.yml, after the real fetch."
         ),
     )
     parser.add_argument(
@@ -1426,6 +1563,21 @@ def main() -> int:
             "--resweep-held, --backfill or --names-only"
         )
 
+    if args.settlement_shadow and (
+        args.symbols
+        or args.crypto_only
+        or args.close_run
+        or args.resweep
+        or args.resweep_held
+        or args.backfill
+        or args.names_only
+        or args.dry_run
+    ):
+        parser.error(
+            "--settlement-shadow measures the full universe on its own; it "
+            "cannot be combined with any other mode"
+        )
+
     # Only THIS run's resolution may license a close-out (`_resolver_failures`).
     global _resolver_failures
     _resolver_failures = None
@@ -1451,6 +1603,12 @@ def main() -> int:
         symbols = _all_symbols()
 
     print(f"Resolved {len(symbols)} symbols to fetch.")
+    if args.settlement_shadow:
+        return run_settlement_shadow(
+            symbols,
+            date.today() - timedelta(days=1),
+            get_config().data_dir / "data" / "market" / "settlement_shadow",
+        )
     if args.dry_run:
         for s in symbols:
             print(f"  {s}")
