@@ -1699,7 +1699,9 @@ def step_commit_session(
     except Exception as exc:  # noqa: BLE001 — the commit outranks the concern
         derived = [
             f"INSTRUMENT_SUSPENDED refusals could not be listed ({exc!r}); "
-            f"read data/orders/*inbox/{session_date.isoformat()}.jsonl by hand."
+            f"read data/orders/*inbox/{session_date.isoformat()}.jsonl and the "
+            "data/orders/*pending/ orders against data/market/instrument_status.json "
+            "by hand."
         ]
     concerns = list(concerns or []) + [c for c in derived if c not in (concerns or [])]
     subprocess.run(["git", "add", "data/"], cwd=_PROJECT_ROOT, check=True)
