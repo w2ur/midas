@@ -85,6 +85,9 @@ LIVE_ONLY_TESTS = {
     # Read the committed OHLCV store (data/market/ohlcv), not shipped to core.
     "test_fetch_market_data.py",
     "test_manager_session.py",
+    # Drives scripts/audit_universe_reliability.py, a read-only live-store
+    # audit (git history of data/market/ohlcv) that core does not ship.
+    "test_audit_universe_reliability.py",
     # Imports scripts.sync_core, the dev-only tool not in core.
     "test_sync_core.py",
     # Drives scripts/prompt_hash.py against docs/triggers/weekday-session.md.
