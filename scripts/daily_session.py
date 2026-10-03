@@ -71,6 +71,7 @@ from engine.baseline_manager import (
 from engine.blog import build_oracle_prompt, save_daily_blog_draft
 from engine.fx import convert as fx_convert
 from engine.quotes import latest_price, ticker_currency
+from engine.stale_marks import find_stale_marks
 from engine.valuation import value_position
 from engine.orders import (
     DroppedTrade,
@@ -1345,6 +1346,14 @@ def build_portfolio_summaries() -> dict[str, dict]:
     Summary shape: {cash, deployed, positions, currency}
     where `positions` is the Portfolio.to_dict() position list and
     `deployed` is `portfolio.cost_basis`.
+
+    When the book's newest snapshot row carries ``stale_marks``
+    (`engine.stale_marks`, written on every row since 2026-10-03), the
+    summary also carries ``marked_on`` (that row's date) and its
+    ``stale_marks``, so the bundle discloses which positions were valued at an
+    older close than their exchange's, next to the positions themselves. A
+    book whose newest row predates the field gets neither key: no check ran,
+    and an empty list would claim one had.
     """
     portfolios_dir = get_config().portfolios_dir
     manager = PortfolioManager(base_dir=portfolios_dir)
@@ -1355,13 +1364,35 @@ def build_portfolio_summaries() -> dict[str, dict]:
             continue
         portfolio = manager.load(agent_id)
         d = portfolio.to_dict()
-        summaries[agent_id] = {
+        summary = {
             "cash": d["cash"],
             "deployed": portfolio.cost_basis,
             "positions": d["positions"],
             "currency": d["currency"],
         }
+        newest = _newest_snapshot_row(portfolios_dir / agent_id / "snapshots.json")
+        if newest is not None and "stale_marks" in newest:
+            summary["marked_on"] = newest.get("date")
+            summary["stale_marks"] = newest["stale_marks"]
+        summaries[agent_id] = summary
     return summaries
+
+
+def _newest_snapshot_row(path: Path) -> dict | None:
+    """The latest-dated row of a snapshots.json, or None (absent, empty, unreadable).
+
+    Unreadable degrades to None rather than raising: the bundle is assembled
+    after the session's work is done, and losing it over a disclosure field is
+    worse than omitting the field (whose absence already means "not checked").
+    """
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    dated = [r for r in rows if isinstance(r, dict) and isinstance(r.get("date"), str)]
+    if not dated:
+        return None
+    return max(dated, key=lambda r: r["date"])
 
 
 @idempotent_step(skip_return={})
@@ -1435,13 +1466,29 @@ def _compute_positions_value(
     book's missing FX rate skips only that book's snapshot for the day
     rather than aborting the whole session.
     """
+    return _mark_positions(portfolio, on)[0]
+
+
+def _mark_positions(
+    portfolio: Portfolio, on: date
+) -> tuple[float, list[tuple[str, date]]]:
+    """`_compute_positions_value`, plus each position's ``(ticker, price_date)``.
+
+    ``price_date`` is the date of the close the position was marked at
+    (`PositionValuation.price_date`), which the snapshot writer turns into the
+    row's ``stale_marks`` disclosure (`engine.stale_marks`). Same refusal as
+    `_compute_positions_value`: a position that cannot be valued raises.
+    """
     total = 0.0
+    marks: list[tuple[str, date]] = []
     for p in portfolio.positions:
         valuation = value_position(p.ticker, p.shares, portfolio.currency, on)
         if not valuation.ok:
             raise MissingPriceError(p.ticker, on, what=valuation.reason)
         total += valuation.value
-    return total
+        if valuation.price_date is not None:
+            marks.append((p.ticker, valuation.price_date))
+    return total, marks
 
 
 @idempotent_step(skip_return=[])
@@ -1507,7 +1554,7 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
             continue
 
         try:
-            positions_value = _compute_positions_value(portfolio, snapshot_date)
+            positions_value, marks = _mark_positions(portfolio, snapshot_date)
         except MissingPriceError as exc:
             fx_gaps.append(strategy_id)
             print(
@@ -1516,6 +1563,17 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
             )
             continue
         portfolio_value = portfolio.cash + positions_value
+        # Every new row says which of its marks trail their exchange (an empty
+        # list is "checked, none"): the row is immutable once written, so the
+        # disclosure has to ride on it (plan 2026-10-03, 1.4).
+        stale = find_stale_marks(marks, snapshot_date)
+        if stale:
+            named = ", ".join(f"{m['ticker']}@{m['price_date']}" for m in stale)
+            print(
+                f"  [WARN] {strategy_id}: {len(stale)} position(s) marked at a close "
+                f"older than their exchange's {snapshot_date} row: {named}. "
+                f"Recorded on the row as stale_marks."
+            )
 
         written = manager.add_snapshot(
             strategy_id=strategy_id,
@@ -1525,6 +1583,7 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
             positions_value=positions_value,
             benchmarks=benchmarks,
             session_date=session_date,
+            stale_marks=stale,
         )
 
         if not written:
