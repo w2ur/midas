@@ -105,6 +105,41 @@ class TestLateRows:
         assert audit._late_rows("2026-08-01", "ohlcv", repo) == {}
 
 
+class TestCryptoBucket:
+    CRYPTO = frozenset({"HBAR-USD"})
+
+    def test_a_pair_the_fee_allowlist_lacks_is_crypto_with_the_set(self):
+        # Regression: the audit called hole_bucket(s) bare, so HBAR-USD landed
+        # in the US bucket "" and its weekend row made every US equity stale.
+        assert audit.hole_bucket("HBAR-USD") == ""  # control: the bare call is wrong
+        assert audit._bucketer(self.CRYPTO)("HBAR-USD") == "crypto"
+
+    def test_a_weekend_crypto_row_does_not_make_us_equities_stale(self):
+        dates = {
+            "AAPL": frozenset({"2026-09-25"}),
+            "HBAR-USD": frozenset({"2026-09-25", "2026-09-27"}),  # 09-27 is a Sunday
+        }
+        newest = audit._bucket_newest(dates, audit._bucketer(self.CRYPTO))
+        assert newest[""] == "2026-09-25"
+        assert newest["crypto"] == "2026-09-27"
+        # control: the bare bucketing reproduces the defect
+        bare = audit._bucket_newest(dates, audit.hole_bucket)
+        assert bare[""] == "2026-09-27"
+
+    def test_late_rows_count_crypto_in_calendar_days(self, tmp_path):
+        repo = tmp_path / "repo"
+        (repo / "ohlcv").mkdir(parents=True)
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "t@example.com")
+        _git(repo, "config", "user.name", "t")
+        TestLateRows._commit(repo, "2026-08-03T06:00:00Z", **{"HBAR-USD": ["2026-08-01"]})
+        # Saturday's row arrives Monday: 2 calendar days late, 0 business days.
+        TestLateRows._commit(repo, "2026-08-03T07:00:00Z", **{"HBAR-USD": ["2026-08-01x"]}) if False else None
+        TestLateRows._commit(repo, "2026-08-10T06:00:00Z", **{"HBAR-USD": ["2026-08-08"]})
+        assert audit._late_rows("2026-08-01", "ohlcv", repo, crypto=self.CRYPTO) == {"HBAR-USD": 1}
+        assert audit._late_rows("2026-08-01", "ohlcv", repo) == {}  # control
+
+
 class TestReport:
     def test_avoided_share_is_the_events_on_dropped_symbols(self):
         rows = [
