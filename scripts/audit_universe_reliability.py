@@ -398,6 +398,13 @@ def choose_cut(rows: list[SymbolRow], n: int) -> set[str]:
     return keep
 
 
+def _floor_extra(
+    rows: list[SymbolRow], forced: set[str], rank_of: dict[str, int], n: int
+) -> list[SymbolRow]:
+    """Floor symbols that are ranked, and ranked below ``n``; unrankable ones have no rank."""
+    return [r for r in rows if r.symbol in forced and r.symbol in rank_of and rank_of[r.symbol] > n]
+
+
 def format_report(
     rows: list[SymbolRow], retired: list[SymbolRow], meta: dict[str, object], cuts: list[int], top: int | None
 ) -> str:
@@ -470,7 +477,7 @@ def format_report(
         for r in dropped:
             by_bucket[r.bucket or "US"] += r.events
         spread = ", ".join(f"{b}:{c}" for b, c in sorted(by_bucket.items(), key=lambda kv: -kv[1])[:6])
-        extra = [r for r in rows if r.symbol in forced and rank_of.get(r.symbol, 10**9) > n]
+        extra = _floor_extra(rows, forced, rank_of, n)
         w(f"  top {n}: drops {len(dropped)} symbols carrying {sum(r.events for r in dropped)} events "
           f"[{spread}]; the floor adds {len(extra)} symbols ranked below {n}, "
           f"{sum(r.events for r in extra)} events, {sum(r.late for r in extra)} late rows")
