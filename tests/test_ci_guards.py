@@ -5013,6 +5013,18 @@ class TestSettlementShadowIsASeparateJob:
         literal = re.findall(r"mode == '([^']+)'", gate)[0]
         assert literal not in assigned
 
+    def test_the_shadow_measures_the_end_the_fetch_job_used(self):
+        """Regression: the shadow job computed its own `end` when it started,
+        so a dispatched run crossing 00:00 UTC measured another window."""
+        spec = self._spec()
+        window = next(s for s in spec["jobs"]["fetch"]["steps"] if s.get("id") == "window")
+        assert 'echo "end=' in window["run"]
+        assert spec["jobs"]["fetch"]["outputs"]["end"] == "${{ steps.window.outputs.end }}"
+        job = spec["jobs"]["settlement-shadow"]
+        run_step = next(s for s in job["steps"] if "--settlement-shadow" in s.get("run", ""))
+        assert run_step["env"]["FETCH_END"] == "${{ needs.fetch.outputs.end }}"
+        assert "--shadow-end" in run_step["run"]
+
     def test_a_forced_shadow_timeout_is_reachable_by_dispatch(self):
         spec = self._spec()
         on = spec[True] if True in spec else spec["on"]

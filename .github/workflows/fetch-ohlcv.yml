@@ -144,6 +144,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       mode: ${{ steps.fetch.outputs.mode }}
+      end: ${{ steps.window.outputs.end }}
 
     steps:
       - name: Checkout repo
@@ -162,6 +163,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      # The `end` the morning run asks for (yesterday, UTC), published as a job
+      # output so a later job measures the SAME window: it starts later and, on
+      # a dispatched run, can start after 00:00 UTC. A separate step because
+      # the fetch step's mode must never be derived from the runner's clock.
+      - name: Record the window end
+        id: window
+        run: echo "end=$(date -u -d yesterday +%F)" >> "$GITHUB_OUTPUT"
 
       - name: Fetch OHLCV
         id: fetch
@@ -439,7 +448,16 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run the settlement shadow
-        run: python scripts/fetch_ohlcv.py --settlement-shadow
+        env:
+          FETCH_END: ${{ needs.fetch.outputs.end }}
+        run: |
+          # The fetch job's own `end`; empty only if that step died before
+          # publishing it, in which case the script's default (yesterday) stands.
+          ARGS=()
+          if [[ -n "$FETCH_END" ]]; then
+            ARGS+=(--shadow-end "$FETCH_END")
+          fi
+          python scripts/fetch_ohlcv.py --settlement-shadow "${ARGS[@]}"
 
       - name: Upload the shadow report
         if: always()

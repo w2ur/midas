@@ -128,6 +128,31 @@ def test_shadow_flag_refuses_accept_gap_before_it_writes_anything(monkeypatch):
     assert e.value.code == 2
 
 
+def test_shadow_measures_the_end_the_fetch_job_used(monkeypatch):
+    # Regression: the shadow derived its own date.today() - 1, so a dispatched
+    # run crossing 00:00 UTC between the two jobs measured a different window
+    # (and asked for a still-forming day) than the fetch it is compared with.
+    seen = {}
+    monkeypatch.setattr(fo, "_all_symbols", lambda: ["AAA"])
+    monkeypatch.setattr(fo, "run_settlement_shadow", lambda syms, end, out: seen.setdefault("end", end) and 0)
+    monkeypatch.setattr(
+        "sys.argv", ["fetch_ohlcv.py", "--settlement-shadow", "--shadow-end", "2026-09-30"]
+    )
+    fo.main()
+    assert seen["end"] == date(2026, 9, 30)
+
+
+def test_shadow_end_is_refused_for_today_or_without_the_shadow(monkeypatch):
+    for argv in (
+        ["--settlement-shadow", "--shadow-end", date.today().isoformat()],
+        ["--shadow-end", "2026-09-30"],
+    ):
+        monkeypatch.setattr("sys.argv", ["fetch_ohlcv.py", *argv])
+        with pytest.raises(SystemExit) as e:
+            fo.main()
+        assert e.value.code == 2
+
+
 DIFF = """\
 diff --git a/data/market/ohlcv/AAA.jsonl b/data/market/ohlcv/AAA.jsonl
 --- a/data/market/ohlcv/AAA.jsonl
