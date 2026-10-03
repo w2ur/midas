@@ -138,6 +138,8 @@ jobs:
   fetch:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      mode: ${{ steps.fetch.outputs.mode }}
 
     steps:
       - name: Checkout repo
@@ -372,3 +374,64 @@ jobs:
         uses: ./.github/actions/dispatch-session-integrity
         with:
           before: ${{ steps.before.outputs.sha }}
+
+  # Settlement-window SHADOW (Stage 2.2 of the market-data structural plan).
+  # Measures what a rolling 10-weekday refetch WOULD insert, revise or
+  # quarantine, so the switch to it (2.3) is decided on ten nights of evidence.
+  # It is a separate job, and never a step of `fetch`, for one reason: a job
+  # cancelled at its timeout commits nothing, and `fetch` already holds a
+  # ~13 minute run inside 30. A shadow that overran inside that job would have
+  # thrown the night's store away. Here a hang, a timeout or a crash costs
+  # only this job.
+  #
+  # - needs `fetch` + `if: always()`: it runs after the real fetch has
+  #   committed, or has failed; `fetch`'s outcome is not its business.
+  # - checks out `github.sha`, the main this run STARTED from, i.e. the store
+  #   BEFORE tonight's fetch and gap-heal landed. Against the post-fetch store
+  #   it could only ever report "nothing to do" and the comparison with the
+  #   real fetch (scripts/compare_settlement_shadow.py) would be vacuous.
+  # - full-universe runs only: a crypto-only or close run is a different
+  #   population and would poison the ten-night sample.
+  # - `continue-on-error`: the shadow has no consumer but the artifact, and
+  #   its absence is the signal. It must not turn the run red or open a
+  #   failure issue for a measurement.
+  # - read-only: contents: read, and the script writes under
+  #   data/market/settlement_shadow/ (gitignored) and nowhere else.
+  settlement-shadow:
+    needs: fetch
+    if: ${{ always() && needs.fetch.outputs.mode == 'full universe' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the store this run started from
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run the settlement shadow
+        run: python scripts/fetch_ohlcv.py --settlement-shadow
+
+      - name: Upload the shadow report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: settlement-shadow-${{ github.run_id }}
+          path: data/market/settlement_shadow/
+          retention-days: 30
+          if-no-files-found: warn
