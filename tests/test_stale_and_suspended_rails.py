@@ -663,3 +663,40 @@ def test_the_baseline_manager_never_buys_a_suspended_or_stale_ticker(
         (broker_env["pm_base"] / "baseline-manager" / "portfolio.json").read_text()
     )
     assert sorted(p["ticker"] for p in book["positions"]) == ["AAPL"]
+
+
+def test_an_armed_order_on_a_live_priced_crypto_pair_is_not_named_stale(broker_env):
+    """Regression (review of feat/stage1-asof-reads): the watcher never fires
+    an allowlisted crypto pair on the store. `engine.triggers.get_current_quote`
+    fetches it live from ccxt and dates the quote today, so `_stale` reads lag 0
+    on the fire path. Judging the armed order against the store's frozen close
+    told a human a live stop was dead. A pair outside the allowlist (HBAR-USD)
+    is priced from the store by the watcher too, so it is still judged."""
+    from engine.paper_broker import instrument_refusal_concerns
+    from engine.triggers import is_crypto_ticker, save_pending
+
+    every_day = [
+        (date(2026, 9, 14) + timedelta(days=i)).isoformat() for i in range(18)
+    ]  # 09-14 .. 10-01
+    _seed_bucket(
+        broker_env["ohlcv"],
+        ("ETH-EUR", "SOL-EUR", "XRP-EUR", "ADA-EUR", "LTC-EUR"),
+        every_day,
+    )
+    frozen = [d for d in every_day if d <= "2026-09-27"]
+    _seed_ohlcv(broker_env["ohlcv"], "BTC-EUR", [(d, 100.0) for d in frozen])
+    _seed_ohlcv(broker_env["ohlcv"], "HBAR-USD", [(d, 100.0) for d in frozen])
+    _write_config(broker_env["config_dir"], "agent1")
+    assert is_crypto_ticker("BTC-EUR") and not is_crypto_ticker("HBAR-USD")
+
+    for order_id, ticker in (("o_btc", "BTC-EUR"), ("o_hbar", "HBAR-USD")):
+        stop = _make_order(order_id, "agent1", "SELL", ticker, 1)
+        stop.trigger = {"op": "<=", "level": 50.0}
+        stop.expires = "2026-10-30"
+        save_pending(stop, pending_dir=get_config().orders_dir / "pending")
+
+    concerns = instrument_refusal_concerns(
+        date(2026, 10, 2), portfolios_dir=broker_env["pm_base"]
+    )
+    assert len(concerns) == 1
+    assert concerns[0].startswith("STALE_PRICE holds armed order o_hbar")
