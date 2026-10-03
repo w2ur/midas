@@ -13,8 +13,10 @@ Rejection reason codes:
 - MAX_ORDER_NOTIONAL: order notional (base currency) > per-agent cap
 - TICKER_NOT_IN_UNIVERSE: allowed_universe is non-empty and ticker not in union
 - TICKER_DENIED: BUY of a ticker in the agent's denied_tickers (at intake for a conditional)
+- INSTRUMENT_SUSPENDED: the instrument status registry holds the ticker suspended or delisted (BUY and SELL; at intake for a conditional)
 - NO_PRICE_DATA: no row in OHLCV store for ticker <= trade_date
 - CURRENCY_UNRESOLVED: ticker's quote currency is in neither map and its suffix is unknown
+- STALE_PRICE: the price's own row trails the ticker's exchange bucket by more than MAX_BUCKET_LAG_DAYS of that bucket's trading days
 - PRICE_IMPLAUSIBLE: fill price outside [1/5, 5]x its reference (prior close on BUY, avg_cost on SELL)
 - TRIGGER_LEVEL_IMPLAUSIBLE: conditional order's level outside [0.2, 5.0]x the latest close
 - VALUATION_UNAVAILABLE: the book cannot be valued, so its relative rails cannot be evaluated
@@ -39,6 +41,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from engine import instrument_status
 from engine.config import get_config
 from engine.fees import fee_for
 from engine.fx import convert as fx_convert
@@ -54,6 +57,7 @@ from engine.triggers import (
     read_cancels,
     save_pending,
 )
+from engine.market_calendar import bucket_lag, MAX_BUCKET_LAG_DAYS
 from engine.portfolio import PortfolioManager
 from engine.types import Trade
 from engine.universes import resolve_universe
@@ -70,7 +74,7 @@ logger = logging.getLogger(__name__)
 #: The complete set of rejection/cancel reason codes this broker can emit.
 #: The module docstring above documents what each one means; `tests/test_reason_codes.py`
 #: asserts the three views (this set, the docstring, the emitted literals) agree.
-#: The watcher in `scripts/check_triggers.py` owns a twenty-first code, TRIGGER_EXPIRED,
+#: The watcher in `scripts/check_triggers.py` owns one more code, TRIGGER_EXPIRED,
 #: which is deliberately NOT in this set — it is a different enforcement point.
 REJECTION_REASON_CODES = frozenset(
     {
@@ -79,8 +83,10 @@ REJECTION_REASON_CODES = frozenset(
         "MAX_ORDER_NOTIONAL",
         "TICKER_NOT_IN_UNIVERSE",
         "TICKER_DENIED",
+        "INSTRUMENT_SUSPENDED",
         "NO_PRICE_DATA",
         "CURRENCY_UNRESOLVED",
+        "STALE_PRICE",
         "PRICE_IMPLAUSIBLE",
         "TRIGGER_LEVEL_IMPLAUSIBLE",
         "VALUATION_UNAVAILABLE",
@@ -227,6 +233,161 @@ def _trigger_level_out_of_band(order: Order, trade_date: date) -> bool:
         return False
     ratio = level / quote.price
     return ratio < TRIGGER_LEVEL_MIN or ratio > TRIGGER_LEVEL_MAX
+
+
+def _instrument_suspended(ticker: str) -> bool:
+    """True when the instrument status registry holds anything against ``ticker``.
+
+    Both statuses refuse, on both sides. ``suspended`` means the ingest
+    tripwire refused the vendor's newest row, so the store's last close may
+    belong to a different instrument (CTVA's 09-30 close of 77.65 against a
+    10-01 instrument trading at 12.57); ``delisted`` means nothing is served.
+    Either way there is no price to fill at, so a SELL is refused too and the
+    holder is trapped until a human adjudicates: that is intended, and
+    `instrument_refusal_concerns` names every holding book the same night.
+    An unreadable registry answers ``suspended`` for every ticker
+    (`engine.instrument_status.status_of` fails closed).
+    """
+    return instrument_status.status_of(ticker) is not None
+
+
+def _stale(ticker: str, as_of: date | None, trade_date: date) -> bool:
+    """True when a price dated ``as_of`` trails its exchange bucket.
+
+    "Trails" is counted in the bucket's own trading days
+    (`engine.market_calendar.bucket_lag`), so a holiday that closes the whole
+    bucket stays green and a fund one day late (4GLD.DE) still fills at
+    ``MAX_BUCKET_LAG_DAYS``. Abstains, and logs, when the bucket is too small to
+    judge or the price carries no date: an abstention is not a pass, and a
+    frozen symbol in such a bucket is the suspension rail's to catch.
+    """
+    if as_of is None:
+        logger.warning("STALE_PRICE not evaluated for %s: the price carries no date", ticker)
+        return False
+    lag = bucket_lag(ticker, as_of, trade_date)
+    if lag.lag is None:
+        logger.info(
+            "STALE_PRICE not evaluated for %s: bucket %r has %d live member(s)",
+            ticker,
+            lag.bucket,
+            lag.population,
+        )
+        return False
+    if lag.lag > MAX_BUCKET_LAG_DAYS:
+        logger.warning(
+            "STALE_PRICE %s on %s: price dated %s, bucket %r at %s, %d trading day(s) behind",
+            ticker,
+            trade_date,
+            as_of,
+            lag.bucket,
+            lag.reference,
+            lag.lag,
+        )
+        return True
+    return False
+
+
+def holding_books(ticker: str, portfolios_dir: Path | None = None) -> list[str]:
+    """Every book under ``portfolios_dir`` holding ``ticker``, sorted.
+
+    Read straight from each ``portfolio.json`` so it sees every book on disk,
+    the Manager's included, not only the roster's traders.
+    """
+    base = portfolios_dir if portfolios_dir is not None else get_config().portfolios_dir
+    out: list[str] = []
+    for path in sorted(base.glob("*/portfolio.json")):
+        try:
+            book = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.error("holding_books: cannot read %s (%s)", path, exc)
+            out.append(f"{path.parent.name} (unreadable)")
+            continue
+        if any(p.get("ticker") == ticker for p in book.get("positions", [])):
+            out.append(path.parent.name)
+    return out
+
+
+def _refuse_suspended(order: Order, portfolios_dir: Path | None = None) -> Fill:
+    holders = holding_books(order.ticker, portfolios_dir)
+    logger.warning(
+        "INSTRUMENT_SUSPENDED %s: %s %s refused; held by %s",
+        order.order_id,
+        order.action,
+        order.ticker,
+        ", ".join(holders) if holders else "no book",
+    )
+    return _reject(order.order_id, "INSTRUMENT_SUSPENDED")
+
+
+def _channel_pairs(orders_dir: Path) -> list[tuple[Path, Path]]:
+    """(outbox, inbox) for the public channel and every allocator channel."""
+    pairs = [(orders_dir / "outbox", orders_dir / "inbox")]
+    for inbox in sorted(orders_dir.glob("*-inbox")):
+        prefix = inbox.name[: -len("-inbox")]
+        pairs.append((orders_dir / f"{prefix}-outbox", inbox))
+    return pairs
+
+
+def instrument_refusal_concerns(
+    trade_date: date,
+    orders_dir: Path | None = None,
+    portfolios_dir: Path | None = None,
+) -> list[str]:
+    """One concern per INSTRUMENT_SUSPENDED refusal in ``trade_date``'s inboxes.
+
+    Each names the order, its ticker and every book holding that ticker, so a
+    refused SELL (a trapped position) is visible in the session's own commit
+    trailers, which session-integrity files as an issue, rather than only in
+    an inbox row nobody reads (plan 2026-10-03, review SHOULD 5). The ticker
+    is joined back from the outboxes by order_id, across every date, because
+    a fired conditional lands in the inbox of its fire date.
+    """
+    orders_dir = orders_dir if orders_dir is not None else get_config().orders_dir
+    concerns: list[str] = []
+    for outbox, inbox in _channel_pairs(orders_dir):
+        inbox_file = inbox / f"{trade_date.isoformat()}.jsonl"
+        if not inbox_file.exists():
+            continue
+        refused: list[str] = []
+        for line in inbox_file.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if row.get("reason") == "INSTRUMENT_SUSPENDED":
+                refused.append(row["order_id"])
+        if not refused:
+            continue
+        wanted = set(refused)
+        authored: dict[str, dict] = {}
+        for path in sorted(outbox.glob("*.jsonl")) if outbox.exists() else []:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    raw = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(raw, dict) and raw.get("order_id") in wanted:
+                    authored[raw["order_id"]] = raw
+        for order_id in refused:
+            raw = authored.get(order_id, {})
+            ticker = raw.get("ticker")
+            if ticker is None:
+                concerns.append(
+                    f"INSTRUMENT_SUSPENDED refused {order_id}, whose ticker is not in "
+                    f"{outbox.name}; its holders could not be named."
+                )
+                continue
+            holders = holding_books(ticker, portfolios_dir)
+            status = instrument_status.status_of(ticker) or "suspended (cleared since)"
+            held = ", ".join(holders) if holders else "no book"
+            concerns.append(
+                f"INSTRUMENT_SUSPENDED refused {order_id} ({raw.get('agent_id')}, "
+                f"{raw.get('action')} {ticker}): {ticker} was {status} in "
+                f"data/market/instrument_status.json and is held by {held}; "
+                "no fill is possible until a human adjudicates it."
+            )
+    return concerns
 
 
 def _book_value(
@@ -472,6 +633,9 @@ def _process_one(
     if _denied(order, config):
         return _reject(order.order_id, "TICKER_DENIED")
 
+    if _instrument_suspended(order.ticker):
+        return _refuse_suspended(order, portfolio_manager._base_dir)
+
     # Asked before the price read, so the two failures stay distinguishable:
     # latest_price returns None both for "no row in the store" and for "no
     # resolvable currency", and an operator reading the inbox needs to know
@@ -489,6 +653,12 @@ def _process_one(
     if quote is None:
         return _reject(order.order_id, "NO_PRICE_DATA")
     price, ticker_ccy = quote.price, quote.currency
+
+    # Before the band: the band's BUY reference is the prior close from the
+    # same file, so a frozen series agrees with itself (CTVA filled at 77.65
+    # against 77.65 on 2026-10-02). The price's own date is what can see it.
+    if _stale(order.ticker, quote.as_of, trade_date):
+        return _reject(order.order_id, "STALE_PRICE")
 
     portfolio = portfolio_manager.load(order.agent_id)
     base_ccy = portfolio.currency
@@ -597,7 +767,7 @@ def fill_day(
 
     The portfolio is still selected per order via the order's agent_id, so a
     the-manager order routes to data/portfolios/the-manager/ via the passed
-    portfolio_manager. All 15 rails, fees, and idempotency apply identically on
+    portfolio_manager. All the rails, fees, and idempotency apply identically on
     either channel. With all four channel args None the behaviour is byte-for-byte
     identical to the legacy single-channel path.
     """
@@ -652,6 +822,14 @@ def fill_day(
             continue
         if o.expires is None:
             _emit(_reject(o.order_id, "TRIGGER_NO_EXPIRY"))
+            already_processed.add(o.order_id)
+            continue
+        # Refused at intake on either side: an order on an instrument with no
+        # trustworthy price must not arm, and its level was set against that
+        # untrustworthy price. Staleness is NOT checked here: it is transient
+        # (the bar lands next night), and the fire path checks it.
+        if _instrument_suspended(o.ticker):
+            _emit(_refuse_suspended(o, portfolio_manager._base_dir))
             already_processed.add(o.order_id)
             continue
         if _trigger_level_out_of_band(o, trade_date):
@@ -767,7 +945,9 @@ def _execute_triggered_order(
         level, not inside _process_one. A triggered fire that should be halted by
         drawdown will still fire here; the agent sees the fill in their inbox and
         can re-author cautiously next session. Revisit if this becomes a problem.
-        Does still respect MAX_ORDER_NOTIONAL, TICKER_NOT_IN_UNIVERSE, TICKER_DENIED, INSUFFICIENT_CASH,
+        Does still respect INSTRUMENT_SUSPENDED, STALE_PRICE (on ``fire_as_of``;
+        not evaluated when the caller passes none), MAX_ORDER_NOTIONAL,
+        TICKER_NOT_IN_UNIVERSE, TICKER_DENIED, INSUFFICIENT_CASH,
         NO_POSITION_TO_SELL, INSUFFICIENT_SHARES, NO_FX_RATE, APPLY_TRADE_FAILED.
 
     ``inbox_dir`` scopes the idempotency scan. Defaults to the public INBOX_DIR;
@@ -793,6 +973,12 @@ def _execute_triggered_order(
         )
         return None
 
+    # An order armed before its instrument was suspended must not fire.
+    if _instrument_suspended(order.ticker):
+        f = _refuse_suspended(order, portfolio_manager._base_dir)
+        f.trigger_fired = True
+        return f
+
     config = AgentConfig.load(order.agent_id)
     portfolio = portfolio_manager.load(order.agent_id)
     base_ccy = portfolio.currency
@@ -809,6 +995,13 @@ def _execute_triggered_order(
         f.trigger_fired = True
         return f
     fire_price, ticker_ccy = denominated.price, denominated.currency
+
+    # `fire_as_of` is the date of the price the trigger fired on: a store
+    # row's date for an equity, the observation date for a live crypto quote.
+    if _stale(order.ticker, fire_as_of, trade_date):
+        f = _reject(order.order_id, "STALE_PRICE")
+        f.trigger_fired = True
+        return f
 
     # The fire price came from ccxt or from the store; the store is the
     # reference either way. A SELL leans on the position's own avg_cost, as

@@ -92,7 +92,7 @@ from engine.output_bundle import (
     refresh_session_costs,
     save_output_bundle,
 )
-from engine.paper_broker import fill_day
+from engine.paper_broker import fill_day, instrument_refusal_concerns
 from engine.portfolio import PortfolioManager
 from engine.restatement import MissingPriceError
 from engine.config import AgentSpec, AllocatorSpec, get_config
@@ -1631,6 +1631,18 @@ def step_commit_session(
     # with a single string is the natural slip.
     if isinstance(concerns, str):
         concerns = [concerns]
+    # The broker's INSTRUMENT_SUSPENDED refusals are added here, not left to
+    # the model: a refused SELL traps a position, and the trailer is what puts
+    # it in front of a human the same night (plan 2026-10-03, review SHOULD 5).
+    # Deriving it must never cost the session its commit.
+    try:
+        derived = instrument_refusal_concerns(session_date)
+    except Exception as exc:  # noqa: BLE001 — the commit outranks the concern
+        derived = [
+            f"INSTRUMENT_SUSPENDED refusals could not be listed ({exc!r}); "
+            f"read data/orders/*inbox/{session_date.isoformat()}.jsonl by hand."
+        ]
+    concerns = list(concerns or []) + [c for c in derived if c not in (concerns or [])]
     subprocess.run(["git", "add", "data/"], cwd=_PROJECT_ROOT, check=True)
     args = ["git", "commit", "-m", f"chore: weekday session {session_date.isoformat()}"]
     for text in concerns or []:

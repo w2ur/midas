@@ -26,7 +26,8 @@ root has never refused a row; the committed file's presence is held by
 ``tests/test_instrument_status_live.py`` instead. Writers never overwrite a
 file they could not read.
 
-Nothing reads a status at the broker yet (Stage 1.3 adds that rail). Engine
+The paper broker refuses BUY and SELL on any recorded status
+(``INSTRUMENT_SUSPENDED``, `engine.paper_broker._instrument_suspended`). Engine
 imports only, no vendor client: this module ships in the midas-core mirror.
 """
 
