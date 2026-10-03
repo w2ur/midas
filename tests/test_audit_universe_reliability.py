@@ -199,6 +199,29 @@ class TestMissingFx:
         assert audit._median_value_eur("X", [("2026-09-01", 1.0, None)], 60) is None
 
 
+class TestValueBasis:
+    ROWS = [("2026-09-01", 84000.0, 5_000_000.0)]
+
+    def test_crypto_volume_is_already_quote_currency(self, monkeypatch):
+        # Regression: close x volume ranked BTC (close 84k, volume in USD) above SPY
+        # and SHIB-USD ($113M a day) dead last.
+        monkeypatch.setattr(audit.fx, "to_eur", lambda amount, ccy: amount)
+        assert audit._median_value_eur("BTC-USD", self.ROWS, 60) == 5_000_000.0
+        assert audit._median_value_eur("HBAR-USD", self.ROWS, 60, crypto=frozenset({"HBAR-USD"})) == 5_000_000.0
+        # control: an equity is still volume x close
+        assert audit._median_value_eur("SPY", self.ROWS, 60) == 84000.0 * 5_000_000.0
+
+    def test_a_cheap_liquid_coin_outranks_an_expensive_thin_one(self, monkeypatch):
+        monkeypatch.setattr(audit.fx, "to_eur", lambda amount, ccy: amount)
+        shib = audit._median_value_eur("SHIB-USD", [("2026-09-01", 1e-5, 113e6)], 60)
+        thin = audit._median_value_eur("BTC-USD", [("2026-09-01", 84000.0, 1e3)], 60)
+        assert shib > thin
+
+    def test_futures_are_unrankable_not_ranked_by_price(self):
+        # Regression: contract counts x per-oz close put GC=F at rank 1205.
+        assert audit._median_value_eur("GC=F", [("2026-09-01", 4000.0, 200000.0)], 60) is None
+
+
 class TestEventCounting:
     def test_a_ledgered_missing_day_is_one_event_not_two(self):
         # Regression: BYND 2026-08-13 sat in both member_gaps and the ledger.
