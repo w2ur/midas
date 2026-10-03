@@ -54,6 +54,7 @@ from engine.store_gaps import is_accepted, parse_ledger, scan_store  # noqa: E40
 from scripts.fetch_ohlcv import (  # noqa: E402
     _all_symbols,
     _collect_holdings,
+    _crypto_symbols,
     hole_bucket,
 )
 
@@ -153,7 +154,21 @@ def _median_value_eur(
     return converted if converted is not None else local
 
 
-def _late_rows(since: str, ohlcv_rel: str, repo: Path = _PROJECT_ROOT) -> dict[str, int]:
+def _bucketer(crypto: frozenset[str]):
+    """`hole_bucket` bound to the crypto set, exactly as fetch_ohlcv calls it.
+
+    Without the set, pairs the fee allowlist lacks (BNB-USD, HBAR-USD, ...) fall
+    into the US bucket and their weekend rows make every US equity look stale.
+    """
+    return lambda symbol: hole_bucket(symbol, crypto)
+
+
+def _late_rows(
+    since: str,
+    ohlcv_rel: str,
+    repo: Path = _PROJECT_ROOT,
+    crypto: frozenset[str] = frozenset(),
+) -> dict[str, int]:
     """symbol -> rows dated >= since that first arrived >= LATE_AFTER_DAYS late."""
     import numpy as np
 
@@ -189,15 +204,27 @@ def _late_rows(since: str, ohlcv_rel: str, repo: Path = _PROJECT_ROOT) -> dict[s
         if proc.wait() != 0:
             raise RuntimeError("git log failed")
 
+    bucket_of = _bucketer(crypto)
     late: dict[str, int] = defaultdict(int)
     for (symbol, d), arrived in first_seen.items():
-        if hole_bucket(symbol) == "crypto":
+        if bucket_of(symbol) == "crypto":
             lag = (date.fromisoformat(arrived) - date.fromisoformat(d)).days
         else:
             lag = int(np.busday_count(d, arrived))
         if lag >= LATE_AFTER_DAYS:
             late[symbol] += 1
     return late
+
+
+def _bucket_newest(
+    dates: dict[str, frozenset[str]], bucket_of
+) -> dict[str, str]:
+    """bucket -> newest date any member holds."""
+    newest: dict[str, str] = {}
+    for s, ds in dates.items():
+        b = bucket_of(s)
+        newest[b] = max(newest.get(b, ""), max(ds))
+    return newest
 
 
 def build_rows(
@@ -224,7 +251,9 @@ def build_rows(
     if end is None or end < since:
         raise RuntimeError("no date in the window is held by half the store")
 
-    scan = scan_store(dates, bucket_of=hole_bucket, scope=dates, start=since, end=end)
+    crypto = frozenset(_crypto_symbols())
+    bucket_of = _bucketer(crypto)
+    scan = scan_store(dates, bucket_of=bucket_of, scope=dates, start=since, end=end)
 
     ledger = parse_ledger((cfg.ohlcv_dir.parent / "store_gaps.json").read_text())
     quarantine: dict[str, int] = defaultdict(int)
@@ -245,19 +274,15 @@ def build_rows(
                 actions[r["symbol"]] += 1
 
     ohlcv_rel = str(cfg.ohlcv_dir.relative_to(_PROJECT_ROOT))
-    late = _late_rows(since, ohlcv_rel)
-
-    bucket_newest: dict[str, str] = {}
-    for s, ds in dates.items():
-        b = hole_bucket(s)
-        bucket_newest[b] = max(bucket_newest.get(b, ""), max(ds))
+    late = _late_rows(since, ohlcv_rel, crypto=crypto)
+    bucket_newest = _bucket_newest(dates, bucket_of)
 
     pool = sorted(set(store) & (universe | held | ordered | bench))
 
     def make_row(s: str, *, retired: bool) -> SymbolRow:
         r = SymbolRow(
             symbol=s,
-            bucket=hole_bucket(s),
+            bucket=bucket_of(s),
             held=s in held,
             ordered=s in ordered,
             benchmark=s in bench,
