@@ -167,6 +167,17 @@ class TestEventCounting:
         # control: an unledgered gap still counts
         assert audit._unledgered_gaps(frozenset({"2026-08-13", "2026-08-14"}), {"2026-08-13": {}}) == 1
 
+    def test_repeat_quarantine_attempts_count_once_per_date(self, tmp_path):
+        # Regression: MNST had 11 quarantine lines over 5 distinct dates.
+        qdir = tmp_path / "q"
+        qdir.mkdir()
+        lines = [{"symbol": "MNST", "date": "2026-08-10"}] * 3 + [
+            {"symbol": "MNST", "date": "2026-08-11"},
+            {"symbol": "MNST", "date": "2026-07-01"},  # before the window
+        ]
+        (qdir / "MNST.jsonl").write_text("\n".join(json.dumps(x) for x in lines) + "\nnot json\n")
+        assert audit._quarantine_counts(qdir, "2026-08-01") == {"MNST": 2}
+
 
 class TestReport:
     def test_avoided_share_is_the_events_on_dropped_symbols(self):

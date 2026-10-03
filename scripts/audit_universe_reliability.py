@@ -14,7 +14,8 @@ Per symbol, since ``--since`` (default 2026-08-01):
                 holiday and a vendor hole look identical to the store.
 - ``accepted``  entries in `data/market/store_gaps.json` on or after the
                 window that a human accepted; ``open`` are the unaccepted ones.
-- ``quar``      rows in `data/market/quarantine/` dated in the window.
+- ``quar``      distinct quarantined (symbol, date) pairs in `data/market/quarantine/`
+                dated in the window (repeat fetch attempts count once).
 - ``acts``      corporate actions in `data/market/corporate_actions.jsonl`
                 effective in the window.
 - ``late``      stored rows dated in the window that first reached the repo
@@ -241,6 +242,20 @@ def _unledgered_gaps(member_gaps: frozenset[str], ledger_entries: dict) -> int:
     return len(set(member_gaps) - set(ledger_entries))
 
 
+def _quarantine_counts(quarantine_dir: Path, since: str) -> dict[str, int]:
+    """symbol -> distinct quarantined dates >= since (not repeat fetch attempts)."""
+    seen: dict[str, set[str]] = defaultdict(set)
+    for path in quarantine_dir.glob("*.jsonl"):
+        for line in path.read_text().splitlines():
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if r.get("date", "") >= since:
+                seen[r.get("symbol", path.stem)].add(r["date"])
+    return {sym: len(ds) for sym, ds in seen.items()}
+
+
 def _bucket_newest(
     dates: dict[str, frozenset[str]], bucket_of
 ) -> dict[str, str]:
@@ -281,15 +296,7 @@ def build_rows(
     scan = scan_store(dates, bucket_of=bucket_of, scope=dates, start=since, end=end)
 
     ledger = parse_ledger((cfg.ohlcv_dir.parent / "store_gaps.json").read_text())
-    quarantine: dict[str, int] = defaultdict(int)
-    for path in (cfg.ohlcv_dir.parent / "quarantine").glob("*.jsonl"):
-        for line in path.read_text().splitlines():
-            try:
-                r = json.loads(line)
-            except ValueError:
-                continue
-            if r.get("date", "") >= since:
-                quarantine[r.get("symbol", path.stem)] += 1
+    quarantine = _quarantine_counts(cfg.ohlcv_dir.parent / "quarantine", since)
     actions: dict[str, int] = defaultdict(int)
     actions_path = cfg.ohlcv_dir.parent / "corporate_actions.jsonl"
     for line in actions_path.read_text().splitlines():
