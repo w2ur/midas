@@ -232,6 +232,15 @@ def _late_rows(
     return late
 
 
+def _unledgered_gaps(member_gaps: frozenset[str], ledger_entries: dict) -> int:
+    """Gap dates not already counted as an accepted/open ledger entry.
+
+    scan_store does not read the ledger, so a ledger date absent from the store
+    is in both; counting both would make one missing day two events.
+    """
+    return len(set(member_gaps) - set(ledger_entries))
+
+
 def _bucket_newest(
     dates: dict[str, frozenset[str]], bucket_of
 ) -> dict[str, str]:
@@ -311,7 +320,7 @@ def build_rows(
         except NoFxRate as exc:
             r.no_fx = True
             missing_fx.setdefault(exc.currency, []).append(s)
-        r.gaps = len(scan.member_gaps.get(s, ()))
+        r.gaps = _unledgered_gaps(scan.member_gaps.get(s, frozenset()), ledger.get(s, {}))
         for d, entry in ledger.get(s, {}).items():
             if d >= since:
                 if is_accepted(entry):
