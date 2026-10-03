@@ -31,7 +31,8 @@ Usage:
 `--head` is the main the run left behind. Rows dated after the shadow's `end`
 (a later close run's today-dated bars) are out of its reach and never a miss, and
 symbols the shadow skipped for having no store (first ingest that night) are
-reported as `skipped_first_ingest`, not as misses. Read-only; exits 1 on a
+reported as `skipped_first_ingest`, and symbols whose shadow fetch failed as
+`shadow_fetch_failed`; neither is a miss (the window was never exercised). Read-only; exits 1 on a
 non-empty `missing_from_shadow`, 2 when it could not form a view: unreadable
 report, empty git range, or a shadow that served no symbol (an UNKNOWN night is
 not a sample, whatever artifact it uploaded).
@@ -114,11 +115,15 @@ def compare(
     window_start = shadow["window_start"]
     end = shadow.get("end")
     skipped = set(shadow.get("skipped_no_store", []))
+    # A symbol whose shadow fetch failed was never asked about: the window logic
+    # was not exercised for it, so its rows are neither misses nor in scope.
+    failed = set(shadow.get("failed", []))
+    unreached = skipped | failed
     shadow_inserts = {(s, d) for s, ds in shadow.get("inserts", {}).items() for d in ds}
     in_window = {
         p
         for p in real_inserts
-        if p[1] >= window_start and (end is None or p[1] <= end) and p[0] not in skipped
+        if p[1] >= window_start and (end is None or p[1] <= end) and p[0] not in unreached
     }
     shadow_q = {(q.get("symbol"), q.get("date")) for q in shadow.get("quarantined", [])}
     real_q = real_quarantined or set()
@@ -138,10 +143,11 @@ def compare(
         "missing_held": sorted(p for p in missing if p[0] in (held or set())),
         "adjudicated_by_real_run": sorted(adjudicated),
         "skipped_first_ingest": sorted(p for p in real_inserts if p[0] in skipped),
+        "shadow_fetch_failed": sorted(p for p in real_inserts if p[0] in failed and p[0] not in skipped),
         "outside_window": sorted(
             p
             for p in real_inserts - in_window
-            if p[0] not in skipped
+            if p[0] not in unreached
         ),
         "extra_in_shadow": sorted(shadow_inserts - real_inserts),
         "tripwire_hits": len(shadow_q),
