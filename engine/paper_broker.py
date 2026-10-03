@@ -334,9 +334,16 @@ def instrument_refusal_concerns(
     orders_dir: Path | None = None,
     portfolios_dir: Path | None = None,
 ) -> list[str]:
-    """One concern per INSTRUMENT_SUSPENDED refusal in ``trade_date``'s
-    inboxes, and one per armed conditional order on a suspended instrument
-    or on a ticker whose newest close is STALE_PRICE on ``trade_date``.
+    """One concern per INSTRUMENT_SUSPENDED refusal, and per STALE_PRICE
+    refusal of a SELL, in ``trade_date``'s inboxes, and one per armed
+    conditional order on a suspended instrument or on a ticker whose newest
+    close is STALE_PRICE on ``trade_date``.
+
+    A market SELL refused STALE_PRICE traps its holder exactly as a suspended
+    one does, and for the symbol the vendor stops serving without tripping the
+    tripwire (SGLN.MI) it is the only refusal there is: night after night the
+    exit is refused and only an inbox row records it. A refused BUY traps no
+    one and is not named.
 
     Each names the order, its ticker and every book holding that ticker, so a
     refused SELL (a trapped position) is visible in the session's own commit
@@ -383,16 +390,16 @@ def instrument_refusal_concerns(
         inbox_file = inbox / f"{trade_date.isoformat()}.jsonl"
         if not inbox_file.exists():
             continue
-        refused: list[str] = []
+        refused: list[tuple[str, str]] = []
         for line in inbox_file.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
             row = json.loads(line)
-            if row.get("reason") == "INSTRUMENT_SUSPENDED":
-                refused.append(row["order_id"])
+            if row.get("reason") in ("INSTRUMENT_SUSPENDED", "STALE_PRICE"):
+                refused.append((row["order_id"], row["reason"]))
         if not refused:
             continue
-        wanted = set(refused)
+        wanted = {order_id for order_id, _ in refused}
         authored: dict[str, dict] = {}
         for path in sorted(outbox.glob("*.jsonl")) if outbox.exists() else []:
             for line in path.read_text(encoding="utf-8").splitlines():
@@ -404,9 +411,22 @@ def instrument_refusal_concerns(
                     continue
                 if isinstance(raw, dict) and raw.get("order_id") in wanted:
                     authored[raw["order_id"]] = raw
-        for order_id in refused:
+        for order_id, reason in refused:
             raw = authored.get(order_id, {})
             ticker = raw.get("ticker")
+            if reason == "STALE_PRICE":
+                # Only a refused SELL traps anyone; a refused BUY leaves cash
+                # in the book and the agent reads the rejection next session.
+                # An order whose action cannot be joined back is named: the
+                # side that cannot be proved harmless is the one reported.
+                if raw.get("action") == "BUY":
+                    continue
+                concerns.append(
+                    _stale_sell_concern(
+                        order_id, raw, outbox.name, trade_date, portfolios_dir
+                    )
+                )
+                continue
             if ticker is None:
                 concerns.append(
                     f"INSTRUMENT_SUSPENDED refused {order_id}, whose ticker is not in "
@@ -423,6 +443,33 @@ def instrument_refusal_concerns(
                 "no fill is possible until a human adjudicates it."
             )
     return concerns
+
+
+def _stale_sell_concern(
+    order_id: str,
+    raw: dict,
+    outbox_name: str,
+    trade_date: date,
+    portfolios_dir: Path | None,
+) -> str:
+    """The concern for a market SELL the broker refused STALE_PRICE."""
+    ticker = raw.get("ticker")
+    if ticker is None:
+        return (
+            f"STALE_PRICE refused {order_id}, whose ticker is not in "
+            f"{outbox_name}; its holders could not be named."
+        )
+    holders = holding_books(ticker, portfolios_dir)
+    held = ", ".join(holders) if holders else "no book"
+    quote = latest_price(ticker, trade_date)
+    dated = quote.as_of if quote is not None else "unknown"
+    return (
+        f"STALE_PRICE refused {order_id} ({raw.get('agent_id')}, "
+        f"{raw.get('action')} {ticker}): the newest stored close for {ticker} "
+        f"is dated {dated}, more than {MAX_BUCKET_LAG_DAYS} trading day(s) "
+        f"behind its exchange on {trade_date}, and it is held by {held}; "
+        "the position cannot be sold until the close lands."
+    )
 
 
 def _armed_stale_concern(armed: Order, channel: str, trade_date: date) -> str | None:
