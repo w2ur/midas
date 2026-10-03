@@ -294,14 +294,61 @@ class TestUnreadableRegistryFailsClosed:
         assert any("is missing" in r.getMessage() for r in caplog.records)
 
     def test_the_next_refusal_recreates_a_lost_registry(self, midas_data_root):
-        """Writers still read a missing file as empty, so a tripwire refusal
-        is not blocked by the loss it would repair."""
+        """A tripwire refusal is not blocked by the loss it would repair: the
+        file comes back, rebuilt from the quarantine, holding the new symbol."""
         path = status.registry_path()
-        _write_jsonl(path.parent / "quarantine" / "CTVA.jsonl", [{"symbol": "CTVA"}])
+        _write_jsonl(path.parent / "quarantine" / "CTVA.jsonl", _QUARANTINE["CTVA"])
         status.mark_suspended("CTVA", since="2026-10-01", source="t", reason="r")
         assert path.exists()
         assert status.status_of("AAPL") is None
         assert status.status_of("CTVA") == status.SUSPENDED
+
+    def test_a_refusal_after_the_loss_keeps_every_lost_suspension(
+        self, midas_data_root
+    ):
+        """Regression (review of feat/stage1-asof-reads, lost-registry
+        writers): `mark` read the lost file as empty and wrote back only the
+        new symbol, so the next tripwire refusal on any other symbol cleared
+        CTVA, and the broker filled it at its frozen 09-30 close."""
+        path = status.registry_path()
+        _write_jsonl(path.parent / "quarantine" / "CTVA.jsonl", _QUARANTINE["CTVA"])
+        assert status.status_of("CTVA") == status.SUSPENDED  # the `_lost` rule
+        status.mark_suspended(
+            "XYZ", since="2026-10-04", source="tripwire", reason="refused"
+        )
+        assert status.status_of("CTVA") == status.SUSPENDED
+        assert status.status_of("XYZ") == status.SUSPENDED
+        assert status.load()["CTVA"].since == "2026-10-01"
+
+    def test_a_clear_after_the_loss_keeps_every_other_suspension(
+        self, midas_data_root
+    ):
+        """Same hole through `clear`: adjudicating one symbol must not write
+        an empty registry over the lost one."""
+        path = status.registry_path()
+        quarantine = path.parent / "quarantine"
+        _write_jsonl(quarantine / "CTVA.jsonl", _QUARANTINE["CTVA"])
+        _write_jsonl(quarantine / "MRNA.jsonl", _QUARANTINE["MRNA"][:1])
+        removed = status.clear("MRNA", reason="human: real repricing")
+        assert removed is not None and removed.status == status.SUSPENDED
+        assert path.exists()
+        assert status.status_of("CTVA") == status.SUSPENDED
+        assert status.status_of("MRNA") is None
+
+    def test_a_lost_registry_that_cannot_be_rebuilt_is_not_overwritten(
+        self, midas_data_root
+    ):
+        """A ledger the rebuild cannot read leaves the file absent, so every
+        lookup still fails closed, and the tripwire path reports it."""
+        path = status.registry_path()
+        _write_jsonl(path.parent / "quarantine" / "CTVA.jsonl", _QUARANTINE["CTVA"])
+        (path.parent / "corporate_actions.jsonl").write_text("{not json\n")
+        with pytest.raises(status.RegistryUnreadable):
+            status.mark_suspended("XYZ", since="2026-10-04", source="t", reason="r")
+        with pytest.raises(status.RegistryUnreadable):
+            status.clear("CTVA", reason="r")
+        assert not path.exists()
+        assert status.status_of("AAPL") == status.SUSPENDED
 
 
 # ---------------------------------------------------------------------------
