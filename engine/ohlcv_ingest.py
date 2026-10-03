@@ -553,7 +553,7 @@ def merge_rows(
                         QuarantinedRow(symbol, d, "revision", previous, incoming, ratio)
                     )
                     continue
-            stored[d] = line  # in place — keeps this row's position in the file
+            stored[d] = line  # replaces the row; _write_store_sorted sets its position by date
             revised += 1
 
     _warn_dropped_no_close(symbol, dropped_no_close)
