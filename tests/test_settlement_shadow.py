@@ -245,8 +245,50 @@ def test_an_unknown_night_is_refused_by_the_comparison_cli(tmp_path, monkeypatch
     rep = tmp_path / "r.json"
     rep.write_text(json.dumps({"window_start": "2026-09-18", "inserts": {}, "served": 0}))
     monkeypatch.setattr("sys.argv", ["c", str(rep), "--base", "a", "--head", "b"])
-    monkeypatch.setattr(cs, "_git_diff", lambda b, h: "")
+    monkeypatch.setattr(cs, "_git_diff", lambda b, h: DIFF)
     assert cs.main() == 2
     # Control: with symbols served the same inputs are a clean night.
+    rep.write_text(json.dumps({"window_start": "2026-09-18", "inserts": {"AAA": ["2026-09-25"]}, "served": 5}))
+    monkeypatch.setattr(cs, "_held", lambda: set())
+    assert cs.main() == 0  # BBB 09-01 predates the window; AAA 09-25 is in the shadow
+    # Control: a miss still exits 1.
     rep.write_text(json.dumps({"window_start": "2026-09-18", "inserts": {}, "served": 5}))
-    assert cs.main() == 0
+    assert cs.main() == 1
+
+
+def test_regression_an_empty_git_range_is_unknown_not_a_clean_night(tmp_path, monkeypatch):
+    # Regression: a wrong --head gave an empty diff and a green all-zero report,
+    # and the test that should have caught it asserted rc 0 for that input.
+    import scripts.compare_settlement_shadow as cs
+
+    rep = tmp_path / "r.json"
+    rep.write_text(json.dumps({"window_start": "2026-09-18", "inserts": {}, "served": 5}))
+    monkeypatch.setattr("sys.argv", ["c", str(rep), "--base", "a", "--head", "a"])
+    monkeypatch.setattr(cs, "_git_diff", lambda b, h: "")
+    assert cs.main() == 2
+
+
+def test_regression_a_row_the_real_run_adjudicated_is_not_a_miss():
+    # Regression: `_adjudicate` re-merges an explained split row with the
+    # tripwire off, so it is inserted AND quarantined in the real run; the
+    # shadow refuses it. That is handled on both sides, not a stop condition.
+    row = ("MNST", "2026-10-01")
+    shadow = {"window_start": "2026-09-18", "inserts": {}, "quarantined": [{"symbol": "MNST", "date": "2026-10-01"}]}
+    r = compare({row}, shadow, {row})
+    assert r["missing_from_shadow"] == []
+    assert r["adjudicated_by_real_run"] == [row]
+    # Control: the same row with no quarantine on the real side IS a miss.
+    r = compare({row}, shadow, set())
+    assert r["missing_from_shadow"] == [row]
+    # Control: quarantined in the real run only (shadow inserted nothing, did not refuse) is a miss.
+    r = compare({row}, {"window_start": "2026-09-18", "inserts": {}}, {row})
+    assert r["missing_from_shadow"] == [row]
+
+
+def test_missing_rows_for_held_symbols_are_marked():
+    shadow = {"window_start": "2026-09-18", "inserts": {}}
+    real = {("HELD", "2026-09-22"), ("SCREEN", "2026-09-22")}
+    r = compare(real, shadow, held={"HELD"})
+    assert [p[0] for p in r["missing_from_shadow"]] == ["HELD", "SCREEN"]
+    assert r["missing_held"] == [("HELD", "2026-09-22")]
+    assert compare(real, shadow)["missing_held"] == []
