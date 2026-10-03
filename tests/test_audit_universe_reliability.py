@@ -290,3 +290,34 @@ class TestReport:
         (midas_data_root / "data" / "market" / "ohlcv").mkdir(parents=True)
         assert audit.main([]) == audit.EXIT_UNKNOWN
         assert "the OHLCV store is empty" in capsys.readouterr().err
+
+
+class TestHeaderAndValueAge:
+    META = {k: 0 for k in (
+        "store_files", "universe_symbols", "universe_in_store", "held", "ordered",
+        "benchmarks", "pool", "outside_pool_files", "bucket_wide_candidates",
+    )}
+
+    def test_the_retired_header_names_the_heaviest_not_the_first_alphabetically(self):
+        # Regression: retired[:12] listed the 12 alphabetically first, so a heavy
+        # carrier sorting late was omitted.
+        retired = [_row(f"A{i:02d}", None, quar=1) for i in range(12)] + [_row("ZZZ", None, quar=40)]
+        assert [r.symbol for r in audit._heaviest(retired, 3)][0] == "ZZZ"
+        meta = dict(self.META, since="2026-08-01", end="2026-10-02", retired_with_events=13)
+        text = audit.format_report([_row("X", 1.0)], retired, meta, [1], 5)
+        assert "ZZZ(40)" in text
+        # control: a light, late-sorting symbol is the one left out
+        assert audit._heaviest(retired, 12)[-1].symbol == "A10"
+
+    def test_value_asof_is_the_newest_ranked_row(self):
+        assert audit._value_asof([("2024-04-16", 1.0, 1.0), ("2024-04-15", 1.0, 1.0)], 60) == "2024-04-16"
+        assert audit._value_asof([], 60) == ""
+
+    def test_a_value_from_before_the_window_is_flagged(self):
+        # Regression: UNI-USD's newest row is 2024-04-16 and was ranked as if current.
+        meta = dict(self.META, since="2026-08-01", end="2026-10-02", retired_with_events=0)
+        rows = [_row("OLD", 5.0, value_stale=True), _row("NEW", 9.0)]
+        text = audit.format_report(rows, [], meta, [1], 5)
+        assert "1 symbols are ranked on rows older than the window" in text
+        assert any(ln.startswith("OLD") and "5*" in ln for ln in text.splitlines())
+        assert not any(ln.startswith("NEW") and "*" in ln for ln in text.splitlines())
