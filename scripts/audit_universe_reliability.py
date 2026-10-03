@@ -25,6 +25,9 @@ Per symbol, since ``--since`` (default 2026-08-01):
                 INCLUDING later repair commits; a row added by the commit that
                 created its file (a first backfill) is not counted.
 - ``stale``     the symbol's newest row is older than its bucket's newest.
+                Scored only for a symbol still fetched (in the universe) or
+                held; one that left the universe is stale by construction,
+                even when it stays in the pool through ``ordered``.
 - ``value_eur`` median daily traded value in EUR over the last ``--value-days``
                 rows: volume x close for equities; for crypto the vendor's volume
                 is already in the quote currency, so it is taken as is (x close
@@ -395,6 +398,11 @@ def _bucket_newest(
     return newest
 
 
+def _counts_as_stale(r: SymbolRow, newest: str, bucket_newest: str) -> bool:
+    """A frozen file is a vendor incident only while something still fetches it."""
+    return (r.in_universe or r.held) and newest < bucket_newest
+
+
 def build_rows(
     since: str, value_days: int, allow_missing_fx: bool = False
 ) -> tuple[list[SymbolRow], list[SymbolRow], dict[str, object]]:
@@ -441,7 +449,7 @@ def build_rows(
     missing_fx: dict[str, list[str]] = {}
     approx_used: set[str] = set()
 
-    def make_row(s: str, *, retired: bool) -> SymbolRow:
+    def make_row(s: str) -> SymbolRow:
         r = SymbolRow(
             symbol=s,
             bucket=bucket_of(s),
@@ -467,18 +475,17 @@ def build_rows(
         r.quar = _unledgered_quarantine(quarantine.get(s, set()), member_gaps, ledger.get(s, {}))
         r.acts = actions.get(s, 0)
         r.late = late.get(s, 0)
-        # A retired symbol is stale by construction; counting it would be noise.
         newest = max(dates[s]) if s in dates else ""
-        r.stale = int(not retired and newest < bucket_newest.get(r.bucket, ""))
+        r.stale = int(_counts_as_stale(r, newest, bucket_newest.get(r.bucket, "")))
         r.rows_in_window = sum(1 for d in dates.get(s, ()) if d >= since)
         return r
 
-    rows = [make_row(s, retired=False) for s in pool]
+    rows = [make_row(s) for s in pool]
     # Symbols that left the universe still carry the window's worst incidents
     # (AVB): a cut cannot avoid them now, but the record must show them.
     retired = [
         r
-        for r in (make_row(s, retired=True) for s in sorted(set(store) - set(pool)))
+        for r in (make_row(s) for s in sorted(set(store) - set(pool)))
         if r.events
     ]
 
