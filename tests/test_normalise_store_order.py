@@ -86,3 +86,26 @@ def test_verify_passes_after_normalisation_and_fails_on_a_changed_value(repo: Pa
 
 def test_verify_unknown_ref_is_unknown_not_healthy(repo: Path) -> None:
     assert verify.main(["--against", "no-such-ref", "--dir", str(repo / "data/market/ohlcv")]) == 2
+
+
+def test_no_doc_claims_the_store_is_deliberately_out_of_order():
+    """Regression: the store is canonical ascending-date since 2026-10-03.
+
+    The units-migration docstring and a merge_rows comment still said line
+    order is deliberately preserved / a row keeps its file position, which
+    contradicts the writers and invites someone to forbid re-sorting.
+    """
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    stale = (
+        "deliberately out of date order",
+        "keeps this row's position in the file",
+    )
+    offenders = [
+        f"{rel}: {phrase!r}"
+        for rel in ("scripts/normalise_store_units.py", "engine/ohlcv_ingest.py")
+        for phrase in stale
+        if phrase in (root / rel).read_text(encoding="utf-8")
+    ]
+    assert offenders == []
