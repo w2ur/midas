@@ -142,11 +142,15 @@ jobs:
       # the same run skipped this step and discarded a correction that had
       # already been written — the exact loss the paragraph above describes,
       # arriving by a route the retry loop cannot help with.
+      #
+      # data/market/instrument_status.json: the resweep shares fetch_ohlcv.py,
+      # and any path of it that writes a status must commit it (plan
+      # 2026-10-03, Stage 1.2).
       - name: Commit and push updates
         if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' }}
         uses: ./.github/actions/push-with-retry
         with:
-          paths: data/market/ohlcv/ data/market/corporate_actions.jsonl data/portfolios/
+          paths: data/market/ohlcv/ data/market/corporate_actions.jsonl data/market/instrument_status.json data/portfolios/
           message: "[data] ${{ steps.today.outputs.date }} held-ticker resweep"
 
       - name: Report outcome

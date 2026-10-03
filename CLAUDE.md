@@ -121,6 +121,7 @@ is not listed is ordinary code; read it rather than a description of it.
 - `engine/market_data.py` — **store first, per ticker; yfinance only for what the store cannot cover**
 - `engine/quotes.py` — ticker → currency in three ordered layers (override map, vendor's captured answer, suffix heuristic), then price reads. **The heuristic returns `None` for a suffix it does not enumerate rather than defaulting to USD** — a wrong currency still prices, so that failure has no symptom. **`GBp` is a unit, not a currency: the store is ISO-denominated and the pence→pounds division happens ONCE, at ingest. Read paths must never scale**, or every LSE price is divided by 100 twice.
 - `engine/corporate_actions.py` — split detection, keyed on a transition-anchored constant ratio
+- `data/market/instrument_status.json` — committed registry of symbols the store must not be trusted for (`engine/instrument_status.py`): a tripwire refusal writes `suspended`, only adjudication clears it, and **an unreadable registry fails closed** (every lookup answers `suspended`). Details in the **`midas-market-data`** skill.
 - `engine/agent_memory.py` — Ring 2 per-agent journal I/O
 - `engine/persona_dispatch.py` — loads `.claude/agents/{id}.md` and wraps a task prompt with the persona body, and injects any in-window desk notice between the two
 - `engine/config.py` — `MidasConfig`, the single source of truth for paths, roster and safety rails, loaded from `roster.yaml`; `MIDAS_DATA_DIR`-aware
