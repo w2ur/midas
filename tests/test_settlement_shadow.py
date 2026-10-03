@@ -294,6 +294,21 @@ def test_missing_rows_for_held_symbols_are_marked():
     assert compare(real, shadow)["missing_held"] == []
 
 
+def test_regression_a_failed_shadow_fetch_is_not_a_miss():
+    # Regression: a transient vendor failure for one symbol put its real rows in
+    # `missing_from_shadow` and exited 1, reading as a money-tier gap the window
+    # never had the chance to recover.
+    row = ("X", "2026-09-30")
+    shadow = {"window_start": "2026-09-18", "end": "2026-10-02", "inserts": {}, "failed": ["X"], "served": 1}
+    r = compare({row}, shadow, held={"X"})
+    assert r["missing_from_shadow"] == [] and r["missing_held"] == []
+    assert r["shadow_fetch_failed"] == [row]
+    # Control: the same row with the fetch not failed IS a miss.
+    r = compare({row}, {**shadow, "failed": []}, held={"X"})
+    assert r["missing_from_shadow"] == [row]
+    assert r["shadow_fetch_failed"] == []
+
+
 def test_regression_the_script_run_by_path_can_read_holdings(tmp_path):
     # Regression: `python scripts/compare_settlement_shadow.py` puts scripts/ on
     # sys.path, `from scripts.fetch_ohlcv import` failed, and the broad except
