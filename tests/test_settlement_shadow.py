@@ -419,3 +419,38 @@ def test_regression_rows_after_the_shadows_end_are_not_outside_window():
     r = compare({("X", "2026-10-03"), ("Y", "2026-09-01")}, shadow)
     assert r["after_shadow_end"] == [("X", "2026-10-03")]
     assert r["outside_window"] == [("Y", "2026-09-01")]
+
+
+def test_regression_a_crash_in_the_comparison_exits_unknown_not_the_stop_condition(tmp_path, monkeypatch):
+    # Regression: a report that passes the key-only shape check but has the wrong
+    # types (`inserts` a list) raised out of compare() and exited 1, the code
+    # reserved for a money-tier gap. A run that could not complete is 2.
+    import scripts.compare_settlement_shadow as cs
+
+    rep = tmp_path / "r.json"
+    rep.write_text(json.dumps({"window_start": "2026-09-18", "inserts": [], "served": 5}))
+    monkeypatch.setattr("sys.argv", ["c", str(rep), "--base", "a", "--head", "b"])
+    monkeypatch.setattr(cs, "_git_diff", lambda b, h: DIFF)
+    monkeypatch.setattr(cs, "_held", lambda: set())
+    assert cs.main() == 2
+
+
+def test_regression_an_unimportable_fetch_module_exits_unknown(tmp_path, monkeypatch):
+    # Regression: outside the project venv `from scripts.fetch_ohlcv import ...`
+    # raised ModuleNotFoundError and the process exited 1.
+    import builtins
+
+    import scripts.compare_settlement_shadow as cs
+
+    real_import = builtins.__import__
+
+    def fake(name, *a, **k):
+        if name == "scripts.fetch_ohlcv":
+            raise ModuleNotFoundError("No module named 'yfinance'")
+        return real_import(name, *a, **k)
+
+    rep = tmp_path / "r.json"
+    rep.write_text(json.dumps({"window_start": "2026-09-18", "inserts": {}, "served": 5}))
+    monkeypatch.setattr("sys.argv", ["c", str(rep), "--base", "a", "--head", "b"])
+    monkeypatch.setattr(builtins, "__import__", fake)
+    assert cs.main() == 2
