@@ -650,3 +650,16 @@ def test_the_required_ignores_are_what_live_ignores_and_the_engine_writes():
         assert probe.returncode == 0, f"live does not ignore {pattern}"
     state = get_config().session_state_dir.resolve().relative_to(sync_core.LIVE_ROOT)
     assert f"{state.as_posix()}/" in sync_core.CORE_REQUIRED_IGNORES
+
+
+def test_the_settlement_shadow_output_dir_is_a_required_core_ignore():
+    """The mirrored fetch_ohlcv carries --settlement-shadow; its report dir must
+    be ignored in core too, or a fork's session commit would stage it. Derived
+    from the directory the code writes, so a move of it goes red here."""
+    import inspect
+
+    import scripts.fetch_ohlcv as fo
+
+    src = inspect.getsource(fo.main)
+    assert '"settlement_shadow"' in src
+    assert "data/market/settlement_shadow/" in sync_core.CORE_REQUIRED_IGNORES
