@@ -219,11 +219,16 @@ def build_new_rows(
 
 
 def _read_store_lines(path: Path) -> tuple[dict[str, str], int]:
-    """Read a store file as ``({date: line}, unparseable_count)``.
+    """Read a store file as ``({date: line}, unrewritable_count)``.
 
-    Dict order is the file's line order (a repeated date keeps its first
-    position and its last line). Lines are returned verbatim, never
+    Dict order is the file's line order. Lines are returned verbatim, never
     re-serialised, so a rewrite from this map is byte-neutral per row.
+
+    ``unrewritable_count`` counts lines a sorted rewrite from the map could not
+    reproduce: unparseable lines, and a second line for a date that differs
+    byte-wise from the first (a rewrite would keep one and silently drop the
+    other; ``scripts/normalise_store_order.py`` calls that a human decision, and
+    the writer must agree). A byte-identical repeat is harmless and collapses.
     """
     stored: dict[str, str] = {}
     unparseable = 0
@@ -238,10 +243,17 @@ def _read_store_lines(path: Path) -> tuple[dict[str, str], int]:
                 except (json.JSONDecodeError, AttributeError):
                     unparseable += 1
                     continue
-                if d:
-                    stored[d] = line
-                else:
+                if not d:
                     unparseable += 1
+                elif d in stored and stored[d] != line:
+                    logger.warning(
+                        "%s holds two different rows for %s; not rewriting the file",
+                        path.name,
+                        d,
+                    )
+                    unparseable += 1
+                else:
+                    stored[d] = line
     return stored, unparseable
 
 
@@ -276,8 +288,8 @@ def append_new_rows(
     The file stays in canonical (ascending-date) order: new dates later than the
     newest stored one are appended; a date that lands INSIDE the series (the
     store-gap heal) makes the file be rewritten sorted, so it lands in place.
-    A file with an unparseable line is only ever appended to, because a rewrite
-    would drop that line.
+    A file with an unparseable line, or two different rows for one date, is only
+    ever appended to, because a rewrite would drop one of them.
 
     ``skip_dates`` adds dates to treat as already present. Its one caller is
     ``merge_rows``'s degraded path: a date carried only by an unparseable line
@@ -297,8 +309,8 @@ def append_new_rows(
         return len(rows_to_append)
     stored, unparseable = _read_store_lines(path)
     if unparseable:
-        # Cannot rewrite without dropping the broken line; append and accept
-        # the out-of-place row (the merge_rows warning already names the file).
+        # Cannot rewrite without dropping a line (broken, or a conflicting
+        # duplicate); append and accept the out-of-place row.
         with path.open("a", encoding="utf-8") as f:
             for _, line in rows_to_append:
                 f.write(line + "\n")
