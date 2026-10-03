@@ -163,7 +163,9 @@ def _median_value_eur(
         return None
     local = statistics.median(values)
     ccy = ticker_currency(symbol)
-    if ccy in (None, "EUR"):
+    if ccy is None:
+        raise NoFxRate("UNRESOLVED")
+    if ccy == "EUR":
         return local
     converted = fx.to_eur(local, ccy)
     if converted is None:

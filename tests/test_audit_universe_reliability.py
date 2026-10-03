@@ -155,6 +155,12 @@ class TestMissingFx:
         monkeypatch.setattr(audit.fx, "to_eur", lambda amount, ccy: amount / 10)
         assert audit._median_value_eur("ERIC-B.ST", self.ROWS, 60) == 100.0
 
+    def test_an_unresolved_currency_is_unrankable_not_eur(self, monkeypatch):
+        # Regression: None was treated as EUR, so the raw local value ranked.
+        monkeypatch.setattr(audit, "ticker_currency", lambda s: None)
+        with pytest.raises(audit.NoFxRate):
+            audit._median_value_eur("X.ZZ", self.ROWS, 60)
+
     def test_no_volume_is_still_none_not_an_error(self, monkeypatch):
         assert audit._median_value_eur("X", [("2026-09-01", 1.0, None)], 60) is None
 
