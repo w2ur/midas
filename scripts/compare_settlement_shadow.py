@@ -47,6 +47,10 @@ import sys
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# Run as `python scripts/compare_settlement_shadow.py`, sys.path[0] is `scripts/`,
+# not the repo root, so `from scripts.fetch_ohlcv import ...` would always fail.
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 STORE_PREFIX = "data/market/ohlcv/"
 QUARANTINE_PREFIX = "data/market/quarantine/"
 
