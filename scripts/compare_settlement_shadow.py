@@ -35,7 +35,8 @@ symbols the shadow skipped for having no store (first ingest that night) are
 reported as `skipped_first_ingest`, and symbols whose shadow fetch failed as
 `shadow_fetch_failed`; neither is a miss (the window was never exercised). Read-only; exits 1 on a
 non-empty `missing_from_shadow`, 2 when it could not form a view: unreadable
-report, empty git range, a shadow that served no symbol, or one whose fetch failed
+report (or one whose shape the comparison cannot process), an unimportable
+fetch module, an empty git range, a shadow that served no symbol, or one whose fetch failed
 for more than `fetch_ohlcv.MAX_FAILURE_RATE` of the symbols it asked about (an
 UNKNOWN night is not a sample, whatever artifact it uploaded).
 """
@@ -206,9 +207,13 @@ def main() -> int:
     if not shadow.get("served"):
         print("the shadow served no symbol: UNKNOWN night, not a sample", file=sys.stderr)
         return 2
-    from scripts.fetch_ohlcv import MAX_FAILURE_RATE
+    try:
+        from scripts.fetch_ohlcv import MAX_FAILURE_RATE
 
-    rate = failure_rate(shadow)
+        rate = failure_rate(shadow)
+    except Exception as exc:  # noqa: BLE001 - could not form a view is UNKNOWN (2), never the stop condition (1)
+        print(f"could not evaluate the shadow's failure rate: {exc!r}: UNKNOWN night", file=sys.stderr)
+        return 2
     if rate > MAX_FAILURE_RATE:
         # Same limit as the real fetch: a brown-out night exercised the window
         # for a sliver of the universe and every failed symbol's rows leave scope.
@@ -235,8 +240,13 @@ def main() -> int:
         # taken before the night's commit), not a clean night.
         print("the git range inserted no store row: UNKNOWN night, check --base/--head", file=sys.stderr)
         return 2
-    report = compare(inserted, shadow, quarantined, held=_held())
-    print(json.dumps(report, indent=1))
+    try:
+        report = compare(inserted, shadow, quarantined, held=_held())
+        rendered = json.dumps(report, indent=1)
+    except Exception as exc:  # noqa: BLE001 - a malformed report is UNKNOWN (2), never the stop condition (1)
+        print(f"could not compare the shadow report: {exc!r}: UNKNOWN night", file=sys.stderr)
+        return 2
+    print(rendered)
     return 1 if report["missing_from_shadow"] else 0
 
 
