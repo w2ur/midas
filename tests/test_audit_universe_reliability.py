@@ -321,3 +321,17 @@ class TestHeaderAndValueAge:
         assert "1 symbols are ranked on rows older than the window" in text
         assert any(ln.startswith("OLD") and "5*" in ln for ln in text.splitlines())
         assert not any(ln.startswith("NEW") and "*" in ln for ln in text.splitlines())
+
+
+class TestOrderedTickers:
+    def test_pending_channels_hold_one_json_file_per_order(self, tmp_path):
+        # Regression: the pending channels were globbed as *.jsonl and matched
+        # nothing, so a conditional order with no outbox line was not "ever
+        # ordered" and could be cut.
+        (tmp_path / "outbox").mkdir()
+        (tmp_path / "outbox" / "2026-09-01.jsonl").write_text('{"ticker": "AAA"}\n')
+        for ch, t in (("pending", "BBB"), ("manager-pending", "CCC")):
+            (tmp_path / ch).mkdir()
+            (tmp_path / ch / "ord_x.json").write_text(json.dumps({"ticker": t}, indent=2))
+        (tmp_path / "pending" / "ord_bad.json").write_text("{not json")
+        assert audit._ordered_tickers(tmp_path) == {"AAA", "BBB", "CCC"}

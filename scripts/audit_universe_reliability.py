@@ -125,6 +125,8 @@ def _read_store(ohlcv_dir: Path) -> dict[str, list[tuple[str, float | None, floa
 
 
 def _ordered_tickers(orders_dir: Path) -> set[str]:
+    """Tickers ever ordered. Outbox channels hold JSONL files; the two pending
+    channels hold one pretty-printed `ord_*.json` file per order."""
     seen: set[str] = set()
     for channel in _ORDER_CHANNELS:
         for path in sorted((orders_dir / channel).glob("*.jsonl")):
@@ -137,6 +139,13 @@ def _ordered_tickers(orders_dir: Path) -> set[str]:
                     continue
                 if t:
                     seen.add(t)
+        for path in sorted((orders_dir / channel).glob("*.json")):
+            try:
+                t = json.loads(path.read_text()).get("ticker")
+            except (ValueError, AttributeError):
+                continue
+            if t:
+                seen.add(t)
     return seen
 
 
