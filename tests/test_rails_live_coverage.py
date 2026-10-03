@@ -242,9 +242,15 @@ JUDGED_STALE_REFUSALS = {
 def test_the_stale_rail_would_refuse_only_the_judged_committed_fills():
     """Replay: every committed fill through STALE_PRICE, at its trade date.
 
-    Against TODAY's store, not the one the broker saw: later refills only
-    shorten a lag, so this can miss a refusal the rail would have made then,
-    never invent one. The faithful replay (each fill's own executed_sha, buckets
+    Against TODAY's store, not the one the broker saw, so it can err both
+    ways. A later refill of the fill's own ticker shortens its lag, and this
+    misses a refusal the rail would have made then. A later refill of the
+    bucket's other members can create a majority date the broker never saw
+    (the 2026-09-26 backfill added 483 US rows for 09-22, a date most of the
+    bucket lacked that night), which lengthens the lag of a ticker that was
+    not refilled, and this invents a refusal. The assertion is an exact set,
+    so either error turns it red for a human to judge; it never licenses
+    loosening the replay. The faithful replay (each fill's own executed_sha, buckets
     sampled to 40 members, 52 s) was run once on 2026-10-03: 411 fills carry a
     sha, 395 read lag 0, 15 lag 1, and the only refusal is the one above.
     """
