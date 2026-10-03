@@ -81,8 +81,20 @@ def test_watchdog_never_pipes_into_grep_q():
     non-match. Measured against this repo's history (2026-08-04, one matching
     subject present), the old form found the commit in 0 of 20 runs.
     """
-    script = _watchdog_run_script()
-    offenders = [
+    # Both jobs run `set -euo pipefail` and detect by `git log`; the
+    # close-runs job is defined further down, so resolve it here.
+    workflow = yaml.safe_load(WATCHDOG.read_text())
+    offenders = []
+    for job in ("watchdog", "close-runs"):
+        script = "\n".join(
+            s["run"] for s in workflow["jobs"][job]["steps"] if "run" in s
+        )
+        offenders += _grep_q_pipes(script)
+    assert offenders == [], f"pipeline into `grep -q` under pipefail: {offenders}"
+
+
+def _grep_q_pipes(script: str) -> list[str]:
+    return [
         line.strip()
         for line in script.splitlines()
         if not line.strip().startswith(
@@ -90,7 +102,6 @@ def test_watchdog_never_pipes_into_grep_q():
         )  # the comment explaining the defect quotes it
         and re.search(r"\|\s*grep\b[^|]*\s-\w*q", line)
     ]
-    assert offenders == [], f"pipeline into `grep -q` under pipefail: {offenders}"
 
 
 DETECTION_START = 'echo "Looking for weekday session commit'
