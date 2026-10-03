@@ -99,7 +99,8 @@ def main(argv: list[str] | None = None) -> int:
             stats["tail_ne_max_before"] += 1
         if rows != b_rows:
             problems.append(f"{rel}: {{date: row}} mapping differs from {args.against}")
-        if sorted(lines) != sorted(b_lines):
+        # Sets, not multisets: the normaliser collapses a byte-identical repeat.
+        if set(lines) != set(b_lines):
             problems.append(f"{rel}: raw lines differ from {args.against} (re-serialised?)")
 
     print(json.dumps(stats))
