@@ -134,7 +134,6 @@ class TestCryptoBucket:
         _git(repo, "config", "user.name", "t")
         TestLateRows._commit(repo, "2026-08-03T06:00:00Z", **{"HBAR-USD": ["2026-08-01"]})
         # Saturday's row arrives Monday: 2 calendar days late, 0 business days.
-        TestLateRows._commit(repo, "2026-08-03T07:00:00Z", **{"HBAR-USD": ["2026-08-01x"]}) if False else None
         TestLateRows._commit(repo, "2026-08-10T06:00:00Z", **{"HBAR-USD": ["2026-08-08"]})
         assert audit._late_rows("2026-08-01", "ohlcv", repo, crypto=self.CRYPTO) == {"HBAR-USD": 1}
         assert audit._late_rows("2026-08-01", "ohlcv", repo) == {}  # control
@@ -213,4 +212,4 @@ class TestReport:
         monkeypatch.setattr(audit, "_collect_holdings", lambda: set())
         (midas_data_root / "data" / "market" / "ohlcv").mkdir(parents=True)
         assert audit.main([]) == audit.EXIT_UNKNOWN
-        assert "could not run" in capsys.readouterr().err
+        assert "the OHLCV store is empty" in capsys.readouterr().err
