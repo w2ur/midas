@@ -34,8 +34,9 @@ symbols the shadow skipped for having no store (first ingest that night) are
 reported as `skipped_first_ingest`, and symbols whose shadow fetch failed as
 `shadow_fetch_failed`; neither is a miss (the window was never exercised). Read-only; exits 1 on a
 non-empty `missing_from_shadow`, 2 when it could not form a view: unreadable
-report, empty git range, or a shadow that served no symbol (an UNKNOWN night is
-not a sample, whatever artifact it uploaded).
+report, empty git range, a shadow that served no symbol, or one whose fetch failed
+for more than `fetch_ohlcv.MAX_FAILURE_RATE` of the symbols it asked about (an
+UNKNOWN night is not a sample, whatever artifact it uploaded).
 """
 
 from __future__ import annotations
@@ -157,6 +158,13 @@ def compare(
     }
 
 
+def failure_rate(shadow: dict) -> float:
+    """Share of the symbols the shadow asked the vendor about that returned nothing."""
+    failed = len(shadow.get("failed", []))
+    asked = int(shadow.get("served") or 0) + failed
+    return failed / asked if asked else 0.0
+
+
 def _git_diff(base: str, head: str) -> str:
     return subprocess.run(
         ["git", "-C", str(_PROJECT_ROOT), "diff", "-U0", base, head, "--", STORE_PREFIX, QUARANTINE_PREFIX],
@@ -190,6 +198,18 @@ def main() -> int:
         return 2
     if not shadow.get("served"):
         print("the shadow served no symbol: UNKNOWN night, not a sample", file=sys.stderr)
+        return 2
+    from scripts.fetch_ohlcv import MAX_FAILURE_RATE
+
+    rate = failure_rate(shadow)
+    if rate > MAX_FAILURE_RATE:
+        # Same limit as the real fetch: a brown-out night exercised the window
+        # for a sliver of the universe and every failed symbol's rows leave scope.
+        print(
+            f"the shadow's fetch failed for {rate:.0%} of the symbols it asked about "
+            f"(limit {MAX_FAILURE_RATE:.0%}): UNKNOWN night, not a sample",
+            file=sys.stderr,
+        )
         return 2
     base = args.base or shadow.get("base_sha")
     if not base:
