@@ -121,41 +121,86 @@ def test_no_universe_ticker_is_undenominable():
 # ---------------------------------------------------------------------------
 
 
+def _channels() -> list[tuple[Path, Path]]:
+    """(outbox, inbox) for the public channel and every allocator channel.
+
+    Derived from the ``*inbox`` directories on disk, the way
+    `engine.paper_broker._channel_pairs` derives them, so a channel added
+    later is replayed without anyone remembering to list it here.
+    """
+    orders = REPO_ROOT / "data" / "orders"
+    pairs = []
+    for inbox in sorted(orders.glob("*inbox")):
+        prefix = inbox.name[: -len("inbox")]
+        pairs.append((orders / f"{prefix}outbox", inbox))
+    return pairs
+
+
 def _filled_fills() -> list[tuple[str, date, str, float]]:
     """(order_id, trade_date, ticker, fill_price) for every committed fill.
 
-    The ticker is not in the inbox line, so it is joined back from the
-    outbox by order_id — the same join the site's trade cards make.
+    Every channel the broker fills through: the public one and the Manager's
+    (``manager-inbox``), which the rails apply to just the same. The ticker is
+    not in the inbox line, so it is joined back from the channel's own outbox
+    by order_id — the same join the site's trade cards make.
     """
-    outbox_tickers: dict[str, str] = {}
-    for path in (REPO_ROOT / "data" / "orders" / "outbox").glob("*.jsonl"):
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            try:
-                order = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if order.get("order_id") and order.get("ticker"):
-                outbox_tickers[order["order_id"]] = order["ticker"]
-
     out: list[tuple[str, date, str, float]] = []
-    for path in sorted((REPO_ROOT / "data" / "orders" / "inbox").glob("*.jsonl")):
-        trade_date = datetime.strptime(path.stem, "%Y-%m-%d").date()
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            try:
-                fill = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if fill.get("status") != "filled":
-                continue
-            ticker = outbox_tickers.get(fill.get("order_id", ""))
-            price = fill.get("fill_price")
-            if ticker and isinstance(price, (int, float)):
-                out.append((fill["order_id"], trade_date, ticker, float(price)))
+    for outbox, inbox in _channels():
+        outbox_tickers: dict[str, str] = {}
+        for path in outbox.glob("*.jsonl"):
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    order = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if order.get("order_id") and order.get("ticker"):
+                    outbox_tickers[order["order_id"]] = order["ticker"]
+
+        for path in sorted(inbox.glob("*.jsonl")):
+            trade_date = datetime.strptime(path.stem, "%Y-%m-%d").date()
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    fill = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if fill.get("status") != "filled":
+                    continue
+                ticker = outbox_tickers.get(fill.get("order_id", ""))
+                price = fill.get("fill_price")
+                if ticker and isinstance(price, (int, float)):
+                    out.append((fill["order_id"], trade_date, ticker, float(price)))
     return out
+
+
+def test_the_replay_covers_every_fill_channel():
+    """Regression (review of feat/stage1-asof-reads, finding 4): the replays
+    read only data/orders/{outbox,inbox}, so the Manager's broker-path fills
+    in manager-inbox were never replayed through any rail. Every filled row in
+    every ``*inbox`` must reach the replay."""
+    channels = {inbox.name for _outbox, inbox in _channels()}
+    assert {"inbox", "manager-inbox"} <= channels, channels
+
+    filled: set[str] = set()
+    for _outbox, inbox in _channels():
+        for path in inbox.glob("*.jsonl"):
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    row = json.loads(line)
+                    if row.get("status") == "filled":
+                        filled.add(row["order_id"])
+    manager = {
+        json.loads(line)["order_id"]
+        for path in (REPO_ROOT / "data" / "orders" / "manager-inbox").glob("*.jsonl")
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and json.loads(line).get("status") == "filled"
+    }
+    assert manager, "no committed Manager fill: this control exercises nothing"
+    replayed = {f[0] for f in _filled_fills()}
+    assert filled - replayed == set(), f"fills no replay reads: {sorted(filled - replayed)}"
 
 
 def test_the_price_band_would_not_have_refused_any_committed_fill():
