@@ -15,9 +15,13 @@ baseline. This answers the plan's three questions:
      already quarantined?                      -> `tripwire_added`
      (`tripwire_hits` is the shadow's absolute count, kept for context.)
 
-**`missing_from_shadow` non-empty is the plan's stop condition** when any of its
-symbols is money-tier (held): a gap the heal pass recovered and the window did
-not. Rows older than the window are reported separately as `outside_window`;
+**`missing_from_shadow` non-empty is the plan's stop condition** for a money-tier
+(held) symbol: a gap the heal pass recovered and the window did not. The script
+exits 1 on ANY in-window miss (the safe side) and lists the held ones separately
+as `missing_held`, from the portfolios in the checkout it runs in, so the human
+judging the stop condition does not cross-reference by hand. A real insert the
+real run explained from the vendor's action calendar (it sits in BOTH quarantines)
+was handled, not missed, and is reported as `adjudicated_by_real_run`. Rows older than the window are reported separately as `outside_window`;
 the window cannot be asked for them, and that is not a miss.
 
 Usage:
@@ -93,6 +97,7 @@ def compare(
     real_inserts: set[tuple[str, str]],
     shadow: dict,
     real_quarantined: set[tuple[str, str]] | None = None,
+    held: set[str] | None = None,
 ) -> dict:
     """Pure comparison of the real run's inserts against a shadow report.
 
@@ -113,6 +118,11 @@ def compare(
     }
     shadow_q = {(q.get("symbol"), q.get("date")) for q in shadow.get("quarantined", [])}
     real_q = real_quarantined or set()
+    # The real run's `_adjudicate` re-merges an explained split row with the
+    # tripwire off, so it is both quarantined AND inserted; the shadow (tripwire
+    # on) refuses the same row. Handled on both sides, not a gap.
+    adjudicated = (in_window - shadow_inserts) & shadow_q & real_q
+    missing = sorted(in_window - shadow_inserts - adjudicated)
     return {
         "window_start": window_start,
         "end": end,
@@ -120,7 +130,9 @@ def compare(
         "run_id": shadow.get("run_id"),
         "real_inserts": len(real_inserts),
         "shadow_inserts": len(shadow_inserts),
-        "missing_from_shadow": sorted(in_window - shadow_inserts),
+        "missing_from_shadow": missing,
+        "missing_held": sorted(p for p in missing if p[0] in (held or set())),
+        "adjudicated_by_real_run": sorted(adjudicated),
         "skipped_first_ingest": sorted(p for p in real_inserts if p[0] in skipped),
         "outside_window": sorted(
             p
@@ -142,6 +154,16 @@ def _git_diff(base: str, head: str) -> str:
         capture_output=True,
         text=True,
     ).stdout
+
+
+def _held() -> set[str]:
+    try:
+        from scripts.fetch_ohlcv import _collect_holdings
+
+        return _collect_holdings()
+    except Exception as exc:  # noqa: BLE001 - holdings are context, never a reason to hide a miss
+        print(f"warning: holdings unreadable, missing_held will be empty: {exc}", file=sys.stderr)
+        return set()
 
 
 def main() -> int:
@@ -170,7 +192,13 @@ def main() -> int:
     except subprocess.CalledProcessError as exc:
         print(f"git diff failed: {exc.stderr}", file=sys.stderr)
         return 2
-    report = compare(inserted, shadow, quarantined)
+    if not inserted:
+        # Every full-universe night appends at least the `end` row for hundreds
+        # of symbols: an empty insert set means a wrong --base/--head (or a head
+        # taken before the night's commit), not a clean night.
+        print("the git range inserted no store row: UNKNOWN night, check --base/--head", file=sys.stderr)
+        return 2
+    report = compare(inserted, shadow, quarantined, held=_held())
     print(json.dumps(report, indent=1))
     return 1 if report["missing_from_shadow"] else 0
 
