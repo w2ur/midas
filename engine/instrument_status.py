@@ -105,7 +105,7 @@ def _parse(text: str) -> dict[str, Entry]:
             )
         except KeyError as exc:
             raise RegistryUnreadable(f"{symbol}: missing {exc}") from exc
-        if entry.status not in STATUSES:
+        if not isinstance(entry.status, str) or entry.status not in STATUSES:
             raise RegistryUnreadable(f"{symbol}: unknown status {entry.status!r}")
         try:
             date.fromisoformat(entry.since)
@@ -134,7 +134,9 @@ def load(path: Path | None = None) -> dict[str, Entry]:
         return {}
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
+        # UnicodeDecodeError is a ValueError, not an OSError: a file that is
+        # not UTF-8 is as unreadable as one that cannot be opened.
         raise RegistryUnreadable(f"cannot read {path} ({exc})") from exc
     return _parse(text)
 

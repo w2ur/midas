@@ -193,6 +193,55 @@ class TestUnreadableRegistryFailsClosed:
             assert status.status_of("ANYTHING") == status.SUSPENDED
         assert any("unreadable" in r.getMessage() for r in caplog.records)
 
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            b"\xff\xfe",
+            json.dumps(
+                {
+                    "schema": 1,
+                    "instruments": {
+                        "X": {
+                            "status": ["suspended"],
+                            "since": "2026-10-01",
+                            "source": "seed",
+                            "reason": "r",
+                        }
+                    },
+                }
+            ).encode(),
+            json.dumps(
+                {
+                    "schema": 1,
+                    "instruments": {
+                        "X": {
+                            "status": {"s": 1},
+                            "since": "2026-10-01",
+                            "source": "seed",
+                            "reason": "r",
+                        }
+                    },
+                }
+            ).encode(),
+        ],
+        ids=["not-utf8", "list-status", "dict-status"],
+    )
+    def test_a_file_that_breaks_the_parser_still_fails_closed(
+        self, midas_data_root, caplog, raw
+    ):
+        """Regression (review of feat/stage1-asof-reads, 2026-10-03): an
+        unhashable status raised TypeError at the ``in STATUSES`` test, and a
+        non-UTF-8 file raised UnicodeDecodeError (a ValueError, not the
+        OSError ``load`` caught), so the lookup raised instead of answering
+        ``suspended``: fill_day aborted part-way and every watcher fire
+        counted as an error."""
+        path = status.registry_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(raw)
+        with caplog.at_level(logging.ERROR, logger="engine.instrument_status"):
+            assert status.status_of("AAPL") == status.SUSPENDED
+        assert any("unreadable" in r.getMessage() for r in caplog.records)
+
     def test_a_writer_never_overwrites_it(self, midas_data_root):
         path = status.registry_path()
         path.parent.mkdir(parents=True, exist_ok=True)
