@@ -763,6 +763,18 @@ def _report_markdown_table(entries: list[dict]) -> str:
         for e in failed:
             lines.append(f"- `{e['order_id']}` [{e['agent_id']}]: {e.get('error')}")
         lines.append("")
+    # A held fire wrote nothing and the run exits 0, so the reason is only
+    # here (and in the session's concern trailer, `instrument_refusal_concerns`).
+    held = [e for e in entries if e.get("kind") == "held"]
+    if held:
+        lines.append(
+            "**Fired, refused by the broker and kept armed — the order is "
+            "retried on the next run and protects nothing until it fills:**"
+        )
+        lines.append("")
+        for e in held:
+            lines.append(f"- `{e['order_id']}` [{e['agent_id']}] {e['ticker']}: {e.get('error')}")
+        lines.append("")
     return "\n".join(lines)
 
 

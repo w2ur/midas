@@ -280,4 +280,4 @@ class TestSessionCommitSanitisesConcerns:
         monkeypatch.setattr(daily_session, "instrument_refusal_concerns", boom)
         daily_session.step_commit_session(date(2026, 10, 2))
         (trailer,) = self._trailers(repo)
-        assert trailer.startswith("INSTRUMENT_SUSPENDED refusals could not be listed")
+        assert trailer.startswith("INSTRUMENT_SUSPENDED and STALE_PRICE holds could not be listed")

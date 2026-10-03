@@ -2286,6 +2286,34 @@ class TestRunReportTable:
         assert "None" not in table
 
 
+    def test_a_held_row_names_the_broker_reason(self) -> None:
+        """Regression (review of feat/stage1-asof-reads, finding 2): a fire the
+        broker refused STALE_PRICE was kept armed with no inbox row and a green
+        run, and the table dropped the reason — only "error" entries got a
+        reason line — so the report read "held" with no cause."""
+        from scripts import check_triggers as ct
+
+        entries = [
+            {
+                "order_id": "ord_stop",
+                "agent_id": "goldfinger",
+                "ticker": "SGLN.MI",
+                "action": "SELL",
+                "shares": 3,
+                "op": "<=",
+                "level": 70.0,
+                "observed_price": 69.0,
+                "fill_price": None,
+                "notional": None,
+                "kind": "held",
+                "error": "STALE_PRICE",
+                "commit": ct.REPORT_COMMIT_NONE,
+            }
+        ]
+        table = ct._report_markdown_table(entries)
+        assert "`ord_stop` [goldfinger] SGLN.MI: STALE_PRICE" in table
+
+
 class TestWriteRunReport:
     """The env-var contract: `WATCHER_REPORT_PATH`, `$RUNNER_TEMP` as its
     default AND as the home of the markdown twin the workflows read back,
