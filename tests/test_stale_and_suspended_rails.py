@@ -1,8 +1,9 @@
 """INSTRUMENT_SUSPENDED and STALE_PRICE (market data plan 2026-10-03, 1.3).
 
-Until these rails existed every read path was blind to a price's age. The
-broker filled CTVA on 2026-10-02 at its 2026-09-30 close of 77.65 (the real
-price was 11.92), and PRICE_IMPLAUSIBLE could not object: its BUY reference
+Until these rails existed every read path was blind to a price's age. A
+CTVA order on 2026-10-02 would have filled at its 2026-09-30 close of 77.65
+(the real price was 11.92; a what-if against the store at 0f981dd99, since no
+CTVA order was ever placed), and PRICE_IMPLAUSIBLE could not object: its BUY reference
 is the prior close from the same frozen file, so the ratio was exactly 1.0.
 
 The fixtures are the real incidents, rebuilt as small stores: CTVA at
@@ -121,7 +122,7 @@ def ctva_store(broker_env):
 
 
 def test_ctva_buy_on_2026_10_02_is_refused_suspended(ctva_store):
-    """Regression: the CTVA fill of 2026-10-02 (plan 2026-10-03, 1.3). The
+    """Regression: the CTVA what-if of 2026-10-02 (plan 2026-10-03, 1.3). The
     registry is seeded from CTVA's real quarantine row, so this also holds the
     chain tripwire -> registry -> broker together."""
     from engine.paper_broker import fill_day

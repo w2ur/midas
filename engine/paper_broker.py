@@ -752,8 +752,9 @@ def _process_one(
     price, ticker_ccy = quote.price, quote.currency
 
     # Before the band: the band's BUY reference is the prior close from the
-    # same file, so a frozen series agrees with itself (CTVA filled at 77.65
-    # against 77.65 on 2026-10-02). The price's own date is what can see it.
+    # same file, so a frozen series agrees with itself (a CTVA order on
+    # 2026-10-02 would have filled at 77.65 against 77.65: a what-if, no CTVA
+    # order was ever placed). The price's own date is what can see it.
     if _stale(order.ticker, quote.as_of, trade_date):
         return _reject(order.order_id, "STALE_PRICE")
 

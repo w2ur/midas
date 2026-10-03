@@ -41,8 +41,9 @@ class DatedClose(NamedTuple):
     about. The two differ whenever the store has no row for the requested
     day (a weekend, a holiday, or a vendor that has not served the bar yet),
     and until 2026-10-03 every read path dropped that difference on the
-    floor: the broker filled CTVA on 2026-10-02 at its 09-30 close with no
-    way to see that the price was two sessions old. Carrying the date is
+    floor: a CTVA order on 2026-10-02 would have filled at its 09-30 close
+    with no way to see that the price was two sessions old (a what-if run
+    against the store at 0f981dd99; no CTVA order was ever placed). Carrying the date is
     what lets a caller tell "today's close" from "the last close we have".
     """
 

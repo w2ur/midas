@@ -309,7 +309,7 @@ class TestUnreadableRegistryFailsClosed:
         """Regression (review of feat/stage1-asof-reads, lost-registry
         writers): `mark` read the lost file as empty and wrote back only the
         new symbol, so the next tripwire refusal on any other symbol cleared
-        CTVA, and the broker filled it at its frozen 09-30 close."""
+        CTVA, and the broker would fill it at its frozen 09-30 close."""
         path = status.registry_path()
         _write_jsonl(path.parent / "quarantine" / "CTVA.jsonl", _QUARANTINE["CTVA"])
         assert status.status_of("CTVA") == status.SUSPENDED  # the `_lost` rule
