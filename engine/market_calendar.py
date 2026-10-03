@@ -12,10 +12,12 @@ the engine on 2026-10-03 so the broker can share it (plan 2026-10-03, 1.3).
 
 **Bucket lag.** A stored close carries the date of its row (``Quote.as_of``,
 1.1). ``bucket_lag`` says how many of the bucket's own trading days that date
-trails the bucket by, as of a trade date. A bucket trades on a date when
-STRICTLY MORE than half its live members hold a row for it, the same majority
-rule `engine.store_gaps` uses; its reference is the newest such date on or
-before the trade date. The lag is the number of bucket trading days in
+trails the bucket by, as of a trade date. A bucket trades on a date when AT
+LEAST half its live members hold a row for it (plan 2026-10-03, 1.3); its
+reference is the newest such date on or before the trade date. This is looser
+than `engine.store_gaps`' strict majority on purpose: there a tie must not
+flag a member's gap, here a tie must not understate a member's lag, so each
+leans the way its own caller can afford (the rail toward refusing). The lag is the number of bucket trading days in
 ``(as_of, reference]``. So:
 
 - a bucket closed wholesale (a holiday) holds no new majority date, its
@@ -190,7 +192,8 @@ def bucket_lag(
         held.update(window)
     if population < MIN_BUCKET_POPULATION:
         return BucketLag(bucket, population, None, None)
-    trading = sorted(d for d, n in held.items() if 2 * n > population)
+    # At least half (a tie counts): see the module docstring.
+    trading = sorted(d for d, n in held.items() if 2 * n >= population)
     if not trading:
         return BucketLag(bucket, population, None, None)
     reference = trading[-1]

@@ -100,6 +100,19 @@ def test_a_date_only_a_minority_holds_is_not_a_bucket_day(us_store):
     assert (result.reference, result.lag) == (ON, 0)
 
 
+def test_a_date_exactly_half_the_bucket_holds_is_a_bucket_day(us_store):
+    """Regression (review of feat/stage1-asof-reads, 2026-10-03): the spec
+    (plan 1.3) takes the newest date held by AT LEAST half the bucket. With a
+    strict majority, three of six holding 10-02 left the reference at 10-01,
+    so a price frozen at 09-30 read lag 1 and filled at a two-session-old
+    close instead of refusing."""
+    for sym in ("D", "E", "F"):
+        _write(us_store, sym, SESSIONS[:-1])
+    result = bucket_lag("AAPL", date(2026, 9, 30), ON, store=us_store)
+    assert (result.reference, result.lag) == (ON, 2)
+    assert is_stale("AAPL", date(2026, 9, 30), ON, store=us_store)
+
+
 def test_rows_after_the_trade_date_are_ignored(us_store):
     """A replay of a past date reads the bucket as of that date."""
     result = bucket_lag("AAPL", date(2026, 9, 29), date(2026, 9, 30), store=us_store)
