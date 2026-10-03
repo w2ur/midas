@@ -27,3 +27,33 @@ def test_current_weekday_cron_is_dated_by_the_fix_not_the_move():
     assert entry.split("**")[1].startswith(current.group(1)), (
         "current cron is dated before the entry that fixed it"
     )
+
+
+def _stale_deploy_dates() -> dict[str, str]:
+    """The date each operational doc gives for the stale Worker schedule."""
+    pats = {
+        ".github/workflows/session-watchdog.yml": r"# secret\. From (\d{4}-\d{2}-\d{2}) the deployed",
+        "workers/trigger-gate/README.md": r"\*\*Deploy from an up-to-date `main`\.\*\* From (\d{4}-\d{2}-\d{2}) the deployed",
+        ".claude/skills/midas-session-cadence/SKILL.md": r"and from (\d{4}-\d{2}-\d{2}) it held the pre-move cron",
+    }
+    out = {}
+    for rel, pat in pats.items():
+        m = re.search(pat, (REPO_ROOT / rel).read_text())
+        assert m, f"{rel} no longer dates the stale Worker deploy"
+        out[rel] = m.group(1)
+    wf = (REPO_ROOT / ".github/workflows/session-watchdog.yml").read_text()
+    m = re.search(r"on (\d{4}-\d{2}-\d{2})\.\.\d{2}-\d{2} the deployed copy", wf)
+    assert m, "the watchdog issue body no longer dates the stale deploy"
+    out["issue body"] = m.group(1)
+    return out
+
+
+def test_stale_worker_deploy_is_dated_by_the_recorded_modification():
+    """Regression: four docs dated the stale deploy 2026-09-28, a day before the
+    Worker schedule's recorded last-modified time (METHODOLOGY says 2026-09-29)."""
+    meth = (REPO_ROOT / "METHODOLOGY.md").read_text()
+    m = re.search(r"last modified (\d{4}-\d{2}-\d{2}) \d{2}:\d{2}", meth)
+    assert m, "METHODOLOGY must record when the deployed schedule was modified"
+    for where, day in _stale_deploy_dates().items():
+        assert day == m.group(1), f"{where} dates the stale deploy {day}, not {m.group(1)}"
+
