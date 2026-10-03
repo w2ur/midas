@@ -179,6 +179,19 @@ class TestEventCounting:
         assert audit._quarantine_counts(qdir, "2026-08-01") == {"MNST": 2}
 
 
+class TestFloorExtra:
+    def test_unrankable_symbols_are_not_ranked_below_n(self):
+        # Regression: rank_of.get(sym, 10**9) counted the 12 FX pairs as ranked below n.
+        rows = _universe()
+        ranked = sorted((r for r in rows if r.value_eur is not None), key=lambda r: -r.value_eur)
+        rank_of = {r.symbol: i + 1 for i, r in enumerate(ranked)}
+        forced = {r.symbol for r in rows if r.held or r.ordered or r.benchmark or r.value_eur is None}
+        extra = {r.symbol for r in audit._floor_extra(rows, forced, rank_of, 3)}
+        assert "EURUSD=X" not in extra
+        # control: ranked floor symbols below n still count
+        assert extra == {"THIN_HELD", "THIN_ORDERED", "THIN_BENCH"}
+
+
 class TestReport:
     def test_avoided_share_is_the_events_on_dropped_symbols(self):
         rows = [
