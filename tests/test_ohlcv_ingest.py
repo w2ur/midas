@@ -642,6 +642,33 @@ def test_append_to_a_file_with_a_broken_line_never_drops_it(tmp_path: Path) -> N
     assert "{broken" in text and "2026-04-21" in text
 
 
+def test_interior_insert_never_drops_a_conflicting_duplicate(tmp_path: Path) -> None:
+    """Regression (review 2026-10-03): the sorted rewrite kept the LAST of two
+    byte-different rows for one date and dropped the other silently, while
+    normalise_store_order.py refuses that case. The writer must append instead."""
+    path = tmp_path / "X.jsonl"
+    path.write_text(
+        "\n".join(json.dumps(_rec(d, c)) for d, c in
+                  (("2026-04-20", 1.0), ("2026-04-20", 2.0), ("2026-04-23", 1.0))) + "\n"
+    )
+    df = _yf_frame({"2026-04-21": [1, 2, 0.5, 1.0, 1.0, 100]})
+    assert append_new_rows(path, df) == 1
+    closes = [(json.loads(x)["date"], json.loads(x)["close"]) for x in path.read_text().splitlines()]
+    assert ("2026-04-20", 1.0) in closes and ("2026-04-20", 2.0) in closes
+    assert ("2026-04-21", 1.0) in closes
+
+
+def test_interior_insert_collapses_a_byte_identical_duplicate(tmp_path: Path) -> None:
+    path = tmp_path / "X.jsonl"
+    dup = json.dumps(_rec("2026-04-20", 1.0))
+    path.write_text(dup + "\n" + dup + "\n" + json.dumps(_rec("2026-04-23", 1.0)) + "\n")
+    df = _yf_frame({"2026-04-21": [1, 2, 0.5, 1.0, 1.0, 100]})
+    assert append_new_rows(path, df) == 1
+    assert [json.loads(x)["date"] for x in path.read_text().splitlines()] == [
+        "2026-04-20", "2026-04-21", "2026-04-23",
+    ]
+
+
 @given(
     st.lists(st.integers(0, 40), min_size=1, max_size=15, unique=True),
     st.lists(st.integers(0, 40), min_size=1, max_size=15, unique=True),
