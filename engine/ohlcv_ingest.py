@@ -453,8 +453,10 @@ def merge_rows(
     that, the first rewrite of an out-of-order file would reorder it.
 
     Revision rewrites the whole file from a date-keyed map, so a line carrying no
-    parseable date has no key to survive under. Such a store is left alone and
-    degrades to append-only rather than losing that line.
+    parseable date has no key to survive under, and neither does the second of two
+    byte-different rows for one date. Such a store is left alone and degrades to
+    append-only rather than losing that line (a human decision, as in
+    ``append_new_rows``).
 
     ``quarantine`` enables the anomaly tripwire: a revision moving a stored
     close by more than ``REVISION_LIMIT``, or a new row more than
@@ -497,10 +499,20 @@ def merge_rows(
                     if salvage:
                         salvaged_dates.add(salvage.group(1))
                     continue
-                if d:
-                    stored[d] = line
-                else:
+                if not d:
                     unparseable += 1
+                elif d in stored and stored[d] != line:
+                    # Two different rows for one date: a dict rewrite would
+                    # keep the last and silently drop the other. Same human
+                    # decision as _read_store_lines; degrade to append-only.
+                    logger.warning(
+                        "%s holds two different rows for %s; not rewriting the file",
+                        path.name,
+                        d,
+                    )
+                    unparseable += 1
+                else:
+                    stored[d] = line
     if unparseable:
         # Degrading to append-only preserves the broken line (a rewrite from a
         # date-keyed map would drop it), but it is not a free pass: revision is

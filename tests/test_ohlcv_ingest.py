@@ -658,6 +658,21 @@ def test_interior_insert_never_drops_a_conflicting_duplicate(tmp_path: Path) -> 
     assert ("2026-04-21", 1.0) in closes
 
 
+def test_merge_rows_revision_never_drops_a_conflicting_duplicate(tmp_path: Path) -> None:
+    """Regression (review 2026-10-03): merge_rows with revise_from (the nightly
+    path) read lines into a dict, last row winning, and rewrote the file,
+    silently dropping the earlier of two different rows for one date."""
+    path = tmp_path / "X.jsonl"
+    path.write_text(
+        "\n".join(json.dumps(_rec(d, c)) for d, c in
+                  (("2026-04-20", 1.0), ("2026-04-20", 2.0), ("2026-04-23", 1.0))) + "\n"
+    )
+    df = _yf_frame({"2026-04-23": [1.05, 1.05, 1.05, 1.05, 1.05, 100]})
+    merge_rows(path, df, revise_from="2026-04-23")
+    closes = [(json.loads(x)["date"], json.loads(x)["close"]) for x in path.read_text().splitlines()]
+    assert ("2026-04-20", 1.0) in closes and ("2026-04-20", 2.0) in closes
+
+
 def test_interior_insert_collapses_a_byte_identical_duplicate(tmp_path: Path) -> None:
     path = tmp_path / "X.jsonl"
     dup = json.dumps(_rec("2026-04-20", 1.0))
