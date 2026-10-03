@@ -24,10 +24,14 @@ Per symbol, since ``--since`` (default 2026-08-01):
                 INCLUDING later repair commits; a row added by the commit that
                 created its file (a first backfill) is not counted.
 - ``stale``     the symbol's newest row is older than its bucket's newest.
-- ``value_eur`` median daily traded value (volume x close, converted to EUR) over
-                the last ``--value-days`` rows. Instruments that carry no
-                volume (FX pairs, indices) cannot be ranked; they are always
-                kept and flagged. Currencies the store has no pair for (SEK,
+- ``value_eur`` median daily traded value in EUR over the last ``--value-days``
+                rows: volume x close for equities; for crypto the vendor's volume
+                is already in the quote currency, so it is taken as is (x close
+                would weight a coin by its price). Futures volume is in contracts
+                and the store holds no contract multiplier, so futures cannot be
+                valued. Instruments that carry no usable volume (FX pairs,
+                indices, futures) cannot be ranked; they are always kept and
+                flagged. Currencies the store has no pair for (SEK,
                 NOK, DKK, PLN) use fixed approximate rates, for ranking only.
 
 Nothing is written, fetched or committed. Exit 0 on a printed table; 2 when the
@@ -51,6 +55,7 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 
 from engine import fx  # noqa: E402
 from engine.config import get_config  # noqa: E402
+from engine.fees import classify_ticker  # noqa: E402
 from engine.quotes import ticker_currency  # noqa: E402
 from engine.store_gaps import is_accepted, parse_ledger, scan_store  # noqa: E402
 from scripts.fetch_ohlcv import (  # noqa: E402
@@ -162,11 +167,16 @@ RANKING_ONLY_EUR_RATES: dict[str, float] = {
 }
 
 
+def _is_future(symbol: str) -> bool:
+    return symbol.endswith("=F")
+
+
 def _median_value_eur(
     symbol: str,
     rows: list[tuple[str, float | None, float | None]],
     days: int,
     approx_used: set[str] | None = None,
+    crypto: frozenset[str] = frozenset(),
 ) -> float | None:
     """Median daily traded value in EUR; None when there is no volume.
 
@@ -175,9 +185,19 @@ def _median_value_eur(
     store has no rate for falls back to `RANKING_ONLY_EUR_RATES` and is recorded
     in ``approx_used``; one in neither raises. An unresolved currency (None) is
     unrankable too, never assumed to be EUR.
+
+    Crypto volume is quoted in the pair's quote currency already, so it is not
+    multiplied by the close. Futures volume counts contracts of an unknown size:
+    None (unrankable) rather than a number that ranks by price.
     """
+    if _is_future(symbol):
+        return None
+    is_crypto = symbol in crypto or classify_ticker(symbol) == "crypto"
     recent = sorted(rows)[-days:]
-    values = [c * v for _, c, v in recent if c and v and v > 0]
+    if is_crypto:
+        values = [v for _, _, v in recent if v and v > 0]
+    else:
+        values = [c * v for _, c, v in recent if c and v and v > 0]
     if not values:
         return None
     local = statistics.median(values)
@@ -365,7 +385,7 @@ def build_rows(
             in_universe=s in universe,
         )
         try:
-            r.value_eur = _median_value_eur(s, store[s], value_days, approx_used)
+            r.value_eur = _median_value_eur(s, store[s], value_days, approx_used, crypto)
         except NoFxRate as exc:
             r.no_fx = True
             missing_fx.setdefault(exc.currency, []).append(s)
@@ -466,7 +486,7 @@ def format_report(
     w(f"  bucket-wide absences (holiday-ambiguous, not counted as gaps): "
       f"{meta['bucket_wide_candidates']} (bucket, date) pairs")
     unrank = sum(1 for r in rows if r.value_eur is None and not r.no_fx)
-    w(f"  {unrank} symbols carry no volume series and cannot be ranked; always kept")
+    w(f"  {unrank} symbols carry no comparable volume series (FX, indices, futures) and cannot be ranked; always kept")
     if meta.get("approx_fx"):
         w(f"  NOTE: {', '.join(meta['approx_fx'])} have no rate in the store; ranked with fixed "
           f"approximate rates (RANKING_ONLY_EUR_RATES), good enough to order, not to value")
