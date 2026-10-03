@@ -1483,6 +1483,18 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--shadow-end",
+        metavar="YYYY-MM-DD",
+        type=date.fromisoformat,
+        default=None,
+        help=(
+            "With --settlement-shadow only: the `end` the real fetch job used, "
+            "so both jobs measure the same window even when a dispatched run "
+            "crosses 00:00 UTC between them. Default: yesterday. Must be "
+            "before today, never a still-forming bar."
+        ),
+    )
+    parser.add_argument(
         "--dry-run", action="store_true", help="List symbols without fetching"
     )
     parser.add_argument(
@@ -1595,6 +1607,12 @@ def main() -> int:
             "--resweep-held, --backfill or --names-only"
         )
 
+    if args.shadow_end is not None:
+        if not args.settlement_shadow:
+            parser.error("--shadow-end is only used with --settlement-shadow")
+        if args.shadow_end >= date.today():
+            parser.error("--shadow-end must be before today (a bar still forming)")
+
     # Only THIS run's resolution may license a close-out (`_resolver_failures`).
     global _resolver_failures
     _resolver_failures = None
@@ -1623,7 +1641,7 @@ def main() -> int:
     if args.settlement_shadow:
         return run_settlement_shadow(
             symbols,
-            date.today() - timedelta(days=1),
+            args.shadow_end or date.today() - timedelta(days=1),
             get_config().data_dir / "data" / "market" / "settlement_shadow",
         )
     if args.dry_run:
