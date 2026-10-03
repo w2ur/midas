@@ -228,6 +228,40 @@ def test_an_armed_order_on_a_suspended_ticker_is_named_every_session(ctva_store,
     assert "o_calm" not in concerns[0]
 
 
+def test_an_armed_order_on_a_stale_ticker_is_named_every_session(ctva_store):
+    """Regression (review of feat/stage1-asof-reads, finding 2): a ticker the
+    vendor stops serving without a quarantine row (SGLN.MI in September) is
+    never suspended, so an armed stop on it fired at every sweep, was refused
+    STALE_PRICE, re-armed with no inbox row and a green run, and no channel
+    named it. The session's concern now does, from state."""
+    from engine.paper_broker import instrument_refusal_concerns
+    from engine.triggers import save_pending
+
+    pm = _init_portfolio(ctva_store["pm_base"], "agent1", cash=10_000.0)
+    _hold(pm, "agent1", "CTVA", 5, 70.0)
+    stop = _make_order("o_stop", "agent1", "SELL", "CTVA", 5)
+    stop.trigger = {"op": "<=", "level": 60.0}
+    stop.expires = "2026-10-30"
+    save_pending(stop, pending_dir=get_config().orders_dir / "pending")
+    calm = _make_order("o_calm", "agent1", "SELL", "AAPL", 1)
+    calm.trigger = {"op": ">=", "level": 70.0}
+    calm.expires = "2026-10-30"
+    save_pending(calm, pending_dir=get_config().orders_dir / "pending")
+
+    # No registry entry: only the price's own date (09-30) can see it.
+    concerns = instrument_refusal_concerns(
+        date(2026, 10, 2), portfolios_dir=ctva_store["pm_base"]
+    )
+    assert len(concerns) == 1
+    assert concerns[0].startswith("STALE_PRICE holds armed order o_stop")
+    assert "SELL CTVA" in concerns[0] and "2026-09-30" in concerns[0]
+
+    # Control: on 10-01 CTVA trails by one session, inside the tolerance.
+    assert instrument_refusal_concerns(
+        date(2026, 10, 1), portfolios_dir=ctva_store["pm_base"]
+    ) == []
+
+
 def test_no_refusal_means_no_concern(ctva_store):
     from engine.paper_broker import fill_day, instrument_refusal_concerns
 

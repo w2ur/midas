@@ -335,7 +335,8 @@ def instrument_refusal_concerns(
     portfolios_dir: Path | None = None,
 ) -> list[str]:
     """One concern per INSTRUMENT_SUSPENDED refusal in ``trade_date``'s
-    inboxes, and one per armed conditional order on a suspended instrument.
+    inboxes, and one per armed conditional order on a suspended instrument
+    or on a ticker whose newest close is STALE_PRICE on ``trade_date``.
 
     Each names the order, its ticker and every book holding that ticker, so a
     refused SELL (a trapped position) is visible in the session's own commit
@@ -349,6 +350,15 @@ def instrument_refusal_concerns(
     inbox-dated scan would never see it. Every pending file in every channel
     is checked against the registry, so the order is named every session
     until a human adjudicates the instrument or the order expires.
+
+    The stale half is the same blindness for the other held reason: a ticker
+    the vendor stops serving without tripping the ingest tripwire (SGLN.MI in
+    September: one row for any window) is never suspended, so an armed stop on
+    it fires at every sweep, is refused STALE_PRICE, is re-armed with no inbox
+    row and a green run, and the agent believes it is protected. Judged at the
+    session, after the close runs, so a bar that is merely a night late has
+    usually landed and is not named; one still behind is named every session
+    until it lands or the order expires.
     """
     orders_dir = orders_dir if orders_dir is not None else get_config().orders_dir
     concerns: list[str] = []
@@ -356,6 +366,9 @@ def instrument_refusal_concerns(
         for armed in list_pending(pending_dir=pending_dir):
             status = instrument_status.status_of(armed.ticker)
             if status is None:
+                stale = _armed_stale_concern(armed, pending_dir.name, trade_date)
+                if stale is not None:
+                    concerns.append(stale)
                 continue
             holders = holding_books(armed.ticker, portfolios_dir)
             held = ", ".join(holders) if holders else "no book"
@@ -410,6 +423,21 @@ def instrument_refusal_concerns(
                 "no fill is possible until a human adjudicates it."
             )
     return concerns
+
+
+def _armed_stale_concern(armed: Order, channel: str, trade_date: date) -> str | None:
+    """The concern for an armed order whose ticker's close fails STALE_PRICE."""
+    quote = latest_price(armed.ticker, trade_date)
+    if quote is None or not _stale(armed.ticker, quote.as_of, trade_date):
+        return None
+    return (
+        f"STALE_PRICE holds armed order {armed.order_id} ({armed.agent_id}, "
+        f"{armed.action} {armed.ticker}, in {channel}): the newest stored close "
+        f"for {armed.ticker} is dated {quote.as_of}, more than "
+        f"{MAX_BUCKET_LAG_DAYS} trading day(s) behind its exchange on "
+        f"{trade_date}; a fire is refused and re-armed until the close lands "
+        "or the order expires, so the order protects nothing meanwhile."
+    )
 
 
 def _book_value(
