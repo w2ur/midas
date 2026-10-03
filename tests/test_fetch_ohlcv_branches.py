@@ -1664,8 +1664,14 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
         for sym in self.DE:
             path = get_config().ohlcv_dir / f"{sym}.jsonl"
             assert missing in fo._existing_dates(path), f"{sym} still lacks {missing}"
-            # Insert-only: every stored line survives byte-for-byte, in order.
-            assert path.read_bytes().startswith(before[sym])
+            # Insert-only: every stored line survives byte-for-byte, and the
+            # healed date lands IN PLACE (canonical ascending order), not at
+            # the end of the file.
+            lines = path.read_bytes().splitlines(keepends=True)
+            assert [l for l in lines if json.loads(l)["date"] != missing] == (
+                before[sym].splitlines(keepends=True)
+            )
+            assert [json.loads(l)["date"] for l in lines] == sorted(dates)
         assert self._ledger() == {}
 
     def test_a_hole_the_vendor_still_cannot_fill_is_held_red(

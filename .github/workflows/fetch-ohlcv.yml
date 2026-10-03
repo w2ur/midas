@@ -98,10 +98,10 @@ name: fetch-ohlcv
 # what the weekly resweep-held-tickers run adjudicates. A bar the vendor does
 # not revise
 # re-fetches identical, so no already-stored row changes value and the diff for
-# that symbol stays the single appended line. merge_rows preserves the store's
-# existing line order and never re-sorts it: 529 of the 1,046 files are not in
-# date order, and re-sorting them from a cron would emit a ~230 MB reorder
-# commit. Canonicalising the store is a separate, deliberate decision.
+# that symbol stays the single appended line. The store is in canonical form
+# (ascending dates, one row per date; normalised 2026-10-03 by
+# scripts/normalise_store_order.py) and the writers keep it so: a date landing
+# inside the series is placed by date, untouched rows keep their exact bytes.
 # Also exposes manual workflow_dispatch for ad-hoc refresh.
 
 on:
