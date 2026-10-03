@@ -124,6 +124,10 @@ on:
         type: choice
         options: ["none", "eu", "us"]
         default: "none"
+      shadow_timeout_minutes:
+        description: "Timeout of the settlement-shadow job, in minutes (default 25). Set 1 to force a timeout and confirm the night's store commit still lands."
+        required: false
+        default: "25"
 
 permissions:
   actions: write  # dispatch session-integrity on the commit this run pushes
@@ -391,17 +395,27 @@ jobs:
   #   it could only ever report "nothing to do" and the comparison with the
   #   real fetch (scripts/compare_settlement_shadow.py) would be vacuous.
   # - full-universe runs only: a crypto-only or close run is a different
-  #   population and would poison the ten-night sample.
+  #   population and would poison the ten-night sample. The gate's literal is
+  #   the MODE the fetch step assigns; tests/test_ci_guards.py ties the two, so
+  #   renaming the mode cannot silently stop the shadow. A manual full-universe
+  #   dispatch also runs it; its report records `event`, so a second same-date
+  #   sample is identifiable and discountable.
+  # - `shadow_timeout_minutes` (dispatch input, default 25) is the falsifying
+  #   control for the isolation: dispatch with 1 and the night's `[data]`
+  #   commit must still land on main.
   # - `continue-on-error`: the shadow has no consumer but the artifact, and
   #   its absence is the signal. It must not turn the run red or open a
-  #   failure issue for a measurement.
+  #   failure issue for a measurement. A night that served nothing (exit 2)
+  #   still uploads a report, so absence is not the whole signal: the
+  #   comparison script refuses a served=0 report, and the ten-night sample
+  #   counts only reports it accepted.
   # - read-only: contents: read, and the script writes under
   #   data/market/settlement_shadow/ (gitignored) and nowhere else.
   settlement-shadow:
     needs: fetch
     if: ${{ always() && needs.fetch.outputs.mode == 'full universe' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: ${{ fromJSON(inputs.shadow_timeout_minutes || '25') }}
     continue-on-error: true
     permissions:
       contents: read
