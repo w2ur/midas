@@ -69,6 +69,8 @@ LIVE_ONLY_TESTS = {
     # Holds the METHODOLOGY store-gap entry to the counts the backfill commit
     # inserted; core ships neither the document nor the store history.
     "test_store_gap_disclosure.py",
+    # Holds the METHODOLOGY close-runs entry to the live ledger and store.
+    "test_close_runs_disclosure.py",
     # Import a live-only script that core does not ship.
     "test_attest_ledger.py",
     "test_attest_verify.py",
