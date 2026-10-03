@@ -57,3 +57,15 @@ def test_stale_worker_deploy_is_dated_by_the_recorded_modification():
     for where, day in _stale_deploy_dates().items():
         assert day == m.group(1), f"{where} dates the stale deploy {day}, not {m.group(1)}"
 
+
+def test_weekday_cron_history_has_no_gap_day():
+    """Regression: `0 20` held 'before 2026-09-28' and `0-4` 'from 2026-09-29', so
+    09-28 (whose session ran at 20:00) was covered by neither."""
+    from datetime import date, timedelta
+
+    skill = (REPO_ROOT / ".claude/skills/midas-session-cadence/SKILL.md").read_text()
+    line = next(l for l in skill.splitlines() if l.startswith("- **Weekday session**"))
+    old = re.search(r"`0 20 \* \* 1-5` through (\d{4}-\d{2}-\d{2})", line)
+    new = re.search(r"`0 22 \* \* 0-4` from (\d{4}-\d{2}-\d{2})", line)
+    assert old and new, "the skill must state both ends of the 0 20 -> 0-4 handover"
+    assert date.fromisoformat(new.group(1)) - date.fromisoformat(old.group(1)) == timedelta(days=1)
