@@ -303,11 +303,16 @@ jobs:
       # each date: without it a gap ages out of the script's lookback and the
       # next green run closes the issue as "Recovered" on a store that still
       # lacks the day (follow-up money review r6, I1).
+      #
+      # data/market/instrument_status.json records every symbol the ingest
+      # tripwire refused as `suspended` until it is adjudicated (plan
+      # 2026-10-03, Stage 1.2). A status that died with the runner would leave
+      # the frozen symbol looking healthy the next night.
       - name: Commit and push updates
         if: ${{ !cancelled() && steps.fetch.outputs.committable == 'true' }}
         uses: ./.github/actions/push-with-retry
         with:
-          paths: data/market/ohlcv/ data/market/quarantine/ data/market/corporate_actions.jsonl data/market/store_gaps.json data/portfolios/ data/tickers.json
+          paths: data/market/ohlcv/ data/market/quarantine/ data/market/corporate_actions.jsonl data/market/store_gaps.json data/market/instrument_status.json data/portfolios/ data/tickers.json
           message: "[data] ${{ steps.today.outputs.date }} OHLCV update${{ steps.fetch.outputs.subject_suffix }}"
 
       # The weekend valuation refresh reads the crypto bars this run just

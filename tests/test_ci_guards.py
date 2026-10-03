@@ -1750,6 +1750,43 @@ class TestStoreGapLedgerIsCommitted:
         assert rel.as_posix() == self.LEDGER
 
 
+class TestInstrumentStatusRegistryIsCommitted:
+    """The instrument status registry must leave the runner (plan 2026-10-03, 1.2).
+
+    `fetch_ohlcv.py` marks a symbol `suspended` when the ingest tripwire
+    refuses one of its rows, and only adjudication clears it. A registry that
+    died with the runner would forget the suspension overnight, and the broker
+    rail built on it (Stage 1.3) would see a frozen symbol as healthy.
+    """
+
+    REGISTRY = "data/market/instrument_status.json"
+    WORKFLOWS = ["fetch-ohlcv.yml", "resweep-held-tickers.yml"]
+
+    @pytest.mark.parametrize("workflow", WORKFLOWS)
+    def test_the_registry_is_in_the_push_paths(self, workflow):
+        spec = yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / workflow).read_text(encoding="utf-8")
+        )
+        steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+        paths = " ".join(
+            str(s["with"]["paths"])
+            for s in steps
+            if str(s.get("uses", "")).endswith("actions/push-with-retry")
+        )
+        assert paths, f"{workflow} has no push-with-retry step"
+        assert self.REGISTRY in paths.split(), (
+            f"{workflow} does not stage {self.REGISTRY}; a suspension would "
+            "die with the runner"
+        )
+
+    def test_the_script_writes_the_path_the_workflows_stage(self):
+        from engine.config import get_config
+        from engine.instrument_status import registry_path
+
+        rel = registry_path().relative_to(get_config().data_dir)
+        assert rel.as_posix() == self.REGISTRY
+
+
 class TestCryptoWatcherIsDispatchOnly:
     """The hourly crypto cron must stay retired (2026-08-18).
 

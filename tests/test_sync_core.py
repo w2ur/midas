@@ -399,6 +399,9 @@ def test_cast_tests_reclaimed_into_manifest():
         # Asserts on the live desk's committed holdings, pending orders and
         # inbox ledger — core ships none of that state.
         "test_rails_live_coverage.py",
+        # Holds the committed instrument status registry to the committed
+        # quarantine, ledger and store — core ships none of them.
+        "test_instrument_status_live.py",
         # Drives scripts/check_append_only.py, a live-repo CI tool.
         "test_append_only_gate.py",
         # Drives scripts/check_session_freshness.py, the same shape: a

@@ -97,6 +97,9 @@ LIVE_ONLY_TESTS = {
     # Reads the committed portfolios, pending orders, inbox ledger and
     # universes — live desk state, none of which core ships.
     "test_rails_live_coverage.py",
+    # Holds the committed instrument status registry to the committed
+    # quarantine, corporate-action ledger and price store; core ships none.
+    "test_instrument_status_live.py",
     # Drives scripts/check_append_only.py, live-repo CI infrastructure that is
     # not in CORE_SCRIPTS.
     "test_append_only_gate.py",

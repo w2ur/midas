@@ -39,6 +39,7 @@ from engine.corporate_actions import (
     ratios_agree,
 )
 from engine.fees import classify_ticker
+from engine import instrument_status
 from engine.quotes import vendor_unit_scale
 from engine.ohlcv_ingest import (
     MergeResult,
@@ -645,7 +646,41 @@ def _write_rows(
         quarantine = (
             get_config().data_dir / "data" / "market" / "quarantine" / f"{symbol}.jsonl"
         )
-    return merge_rows(path, df, revise_from, quarantine=quarantine)
+    merged = merge_rows(path, df, revise_from, quarantine=quarantine)
+    if merged.quarantined:
+        _suspend(symbol, merged)
+    return merged
+
+
+def _suspend(symbol: str, merged: MergeResult) -> None:
+    """A tripwire refusal marks the symbol ``suspended`` in the status registry.
+
+    The store has stopped short of what the vendor served, so its newest close
+    may belong to a different instrument (CTVA 2026-10-01). Only adjudication
+    clears it: `_adjudicate` once its re-merge lands, or a human. A registry
+    that cannot be read is left untouched and said so: `status_of` already
+    answers ``suspended`` for every symbol while it is unreadable, and the run
+    is red anyway, because the refusal itself exits non-zero.
+    """
+    dates = sorted(r.date for r in merged.refused)
+    since = dates[0] if dates else date.today().isoformat()
+    try:
+        instrument_status.mark_suspended(
+            symbol,
+            since=since,
+            source="tripwire",
+            reason=(
+                f"ingest tripwire refused {merged.quarantined} row(s)"
+                + (f" ({', '.join(dates)})" if dates else "")
+                + "; see data/market/quarantine/"
+            ),
+        )
+    except instrument_status.RegistryUnreadable as exc:
+        print(
+            f"ERROR: instrument status registry unreadable ({exc}); "
+            f"{symbol} not recorded as suspended (every lookup fails closed).",
+            file=sys.stderr,
+        )
 
 
 def _read_store_rows(path: Path) -> list[dict]:
@@ -873,6 +908,17 @@ def _adjudicate(
             )
             continue
 
+        try:
+            instrument_status.clear(
+                symbol,
+                reason=f"adjudicated: {action.effective} corporate action, re-merged",
+            )
+        except instrument_status.RegistryUnreadable as exc:
+            print(
+                f"ERROR: instrument status registry unreadable ({exc}); "
+                f"{symbol} adjudicated but its status was not cleared.",
+                file=sys.stderr,
+            )
         print(
             f"  ! {symbol}: ADJUDICATED — {action.effective} corporate action, "
             f"shares x{action.shares_ratio:.6g} (price x{action.price_ratio:.6g}), "
