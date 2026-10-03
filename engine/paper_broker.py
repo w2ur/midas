@@ -54,6 +54,7 @@ from engine.quotes import (
 )
 from engine.triggers import (
     delete_pending,
+    list_pending,
     read_cancels,
     save_pending,
 )
@@ -333,17 +334,38 @@ def instrument_refusal_concerns(
     orders_dir: Path | None = None,
     portfolios_dir: Path | None = None,
 ) -> list[str]:
-    """One concern per INSTRUMENT_SUSPENDED refusal in ``trade_date``'s inboxes.
+    """One concern per INSTRUMENT_SUSPENDED refusal in ``trade_date``'s
+    inboxes, and one per armed conditional order on a suspended instrument.
 
     Each names the order, its ticker and every book holding that ticker, so a
     refused SELL (a trapped position) is visible in the session's own commit
     trailers, which session-integrity files as an issue, rather than only in
     an inbox row nobody reads (plan 2026-10-03, review SHOULD 5). The ticker
-    is joined back from the outboxes by order_id, across every date, because
-    a fired conditional lands in the inbox of its fire date.
+    is joined back from the outboxes by order_id, across every date.
+
+    The second half reads state, not a date: the watcher keeps a fire the
+    suspension refuses armed (``scripts.check_triggers.HELD_ON_FIRE``) and
+    writes no inbox row, and it runs between sessions and at weekends, so an
+    inbox-dated scan would never see it. Every pending file in every channel
+    is checked against the registry, so the order is named every session
+    until a human adjudicates the instrument or the order expires.
     """
     orders_dir = orders_dir if orders_dir is not None else get_config().orders_dir
     concerns: list[str] = []
+    for pending_dir in [orders_dir / "pending", *sorted(orders_dir.glob("*-pending"))]:
+        for armed in list_pending(pending_dir=pending_dir):
+            status = instrument_status.status_of(armed.ticker)
+            if status is None:
+                continue
+            holders = holding_books(armed.ticker, portfolios_dir)
+            held = ", ".join(holders) if holders else "no book"
+            concerns.append(
+                f"INSTRUMENT_SUSPENDED holds armed order {armed.order_id} "
+                f"({armed.agent_id}, {armed.action} {armed.ticker}, in "
+                f"{pending_dir.name}): {armed.ticker} is {status} in "
+                f"data/market/instrument_status.json and is held by {held}; "
+                "the order cannot fill until a human adjudicates it."
+            )
     for outbox, inbox in _channel_pairs(orders_dir):
         inbox_file = inbox / f"{trade_date.isoformat()}.jsonl"
         if not inbox_file.exists():

@@ -193,6 +193,41 @@ def test_a_sell_of_a_suspended_holding_is_refused_and_names_the_holders(ctva_sto
     assert "agent1, agent2" in concerns[0] and "agent3" not in concerns[0]
 
 
+@pytest.mark.parametrize("channel", ["pending", "manager-pending"])
+def test_an_armed_order_on_a_suspended_ticker_is_named_every_session(ctva_store, channel):
+    """Regression (review of feat/stage1-asof-reads, 2026-10-03): the concern
+    read only the session date's inboxes, so a SELL fired by a weekend crypto
+    pass, or any watcher fire between sessions, was never named. The watcher
+    now holds such a fire armed (HELD_ON_FIRE) and writes no inbox row, so the
+    concern reads the state instead: every armed order, in every channel,
+    on a suspended instrument, whatever date it fired or was authored."""
+    from engine.paper_broker import instrument_refusal_concerns
+    from engine.triggers import save_pending
+
+    pm = _init_portfolio(ctva_store["pm_base"], "agent1", cash=10_000.0)
+    _init_portfolio(ctva_store["pm_base"], "agent2", cash=10_000.0)
+    _hold(pm, "agent1", "CTVA", 5, 70.0)
+    _hold(pm, "agent2", "CTVA", 3, 70.0)
+    order = _make_order("o_sat", "agent1", "SELL", "CTVA", 5)
+    order.trigger = {"op": ">=", "level": 70.0}
+    order.expires = "2026-10-30"
+    save_pending(order, pending_dir=get_config().orders_dir / channel)
+    calm = _make_order("o_calm", "agent1", "SELL", "AAPL", 1)
+    calm.trigger = {"op": ">=", "level": 70.0}
+    calm.expires = "2026-10-30"
+    save_pending(calm, pending_dir=get_config().orders_dir / channel)
+    _seed_registry_from_quarantine({"CTVA": [CTVA_QUARANTINE]})
+
+    # Monday's session: nothing in its own inbox.
+    concerns = instrument_refusal_concerns(
+        date(2026, 10, 5), portfolios_dir=ctva_store["pm_base"]
+    )
+    assert len(concerns) == 1
+    assert "o_sat" in concerns[0] and "SELL CTVA" in concerns[0]
+    assert "agent1, agent2" in concerns[0]
+    assert "o_calm" not in concerns[0]
+
+
 def test_no_refusal_means_no_concern(ctva_store):
     from engine.paper_broker import fill_day, instrument_refusal_concerns
 
