@@ -7,7 +7,7 @@ name: check-triggers-crypto
 # Why this is split from check-triggers.yml (2026-08-17):
 #
 # Crypto is the only asset class whose trigger evaluation can change intraday.
-# engine.triggers.get_current_price fetches crypto live from ccxt/Coinbase and
+# engine.triggers.get_current_quote fetches crypto live from ccxt/Coinbase and
 # reads everything else from the committed OHLCV store, which fetch-ohlcv.yml
 # refreshes once a day — so an hourly sweep of an equity trigger re-reads
 # byte-identical data. Crypto also trades nights and weekends, so this one

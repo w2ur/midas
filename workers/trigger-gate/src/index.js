@@ -234,7 +234,7 @@ export default {
       // invocation, so one pair Coinbase does not serve suppressed the gate for
       // every other order until that order expired — a systematic
       // under-dispatch, the one error direction this gate must never make.
-      // engine.triggers.get_current_price does the same thing: it catches
+      // engine.triggers.get_current_quote does the same thing: it catches
       // everything and returns None for that ticker alone.
       const pairs = [...new Set(candidates.map((o) => o.ticker))];
       const prices = {};

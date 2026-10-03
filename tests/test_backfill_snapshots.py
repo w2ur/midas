@@ -11,6 +11,7 @@ from unittest.mock import patch
 import pytest
 
 from engine.config import get_config
+from engine.ohlcv_store import DatedClose
 from scripts import backfill_snapshots
 
 
@@ -40,7 +41,7 @@ def fake_ohlcv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             return None
         for (t, d), p in sorted(prices.items(), key=lambda kv: kv[0][1], reverse=True):
             if t == ticker and d <= on:
-                return p
+                return DatedClose(p, d)
         return None
 
     monkeypatch.setattr(backfill_snapshots, "latest_close_on_or_before", _fake)

@@ -91,7 +91,8 @@ def _value_positions(
 ) -> float:
     total = 0.0
     for ticker, shares in positions.items():
-        price = latest_close_on_or_before(ticker, on_date)
+        dated = latest_close_on_or_before(ticker, on_date)
+        price = dated.close if dated is not None else None
         if price is None:
             price = _last_trade_price_at_or_before(trades, ticker, on_date)
         if price is None:

@@ -488,7 +488,7 @@ def _process_one(
     quote = latest_price(order.ticker, trade_date)
     if quote is None:
         return _reject(order.order_id, "NO_PRICE_DATA")
-    price, ticker_ccy = quote
+    price, ticker_ccy = quote.price, quote.currency
 
     portfolio = portfolio_manager.load(order.agent_id)
     base_ccy = portfolio.currency
@@ -714,6 +714,7 @@ def execute_triggered_order(
     portfolio_manager: PortfolioManager,
     fire_price: float,
     *,
+    fire_as_of: date | None = None,
     inbox_dir: Path | None = None,
 ) -> Fill | None:
     """Run the rails, then stamp the executing commit SHA on the resulting Fill.
@@ -722,9 +723,18 @@ def execute_triggered_order(
     fills carry the same git provenance (Fill.executed_sha) as same-session market
     fills. A None result (idempotent no-op — already in inbox) is passed through
     unstamped: there is no fill to attribute.
+
+    ``fire_as_of`` is the market date ``fire_price`` belongs to (the store
+    row's date, or the observation date for a live crypto quote), as the
+    watcher's ``engine.triggers.get_current_quote`` reports it.
     """
     fill = _execute_triggered_order(
-        order, trade_date, portfolio_manager, fire_price, inbox_dir=inbox_dir
+        order,
+        trade_date,
+        portfolio_manager,
+        fire_price,
+        fire_as_of=fire_as_of,
+        inbox_dir=inbox_dir,
     )
     if fill is not None:
         fill.executed_sha = _current_commit_sha()
@@ -737,6 +747,7 @@ def _execute_triggered_order(
     portfolio_manager: PortfolioManager,
     fire_price: float,
     *,
+    fire_as_of: date | None = None,
     inbox_dir: Path | None = None,
 ) -> Fill | None:
     """Execute a fired conditional order through the same safety rails as market orders.
@@ -792,12 +803,12 @@ def _execute_triggered_order(
     # currency explicitly rather than pairing the raw value with
     # `ticker_currency` by hand. It must NOT scale: doing so would divide every
     # LSE fire price by 100 a second time.
-    denominated = store_quote(order.ticker, fire_price)
+    denominated = store_quote(order.ticker, fire_price, as_of=fire_as_of)
     if denominated is None:
         f = _reject(order.order_id, "CURRENCY_UNRESOLVED")
         f.trigger_fired = True
         return f
-    fire_price, ticker_ccy = denominated
+    fire_price, ticker_ccy = denominated.price, denominated.currency
 
     # The fire price came from ccxt or from the store; the store is the
     # reference either way. A SELL leans on the position's own avg_cost, as

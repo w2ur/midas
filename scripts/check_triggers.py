@@ -81,7 +81,7 @@ from engine.portfolio import PortfolioManager
 from engine.triggers import (
     delete_pending,
     evaluate_trigger,
-    get_current_price,
+    get_current_quote,
     is_expired,
     list_pending,
 )
@@ -848,7 +848,7 @@ def _process_channel(
     `execute_triggered_order` is never called: it is the broker, and it moves
     the book. The report is written to the log instead.
     """
-    # Late binding: tests monkeypatch `engine.triggers.get_current_price` so we
+    # Late binding: tests monkeypatch `engine.triggers.get_current_quote` so we
     # must call it through the module attribute, not the imported name.
     from engine import triggers as _triggers
 
@@ -877,10 +877,11 @@ def _process_channel(
             summary["report"].append(_report_entry(order, "expired", None, f))
             continue
 
-        price = _triggers.get_current_price(order.ticker, today=today)
-        if price is None:
+        observed = _triggers.get_current_quote(order.ticker, today=today)
+        if observed is None:
             summary["carried"] += 1
             continue
+        price = observed.close
         if not evaluate_trigger(price, order.trigger):
             summary["carried"] += 1
             continue
@@ -896,7 +897,12 @@ def _process_channel(
         # the idempotency scan is scoped to the correct channel.
         try:
             f = execute_triggered_order(
-                order, today, portfolio_manager, fire_price=price, inbox_dir=inbox_dir
+                order,
+                today,
+                portfolio_manager,
+                fire_price=price,
+                fire_as_of=observed.as_of,
+                inbox_dir=inbox_dir,
             )
         except Exception as exc:
             logger.exception(
