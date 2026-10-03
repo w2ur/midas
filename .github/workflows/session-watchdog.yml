@@ -22,8 +22,10 @@ name: session-watchdog
 # neither close cron, so no close run ever fired by itself, and nothing noticed
 # for five days because the repo's own config (wrangler.toml) was correct. A
 # close run that fires lands a `[data] ... OHLCV update (eu close)` / `(us
-# close)` commit on main; none at all after 19:00 UTC means the Worker is not
-# firing them.
+# close)` commit on main; either one missing within the window (19:00 UTC on
+# the day to 19:00 UTC the next) goes red and files an issue naming the side:
+# a one-sided holiday costs one closeable issue, a lost cron would otherwise be
+# silent. Causes: the Worker, the dispatch, or fetch-ohlcv landing nothing.
 
 on:
   schedule:
@@ -60,6 +62,7 @@ jobs:
 
           yesterday=$(date -u -d 'yesterday' +%Y-%m-%d)
           dow=$(date -u -d 'yesterday' +%u)  # 1=Mon..7=Sun
+          window_end=$(date -u -d 'today' +%Y-%m-%d)
 
           if [[ "$dow" -lt 1 || "$dow" -gt 5 ]]; then
             echo "Yesterday ($yesterday) was a weekend — no weekday session expected. Skipping."
@@ -187,6 +190,7 @@ jobs:
 
           yesterday=$(date -u -d 'yesterday' +%Y-%m-%d)
           dow=$(date -u -d 'yesterday' +%u)  # 1=Mon..7=Sun
+          window_end=$(date -u -d 'today' +%Y-%m-%d)
 
           if [[ "$dow" -lt 1 || "$dow" -gt 5 ]]; then
             echo "Yesterday ($yesterday) was a weekend — no close runs expected. Skipping."
@@ -204,18 +208,22 @@ jobs:
           # BEGIN close-run detection
           # Materialise to a file and grep the file (never `git log | grep -q`:
           # the SIGPIPE race the session check's comment describes).
-          # The window opens at 19:00 UTC and has no upper edge on purpose: a
-          # close run the scheduler starts late can land its commit after
-          # midnight, and its subject carries the date it RAN, not the day it
-          # priced.
+          # The window opens at 19:00 UTC on the checked day and closes at
+          # 19:00 UTC the next day (the first moment the next day's own eu
+          # close can land). Past midnight is inside on purpose: a close run
+          # the scheduler starts late can land its commit after midnight, and
+          # its subject carries the date it RAN, not the day it priced. The
+          # upper edge makes a by-hand dispatch after 19:00 on D+1 unable to
+          # count D+1's own close commits as D's.
           close_file="${RUNNER_TEMP:-/tmp}/close-run-subjects.txt"
-          git log origin/main --since="$yesterday 19:00 UTC" --pretty=%s > "$close_file"
+          git log origin/main --since="$yesterday 19:00 UTC" \
+            --until="$window_end 19:00 UTC" --pretty=%s > "$close_file"
           eu=0; us=0
           if grep -Eq '^\[data\] [0-9-]+ OHLCV update \(eu close\)' "$close_file"; then eu=1; fi
           if grep -Eq '^\[data\] [0-9-]+ OHLCV update \(us close\)' "$close_file"; then us=1; fi
           # END close-run detection
 
-          echo "close-run commits since $yesterday 19:00 UTC: eu=$eu us=$us"
+          echo "close-run commits in [$yesterday 19:00, $window_end 19:00) UTC: eu=$eu us=$us"
 
           if [[ "$eu" -eq 1 && "$us" -eq 1 ]]; then
             if [[ -n "$existing" ]]; then
@@ -225,40 +233,43 @@ jobs:
             exit 0
           fi
 
-          if [[ "$eu" -eq 0 && "$us" -eq 0 ]]; then
-            if [[ -z "$existing" ]]; then
-              body_file="${RUNNER_TEMP:-/tmp}/close-run-issue.md"
-          cat > "$body_file" <<EOF
-          The \`session-watchdog\` job found no \`(eu close)\` and no \`(us close)\`
-          OHLCV commit on \`main\` after 19:00 UTC on $yesterday.
+          missing=""
+          [[ "$eu" -eq 0 ]] && missing="(eu close)"
+          [[ "$us" -eq 0 ]] && missing="${missing:+$missing and }(us close)"
 
-          Both are fired by the \`workers/trigger-gate/\` Cloudflare Worker
-          (\`15 19 * * 1-5\` and \`20 21 * * 1-5\`), never by a GitHub cron, so
-          this means the Worker is not firing them. CI cannot read the deployed
-          schedule, so this checks the effect.
+          if [[ -z "$existing" ]]; then
+            body_file="${RUNNER_TEMP:-/tmp}/close-run-issue.md"
+            cat > "$body_file" <<EOF
+          The \`session-watchdog\` job found no $missing OHLCV commit on
+          \`main\` between 19:00 UTC on $yesterday and 19:00 UTC the next day.
+          Both close runs are expected every weekday: a single missing side is
+          reported too, because a lost cron looks exactly like that.
+
+          The two close runs are fired by the \`workers/trigger-gate/\`
+          Cloudflare Worker (\`15 19 * * 1-5\` and \`20 21 * * 1-5\`), never
+          by a GitHub cron. A missing commit means one of: the Worker did not
+          fire the run, the dispatch failed, or \`fetch-ohlcv\` ran and landed
+          nothing (a crash, or no diff). CI cannot read the deployed schedule,
+          so this checks the effect.
 
           **Where to look**
+          - The \`fetch-ohlcv\` run list for \`workflow_dispatch\` events near
+            19:15 and 21:20 UTC: absent means the Worker, present and red or
+            empty means the fetch.
           - The Worker's registered crons (Cloudflare dashboard or API) against
             \`workers/trigger-gate/wrangler.toml\`. Deploy from an up-to-date
             \`main\`: on 2026-09-28..10-03 the deployed copy held a stale cron
             list and \`wrangler.toml\` was correct.
-          - The \`fetch-ohlcv\` run list for \`workflow_dispatch\` events near
-            19:15 and 21:20 UTC.
-          - A day on which both the US and Europe were closed (a holiday)
-            commits nothing and trips this check; if so, close this issue.
+          - A one-sided market holiday (US-only or EU-only), or a day on which
+            both were closed, commits nothing for that side and trips this
+            check; if so, close this issue.
 
           Detected by [this run]($RUN_URL).
           EOF
-              url=$(gh issue create --title "$title" --body-file "$body_file" | tail -n1)
-              echo "Filed $url"
-            else
-              echo "Issue #$existing already open for $yesterday — not filing a duplicate."
-            fi
-            echo "::error::No close-run commit (eu or us) for $yesterday on main. The Worker is likely not firing them."
-            exit 1
+            url=$(gh issue create --title "$title" --body-file "$body_file" | tail -n1)
+            echo "Filed $url"
+          else
+            echo "Issue #$existing already open for $yesterday — not filing a duplicate."
           fi
-
-          # One of the two is present: a one-sided holiday (US-only or EU-only)
-          # looks identical to one lost dispatch, so this warns and does not
-          # fail.
-          echo "::warning::Only one close-run commit for $yesterday on main (eu=$eu us=$us). A one-sided market holiday looks the same; check the fetch-ohlcv run list if it was not one."
+          echo "::error::No close-run commit $missing for $yesterday on main. The Worker did not fire it, the dispatch failed, or fetch-ohlcv landed nothing; check the fetch-ohlcv run list."
+          exit 1

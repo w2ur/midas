@@ -230,7 +230,7 @@ def test_watchdog_reports_a_genuinely_missing_session(absent_repo, tmp_path):
 def _render_watchdog_issue_body(tmp_path: Path, day: str) -> str:
     """Render the watchdog's issue heredoc exactly as the runner's bash would."""
     lines = _watchdog_run_script().splitlines()
-    start = next(i for i, ln in enumerate(lines) if ln.startswith('cat > "$body_file" <<EOF'))
+    start = next(i for i, ln in enumerate(lines) if ln.strip().startswith('cat > "$body_file" <<EOF'))
     end = next(i for i in range(start + 1, len(lines)) if lines[i] == "EOF")
     script = "\n".join(
         [
@@ -238,6 +238,7 @@ def _render_watchdog_issue_body(tmp_path: Path, day: str) -> str:
             f'yesterday="{day}"',
             'RUN_URL="https://example.invalid/run"',
             f'body_file="{tmp_path}/body.md"',
+            'missing="(eu close)"',
             *lines[start : end + 1],
         ]
     )
@@ -269,6 +270,7 @@ def test_watchdog_issue_names_the_rate_limit_cause(tmp_path):
 # that fires lands a `(eu close)` / `(us close)` commit on main.
 
 CLOSE_DAY = "2026-10-02"  # a Friday
+CLOSE_NEXT_DAY = "2026-10-03"
 
 
 def _close_runs_script() -> str:
@@ -309,7 +311,7 @@ def _dated_repo(tmp_path: Path, commits: list[tuple[str, str]]) -> Path:
 def _run_close_check(repo: Path, tmp_path: Path) -> tuple[int, str, str]:
     """Run the workflow's own script against `repo`, with `gh` recorded.
 
-    Only the two `date -d yesterday` lines are replaced (BSD date has no
+    Only the three `date -d` lines are replaced (BSD date has no
     `-d`); everything after them is the workflow's text, unmodified.
     """
     script = _close_runs_script()
@@ -317,7 +319,11 @@ def _run_close_check(repo: Path, tmp_path: Path) -> tuple[int, str, str]:
         r"^yesterday=\$\(date .*\)$", f'yesterday="{CLOSE_DAY}"', script, flags=re.M
     )
     script = re.sub(r"^dow=\$\(date .*$", "dow=5", script, flags=re.M)
+    script = re.sub(
+        r"^window_end=\$\(date .*$", f'window_end="{CLOSE_NEXT_DAY}"', script, flags=re.M
+    )
     assert CLOSE_DAY in script and "dow=5" in script, "date lines were not substituted"
+    assert CLOSE_NEXT_DAY in script, "window_end was not substituted"
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     gh_log = tmp_path / "gh.log"
@@ -404,21 +410,65 @@ def test_close_run_check_ignores_close_commits_before_the_window(tmp_path):
     assert code == 1, out
 
 
-def test_close_run_check_warns_without_failing_on_a_single_close_commit(tmp_path):
-    """A one-sided market holiday looks like one lost dispatch: warn, no issue."""
+@pytest.mark.parametrize(
+    "present,missing",
+    [("eu", "(us close)"), ("us", "(eu close)")],
+)
+def test_close_run_check_is_red_and_names_the_side_when_one_close_is_lost(
+    tmp_path, present, missing
+):
+    """Regression: a deployed Worker that lost ONE of its two crons used to
+    exit 0 with a warning nobody reads, so the US (or EU) close runs stayed
+    missing indefinitely. A one-sided holiday costs one closeable issue; a
+    lost cron costs unbounded silence."""
     repo = _dated_repo(
         tmp_path,
-        [*_FILLER, ("2026-10-02T19:20:00+0000", "[data] 2026-10-02 OHLCV update (eu close)")],
+        [
+            *_FILLER,
+            (
+                "2026-10-02T19:20:00+0000",
+                f"[data] 2026-10-02 OHLCV update ({present} close)",
+            ),
+        ],
     )
     code, out, gh = _run_close_check(repo, tmp_path)
-    assert code == 0, out
-    assert "::warning::" in out and "issue create" not in gh
+    assert code == 1, out
+    assert "issue create" in gh and "Missing close-run commits 2026-10-02" in gh
+    assert f"::error::No close-run commit {missing}" in out
+    assert f"({present} close)" not in out.split("::error::")[1].split("for 2026")[0]
+
+
+def test_close_run_check_ignores_close_commits_after_the_window(tmp_path):
+    """Regression: with no upper edge, a by-hand run after 19:00 UTC on D+1
+    counted D+1's own close commits as D's and closed D's issue as resolved."""
+    repo = _dated_repo(
+        tmp_path,
+        [
+            *_FILLER,
+            *_SESSION_ONLY,
+            ("2026-10-03T19:20:00+0000", "[data] 2026-10-03 OHLCV update (eu close)"),
+            ("2026-10-03T21:25:00+0000", "[data] 2026-10-03 OHLCV update (us close)"),
+        ],
+    )
+    code, out, gh = _run_close_check(repo, tmp_path)
+    assert code == 1, out
+    assert "eu=0 us=0" in out
+
+
+def test_close_run_issue_names_every_cause_not_only_the_worker(tmp_path):
+    """Regression: a close run can be dispatched and still leave no commit
+    (fetch crash, empty diff); the issue must not blame the Worker alone."""
+    repo = _dated_repo(tmp_path, [*_FILLER, *_SESSION_ONLY])
+    _, out, _ = _run_close_check(repo, tmp_path)
+    assert "likely not firing" not in out and "fetch-ohlcv" in out
+    body = (tmp_path / "close-run-issue.md").read_text()
+    assert "landed" in body and "dispatch failed" in body
 
 
 def test_close_run_issue_body_renders_through_bash(tmp_path):
     """Backticks in the heredoc are command substitutions if unescaped."""
     lines = _close_runs_script().splitlines()
-    start = next(i for i, ln in enumerate(lines) if ln.startswith('cat > "$body_file" <<EOF'))
+    start = next(i for i, ln in enumerate(lines) if ln.strip().startswith('cat > "$body_file" <<EOF'))
     end = next(i for i in range(start + 1, len(lines)) if lines[i] == "EOF")
     script = "\n".join(
         [
@@ -426,12 +476,13 @@ def test_close_run_issue_body_renders_through_bash(tmp_path):
             f'yesterday="{CLOSE_DAY}"',
             'RUN_URL="https://example.invalid/run"',
             f'body_file="{tmp_path}/body.md"',
+            'missing="(eu close)"',
             *lines[start : end + 1],
         ]
     )
     subprocess.run(["bash", "-c", script], check=True, capture_output=True, text=True)
     body = (tmp_path / "body.md").read_text()
-    assert "`(eu close)`" in body and "`workers/trigger-gate/`" in body
+    assert "no (eu close) OHLCV" in body and "`workers/trigger-gate/`" in body
     assert "`wrangler.toml`" in body
 
 
