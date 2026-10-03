@@ -315,8 +315,10 @@ def demo_desk_universes(root: Path = LIVE_ROOT) -> dict[Path, Path]:
 #: step markers, and the mirrored `step_git_commit_push` stages `data/` — so
 #: until 2026-09-25 a fork running the mirrored session committed them (J6
 #: money review round 1, M3). tests/test_sync_core.py checks each line is
-#: ignored in live too.
-CORE_REQUIRED_IGNORES = ("data/session_state/",)
+#: ignored in live too. `data/market/settlement_shadow/` is where the mirrored
+#: `fetch_ohlcv.py --settlement-shadow` writes its report (a live-only
+#: measurement job, but the flag ships with the mirrored script).
+CORE_REQUIRED_IGNORES = ("data/session_state/", "data/market/settlement_shadow/")
 
 _GITIGNORE = Path(".gitignore")
 _REQUIRED_IGNORES_HEADER = "# Required by the mirrored engine (scripts/sync_core.py CORE_REQUIRED_IGNORES)"
