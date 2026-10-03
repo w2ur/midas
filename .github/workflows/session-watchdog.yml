@@ -18,7 +18,7 @@ name: session-watchdog
 # The `close-runs` job beside it checks an EFFECT, not a config: the two
 # same-evening close runs (eu 19:15, us 21:20 UTC) are fired by a Cloudflare
 # Worker whose deployed schedule cannot be read from CI without a Cloudflare
-# secret. From 2026-09-28 the deployed Worker held the pre-move crypto cron and
+# secret. From 2026-09-29 the deployed Worker held the pre-move crypto cron and
 # neither close cron, so no close run ever fired by itself, and nothing noticed
 # for five days because the repo's own config (wrangler.toml) was correct. A
 # close run that fires lands a `[data] ... OHLCV update (eu close)` / `(us
@@ -257,7 +257,7 @@ jobs:
             empty means the fetch.
           - The Worker's registered crons (Cloudflare dashboard or API) against
             \`workers/trigger-gate/wrangler.toml\`. Deploy from an up-to-date
-            \`main\`: on 2026-09-28..10-03 the deployed copy held a stale cron
+            \`main\`: on 2026-09-29..10-03 the deployed copy held a stale cron
             list and \`wrangler.toml\` was correct.
           - A one-sided market holiday (US-only or EU-only), or a day on which
             both were closed, commits nothing for that side and trips this
