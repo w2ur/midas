@@ -655,6 +655,13 @@ def test_cancellation_is_not_an_alertable_failure(tmp_path):
 
 _NON_OUTCOME_FAILURE_ISSUE_JOBS = {("session-integrity.yml", "concerns")}
 
+#: Jobs a workflow's outcome reporter deliberately does NOT watch. The
+#: settlement shadow is a measurement whose only consumer is its uploaded
+#: artifact (its absence is the signal), run `continue-on-error`; an issue for
+#: it would be the alert-fatigue this reporter exists to prevent.
+#: `TestSettlementShadowIsASeparateJob` pins its isolation from `fetch`.
+_UNWATCHED_MEASUREMENT_JOBS = {("fetch-ohlcv.yml", "settlement-shadow")}
+
 #: Workflows reporting once per SCOPE rather than once: reporter job -> the
 #: jobs it must watch. session-integrity keys commit-scoped failures to the
 #: commit so a later green commit cannot close them (round 4, I-B).
@@ -721,7 +728,11 @@ def test_alerting_workflows_report_their_outcome():
         )
 
         outcome = step["with"]["outcome"]
-        guarded_jobs = set(workflow["jobs"]) - {job_name}
+        guarded_jobs = {
+            j
+            for j in workflow["jobs"]
+            if j != job_name and (name, j) not in _UNWATCHED_MEASUREMENT_JOBS
+        }
         if guarded_jobs:
             # A dedicated reporting job's own `job.status` is always success —
             # it would report green on every red run. It must aggregate the
@@ -4201,7 +4212,14 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         for name in _main_writers():
             spec = _workflow_specs()[name]
             assert spec["permissions"].get("actions") == "write", f"{name}: cannot dispatch"
-            steps = [s for job in spec["jobs"].values() for s in job["steps"]]
+            # A measurement job that never writes main is not part of the
+            # writer's step order (see _UNWATCHED_MEASUREMENT_JOBS).
+            steps = [
+                s
+                for job_name, job in spec["jobs"].items()
+                if (name, job_name) not in _UNWATCHED_MEASUREMENT_JOBS
+                for s in job["steps"]
+            ]
             dispatch = [s for s in steps if s.get("uses") == DISPATCH_USES]
             assert len(dispatch) == 1, f"{name}: no session-integrity dispatch step"
             step = dispatch[0]
@@ -4877,3 +4895,88 @@ class TestTheWeekendRefreshFollowsTheCryptoBars:
         )
         on = spec[True] if True in spec else spec["on"]
         assert "workflow_dispatch" in on
+
+
+class TestSettlementShadowIsASeparateJob:
+    """Stage 2.2: the settlement-window shadow must never endanger the fetch.
+
+    `fetch` already holds a ~13 minute run inside a 30 minute timeout, and a
+    cancelled job commits nothing. The shadow therefore lives in its own job
+    (`needs: fetch`, `if: always()`, its own `timeout-minutes`), and the fetch
+    job must carry no shadow step. A shadow overrunning inside `fetch` would
+    discard the night's store; these pins make that move go red.
+    """
+
+    WORKFLOW = REPO_ROOT / ".github" / "workflows" / "fetch-ohlcv.yml"
+
+    def _spec(self):
+        return yaml.safe_load(self.WORKFLOW.read_text(encoding="utf-8"))
+
+    @staticmethod
+    def _assert_isolated(spec):
+        job = spec["jobs"]["settlement-shadow"]
+        assert job["needs"] == "fetch"
+        assert str(job["if"]).lstrip("${} ").startswith("always()")
+        assert isinstance(job["timeout-minutes"], int) and job["timeout-minutes"] > 0
+        # Its failure must not turn the run red or file an issue.
+        assert job["continue-on-error"] is True
+        assert job["permissions"] == {"contents": "read"}
+        assert "--settlement-shadow" in " ".join(s.get("run", "") for s in job["steps"])
+        # The store it measures is the one the run STARTED from: against the
+        # post-fetch store the comparison with the real fetch is vacuous.
+        checkout = next(
+            s for s in job["steps"] if str(s.get("uses", "")).startswith("actions/checkout")
+        )
+        assert checkout["with"]["ref"] == "${{ github.sha }}"
+        fetch = spec["jobs"]["fetch"]
+        for step in fetch["steps"]:
+            assert "settlement" not in json.dumps(step).lower(), step.get("name")
+        assert fetch["timeout-minutes"] == 30
+
+    def test_the_shadow_is_isolated_from_the_fetch_job(self):
+        self._assert_isolated(self._spec())
+
+    def test_the_isolation_pins_can_fail(self):
+        """Control: each way of coupling the shadow to `fetch` goes red."""
+        import copy
+
+        def mutated(change):
+            spec = copy.deepcopy(self._spec())
+            change(spec)
+            return spec
+
+        def into_fetch(spec):
+            shadow = spec["jobs"]["settlement-shadow"]["steps"][-2]
+            spec["jobs"]["fetch"]["steps"].append(shadow)
+
+        def drop_needs(spec):
+            del spec["jobs"]["settlement-shadow"]["needs"]
+
+        def drop_always(spec):
+            spec["jobs"]["settlement-shadow"]["if"] = "${{ needs.fetch.result == 'success' }}"
+
+        def drop_timeout(spec):
+            del spec["jobs"]["settlement-shadow"]["timeout-minutes"]
+
+        def post_fetch_store(spec):
+            checkout = spec["jobs"]["settlement-shadow"]["steps"][0]
+            del checkout["with"]["ref"]
+
+        for change in (into_fetch, drop_needs, drop_always, drop_timeout, post_fetch_store):
+            with pytest.raises((AssertionError, KeyError)):
+                self._assert_isolated(mutated(change))
+
+    def test_the_report_is_uploaded_and_never_committed(self):
+        spec = self._spec()
+        job = spec["jobs"]["settlement-shadow"]
+        upload = next(
+            s for s in job["steps"] if str(s.get("uses", "")).startswith("actions/upload-artifact")
+        )
+        assert upload["if"] == "always()"
+        assert upload["with"]["path"] == "data/market/settlement_shadow/"
+        ignored = (REPO_ROOT / ".gitignore").read_text().splitlines()
+        assert "data/market/settlement_shadow/" in ignored
+        push = next(
+            s for s in spec["jobs"]["fetch"]["steps"] if s.get("name") == "Commit and push updates"
+        )
+        assert "settlement_shadow" not in push["with"]["paths"]
