@@ -27,7 +27,8 @@ Per symbol, since ``--since`` (default 2026-08-01):
 - ``value_eur`` median daily traded value (volume x close, converted to EUR) over
                 the last ``--value-days`` rows. Instruments that carry no
                 volume (FX pairs, indices) cannot be ranked; they are always
-                kept and flagged.
+                kept and flagged. Currencies the store has no pair for (SEK,
+                NOK, DKK, PLN) use fixed approximate rates, for ranking only.
 
 Nothing is written, fetched or committed. Exit 0 on a printed table; 2 when the
 inputs cannot be read (an empty store is unknown, never "no incidents").
@@ -149,13 +150,31 @@ class NoFxRate(Exception):
         self.currency = currency
 
 
+#: EUR per one unit, used ONLY to rank symbols whose currency has no pair in the
+#: store (it holds 10 `=X` pairs, none for these). Approximate on purpose: a
+#: ranking by traded value tolerates a ~10% rate error, and nothing here is ever
+#: written to the store or used to value a position. DKK is pegged to the euro.
+RANKING_ONLY_EUR_RATES: dict[str, float] = {
+    "SEK": 0.090,
+    "NOK": 0.085,
+    "DKK": 0.134,
+    "PLN": 0.235,
+}
+
+
 def _median_value_eur(
-    symbol: str, rows: list[tuple[str, float | None, float | None]], days: int
+    symbol: str,
+    rows: list[tuple[str, float | None, float | None]],
+    days: int,
+    approx_used: set[str] | None = None,
 ) -> float | None:
     """Median daily traded value in EUR; None when there is no volume.
 
     Raises `NoFxRate` rather than return local units: a wrong currency still
-    ranks, so that failure has no symptom (SEK/NOK ~11x too high).
+    ranks, so that failure has no symptom (SEK/NOK ~11x too high). A currency the
+    store has no rate for falls back to `RANKING_ONLY_EUR_RATES` and is recorded
+    in ``approx_used``; one in neither raises. An unresolved currency (None) is
+    unrankable too, never assumed to be EUR.
     """
     recent = sorted(rows)[-days:]
     values = [c * v for _, c, v in recent if c and v and v > 0]
@@ -169,7 +188,12 @@ def _median_value_eur(
         return local
     converted = fx.to_eur(local, ccy)
     if converted is None:
-        raise NoFxRate(ccy)
+        rate = RANKING_ONLY_EUR_RATES.get(ccy)
+        if rate is None:
+            raise NoFxRate(ccy)
+        if approx_used is not None:
+            approx_used.add(ccy)
+        return local * rate
     return converted
 
 
@@ -314,6 +338,7 @@ def build_rows(
     pool = sorted(set(store) & (universe | held | ordered | bench))
 
     missing_fx: dict[str, list[str]] = {}
+    approx_used: set[str] = set()
 
     def make_row(s: str, *, retired: bool) -> SymbolRow:
         r = SymbolRow(
@@ -325,7 +350,7 @@ def build_rows(
             in_universe=s in universe,
         )
         try:
-            r.value_eur = _median_value_eur(s, store[s], value_days)
+            r.value_eur = _median_value_eur(s, store[s], value_days, approx_used)
         except NoFxRate as exc:
             r.no_fx = True
             missing_fx.setdefault(exc.currency, []).append(s)
@@ -366,6 +391,7 @@ def build_rows(
         )
 
     meta = {
+        "approx_fx": sorted(approx_used),
         "missing_fx": {c: len(v) for c, v in sorted(missing_pool.items())},
         "since": since,
         "end": end,
@@ -426,6 +452,9 @@ def format_report(
       f"{meta['bucket_wide_candidates']} (bucket, date) pairs")
     unrank = sum(1 for r in rows if r.value_eur is None and not r.no_fx)
     w(f"  {unrank} symbols carry no volume series and cannot be ranked; always kept")
+    if meta.get("approx_fx"):
+        w(f"  NOTE: {', '.join(meta['approx_fx'])} have no rate in the store; ranked with fixed "
+          f"approximate rates (RANKING_ONLY_EUR_RATES), good enough to order, not to value")
     nofx = sum(1 for r in rows if r.no_fx)
     if nofx:
         w(f"  WARNING: {nofx} symbols have no EUR rate ({meta.get('missing_fx')}); unrankable, "

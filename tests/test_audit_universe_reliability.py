@@ -145,7 +145,7 @@ class TestMissingFx:
     def test_refuses_local_units_when_no_rate_exists(self, monkeypatch):
         # Regression: a None rate fell back to the unconverted local value, so
         # SEK/NOK/DKK/PLN names ranked 4-11x too high with no symptom.
-        monkeypatch.setattr(audit, "ticker_currency", lambda s: "SEK")
+        monkeypatch.setattr(audit, "ticker_currency", lambda s: "XYZ")
         monkeypatch.setattr(audit.fx, "to_eur", lambda amount, ccy: None)
         with pytest.raises(audit.NoFxRate):
             audit._median_value_eur("ERIC-B.ST", self.ROWS, 60)
@@ -154,6 +154,22 @@ class TestMissingFx:
         monkeypatch.setattr(audit, "ticker_currency", lambda s: "SEK")
         monkeypatch.setattr(audit.fx, "to_eur", lambda amount, ccy: amount / 10)
         assert audit._median_value_eur("ERIC-B.ST", self.ROWS, 60) == 100.0
+
+    def test_a_currency_without_a_store_rate_ranks_on_the_approximate_rate(self, monkeypatch):
+        # Regression: SEK/NOK/DKK/PLN made the default run exit 2, and the only
+        # escape put 111 symbols in every cut's floor.
+        monkeypatch.setattr(audit, "ticker_currency", lambda s: "SEK")
+        monkeypatch.setattr(audit.fx, "to_eur", lambda amount, ccy: None)
+        used: set[str] = set()
+        v = audit._median_value_eur("ERIC-B.ST", self.ROWS, 60, used)
+        assert v == pytest.approx(1000.0 * audit.RANKING_ONLY_EUR_RATES["SEK"])
+        assert used == {"SEK"}
+
+    def test_a_currency_in_neither_source_still_refuses(self, monkeypatch):
+        monkeypatch.setattr(audit, "ticker_currency", lambda s: "XYZ")
+        monkeypatch.setattr(audit.fx, "to_eur", lambda amount, ccy: None)
+        with pytest.raises(audit.NoFxRate):
+            audit._median_value_eur("X.ZZ", self.ROWS, 60)
 
     def test_an_unresolved_currency_is_unrankable_not_eur(self, monkeypatch):
         # Regression: None was treated as EUR, so the raw local value ranked.
