@@ -54,6 +54,7 @@ from engine.quotes import (
 )
 from engine.triggers import (
     delete_pending,
+    is_crypto_ticker,
     list_pending,
     read_cancels,
     save_pending,
@@ -473,7 +474,17 @@ def _stale_sell_concern(
 
 
 def _armed_stale_concern(armed: Order, channel: str, trade_date: date) -> str | None:
-    """The concern for an armed order whose ticker's close fails STALE_PRICE."""
+    """The concern for an armed order whose ticker's close fails STALE_PRICE.
+
+    None for an allowlisted crypto pair (`engine.triggers.is_crypto_ticker`):
+    the watcher never fires one on the store. `get_current_quote` prices it
+    live from ccxt and dates the quote the day it runs, so the fire path's
+    STALE_PRICE reads lag 0 whatever the store holds, and a frozen store
+    series would name a live stop as dead. A pair outside the allowlist
+    (HBAR-USD) is priced from the store on the fire path too, so it is judged.
+    """
+    if is_crypto_ticker(armed.ticker):
+        return None
     quote = latest_price(armed.ticker, trade_date)
     if quote is None or not _stale(armed.ticker, quote.as_of, trade_date):
         return None
