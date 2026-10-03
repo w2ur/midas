@@ -656,10 +656,19 @@ def test_the_settlement_shadow_output_dir_is_a_required_core_ignore():
     """The mirrored fetch_ohlcv carries --settlement-shadow; its report dir must
     be ignored in core too, or a fork's session commit would stage it. Derived
     from the directory the code writes, so a move of it goes red here."""
-    import inspect
+    import sys
 
     import scripts.fetch_ohlcv as fo
+    from engine.config import get_config
 
-    src = inspect.getsource(fo.main)
-    assert '"settlement_shadow"' in src
-    assert "data/market/settlement_shadow/" in sync_core.CORE_REQUIRED_IGNORES
+    captured = {}
+    mp = pytest.MonkeyPatch()
+    try:
+        mp.setattr(fo, "_all_symbols", lambda: ["AAA"])
+        mp.setattr(fo, "run_settlement_shadow", lambda symbols, end, out_dir: captured.update(out=out_dir) or 0)
+        mp.setattr(sys, "argv", ["fetch_ohlcv.py", "--settlement-shadow"])
+        assert fo.main() == 0
+    finally:
+        mp.undo()
+    written = captured["out"].resolve().relative_to(get_config().data_dir.resolve())
+    assert f"{written.as_posix()}/" in sync_core.CORE_REQUIRED_IGNORES
