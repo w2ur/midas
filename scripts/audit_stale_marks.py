@@ -24,7 +24,8 @@ instead.
 One class is excluded from that test because it is late by design, not by the
 vendor: since the 2026-09-28 cadence move a session prices the day it runs on,
 and inside that row crypto, FX and futures mark at the previous completed bar
-(CLAUDE.md, Session Cadence; METHODOLOGY ``#same-day-close-2026-09-28``). Hindsight
+(CLAUDE.md, Session Cadence; METHODOLOGY ``#same-day-close-2026-09-28``), as do
+the `.F` and `.NYB` listings, which no evening close run collects. Hindsight
 always finds that day's bar later, so a mark of that class, in a row dated on
 its own session's day, priced at the newest close before the row's date, with
 the only newer close being the row's own date, is reported separately as
@@ -53,7 +54,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from engine.market_calendar import store_bucket  # noqa: E402
+from engine.market_calendar import store_close_run_bucket  # noqa: E402
 
 SESSION_SUBJECT = re.compile(r"^chore: weekday session (\d{4}-\d{2}-\d{2})\b")
 SNAPSHOTS_GLOB = "data/portfolios/*/snapshots.json"
@@ -143,8 +144,10 @@ def newer_served(raw: bytes | None, after: str, on_or_before: str) -> str | None
 
 
 def marks_at_previous_bar(ticker: str) -> bool:
-    """Crypto, FX and futures: marked at the previous completed bar by design."""
-    return ticker.endswith("=F") or store_bucket(ticker) in ("crypto", "fx")
+    """Marked at the previous completed bar by design: every symbol no
+    same-evening close run collects (crypto, FX, futures, and the `.F` and
+    `.NYB` listings, which only the morning run's previous-day rule fetches)."""
+    return store_close_run_bucket(ticker) is None
 
 
 def _day_before(d: str) -> str:
@@ -292,7 +295,7 @@ def report(marks: list[Mark], sessions: int, since: str) -> str:
     by_design = [m for m in marks if m.late and m.by_design]
     if by_design:
         lines.append(
-            f"Crypto/FX/futures marks at the previous completed bar by design "
+            f"Crypto/FX/futures/.F/.NYB marks at the previous completed bar by design "
             f"(not counted stale): {len(by_design)}"
         )
     if unpriced:
