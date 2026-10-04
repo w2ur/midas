@@ -17,7 +17,7 @@ needs a runner.
 
 ## Close runs (since 2026-09-28)
 
-The same Worker carries two more crons, `15 19 * * 1-5` and `20 21 * * 1-5`,
+The same Worker carries two more crons, `15 19 * * MON-FRI` and `20 21 * * MON-FRI`,
 which `workflow_dispatch` `fetch-ohlcv.yml` with `close_run=eu` and
 `close_run=us`: the same-evening collection of each day's cash-equity closes,
 one bucket per pass, after that bucket's markets have closed. They are here

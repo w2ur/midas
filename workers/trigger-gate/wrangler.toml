@@ -35,4 +35,4 @@ workers_dev = false
 # no deadline: fetch-ohlcv.yml's 06:00 cron started 4 h 06 to 6 h 57 late on
 # every run from 2026-09-17 to 09-28. Cloudflare's cron fires to the minute,
 # and a workflow_dispatch starts within one.
-crons = ["0 0-21,23 * * *", "15 19 * * 1-5", "20 21 * * 1-5"]
+crons = ["0 0-21,23 * * *", "15 19 * * MON-FRI", "20 21 * * MON-FRI"]
