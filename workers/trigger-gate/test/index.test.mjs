@@ -159,7 +159,7 @@ test("the European close cron dispatches fetch-ohlcv with close_run=eu and consu
   // dispatch of check-triggers-crypto.yml. On a close-run cron it must be
   // neither read nor acted on — the fetch is the whole job.
   const calls = stubFetch({ orders: [btc], prices: { "BTC-EUR": 150 } });
-  await worker.scheduled({ cron: "15 19 * * 1-5" }, ENV, {});
+  await worker.scheduled({ cron: "15 19 * * MON-FRI" }, ENV, {});
   assert.equal(calls.dispatches, 1);
   assert.match(calls.dispatched[0].url, /\/actions\/workflows\/fetch-ohlcv\.yml\/dispatches$/);
   assert.deepEqual(calls.dispatched[0].body, { ref: "main", inputs: { close_run: "eu" } });
@@ -168,7 +168,7 @@ test("the European close cron dispatches fetch-ohlcv with close_run=eu and consu
 
 test("the US close cron dispatches close_run=us", async () => {
   const calls = stubFetch({ orders: [], prices: {} });
-  await worker.scheduled({ cron: "20 21 * * 1-5" }, ENV, {});
+  await worker.scheduled({ cron: "20 21 * * MON-FRI" }, ENV, {});
   assert.deepEqual(calls.dispatched.map((d) => d.body.inputs), [{ close_run: "us" }]);
 });
 
@@ -194,7 +194,7 @@ test("a refused close-run dispatch files the failure issue and rethrows", async 
   // A close run that silently fails to start is the morning-only regime back
   // for that day, with nothing saying so. The Worker's own alerting covers it.
   const calls = stubFetch({ orders: [], prices: {}, dispatchFails: true });
-  await assert.rejects(() => worker.scheduled({ cron: "15 19 * * 1-5" }, ENV, {}), /500/);
+  await assert.rejects(() => worker.scheduled({ cron: "15 19 * * MON-FRI" }, ENV, {}), /500/);
   assert.deepEqual(calls.issuesCreated, ["trigger-gate worker failing"]);
 });
 
@@ -204,6 +204,6 @@ test("a clean close-run invocation closes an open failure issue", async () => {
     prices: {},
     openIssues: [{ number: 7, title: "trigger-gate worker failing" }],
   });
-  await worker.scheduled({ cron: "20 21 * * 1-5" }, ENV, {});
+  await worker.scheduled({ cron: "20 21 * * MON-FRI" }, ENV, {});
   assert.equal(calls.issuesClosed.length, 1);
 });

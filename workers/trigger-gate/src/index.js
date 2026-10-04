@@ -32,8 +32,8 @@ const ISSUE_TITLE = "trigger-gate worker failing";
 // crons declared there and against the session start.
 const FETCH_WORKFLOW_FILE = "fetch-ohlcv.yml";
 export const CLOSE_RUNS = {
-  "15 19 * * 1-5": "eu",
-  "20 21 * * 1-5": "us",
+  "15 19 * * MON-FRI": "eu",
+  "20 21 * * MON-FRI": "us",
 };
 
 // Both pending channels: the public one and the allocator's. Kept in step with

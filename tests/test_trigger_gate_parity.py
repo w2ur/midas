@@ -248,8 +248,17 @@ class TestCloseRunCronParity:
         ), f"{us} leaves the session less than 25 min after the US close run starts"
 
     def test_the_close_runs_are_weekday_only(self):
+        # Regression: until 2026-10-04 this pinned "1-5", the defect itself.
+        # Cloudflare numbers day-of-week 1 = Sunday .. 7 = Saturday, so "1-5"
+        # fired Sun-Thu: no Friday close run, and one on Sunday 2026-10-04.
+        # Names cannot be misread under either numbering.
         for cron in _close_runs():
-            assert cron.split()[4] == "1-5", cron
+            assert cron.split()[4] == "MON-FRI", cron
+
+    def test_no_worker_cron_uses_a_numeric_day_of_week(self):
+        for cron in _close_runs():
+            dow = cron.split()[4]
+            assert dow == "*" or not any(ch.isdigit() for ch in dow), cron
 
     def test_the_input_the_worker_dispatches_exists(self):
         import yaml
