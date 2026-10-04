@@ -179,3 +179,26 @@ def test_a_crypto_mark_two_bars_behind_is_still_stale(tmp_path: Path) -> None:
     btc = next(m for m in audit(repo, "2026-08-20")[0] if m.ticker == "BTC-EUR")
     assert btc.price_date == "2026-09-27"
     assert btc.stale and not btc.by_design
+
+
+def test_methodology_states_the_live_rule_as_at_least_half(tmp_path: Path) -> None:
+    """Regression: the METHODOLOGY entry said a mark is listed when "a majority"
+    of its exchange's listings hold a later trading day, but
+    `engine.market_calendar.bucket_lag` counts a tie as trading (at least
+    half, so a tie never understates a lag). A bucket split 3 of 6 lists the
+    mark, and the published rule must say so."""
+    from datetime import date
+
+    from engine.stale_marks import is_stale_mark
+
+    for i in range(6):
+        days = ["2026-09-28", "2026-09-29"] + (["2026-09-30"] if i < 3 else [])
+        (tmp_path / f"M{i}.DE.jsonl").write_text(
+            "".join(json.dumps({"date": d, "close": 1.0}) + "\n" for d in days)
+        )
+    assert is_stale_mark("M5.DE", date(2026, 9, 29), date(2026, 9, 30), store=tmp_path)
+
+    text = (Path(__file__).resolve().parents[1] / "METHODOLOGY.md").read_text(encoding="utf-8")
+    entry = text.split('<a id="stale-marks-2026-10-03"></a>', 1)[1].split("\n- <a id=", 1)[0]
+    assert "(a majority of them)" not in entry
+    assert "at least half of them" in entry

@@ -10,8 +10,8 @@ their 09-29 closes while the rest of `.DE` held 09-30, and published a value
 byte-identical to the day before with no trace of why.
 
 A mark is **stale** when its ticker's bucket (`engine.market_calendar`) holds a
-majority trading date after the mark's `price_date`, on or before the row's
-date: the exchange demonstrably traded and this close is not in the store. That
+trading date (one at least half its live members hold: a tie counts) after the
+mark's `price_date`, on or before the row's date: the exchange demonstrably traded and this close is not in the store. That
 is the broker's stale-price rule with a lag of one rather than two, because a
 disclosure has no tolerance to grant: a one-day-late fund still trades (the
 rail allows it), and its mark is still a day old (this records it).
