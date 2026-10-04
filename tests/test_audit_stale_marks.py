@@ -202,3 +202,19 @@ def test_methodology_states_the_live_rule_as_at_least_half(tmp_path: Path) -> No
     entry = text.split('<a id="stale-marks-2026-10-03"></a>', 1)[1].split("\n- <a id=", 1)[0]
     assert "(a majority of them)" not in entry
     assert "at least half of them" in entry
+
+
+def test_listings_no_close_run_collects_are_marked_at_the_previous_bar() -> None:
+    """Regression: `.F` and `.NYB` are fetched only by the morning run's
+    previous-day rule (`engine.market_calendar.close_run_bucket` is None), so a
+    row dated on its own session's day holds them at D-1 exactly as it holds
+    crypto, FX and futures; the audit counted such a mark stale. A close-run
+    listing one day late stays a candidate for stale."""
+    from scripts.audit_stale_marks import marks_at_previous_bar
+
+    assert marks_at_previous_bar("FRE.F")
+    assert marks_at_previous_bar("DX-Y.NYB")
+    assert marks_at_previous_bar("BTC-EUR") and marks_at_previous_bar("GC=F")
+    assert marks_at_previous_bar("AUDUSD=X") and marks_at_previous_bar("HBAR-USD")
+    assert not marks_at_previous_bar("4GLD.DE")
+    assert not marks_at_previous_bar("AAPL") and not marks_at_previous_bar("^VIX")
