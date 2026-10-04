@@ -19,10 +19,14 @@ rail allows it), and its mark is still a day old (this records it).
 Three edges, stated rather than hidden:
 
 - **A bucket too small to judge** (fewer than ``MIN_BUCKET_POPULATION`` live
-  members: `.F`, `.NYB`) falls back to a weekday comparison: a
-  ``price_date`` before the last weekday on or before the row's date is
-  recorded. Over-disclosing a holiday is the safe side of a disclosure; a
-  weekend is not a holiday, and the weekend refresh writes a Saturday- and a
+  members: `.F`, `.NYB`) falls back to a weekday comparison against the close
+  the session can hold. For a bucket a same-evening close run collects
+  (`engine.market_calendar.close_run_bucket`) that is the last weekday on or
+  before the row's date; for any other (`.F` and `.NYB` both: only the
+  morning run's previous-day rule fetches them) it is the weekday before the
+  row's date, the futures rule below, because a weekday row holds them at
+  D-1 by design. Over-disclosing a holiday is the safe side of a disclosure;
+  a weekend is not a holiday, and the weekend refresh writes a Saturday- and a
   Sunday-dated row for every book, so a Friday close in them is not stale.
 - **Futures** (`=F`) share the no-suffix bucket with US listings, but their
   daily bar completes at 00:00 UTC and the same-evening close runs never fetch
@@ -48,7 +52,7 @@ from collections.abc import Iterable
 from datetime import date, timedelta
 from pathlib import Path
 
-from engine.market_calendar import bucket_lag
+from engine.market_calendar import bucket_lag, store_close_run_bucket
 
 
 def _previous_weekday(d: date) -> date:
@@ -74,6 +78,8 @@ def is_stale_mark(
         return price_date < _previous_weekday(on)
     lag = bucket_lag(ticker, price_date, on, store=store).lag
     if lag is None:
+        if store_close_run_bucket(ticker) is None:
+            return price_date < _previous_weekday(on)
         return price_date < _weekday_on_or_before(on)
     return lag >= 1
 

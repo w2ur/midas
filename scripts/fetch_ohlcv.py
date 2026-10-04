@@ -38,7 +38,9 @@ from engine.corporate_actions import (
     explain_quarantine,
     ratios_agree,
 )
+from engine.market_calendar import EU_CLOSE_SUFFIXES as _EU_CLOSE_SUFFIXES
 from engine.market_calendar import bucket_of
+from engine.market_calendar import close_run_bucket as _close_run_bucket
 from engine import instrument_status
 from engine.quotes import vendor_unit_scale
 from engine.ohlcv_ingest import (
@@ -317,44 +319,12 @@ SMALL_BUCKET_HOLE_SHARE = 0.5
 hole_bucket = bucket_of
 
 
-#: The exchange suffixes the `--close-run eu` evening pass collects. Every
-#: venue here has closed by 16:30 UTC on a winter day (Euronext, Xetra, SIX,
-#: the LSE, the Nordics, Madrid, Milan, Vienna, Warsaw, Athens, Dublin,
-#: Lisbon). NOT `.F`: the Frankfurt floor trades until 20:00 local, so its bar
-#: is still forming when this pass runs. A suffix absent here stays on the
-#: morning run, whose previous-day rule is right for any close hour.
-EU_CLOSE_SUFFIXES = frozenset(
-    {
-        ".AS", ".AT", ".BR", ".CO", ".DE", ".HE", ".IR", ".L", ".LS", ".MC",
-        ".MI", ".OL", ".PA", ".ST", ".SW", ".VI", ".WA",
-    }
-)
-
-
-def close_run_bucket(symbol: str, crypto: frozenset[str] = frozenset()) -> str | None:
-    """Which same-evening pass collects ``symbol``: ``"eu"``, ``"us"`` or None.
-
-    Why there are evening passes at all (measured by `eu-close-probe.yml`,
-    2026-08-14..18): the vendor publishes a cash-equity day's close the same
-    evening — populated from about 1.5 h after the bell, still there at 20:18
-    UTC for Europe — then WITHDRAWS it overnight (a null row by 22:23, still
-    null at 07:22, the US included) and restores it the next afternoon. The
-    06:00 morning run sits inside that withdrawal, and its real start (4-7 h
-    late, GitHub's scheduler) lands on the restoration edge, which is where
-    the store's random one-day holes came from. Collecting in the evening
-    asks for the bar while it exists.
-
-    ``"us"`` is a US cash listing: no exchange suffix, and not a 24/7 or
-    settlement-priced instrument (crypto, `=X` FX, `=F` futures — their daily
-    bar completes at 00:00 UTC and stays on the morning run's previous-day
-    rule). Indices (`^VIX`) count as US: they print with the cash close.
-    """
-    bucket = hole_bucket(symbol, crypto)
-    if bucket in EU_CLOSE_SUFFIXES:
-        return "eu"
-    if bucket == "" and not symbol.endswith("=F"):
-        return "us"
-    return None
+#: Which same-evening pass collects a symbol. Defined in the engine since
+#: 2026-10-04, because `engine.stale_marks` must know which buckets a session
+#: holds at the row's own date and which only at the previous one; re-exported
+#: here, where the close runs select by it.
+EU_CLOSE_SUFFIXES = _EU_CLOSE_SUFFIXES
+close_run_bucket = _close_run_bucket
 
 
 def _report_close_run_reach(
