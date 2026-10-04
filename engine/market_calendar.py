@@ -104,6 +104,56 @@ def store_bucket(symbol: str) -> str:
     return bucket_of(symbol, crypto)
 
 
+#: The exchange suffixes the `--close-run eu` evening pass collects. Every
+#: venue here has closed by 16:30 UTC on a winter day (Euronext, Xetra, SIX,
+#: the LSE, the Nordics, Madrid, Milan, Vienna, Warsaw, Athens, Dublin,
+#: Lisbon). NOT `.F`: the Frankfurt floor trades until 20:00 local, so its bar
+#: is still forming when this pass runs. A suffix absent here stays on the
+#: morning run, whose previous-day rule is right for any close hour.
+EU_CLOSE_SUFFIXES = frozenset(
+    {
+        ".AS", ".AT", ".BR", ".CO", ".DE", ".HE", ".IR", ".L", ".LS", ".MC",
+        ".MI", ".OL", ".PA", ".ST", ".SW", ".VI", ".WA",
+    }
+)
+
+
+def close_run_bucket(symbol: str, crypto: frozenset[str] = frozenset()) -> str | None:
+    """Which same-evening pass collects ``symbol``: ``"eu"``, ``"us"`` or None.
+
+    Why there are evening passes at all (measured by `eu-close-probe.yml`,
+    2026-08-14..18): the vendor publishes a cash-equity day's close the same
+    evening — populated from about 1.5 h after the bell, still there at 20:18
+    UTC for Europe — then WITHDRAWS it overnight (a null row by 22:23, still
+    null at 07:22, the US included) and restores it the next afternoon. The
+    06:00 morning run sits inside that withdrawal, and its real start (4-7 h
+    late, GitHub's scheduler) lands on the restoration edge, which is where
+    the store's random one-day holes came from. Collecting in the evening
+    asks for the bar while it exists.
+
+    ``"us"`` is a US cash listing: no exchange suffix, and not a 24/7 or
+    settlement-priced instrument (crypto, `=X` FX, `=F` futures — their daily
+    bar completes at 00:00 UTC and stays on the morning run's previous-day
+    rule). Indices (`^VIX`) count as US: they print with the cash close.
+
+    Moved here from `scripts.fetch_ohlcv` on 2026-10-04: `engine.stale_marks`
+    reads it to know whether a session holds a symbol at its row's own date
+    (a close-run bucket) or at the previous one (everything else).
+    """
+    bucket = bucket_of(symbol, crypto)
+    if bucket in EU_CLOSE_SUFFIXES:
+        return "eu"
+    if bucket == "" and not symbol.endswith("=F"):
+        return "us"
+    return None
+
+
+def store_close_run_bucket(symbol: str) -> str | None:
+    """``close_run_bucket`` for a store symbol, with crypto read from its shape."""
+    crypto = frozenset({symbol}) if _looks_like_crypto_pair(symbol) else frozenset()
+    return close_run_bucket(symbol, crypto)
+
+
 # ---------------------------------------------------------------------------
 # Per-file row dates, cached on (mtime, size)
 # ---------------------------------------------------------------------------
@@ -218,12 +268,15 @@ def is_stale(
 
 
 __all__ = [
+    "EU_CLOSE_SUFFIXES",
     "LOOKBACK_DAYS",
     "MAX_BUCKET_LAG_DAYS",
     "MIN_BUCKET_POPULATION",
     "BucketLag",
     "bucket_lag",
     "bucket_of",
+    "close_run_bucket",
     "is_stale",
     "store_bucket",
+    "store_close_run_bucket",
 ]

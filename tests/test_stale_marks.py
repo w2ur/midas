@@ -83,9 +83,30 @@ def test_a_mark_on_the_rows_own_date_is_not_stale(tmp_path: Path) -> None:
 
 
 def test_a_bucket_too_small_to_judge_falls_back_to_the_date(tmp_path: Path) -> None:
-    """Fewer than five live `.F` files: over-disclose rather than abstain."""
-    _write(tmp_path, "X.F", {"2026-09-29": 1.0})
-    assert is_stale_mark("X.F", date(2026, 9, 29), date(2026, 9, 30), store=tmp_path)
+    """Fewer than five live files in a bucket a close run collects (`.LS`):
+    the row's own date is expected, so D-1 is over-disclosed rather than
+    abstained on."""
+    _write(tmp_path, "X.LS", {"2026-09-29": 1.0})
+    assert is_stale_mark("X.LS", date(2026, 9, 29), date(2026, 9, 30), store=tmp_path)
+
+
+def test_a_small_bucket_no_close_run_collects_is_judged_against_the_previous_weekday(
+    tmp_path: Path,
+) -> None:
+    """Regression: `.F` (FRE.F, in the stoxx600 universe) is not in
+    EU_CLOSE_SUFFIXES (the Frankfurt floor closes at 20:00 local), so only the
+    morning run's previous-day rule fetches it and a weekday row dated D holds
+    it at D-1 by design. The weekday fallback named that D-1 close stale on
+    every weekday row, a false disclosure on an immutable row. Such a bucket is
+    judged the way futures are: D-2 is stale, D-1 is not; Monday's row expects
+    Friday's close."""
+    _write(tmp_path, "FRE.F", {"2026-09-28": 1.0, "2026-09-29": 1.0})
+    wednesday = date(2026, 9, 30)
+    assert not is_stale_mark("FRE.F", date(2026, 9, 29), wednesday, store=tmp_path)
+    assert is_stale_mark("FRE.F", date(2026, 9, 28), wednesday, store=tmp_path)
+    assert not is_stale_mark("FRE.F", date(2026, 9, 25), date(2026, 9, 28), store=tmp_path)
+    assert is_stale_mark("FRE.F", date(2026, 9, 24), date(2026, 9, 28), store=tmp_path)
+    assert not is_stale_mark("DX-Y.NYB", date(2026, 9, 29), wednesday, store=tmp_path)
 
 
 def test_a_small_bucket_on_a_weekend_row_is_judged_against_friday(tmp_path: Path) -> None:
