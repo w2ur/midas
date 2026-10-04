@@ -19,9 +19,11 @@ rail allows it), and its mark is still a day old (this records it).
 Three edges, stated rather than hidden:
 
 - **A bucket too small to judge** (fewer than ``MIN_BUCKET_POPULATION`` live
-  members: `.F`, `.NYB`) falls back to the plain date comparison: any
-  ``price_date`` before the row's date is recorded. Over-disclosing a holiday
-  is the safe side of a disclosure.
+  members: `.F`, `.NYB`) falls back to a weekday comparison: a
+  ``price_date`` before the last weekday on or before the row's date is
+  recorded. Over-disclosing a holiday is the safe side of a disclosure; a
+  weekend is not a holiday, and the weekend refresh writes a Saturday- and a
+  Sunday-dated row for every book, so a Friday close in them is not stale.
 - **Futures** (`=F`) share the no-suffix bucket with US listings, but their
   daily bar completes at 00:00 UTC and the same-evening close runs never fetch
   them: inside a row dated on a US trading day they mark at the previous
@@ -56,6 +58,12 @@ def _previous_weekday(d: date) -> date:
     return d
 
 
+def _weekday_on_or_before(d: date) -> date:
+    while d.weekday() >= 5:
+        d -= timedelta(days=1)
+    return d
+
+
 def is_stale_mark(
     ticker: str, price_date: date, on: date, store: Path | None = None
 ) -> bool:
@@ -66,7 +74,7 @@ def is_stale_mark(
         return price_date < _previous_weekday(on)
     lag = bucket_lag(ticker, price_date, on, store=store).lag
     if lag is None:
-        return True
+        return price_date < _weekday_on_or_before(on)
     return lag >= 1
 
 

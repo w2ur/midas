@@ -88,6 +88,18 @@ def test_a_bucket_too_small_to_judge_falls_back_to_the_date(tmp_path: Path) -> N
     assert is_stale_mark("X.F", date(2026, 9, 29), date(2026, 9, 30), store=tmp_path)
 
 
+def test_a_small_bucket_on_a_weekend_row_is_judged_against_friday(tmp_path: Path) -> None:
+    """Regression: the date-only fallback named a Friday close stale on every
+    Saturday- and Sunday-dated row (the weekend refresh writes one for every
+    book), a false disclosure on an immutable row. Weekdays are the fallback's
+    calendar: a holiday may still be over-reported, a weekend may not."""
+    _write(tmp_path, "FRE.F", {"2026-10-01": 1.0, "2026-10-02": 1.0})
+    friday, thursday = date(2026, 10, 2), date(2026, 10, 1)
+    for weekend_day in (date(2026, 10, 3), date(2026, 10, 4)):
+        assert not is_stale_mark("FRE.F", friday, weekend_day, store=tmp_path)
+        assert is_stale_mark("FRE.F", thursday, weekend_day, store=tmp_path)
+
+
 def test_futures_mark_at_the_previous_completed_bar_by_design(tmp_path: Path) -> None:
     """`=F` shares the US bucket but is never on a close run: D-1 in a D row is
     the design, D-2 is stale. Without the special case the US majority holding
