@@ -20,7 +20,9 @@ classified against the store:
 - ``rescaled``: the ratio holds but the closes changed (a units or split
   rebase of the whole history). A ratio series cancels a constant factor.
 - ``unclassified``: a legacy row with no recorded marks anywhere.
-- ``path_recompute``: a coin-flip mismatch (until plan 1.6 makes it stateful).
+
+The coin flip no longer comes through this merge: since plan 1.6 it advances
+from a persisted state (``tests/test_coinflip_state.py``).
 """
 
 from __future__ import annotations
@@ -301,21 +303,17 @@ def test_msci_world_sidecar_name(midas_data_root, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Coin flip, appends, restatement
+# Appends, restatement
 # ---------------------------------------------------------------------------
 
 
-def test_a_coin_flip_mismatch_is_a_path_recompute(tmp_path, capsys):
-    path = tmp_path / "coinflip.json"
-    row = {"date": "2026-04-17", "portfolio_value": 1.0, "cash": 0.0,
-           "positions_value": 1.0, "currency": "EUR"}
-    _write(path, [row])
-    counts = merge_baseline_series(
-        path, [dict(row, portfolio_value=2.0)], kind="coinflip"
-    )
-    assert counts == MergeCounts(path_recompute=1)
-    assert counts.concern == 0
-    assert "[WARN]" not in capsys.readouterr().out
+def test_the_merge_has_no_coin_flip_kind():
+    """Plan 1.6: the coin flip left this merge (it advances from a state), so
+    the ``kind`` switch and its ``path_recompute`` class are gone."""
+    import inspect
+
+    assert "kind" not in inspect.signature(merge_baseline_series).parameters
+    assert "path_recompute" not in {f.name for f in __import__("dataclasses").fields(MergeCounts)}
 
 
 def test_appends_are_counted(midas_data_root, tmp_path):
@@ -336,10 +334,10 @@ def test_restate_overwrites_and_classifies_nothing(midas_data_root, tmp_path):
 
 def test_counts_add_up():
     a = MergeCounts(appended=1, stale_mark=2, concern=1)
-    b = MergeCounts(rescaled=3, path_recompute=4, unclassified=5)
+    b = MergeCounts(rescaled=3, unclassified=5)
     total = a + b
-    assert total == MergeCounts(1, 2, 3, 1, 5, 4)
-    assert total.mismatched == 15
+    assert total == MergeCounts(1, 2, 3, 1, 5)
+    assert total.mismatched == 11
 
 
 # ---------------------------------------------------------------------------

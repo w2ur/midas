@@ -295,7 +295,7 @@ def test_build_all_baselines_prints_one_aggregate_summary_on_concern(
 # ---------------------------------------------------------------------------
 
 
-# bt needs a few bars before the coin flip holds anything: over a two-day
+# The coin flip needs a few bars before it moves: over a two-day
 # window every value comes out flat at initial capital, and a "did it move?"
 # assertion would then be unfalsifiable in both directions.
 _DAYS = ["2026-04-17", "2026-04-18", "2026-04-19", "2026-04-20", "2026-04-21"]
@@ -353,14 +353,13 @@ def _priced_agents(cfg):
     ]
 
 
-def test_restating_coin_flips_leaves_benchmarks_frozen(midas_data_root, capsys):
-    """The exact 2026-08-07 requirement, as an executable assertion.
+def test_restating_the_global_reference_leaves_benchmarks_frozen(midas_data_root, capsys):
+    """The exact 2026-08-07 requirement, as an executable assertion: a scope
+    moves only what it names. Under the old bool, `restate=True` moved these.
 
-    Asserted on the benchmark rather than the coin flip because the benchmark
-    is the series that provably moves with a revised price (the coin flip sits
-    flat at initial capital over a fixture this small, so a "did it move?"
-    assertion on it would be unfalsifiable). This is the direction that
-    matters anyway: under the old bool, `restate=True` moved these.
+    The 2026-08-07 case itself scoped the coin flips, and a coin-flip scope is
+    now refused outright (plan 1.6, `tests/test_coinflip_state.py`), so the
+    narrowest series left to scope is the global reference.
     """
     from engine.config import get_config
 
@@ -371,14 +370,17 @@ def test_restating_coin_flips_leaves_benchmarks_frozen(midas_data_root, capsys):
     agent = _priced_agents(cfg)[0]
     bench_path = cfg.baselines_dir / agent / "benchmark.json"
     bench_before = _values(bench_path)
+    global_path = cfg.baselines_dir / "global" / "msci_world.json"
+    global_before = _values(global_path)
 
     _seed_desk(cfg, last_close=999.0, fake_a_last=40.0)
-    _build(cfg, universes, restate_series={"coinflip"})
+    _build(cfg, universes, restate_series={"global/msci_world"})
     capsys.readouterr()
 
+    assert _values(global_path) != global_before, "the scope restated nothing"
     assert _values(bench_path) == bench_before, (
-        "a coin-flip-scoped restatement moved a passive benchmark — the exact "
-        "over-reach the bool API allowed on 2026-08-07"
+        "a global-reference-scoped restatement moved a passive benchmark — the "
+        "exact over-reach the bool API allowed on 2026-08-07"
     )
 
 

@@ -187,12 +187,15 @@ class TestPassiveBenchmarkIsScaleInvariant:
 
 @pytest.mark.live_cast
 class TestCoinFlipIsNotScaleInvariant:
-    """The documented counterpart, and the reason the coin flip gets restated.
+    """The documented counterpart: a fresh path still depends on scale.
 
-    `bt.Backtest` defaults to `integer_positions=True`, so share counts round
-    down and the residue depends on absolute price. If this ever starts passing
-    as "invariant", the coin flip's restatement rationale has silently changed
-    and `compute_coin_flip`'s docstring is wrong.
+    Whole shares are sized at the day's absolute close, so the cash residue of
+    each repick depends on the scale a price is quoted in. Since plan 1.6 that
+    no longer reaches a published row (a holding is valued by a close ratio
+    from one advance to the next, `tests/test_coinflip_state.py`), but a path
+    computed from scratch at two scales still differs. If this ever starts
+    passing as "invariant", whole-share sizing has silently gone and
+    `compute_coin_flip`'s docstring is wrong.
     """
 
     def _series(self, store: Path, scale: float) -> list[dict]:
