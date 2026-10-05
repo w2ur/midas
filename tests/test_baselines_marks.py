@@ -34,6 +34,8 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from engine.baselines import (
     MergeCounts,
@@ -494,3 +496,22 @@ def test_the_build_reads_each_benchmark_file_once(midas_data_root, monkeypatch):
     assert per_ticker, "the fixture must price at least one benchmark"
     for ticker, series in per_ticker.items():
         assert reads[ticker] == series, ticker
+
+
+_ISO = st.dates(min_value=date(2026, 1, 1), max_value=date(2026, 3, 1)).map(date.isoformat)
+
+
+@given(
+    store=st.sets(_ISO, max_size=40),
+    mark=_ISO,
+    row=_ISO,
+    priced=st.booleans(),
+)
+def test_has_later_close_bisect_matches_the_scan(store, mark, row, priced):
+    """Cleanup 6b: the bisect answers exactly what the linear scan did."""
+    from engine.baselines import _has_later_close
+
+    closes = {d: 1.0 for d in store} if priced else None
+    scan = closes is not None and mark < row and any(mark < d <= row for d in closes)
+    dates = sorted(closes) if closes is not None else None
+    assert _has_later_close({"mark_date": mark}, row, dates) == scan

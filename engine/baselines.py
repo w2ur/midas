@@ -38,7 +38,7 @@ import random
 from dataclasses import dataclass, fields
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Collection, Iterator, Mapping
+from typing import Collection, Iterator, Mapping, Sequence
 
 from engine.config import BenchmarkSpec, get_config
 from engine.disclosure import require_changelog_entry
@@ -931,12 +931,18 @@ def _ratio_holds(marks: dict, closes: Mapping[str, float] | None) -> bool:
 
 
 def _has_later_close(
-    marks: dict, row_date: str, closes: Mapping[str, float] | None
+    marks: dict, row_date: str, dates: Sequence[str] | None
 ) -> bool:
-    """Does the store now hold a close in (mark_date, row_date]?"""
-    if closes is None or marks["mark_date"] >= row_date:
+    """Does the store now hold a close in (mark_date, row_date]?
+
+    ``dates`` is the store's close dates, sorted (``merge_baseline_series``
+    sorts them once per series), so this is one bisect, not a scan of every
+    close for every row.
+    """
+    if dates is None or marks["mark_date"] >= row_date:
         return False
-    return any(marks["mark_date"] < d <= row_date for d in closes)
+    i = bisect.bisect_right(dates, marks["mark_date"])
+    return i < len(dates) and dates[i] <= row_date
 
 
 def _classify(
@@ -945,6 +951,7 @@ def _classify(
     *,
     sidecar: dict[str, dict] | None,
     closes: Mapping[str, float] | None,
+    dates: Sequence[str] | None,
 ) -> str | None:
     """The class of a published row against its recomputation, or None if equal.
 
@@ -970,7 +977,7 @@ def _classify(
             return "unclassified"
     if marks["mark_date"] != marks["base_date"] and not _ratio_holds(marks, closes):
         return "concern"
-    if _has_later_close(marks, published["date"], closes):
+    if _has_later_close(marks, published["date"], dates):
         return "stale_mark"
     return "rescaled"
 
@@ -1095,6 +1102,7 @@ def merge_baseline_series(
     if any("mark_date" not in r for r in existing):
         sidecar, sidecar_problem = _load_marks_sidecar(path)
     by_date = {row["date"]: row for row in existing}
+    close_dates = sorted(closes) if closes is not None else None
     tally = {f.name: 0 for f in fields(MergeCounts)}
     if sidecar_problem == "unreadable":
         tally["concern"] += 1
@@ -1108,7 +1116,9 @@ def merge_baseline_series(
             by_date[date_key] = row
             continue
         published = by_date[date_key]
-        verdict = _classify(published, row, sidecar=sidecar, closes=closes)
+        verdict = _classify(
+            published, row, sidecar=sidecar, closes=closes, dates=close_dates
+        )
         if verdict is None:
             continue
         tally[verdict] += 1
