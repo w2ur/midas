@@ -418,9 +418,8 @@ def test_cast_tests_reclaimed_into_manifest():
         # committed baselines; core ships neither.
         "test_derive_legacy_benchmark_marks.py",
         "test_benchmark_marks_live.py",
-        # Drive the plan 1.6 coin-flip migration and the seam audit over this
-        # repo's history; core ships neither script.
-        "test_init_coinflip_state.py",
+        # Drives the coin-flip seam audit over this repo's history; core does
+        # not ship that script.
         "test_audit_coinflip_seams.py",
         # Drives scripts/prompt_hash.py against docs/triggers/, both live-desk
         # RemoteTrigger infrastructure that core does not carry.
@@ -436,6 +435,17 @@ def test_cast_tests_reclaimed_into_manifest():
     # All reclaimed tests now ship in the code manifest.
     manifest_names = {p.name for p in sync_core.code_manifest()}
     assert reclaimed <= manifest_names
+
+
+def test_the_coinflip_reinit_remedy_ships_with_its_test():
+    """COINFLIP_REINIT_REMEDY names scripts/init_coinflip_state.py as the
+    recovery; a core that did not ship it would point a fork at nothing."""
+    from engine.baselines import COINFLIP_REINIT_REMEDY
+
+    assert "scripts/init_coinflip_state.py" in COINFLIP_REINIT_REMEDY
+    shipped = {p.as_posix() for p in sync_core.code_manifest()}
+    assert any(s.endswith("scripts/init_coinflip_state.py") for s in shipped)
+    assert any(s.endswith("tests/test_init_coinflip_state.py") for s in shipped)
 
 
 def test_manifest_is_closed_under_scripts_imports():

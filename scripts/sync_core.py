@@ -36,6 +36,11 @@ CORE_SCRIPTS = [
     "session_guard.py",
     "resolve_manager_outcomes.py",
     "backfill_baselines.py",
+    # The coin flip's state initialiser. engine.baselines'
+    # COINFLIP_REINIT_REMEDY names it as the recovery for a coin flip that
+    # cannot be advanced, so a fork must have it; it imports only engine/,
+    # backfill_baselines (above) and stdlib.
+    "init_coinflip_state.py",
     "build_tax_shadow.py",
     # Restatement tooling: reusable by any fork that later corrects a price-
     # store defect and needs to re-derive published valuations from it. Both
@@ -127,10 +132,9 @@ LIVE_ONLY_TESTS = {
     # Holds the committed benchmark marks sidecars to the committed baseline
     # series; core ships neither.
     "test_benchmark_marks_live.py",
-    # Drive scripts/init_coinflip_state.py (the one-off plan 1.6 migration of
-    # this desk's published coin flips) and scripts/audit_coinflip_seams.py
-    # (a read over this repo's git history); core ships neither script.
-    "test_init_coinflip_state.py",
+    # Drives scripts/audit_coinflip_seams.py (a read over this repo's git
+    # history), which core does not ship. test_init_coinflip_state.py is not
+    # here: init_coinflip_state.py ships, and its test reads only fixtures.
     "test_audit_coinflip_seams.py",
     # Reads workers/trigger-gate/, the Cloudflare dispatch-gate. That Worker is
     # live-desk quota infrastructure keyed to this repo's own workflow file and
