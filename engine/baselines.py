@@ -987,7 +987,6 @@ def merge_baseline_series(
     computed: list[dict],
     *,
     restate: bool = False,
-    restate_dates: Collection[str] = (),
     closes: Mapping[str, float] | None = None,
 ) -> MergeCounts:
     """Append-or-keep merge of a freshly computed series onto a baseline file,
@@ -999,11 +998,11 @@ def merge_baseline_series(
     disk is kept exactly as published, whatever ``computed`` now says.
     ``restate=True`` is the explicit, one-time escape hatch: every date in
     ``computed`` overwrites its on-disk counterpart, used only for a
-    deliberate, publicly logged restatement (and counted in no class).
-    ``restate_dates`` is the same escape hatch narrowed to named dates: only
-    those rows overwrite, every other row keeps append/classify behaviour (and
-    is counted in its class). A date in ``restate_dates`` that ``computed``
-    does not hold raises ``ValueError`` before the file is written.
+    deliberate, publicly logged restatement (and counted in no class). It is
+    the only restatement mechanism here: which rows a restatement writes —
+    a whole series' published dates, or one dated scope's — is decided by
+    ``_restatement_plan``, which hands this merge exactly those rows and
+    validates every scope entry before the first write.
 
     **What changed (plan 1.5, 2026-10-04): a mismatch is classified, not
     refused as one undifferentiated count.** The old docstring argued that
@@ -1069,9 +1068,8 @@ def merge_baseline_series(
         Freshly computed series for the full [from_date, to_date] window.
     restate:
         When True, every date overwrites the on-disk row instead of being
-        kept. Reserved for a deliberate restatement.
-    restate_dates:
-        ISO dates whose on-disk row is overwritten; no other row is.
+        kept. Reserved for a deliberate restatement, called only with the
+        rows ``_restatement_plan`` chose.
     closes:
         The store's ``{date: close}`` for the benchmark's ticker. Without it
         no recorded mark can be confirmed, so every mark-bearing mismatch is
@@ -1091,12 +1089,6 @@ def merge_baseline_series(
             f"not a transient blip. Keeping the published file as-is."
         )
         return MergeCounts()
-    absent = sorted(set(restate_dates) - {row["date"] for row in computed})
-    if absent:
-        raise ValueError(
-            f"{path.parent.name}/{path.name}: restate date(s) {absent} not in "
-            f"the computed series — nothing would be restated"
-        )
     sidecar: dict[str, dict] | None = {}
     sidecar_problem: str | None = None
     if any("mark_date" not in r for r in existing):
@@ -1112,7 +1104,7 @@ def merge_baseline_series(
             by_date[date_key] = row
             tally["appended"] += 1
             continue
-        if restate or date_key in restate_dates:
+        if restate:
             by_date[date_key] = row
             continue
         published = by_date[date_key]
