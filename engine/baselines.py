@@ -945,16 +945,23 @@ def merge_baseline_series(
 def _series_restated(
     restate_series: Collection[str] | None, agent: str, kind: str
 ) -> bool:
-    """Does the caller's restatement scope cover this one series?
+    """Does the caller's restatement scope cover this one whole series?
 
     A scope entry is either a bare kind (`"benchmark"` — every agent's
-    passive benchmark) or a fully-qualified `"<agent>/<kind>"`
-    (`"goldfinger/benchmark"`, `"global/msci_world"`). A third form,
-    `"<agent>/<kind>@<YYYY-MM-DD>"`, restates ONE DATE of one series
-    (`_series_restated_dates`) and makes this function answer False for it:
-    the rest of that series keeps append/classify behaviour. It exists
-    because the rows that genuinely needed restating (priced from provisional
-    bars, 2026-10-05) sat inside series whose other rows must not move.
+    passive benchmark — or `"msci_world"`) or a fully-qualified
+    `"<agent>/<kind>"` (`"goldfinger/benchmark"`, `"global/msci_world"`). A
+    third form, `"<agent>/<kind>@<YYYY-MM-DD>"`, restates ONE published date
+    of one series (`_series_restated_dates`) and makes this function answer
+    False for it: no other row of that series moves. It exists because the
+    rows that genuinely needed restating (priced from provisional bars,
+    2026-10-05) sat inside series whose other rows must not move.
+
+    **A restatement is restate-only** (whole-branch review I1, 2026-10-05).
+    A covered series has its *published* dates rewritten from the
+    recomputation and nothing else: no new date is appended to it or to any
+    other series, and no coin flip advances. The routine append runs from a
+    call with no scope. Every entry is validated by
+    ``_restatement_plan`` before the first write.
 
     **The coin flip cannot be restated** (plan 1.6, 2026-10-05):
     ``build_all_baselines`` refuses a scope naming it, bare or qualified. It is
@@ -969,7 +976,7 @@ def _series_restated(
     genuinely needed restating onto normalised units, the passive benchmarks
     did not, and the blanket flag moved eight of them anyway — on *fresher
     prices*, not on units, which is precisely the retroactive drift the
-    append-or-refuse rule exists to refuse. They had to be restored by hand.
+    append-only rule exists to refuse. They had to be restored by hand.
     An API that cannot express the intended scope will eventually be used
     outside it.
     """
@@ -1031,6 +1038,95 @@ _COINFLIP_RESTATE_REFUSED = (
 )
 
 
+def _validate_scope_entry(entry: str, cfg) -> None:
+    """Refuse a scope entry that names no restatable series. Reads no file."""
+    if "@" in entry:
+        agent, _kind, _day = _parse_dated_scope(entry, cfg.trading_roster)
+    elif entry in _DATED_KINDS:
+        return
+    else:
+        agent, slash, kind = entry.partition("/")
+        if not (slash and agent and kind):
+            raise ValueError(
+                f"{entry!r}: unknown restatement scope; a scope entry is one of "
+                f"{list(_DATED_KINDS)}, <agent>/<kind> or {_DATED_FORM}"
+            )
+        if kind not in _DATED_KINDS:
+            raise ValueError(
+                f"{entry!r}: unknown series kind {kind!r}; a scope takes one of "
+                f"{list(_DATED_KINDS)}"
+            )
+        if agent != "global" and agent not in cfg.trading_roster:
+            raise ValueError(f"{entry!r}: unknown agent {agent!r}")
+        if (agent == "global") != (kind == "msci_world"):
+            raise ValueError(
+                f"{entry!r}: msci_world belongs to 'global', benchmark to an agent"
+            )
+    if agent != "global" and cfg.roster[agent].benchmark is None:
+        raise ValueError(
+            f"{entry!r}: {agent!r} has no benchmark in the roster, so there is "
+            f"no benchmark series to restate"
+        )
+
+
+@dataclass(frozen=True)
+class _Restatement:
+    """One series a restatement rewrites, and the rows it writes."""
+
+    path: Path
+    rows: list[dict]
+
+
+def _restatement_plan(
+    restate_series: Collection[str], cfg, from_date: date, to_date: date
+) -> list[_Restatement]:
+    """Every series the scope covers, with the published rows it rewrites.
+
+    Raises ``ValueError`` before anything is written when an entry names no
+    published row: a dated entry whose day is not a published date of its
+    series, or one the recomputation over ``[from_date, to_date]`` does not
+    hold. A covered series' rows are its published dates only, so the merge
+    that writes them appends nothing.
+    """
+    series: list[tuple[str, str, BenchmarkSpec]] = [
+        (aid, "benchmark", cfg.roster[aid].benchmark)
+        for aid in cfg.trading_roster
+        if cfg.roster[aid].benchmark is not None
+    ]
+    series.append(("global", "msci_world", cfg.global_reference))
+    plan: list[_Restatement] = []
+    for agent, kind, spec in series:
+        whole = _series_restated(restate_series, agent, kind)
+        dated = _series_restated_dates(restate_series, agent, kind)
+        if not whole and not dated:
+            continue
+        path = cfg.baselines_dir / agent / f"{kind}.json"
+        name = f"{agent}/{kind}"
+        published = (
+            {r["date"] for r in json.loads(path.read_text())} if path.exists() else set()
+        )
+        unpublished = sorted(dated - published)
+        if unpublished:
+            raise ValueError(
+                f"{name}: restate date(s) {unpublished} not a published date of "
+                f"{path.parent.name}/{path.name} — a restatement rewrites published "
+                f"rows only, it never appends one"
+            )
+        computed = {
+            r["date"]: r for r in compute_passive_benchmark(spec, from_date, to_date)
+        }
+        absent = sorted(dated - computed.keys())
+        if absent:
+            raise ValueError(
+                f"{name}: restate date(s) {absent} not in the computed series "
+                f"over {from_date}..{to_date} — nothing would be restated"
+            )
+        targets = (published if whole else dated) & computed.keys()
+        if targets:
+            plan.append(_Restatement(path, [computed[d] for d in sorted(targets)]))
+    return plan
+
+
 def build_all_baselines(
     universes_by_agent: dict[str, list[str]],
     from_date: date,
@@ -1043,9 +1139,23 @@ def build_all_baselines(
     """Produce all per-agent baseline files + the global reference file.
 
     Iterates get_config().trading_roster; agents whose benchmark is None are
-    skipped. Append-or-keep: an already-published date is kept as-is unless
-    the series is named in ``restate_series`` (see ``_series_restated`` for
-    the scoping rules, and for why this is not a bool). Missing OHLCV data
+    skipped. Append-or-keep: an already-published date is kept as-is (a
+    mismatch is classified, ``merge_baseline_series``) and new dates are
+    appended.
+
+    **A restatement is restate-only** (whole-branch review I1, 2026-10-05).
+    With a non-empty ``restate_series`` (see ``_series_restated`` for the
+    scoping rules, and for why this is not a bool) the call writes the
+    scoped published rows and nothing else: no new date is appended to any
+    series and ``advance_coin_flip`` is not called, so no coin-flip row or
+    state is written. Every entry is validated before the first write — a
+    dated entry's day must already be a published date of its series, an
+    entry must name a series that exists (an agent whose roster
+    ``benchmark`` is None has none), and one bad entry refuses the whole
+    scope with ``ValueError``. The routine append comes from a later call
+    with no scope, so a ``[restate]`` commit carries only what it discloses.
+
+    Missing OHLCV data
     for a brand-new agent (no prior file) yields an empty file — "no line to
     draw" for the site. Missing OHLCV data against an *established* baseline
     is not empty: the old file is kept frozen and a [WARN] is printed by
@@ -1085,14 +1195,21 @@ def build_all_baselines(
     )
     if refused:
         raise ValueError(f"{refused}: {_COINFLIP_RESTATE_REFUSED}")
-    for entry in restate_series or ():
-        if "@" in entry:
-            _parse_dated_scope(entry, cfg.trading_roster)
+    for entry in sorted(restate_series or ()):
+        _validate_scope_entry(entry, cfg)
     if restate_series:
         require_changelog_entry(
             changelog_entry,
             what=f"Restating baseline series {sorted(restate_series)}",
         )
+        plan = _restatement_plan(restate_series, cfg, from_date, to_date)
+        for item in plan:
+            merge_baseline_series(item.path, item.rows, restate=True)
+            print(
+                f"  [INFO] baselines: restated {len(item.rows)} published row(s) "
+                f"of {item.path.parent.name}/{item.path.name}; nothing appended."
+            )
+        return MergeCounts()
     max_positions_by_agent = max_positions_by_agent or {}
     baselines_dir = cfg.baselines_dir
     totals = MergeCounts()
@@ -1104,8 +1221,6 @@ def build_all_baselines(
         totals += merge_baseline_series(
             agent_dir / "benchmark.json",
             compute_passive_benchmark(spec, from_date, to_date),
-            restate=_series_restated(restate_series, agent_id, "benchmark"),
-            restate_dates=_series_restated_dates(restate_series, agent_id, "benchmark"),
             closes=_benchmark_closes(spec),
         )
 
@@ -1125,8 +1240,6 @@ def build_all_baselines(
     totals += merge_baseline_series(
         baselines_dir / "global" / "msci_world.json",
         compute_global_reference(from_date, to_date),
-        restate=_series_restated(restate_series, "global", "msci_world"),
-        restate_dates=_series_restated_dates(restate_series, "global", "msci_world"),
         closes=_benchmark_closes(cfg.global_reference),
     )
 

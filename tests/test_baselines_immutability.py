@@ -544,7 +544,7 @@ def test_a_dated_scope_needs_a_changelog_entry(midas_data_root):
         ("{agent}/coinflip@2026-04-19", "coin flip"),
         ("nobody/benchmark@2026-04-19", "agent"),
         ("benchmark@2026-04-19", "<agent>/<kind>@<YYYY-MM-DD>"),
-        ("{agent}/benchmark@2026-06-01", "not in the computed"),
+        ("{agent}/benchmark@2026-06-01", "not a published date"),
     ],
 )
 def test_a_malformed_dated_scope_is_refused_before_anything_is_written(
@@ -563,3 +563,158 @@ def test_a_malformed_dated_scope_is_refused_before_anything_is_written(
     with pytest.raises(ValueError, match=message):
         _build_dated(cfg, universes, {scope.format(agent=agent)})
     assert path.read_text() == snapshot
+
+
+# ---------------------------------------------------------------------------
+# A restatement is restate-only (whole-branch review I1, M4)
+#
+# A scoped restatement used to run the whole routine build around its scope:
+# every benchmark gained its new dates and every coin flip advanced, so a call
+# meant to move one disclosed row also published days of unrelated rows under
+# a `[restate]` commit. And a dated scope was checked against the computed
+# series only when its own file came up, after earlier files had been written.
+# ---------------------------------------------------------------------------
+
+
+def _tree(root: Path) -> dict[str, bytes]:
+    """Every file under ``root``, by relative path."""
+    return {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in sorted(root.rglob("*"))
+        if p.is_file()
+    }
+
+
+def _build_to(cfg, universes, to_day, scope=None, anchor=_ANCHOR):
+    from datetime import date as _date
+
+    from engine.baselines import build_all_baselines
+
+    return build_all_baselines(
+        universes_by_agent=universes,
+        from_date=_date(2026, 4, 17),
+        to_date=_date.fromisoformat(to_day),
+        restate_series=scope,
+        changelog_entry=anchor if scope else None,
+    )
+
+
+@pytest.mark.parametrize(
+    "scope",
+    ["{agent}/benchmark@2026-04-19", "{agent}/benchmark", "benchmark", "global/msci_world"],
+)
+def test_a_restatement_writes_only_its_scoped_rows(midas_data_root, capsys, scope):
+    """No new date is appended to any series and no coin flip advances: the
+    rows a restatement writes are exactly the published rows it names."""
+    from engine.config import get_config
+
+    cfg = get_config()
+    _disclose(midas_data_root)
+    universes = _seed_desk(cfg)
+    _build_to(cfg, universes, "2026-04-19")
+    agent = _priced_agents(cfg)[0]
+    before = _tree(cfg.baselines_dir)
+    coin = {k: v for k, v in before.items() if "coinflip" in k}
+    assert coin, "the routine build wrote no coin flip — the check below is vacuous"
+
+    _seed_desk(cfg, last_close=999.0, fake_a_last=40.0)
+    _build_to(cfg, universes, "2026-04-21", scope={scope.format(agent=agent)})
+    capsys.readouterr()
+
+    after = _tree(cfg.baselines_dir)
+    assert set(after) == set(before), "a restatement created or removed a file"
+    for name in before:
+        if name.endswith(".json") and "coinflip" not in name and "_marks" not in name:
+            dates_before = [r["date"] for r in json.loads(before[name])]
+            dates_after = [r["date"] for r in json.loads(after[name])]
+            assert dates_after == dates_before, f"{name}: a restatement appended a date"
+    assert {k: after[k] for k in coin} == coin, "a restatement advanced a coin flip"
+
+
+def test_a_routine_build_over_the_same_window_does_append(midas_data_root, capsys):
+    """Fail-once control for the test above: the same call without a scope
+    appends 04-20 and 04-21 and advances every coin flip."""
+    from engine.config import get_config
+
+    cfg = get_config()
+    universes = _seed_desk(cfg)
+    _build_to(cfg, universes, "2026-04-19")
+    before = _tree(cfg.baselines_dir)
+    _build_to(cfg, universes, "2026-04-21")
+    capsys.readouterr()
+    after = _tree(cfg.baselines_dir)
+    assert any(after[k] != v for k, v in before.items() if "coinflip" in k)
+    agent = _priced_agents(cfg)[0]
+    rows = json.loads(after[f"{agent}/benchmark.json"])
+    assert rows[-1]["date"] == "2026-04-21"
+
+
+@pytest.mark.parametrize(
+    "bad, message",
+    [
+        ("global/msci_world@2026-06-01", "not a published date"),
+        ("{agent}/benchmark@2026-04-20", "not a published date"),
+        ("{other}/benchmark@2026-04-16", "not a published date"),
+        ("nobody/benchmark", "agent"),
+        ("{agent}/mystery", "kind"),
+        ("mystery", "scope"),
+    ],
+)
+def test_one_bad_entry_in_a_scope_writes_nothing_at_all(midas_data_root, capsys, bad, message):
+    """Every entry is validated before the first write: a valid entry whose
+    file comes up first is not restated because a later entry is bad."""
+    from engine.config import get_config
+
+    cfg = get_config()
+    _disclose(midas_data_root)
+    universes = _seed_desk(cfg)
+    _build_to(cfg, universes, "2026-04-19")
+    priced = _priced_agents(cfg)
+    agent, other = priced[0], priced[-1]
+    before = _tree(cfg.baselines_dir)
+
+    _seed_desk(cfg, last_close=999.0, fake_a_last=40.0)
+    ticker = cfg.ohlcv_dir / f"{cfg.roster[agent].benchmark.ticker}.jsonl"
+    ticker.write_text(
+        "\n".join(
+            '{"date":"%s","close":%s}' % (d, c)
+            for d, c in zip(_DAYS, [100.0, 101.0, 150.0, 160.0, 170.0])
+        )
+        + "\n"
+    )
+    scope = {f"{agent}/benchmark@2026-04-19", bad.format(agent=agent, other=other)}
+    with pytest.raises(ValueError, match=message):
+        _build_to(cfg, universes, "2026-04-21", scope=scope)
+    assert _tree(cfg.baselines_dir) == before
+
+
+def _strip_benchmark(root: Path, agent: str) -> None:
+    import yaml
+
+    from engine.config import reset_config_cache
+
+    roster = yaml.safe_load((root / "roster.yaml").read_text())
+    del roster["agents"][agent]["benchmark"]
+    (root / "roster.yaml").write_text(yaml.safe_dump(roster, sort_keys=False))
+    reset_config_cache()
+
+
+@pytest.mark.parametrize("scope", ["{agent}/benchmark@2026-04-19", "{agent}/benchmark"])
+def test_a_scope_naming_an_agent_with_no_benchmark_is_refused(midas_data_root, scope):
+    """Review M4: such an agent has no benchmark series, so the scope would
+    restate nothing — and silently, since the build skips the agent."""
+    from engine.config import get_config
+
+    cfg = get_config()
+    _disclose(midas_data_root)
+    universes = _seed_desk(cfg)
+    _build_to(cfg, universes, "2026-04-19")
+    agent = _priced_agents(cfg)[0]
+    _strip_benchmark(midas_data_root, agent)
+    cfg = get_config()
+    assert agent in cfg.trading_roster and cfg.roster[agent].benchmark is None
+    before = _tree(cfg.baselines_dir)
+
+    with pytest.raises(ValueError, match="no benchmark"):
+        _build_to(cfg, universes, "2026-04-21", scope={scope.format(agent=agent)})
+    assert _tree(cfg.baselines_dir) == before
