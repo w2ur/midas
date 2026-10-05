@@ -1150,9 +1150,81 @@ def merge_baseline_series(
     return MergeCounts(**tally)
 
 
-def _series_restated(
-    restate_series: Collection[str] | None, agent: str, kind: str
-) -> bool:
+#: The series kinds a restatement scope may name.
+_DATED_KINDS = ("benchmark", "msci_world")
+
+_DATED_FORM = "<agent>/<kind>@<YYYY-MM-DD>"
+
+#: What a refused coin-flip restatement scope says.
+_COINFLIP_RESTATE_REFUSED = (
+    "the coin flip cannot be restated: it is advanced from a persisted state "
+    "over new dates only (plan 1.6, METHODOLOGY #stateful-coinflip-2026-10-05)"
+)
+
+
+@dataclass(frozen=True)
+class _ScopeEntry:
+    """One parsed restatement scope entry.
+
+    ``agent`` is None for a bare kind (every series of that kind); ``day`` is
+    None for a whole series.
+    """
+
+    agent: str | None
+    kind: str
+    day: str | None
+
+
+def _parse_scope_entry(entry: str, cfg) -> _ScopeEntry:
+    """Parse and validate one scope entry: a bare kind, ``"<agent>/<kind>"``
+    or ``"<agent>/<kind>@<YYYY-MM-DD>"``. Raises ``ValueError`` for an entry
+    that names no restatable series. Reads no file.
+
+    The one place a scope entry is read: the coin-flip refusal, the date, the
+    kind, the agent, the ``global``/``msci_world`` pairing and the roster
+    benchmark are each checked here once, for every form.
+    """
+    series, at, day = entry.partition("@")
+    if not at and series in _DATED_KINDS:
+        return _ScopeEntry(None, series, None)
+    if series == "coinflip" or series.endswith("/coinflip"):
+        raise ValueError(f"{entry!r}: {_COINFLIP_RESTATE_REFUSED}")
+    agent, slash, kind = series.partition("/")
+    if not (slash and agent and kind):
+        if at:
+            raise ValueError(f"{entry!r}: a dated scope reads {_DATED_FORM}")
+        raise ValueError(
+            f"{entry!r}: unknown restatement scope; a scope entry is one of "
+            f"{list(_DATED_KINDS)}, <agent>/<kind> or {_DATED_FORM}"
+        )
+    if at:
+        try:
+            if date.fromisoformat(day).isoformat() != day:
+                raise ValueError
+        except ValueError:
+            raise ValueError(
+                f"{entry!r}: {day!r} is not an ISO date ({_DATED_FORM})"
+            ) from None
+    if kind not in _DATED_KINDS:
+        raise ValueError(
+            f"{entry!r}: unknown series kind {kind!r}; a scope takes one of "
+            f"{list(_DATED_KINDS)}"
+        )
+    if agent != "global" and agent not in cfg.trading_roster:
+        raise ValueError(f"{entry!r}: unknown agent {agent!r}")
+    if (agent == "global") != (kind == "msci_world"):
+        raise ValueError(
+            f"{entry!r}: msci_world belongs to 'global', benchmark to an agent"
+        )
+    if agent != "global" and cfg.roster[agent].benchmark is None:
+        raise ValueError(
+            f"{entry!r}: {agent!r} has no benchmark in the roster, so there is "
+            f"no benchmark series to restate"
+        )
+    return _ScopeEntry(agent, kind, day or None)
+
+
+def _series_restated(entries: Collection[_ScopeEntry], agent: str, kind: str) -> bool:
     """Does the caller's restatement scope cover this one whole series?
 
     A scope entry is either a bare kind (`"benchmark"` — every agent's
@@ -1168,8 +1240,8 @@ def _series_restated(
     A covered series has its *published* dates rewritten from the
     recomputation and nothing else: no new date is appended to it or to any
     other series, and no coin flip advances. The routine append runs from a
-    call with no scope. Every entry is validated by
-    ``_restatement_plan`` before the first write.
+    call with no scope. Every entry is parsed and validated once,
+    by ``_parse_scope_entry``, before the first write.
 
     **The coin flip cannot be restated** (plan 1.6, 2026-10-05):
     ``build_all_baselines`` refuses a scope naming it, bare or qualified. It is
@@ -1188,93 +1260,18 @@ def _series_restated(
     An API that cannot express the intended scope will eventually be used
     outside it.
     """
-    if not restate_series:
-        return False
-    return kind in restate_series or f"{agent}/{kind}" in restate_series
-
-
-#: The series kinds a dated scope may name, and where their agent comes from.
-_DATED_KINDS = ("benchmark", "msci_world")
-
-_DATED_FORM = "<agent>/<kind>@<YYYY-MM-DD>"
-
-
-def _parse_dated_scope(entry: str, agents: Collection[str]) -> tuple[str, str, str]:
-    """``(agent, kind, date)`` of a ``"<agent>/<kind>@<date>"`` entry, or raise."""
-    series, sep, day = entry.partition("@")
-    agent, slash, kind = series.partition("/")
-    if not (sep and slash and agent and kind):
-        raise ValueError(f"{entry!r}: a dated scope reads {_DATED_FORM}")
-    try:
-        if date.fromisoformat(day).isoformat() != day:
-            raise ValueError
-    except ValueError:
-        raise ValueError(
-            f"{entry!r}: {day!r} is not an ISO date ({_DATED_FORM})"
-        ) from None
-    if kind == "coinflip":
-        raise ValueError(f"{entry!r}: {_COINFLIP_RESTATE_REFUSED}")
-    if kind not in _DATED_KINDS:
-        raise ValueError(
-            f"{entry!r}: unknown series kind {kind!r}; a dated scope takes one "
-            f"of {list(_DATED_KINDS)}"
-        )
-    if agent != "global" and agent not in agents:
-        raise ValueError(f"{entry!r}: unknown agent {agent!r}")
-    if (agent == "global") != (kind == "msci_world"):
-        raise ValueError(
-            f"{entry!r}: msci_world belongs to 'global', benchmark to an agent"
-        )
-    return agent, kind, day
-
-
-def _series_restated_dates(
-    restate_series: Collection[str] | None, agent: str, kind: str
-) -> frozenset[str]:
-    """The dates of this one series a dated scope entry names."""
-    return frozenset(
-        e.partition("@")[2]
-        for e in restate_series or ()
-        if "@" in e and e.partition("@")[0] == f"{agent}/{kind}"
+    return any(
+        e.kind == kind and e.day is None and e.agent in (None, agent) for e in entries
     )
 
 
-#: What a refused coin-flip restatement scope says.
-_COINFLIP_RESTATE_REFUSED = (
-    "the coin flip cannot be restated: it is advanced from a persisted state "
-    "over new dates only (plan 1.6, METHODOLOGY #stateful-coinflip-2026-10-05)"
-)
-
-
-def _validate_scope_entry(entry: str, cfg) -> None:
-    """Refuse a scope entry that names no restatable series. Reads no file."""
-    if "@" in entry:
-        agent, _kind, _day = _parse_dated_scope(entry, cfg.trading_roster)
-    elif entry in _DATED_KINDS:
-        return
-    else:
-        agent, slash, kind = entry.partition("/")
-        if not (slash and agent and kind):
-            raise ValueError(
-                f"{entry!r}: unknown restatement scope; a scope entry is one of "
-                f"{list(_DATED_KINDS)}, <agent>/<kind> or {_DATED_FORM}"
-            )
-        if kind not in _DATED_KINDS:
-            raise ValueError(
-                f"{entry!r}: unknown series kind {kind!r}; a scope takes one of "
-                f"{list(_DATED_KINDS)}"
-            )
-        if agent != "global" and agent not in cfg.trading_roster:
-            raise ValueError(f"{entry!r}: unknown agent {agent!r}")
-        if (agent == "global") != (kind == "msci_world"):
-            raise ValueError(
-                f"{entry!r}: msci_world belongs to 'global', benchmark to an agent"
-            )
-    if agent != "global" and cfg.roster[agent].benchmark is None:
-        raise ValueError(
-            f"{entry!r}: {agent!r} has no benchmark in the roster, so there is "
-            f"no benchmark series to restate"
-        )
+def _series_restated_dates(
+    entries: Collection[_ScopeEntry], agent: str, kind: str
+) -> frozenset[str]:
+    """The dates of this one series a dated scope entry names."""
+    return frozenset(
+        e.day for e in entries if e.day is not None and (e.agent, e.kind) == (agent, kind)
+    )
 
 
 @dataclass(frozen=True)
@@ -1286,7 +1283,7 @@ class _Restatement:
 
 
 def _restatement_plan(
-    restate_series: Collection[str], cfg, from_date: date, to_date: date
+    entries: Collection[_ScopeEntry], cfg, from_date: date, to_date: date
 ) -> list[_Restatement]:
     """Every series the scope covers, with the published rows it rewrites.
 
@@ -1304,8 +1301,8 @@ def _restatement_plan(
     series.append(("global", "msci_world", cfg.global_reference))
     plan: list[_Restatement] = []
     for agent, kind, spec in series:
-        whole = _series_restated(restate_series, agent, kind)
-        dated = _series_restated_dates(restate_series, agent, kind)
+        whole = _series_restated(entries, agent, kind)
+        dated = _series_restated_dates(entries, agent, kind)
         if not whole and not dated:
             continue
         path = cfg.baselines_dir / agent / f"{kind}.json"
@@ -1397,21 +1394,13 @@ def build_all_baselines(
     routine session call passes no scope and is unaffected.
     """
     cfg = get_config()
-    refused = sorted(
-        s
-        for s in restate_series or ()
-        if s == "coinflip" or s.partition("@")[0].endswith("/coinflip")
-    )
-    if refused:
-        raise ValueError(f"{refused}: {_COINFLIP_RESTATE_REFUSED}")
-    for entry in sorted(restate_series or ()):
-        _validate_scope_entry(entry, cfg)
+    entries = [_parse_scope_entry(e, cfg) for e in sorted(restate_series or ())]
     if restate_series:
         require_changelog_entry(
             changelog_entry,
             what=f"Restating baseline series {sorted(restate_series)}",
         )
-        plan = _restatement_plan(restate_series, cfg, from_date, to_date)
+        plan = _restatement_plan(entries, cfg, from_date, to_date)
         for item in plan:
             merge_baseline_series(item.path, item.rows, restate=True)
             print(
