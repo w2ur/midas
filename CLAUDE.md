@@ -91,7 +91,9 @@ changelog entry, found five days later by an unrelated cross-check. A
 precondition, not an audit: an audit tells you afterwards that you forgot.
 
 **Restatement scope is a set, not a bool.** `build_all_baselines(restate_series=…)`
-takes `{"benchmark"}`, `{"<agent>/<kind>"}` or one date of one series, `{"<agent>/<kind>@<YYYY-MM-DD>"}` (the rest of that series keeps append/classify). The bool it
+takes `{"benchmark"}`, `{"<agent>/<kind>"}` or one date of one series, `{"<agent>/<kind>@<YYYY-MM-DD>"}`. **A restatement is restate-only**: every
+entry is validated before any write, and the call rewrites only the scoped rows
+— no appends, no coin-flip advance. The bool it
 replaced could only say "everything", which on 2026-08-07 moved eight passive
 benchmarks that should not have moved (on fresher *prices*, not units) and they
 had to be restored by hand. **A coin-flip scope is refused**: since 2026-10-05
