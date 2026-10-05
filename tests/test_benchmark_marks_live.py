@@ -16,7 +16,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from engine.baselines import MARK_FIELDS
+import scripts.derive_legacy_benchmark_marks as derive
+from engine.baselines import MARK_FIELDS, marks_sidecar_path
 from engine.config import _LEGACY_ROOT, get_config
 
 BASELINES = _LEGACY_ROOT / "data" / "baselines"
@@ -46,14 +47,58 @@ def inconsistencies(sidecar: Path, initial: float) -> list[str]:
     return problems
 
 
-def _sidecars() -> list[Path]:
-    return sorted(BASELINES.glob("*/*_marks.json"))
+def _sidecars(root: Path = BASELINES) -> list[Path]:
+    return sorted(root.glob("*/*_marks.json"))
+
+
+def expected_sidecars() -> set[str]:
+    """The sidecar of every priced benchmark series, under data/baselines.
+
+    Derived from the same roster walk the derivation script runs
+    (``series_to_derive``): every trading agent whose benchmark is not
+    ``EUR_CASH_FLAT``, plus the global reference. Each of them carries
+    legacy rows published before plan 1.5, so each must have a sidecar.
+    """
+    return {
+        marks_sidecar_path(Path(rel)).relative_to("data/baselines").as_posix()
+        for rel, _ticker in derive.series_to_derive(get_config())
+    }
+
+
+def sidecar_set_differences(root: Path) -> tuple[set[str], set[str]]:
+    """``(missing, unexpected)`` sidecars under ``root`` against the roster."""
+    found = {p.relative_to(root).as_posix() for p in _sidecars(root)}
+    expected = expected_sidecars()
+    return expected - found, found - expected
 
 
 def test_every_priced_series_has_a_sidecar() -> None:
-    names = {p.relative_to(BASELINES).as_posix() for p in _sidecars()}
-    assert "global/msci_world_marks.json" in names
-    assert len(names) >= 2, names
+    """Exactly the priced series: a missing sidecar leaves that series'
+    legacy rows ``unclassified``, an extra one is a sidecar nothing reads."""
+    assert "global/msci_world_marks.json" in expected_sidecars()
+    assert sidecar_set_differences(BASELINES) == (set(), set())
+
+
+def test_a_hidden_sidecar_is_caught(tmp_path) -> None:
+    """The control: the check above goes red on a COPY of the committed
+    baselines with one agent's sidecar removed (the committed file is never
+    touched), and on one with a sidecar for a series that is not priced.
+
+    The guard it replaced asserted only that msci_world's sidecar existed and
+    that there were at least two, so every agent's sidecar but one could go
+    missing and it stayed green.
+    """
+    import shutil
+
+    copy = tmp_path / "baselines"
+    shutil.copytree(BASELINES, copy)
+    hidden = sorted(n for n in expected_sidecars() if not n.startswith("global/"))[0]
+    (copy / hidden).unlink()
+    assert sidecar_set_differences(copy) == ({hidden}, set())
+
+    (copy / hidden).write_text((BASELINES / hidden).read_text())
+    (copy / "global" / "coinflip_marks.json").write_text("[]\n")
+    assert sidecar_set_differences(copy) == (set(), {"global/coinflip_marks.json"})
 
 
 def test_every_sidecar_reproduces_its_series() -> None:
