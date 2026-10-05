@@ -26,7 +26,7 @@ de minimis, matching the existing snapshot-benchmark pattern in the site.
 That argument holds for one ticker's ratio and **not for the coin flip**,
 which sums several tickers' closes into one book: each close is converted
 into the series currency at its own date before it is summed (``_Closes``,
-``_step``; METHODOLOGY ``#stateful-coinflip-2026-10-05``).
+``_step``; METHODOLOGY ``#coinflip-currency-2026-10-05``).
 """
 
 from __future__ import annotations
