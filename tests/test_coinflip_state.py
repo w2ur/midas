@@ -371,6 +371,14 @@ def test_a_series_without_a_state_is_not_advanced(midas_data_root, capsys):
     assert result.appended == 0 and len(result.concerns) == 1
     assert "[WARN]" in capsys.readouterr().out
     assert _series_path().read_text() == before
+    _assert_names_the_reinit_remedy(result.concerns[0])
+
+
+def _assert_names_the_reinit_remedy(concern: str) -> None:
+    """Review I2: the refusal says how to recover, and what recovering costs."""
+    assert "scripts/init_coinflip_state.py --force" in concern
+    assert "chore(data):" in concern and "its own" in concern
+    assert "new seam" in concern and "METHODOLOGY" in concern
 
 
 def test_a_state_behind_the_series_is_not_advanced(midas_data_root, capsys, monkeypatch):
@@ -403,6 +411,7 @@ def test_a_state_whose_value_differs_from_its_row_is_not_advanced(midas_data_roo
     path.write_text(json.dumps(doc))
     result = _advance(_START + timedelta(days=6))
     assert result.appended == 0 and len(result.concerns) == 1
+    _assert_names_the_reinit_remedy(result.concerns[0])
 
 
 def test_a_state_without_a_series_is_not_advanced(midas_data_root):
@@ -488,6 +497,27 @@ def _seed_benchmarks(cfg, days: list[str]) -> None:
         if spec is not None and spec.ticker != "EUR_CASH_FLAT":
             _store(spec.ticker, [(d, 100.0 + i) for i, d in enumerate(days)])
     _store(cfg.global_reference.ticker, [(d, 100.0 + i) for i, d in enumerate(days)])
+
+
+def test_a_coinflip_concern_is_counted_in_the_build(midas_data_root, capsys):
+    """Review M2: a coin flip that cannot be advanced is a concern of the
+    build, in its totals and its aggregate line, not only a stray [WARN]."""
+    cfg = get_config()
+    days = _days(_START, 10)
+    _seed_benchmarks(cfg, days)
+    _seed_store(n_days=10)
+    universes = _desk_universes(cfg, ["AAA", "BBB", "CCC"])
+    build_all_baselines(universes, _START, _START + timedelta(days=5))
+    agent = next(iter(universes))
+    coin_flip_state_path(cfg.baselines_dir / agent / "coinflip.json").unlink()
+    capsys.readouterr()
+
+    totals = build_all_baselines(universes, _START, _START + timedelta(days=9))
+
+    out = capsys.readouterr().out
+    assert totals.concern == 1
+    assert "[WARN] baselines: 1 concern(s)" in out
+    assert "coin flip" in out.split("[WARN] baselines:")[1]
 
 
 @pytest.mark.parametrize("scope", [{"coinflip"}, {"goldfinger/coinflip"}])

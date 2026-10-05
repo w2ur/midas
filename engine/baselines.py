@@ -192,6 +192,17 @@ class CoinFlipAdvance:
     concerns: list[str]
 
 
+#: What a coin flip that cannot be advanced is told to do (review I2). The
+#: remedy is not free: a re-init repicks the book at the last published row
+#: with today's universe and store, which is a new seam in the path.
+COINFLIP_REINIT_REMEDY = (
+    "Recovery: scripts/init_coinflip_state.py --force, committed as its own "
+    "chore(data): commit (--force rewrites every agent's state, so keep only "
+    "this agent's file in it). A re-init is a new seam in the path and must be "
+    "disclosed in METHODOLOGY."
+)
+
+
 def coin_flip_state_path(series_path: Path) -> Path:
     """``<agent>/coinflip.json`` -> ``<agent>/state/coinflip.json``.
 
@@ -545,9 +556,11 @@ def advance_coin_flip(
       unreadable state, or a state that does not chain from the last row (the
       shape a run killed between the two writes leaves): nothing is written,
       the series is not advanced (there is no recompute from day one to fall
-      back on) and one ``[WARN]`` concern prints. The session lifts it into a
-      ``Concerns:`` trailer, and ``check_session_freshness`` sees the series
-      fall behind the snapshots.
+      back on) and one ``[WARN]`` concern prints, naming the recovery
+      (``COINFLIP_REINIT_REMEDY``: a re-init committed on its own, disclosed
+      as the seam it is). The session lifts it into a ``Concerns:`` trailer,
+      ``build_all_baselines`` counts it, and ``check_session_freshness`` sees
+      the series fall behind the snapshots.
 
     A holding whose file is gone, or whose store no longer holds a close dated
     its mark (truncated, or that row withdrawn), is held at its recorded mark
@@ -576,7 +589,7 @@ def advance_coin_flip(
                 f"{name}: {len(series)} published row(s) but no state at "
                 f"{state_path.parent.name}/{state_path.name}; the coin flip is "
                 f"not advanced (it is never recomputed from day one). "
-                f"Initialise it with scripts/init_coinflip_state.py."
+                f"{COINFLIP_REINIT_REMEDY}"
             )
             return done(0)
         states = _fresh_path(
@@ -593,7 +606,9 @@ def advance_coin_flip(
     try:
         state = load_coin_flip_state(state_path)
     except ValueError as exc:
-        concerns.append(f"{name}: state unreadable ({exc}); not advanced.")
+        concerns.append(
+            f"{name}: state unreadable ({exc}); not advanced. {COINFLIP_REINIT_REMEDY}"
+        )
         return done(0)
     if not series:
         concerns.append(
@@ -605,7 +620,8 @@ def advance_coin_flip(
         concerns.append(
             f"{name}: the state ({state.date}, {state.portfolio_value}) does not "
             f"chain from the last published row ({last.get('date')}, "
-            f"{last.get('portfolio_value')}); not advanced, nothing recomputed."
+            f"{last.get('portfolio_value')}); not advanced, nothing recomputed. "
+            f"{COINFLIP_REINIT_REMEDY}"
         )
         return done(0)
     if to_date.isoformat() <= state.date:
@@ -1168,10 +1184,11 @@ def build_all_baselines(
 
     **What reaches the session's ``Concerns:`` path.** The session model
     turns printed ``[WARN]`` lines into commit trailers, so only a
-    ``concern`` prints as one: each row as it is found, then one aggregate
-    ``[WARN] baselines: N concern(s)`` line; a coin flip that cannot be
-    advanced, or holds a ticker the store can no longer price, prints its own
-    ``[WARN]`` line. Every expected class (``stale_mark``, ``rescaled``,
+    concern prints as one: each benchmark row as it is found, and each coin
+    flip that cannot be advanced or holds a ticker the store can no longer
+    price, then one aggregate ``[WARN] baselines: N concern(s)`` line whose
+    N counts both (``MergeCounts.concern`` in the returned totals; review
+    M2). Every expected class (``stale_mark``, ``rescaled``,
     ``unclassified``)
     prints exactly one ``[INFO] … not a concern`` summary line across every
     file this build merged, when non-zero, and never a per-row line — the
@@ -1213,6 +1230,7 @@ def build_all_baselines(
     max_positions_by_agent = max_positions_by_agent or {}
     baselines_dir = cfg.baselines_dir
     totals = MergeCounts()
+    coin_concerns = 0
     for agent_id in cfg.trading_roster:
         spec = cfg.roster[agent_id].benchmark
         if spec is None:
@@ -1235,7 +1253,8 @@ def build_all_baselines(
             from_date=from_date,
             to_date=to_date,
         )
-        totals += MergeCounts(appended=coin.appended)
+        coin_concerns += len(coin.concerns)
+        totals += MergeCounts(appended=coin.appended, concern=len(coin.concerns))
 
     totals += merge_baseline_series(
         baselines_dir / "global" / "msci_world.json",
@@ -1248,10 +1267,17 @@ def build_all_baselines(
         if count:
             print(f"  [INFO] baselines: {count} {name} — {meaning}; not a concern.")
     if totals.concern:
+        parts = []
+        if totals.concern - coin_concerns:
+            parts.append(
+                f"{totals.concern - coin_concerns} benchmark point(s) priced from "
+                f"a close the store has since revised (published values kept)"
+            )
+        if coin_concerns:
+            parts.append(f"{coin_concerns} coin flip concern(s)")
         print(
-            f"  [WARN] baselines: {totals.concern} concern(s) — a close a "
-            f"published benchmark point was priced from has been revised in "
-            f"the store (rows above); the published values were kept. "
+            f"  [WARN] baselines: {totals.concern} concern(s) — "
+            f"{'; '.join(parts)}; each [WARN] above names its remedy. "
             f"{totals.appended} new point(s) appended."
         )
     return totals
