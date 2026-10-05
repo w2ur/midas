@@ -84,6 +84,8 @@ def compute_passive_benchmark(
     spec: BenchmarkSpec,
     from_date: date,
     to_date: date,
+    *,
+    closes: Mapping[str, float] | None = None,
 ) -> list[dict]:
     """€10k (or $10k) buy-and-hold of spec.ticker from from_date to to_date inclusive.
 
@@ -101,6 +103,10 @@ def compute_passive_benchmark(
     (a genuinely wrong published price). Without them those two look
     identical — the 2026-10-01 session refused 1,830 points as one count, 11
     of them real. ``EUR_CASH_FLAT`` reads no price and records no marks.
+
+    ``closes`` is the ticker's ``{date: close}`` when the caller has already
+    read it (``build_all_baselines`` hands the same map to the merge);
+    omitted, it is read from the store here.
     """
     initial = _initial()
     if spec.ticker == "EUR_CASH_FLAT":
@@ -115,7 +121,8 @@ def compute_passive_benchmark(
             for d in _daterange(from_date, to_date)
         ]
 
-    closes = _load_ohlcv(spec.ticker)
+    if closes is None:
+        closes = _load_ohlcv(spec.ticker)
     if not closes:
         return []
 
@@ -795,9 +802,13 @@ def advance_coin_flip(
     return done(len(states))
 
 
-def compute_global_reference(from_date: date, to_date: date) -> list[dict]:
+def compute_global_reference(
+    from_date: date, to_date: date, *, closes: Mapping[str, float] | None = None
+) -> list[dict]:
     """€10k buy-and-hold of MSCI World, the site's global reference line."""
-    return compute_passive_benchmark(get_config().global_reference, from_date, to_date)
+    return compute_passive_benchmark(
+        get_config().global_reference, from_date, to_date, closes=closes
+    )
 
 
 def _write_json(path: Path, data: list[dict]) -> None:
@@ -1415,10 +1426,11 @@ def build_all_baselines(
         if spec is None:
             continue
         agent_dir = baselines_dir / agent_id
+        closes = _benchmark_closes(spec)  # read once: priced from, classified against
         totals += merge_baseline_series(
             agent_dir / "benchmark.json",
-            compute_passive_benchmark(spec, from_date, to_date),
-            closes=_benchmark_closes(spec),
+            compute_passive_benchmark(spec, from_date, to_date, closes=closes),
+            closes=closes,
         )
 
         tickers = universes_by_agent.get(agent_id, [])
@@ -1435,10 +1447,11 @@ def build_all_baselines(
         coin_concerns += len(coin.concerns)
         totals += MergeCounts(appended=coin.appended, concern=len(coin.concerns))
 
+    ref_closes = _benchmark_closes(cfg.global_reference)
     totals += merge_baseline_series(
         baselines_dir / "global" / "msci_world.json",
-        compute_global_reference(from_date, to_date),
-        closes=_benchmark_closes(cfg.global_reference),
+        compute_global_reference(from_date, to_date, closes=ref_closes),
+        closes=ref_closes,
     )
 
     for name, meaning in EXPECTED_CLASSES:

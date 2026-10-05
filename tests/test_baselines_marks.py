@@ -464,3 +464,33 @@ def test_expected_classes_print_one_info_line_each(midas_data_root, capsys):
     info = [ln for ln in out.splitlines() if "[INFO] baselines:" in ln]
     assert len(info) == 1
     assert "rescaled" in info[0] and "not a concern" in info[0]
+
+
+def test_the_build_reads_each_benchmark_file_once(midas_data_root, monkeypatch):
+    """Cleanup 6a: the benchmark was priced from one read of its file and
+    classified against a second. One read now serves both."""
+    from collections import Counter
+
+    import engine.baselines as baselines
+
+    cfg = get_config()
+    universes = _seed_desk(cfg, {})
+    reads: Counter[str] = Counter()
+    real = baselines._load_ohlcv
+
+    def counting(ticker):
+        reads[ticker] += 1
+        return real(ticker)
+
+    monkeypatch.setattr(baselines, "_load_ohlcv", counting)
+    _build(universes)
+    agents = [a for a in cfg.trading_roster if cfg.roster[a].benchmark is not None]
+    per_ticker = Counter(
+        cfg.roster[a].benchmark.ticker
+        for a in agents
+        if cfg.roster[a].benchmark.ticker != "EUR_CASH_FLAT"
+    )
+    per_ticker[cfg.global_reference.ticker] += 1
+    assert per_ticker, "the fixture must price at least one benchmark"
+    for ticker, series in per_ticker.items():
+        assert reads[ticker] == series, ticker
