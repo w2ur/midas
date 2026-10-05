@@ -395,9 +395,11 @@ jobs:
             fail=1
           fi
           # Same correction as session-integrity's `check` job, and it matters
-          # MORE here: this one gates the merge. `merge_baseline_series` is
-          # append-or-refuse, so a correct Step 9 against an already-current
-          # series writes nothing, and on 2026-08-07 that shape refused to
+          # MORE here: this one gates the merge. A published baseline row is
+          # never rewritten (`merge_baseline_series` keeps it and classifies a
+          # mismatch; `advance_coin_flip` appends new dates only), so a correct
+          # Step 9 against an already-current series writes nothing, and on
+          # 2026-08-07 that shape refused to
           # merge a good session — inert only because the direct push to main
           # had already succeeded. State, not diff.
           if [[ $touches_baselines -eq 0 ]]; then

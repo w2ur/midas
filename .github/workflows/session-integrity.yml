@@ -254,7 +254,7 @@ jobs:
 
           if [[ "$mode" == "refresh" ]]; then
             fail=0
-            # Same append-or-refuse caveat as the session branch below: a
+            # Same append-only caveat as the session branch below: a
             # weekend refresh over an unadvanced store legitimately writes no
             # baseline row. The refresh still has to produce current.json,
             # which is checked separately — so this arm keeps its teeth.
@@ -317,8 +317,10 @@ jobs:
             fail=1
           fi
           # An empty diff is NOT evidence that Step 9 was skipped.
-          # `merge_baseline_series` is append-or-refuse, so a Step 9 that runs
-          # against a series already carrying the session's date writes nothing
+          # A published baseline row is never rewritten (`merge_baseline_series`
+          # keeps it and classifies a mismatch; `advance_coin_flip` appends
+          # new dates only), so a Step 9 that runs against a series already
+          # carrying the session's date writes nothing
           # — which is byte-identical, in the diff, to never having run. That
           # came apart on 2026-08-07: `a4dc9dce2 [restate]` rebuilt every
           # series earlier the same day, and both this guard and the inline
