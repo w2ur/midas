@@ -124,6 +124,9 @@ LIVE_ONLY_TESTS = {
     # Drives scripts/derive_legacy_benchmark_marks.py, a one-off read over
     # this repo's git history that core does not ship.
     "test_derive_legacy_benchmark_marks.py",
+    # Holds the committed benchmark marks sidecars to the committed baseline
+    # series; core ships neither.
+    "test_benchmark_marks_live.py",
     # Reads workers/trigger-gate/, the Cloudflare dispatch-gate. That Worker is
     # live-desk quota infrastructure keyed to this repo's own workflow file and
     # allocator channels; core ships neither.
