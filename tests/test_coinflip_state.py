@@ -80,7 +80,7 @@ def _advance(to: date, tickers=None, max_positions: int = 2, currency: str = "US
     # Bare test tickers resolve to USD, so a USD book needs no FX.
     return advance_coin_flip(
         agent_id=_AGENT,
-        tickers=list(tickers or _BASES),
+        tickers=list(_BASES if tickers is None else tickers),
         currency=currency,
         max_positions=max_positions,
         series_path=_series_path(),
@@ -461,6 +461,8 @@ def test_a_held_name_that_loses_its_rate_is_frozen_and_raises_a_concern(
     """A held USD name in a EUR book whose rate file is gone: NO_FX_RATE, held
     at its recorded mark in the book currency, kept, and one concern."""
     _store("U", [(d, 30.0 + i) for i, d in enumerate(_days(_START, 4))])
+    _currencies({"E.PA": "EUR"})  # a priceable name, so the book is advanced
+    _store("E.PA", [(d, 10.0) for d in _days(_START, 4)])
     state = CoinFlipState(
         date="2026-01-01",
         portfolio_value=100.0 + 10 * 30.0 * 0.9,
@@ -468,7 +470,7 @@ def test_a_held_name_that_loses_its_rate_is_frozen_and_raises_a_concern(
         holdings={"U": CoinFlipHolding(10, "2026-01-01", 30.0, "USD", 0.9)},
     )
     _seed_state(state)
-    result = _advance(date(2026, 1, 3), tickers=["U"], max_positions=1, currency="EUR")
+    result = _advance(date(2026, 1, 3), tickers=["U", "E.PA"], max_positions=1, currency="EUR")
     warns = [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l]
     assert len(result.concerns) == 1 and len(warns) == 1
     assert "NO_FX_RATE" in warns[0] and _AGENT in warns[0] and "U" in warns[0]
@@ -497,8 +499,9 @@ def test_a_name_bought_and_frozen_in_the_same_run_names_its_actual_mark(midas_da
 def test_a_held_name_whose_currency_no_longer_resolves_is_frozen(midas_data_root, capsys):
     """Its override removed, `ZZZ.XX` resolves to nothing: CURRENCY_UNRESOLVED."""
     _store("ZZZ.XX", [(d, 10.0) for d in _days(_START, 4)])
+    _store("AAA", [(d, 10.0) for d in _days(_START, 4)])  # priceable, too dear for 5.0
     _seed_state(_held_state("ZZZ.XX", 10, "2026-01-01", 10.0, cash=5.0))
-    result = _advance(date(2026, 1, 2), tickers=["ZZZ.XX"], max_positions=1)
+    result = _advance(date(2026, 1, 2), tickers=["ZZZ.XX", "AAA"], max_positions=1)
     assert len(result.concerns) == 1 and "CURRENCY_UNRESOLVED" in result.concerns[0]
     assert _rows()[-1]["portfolio_value"] == pytest.approx(105.0)
 
@@ -575,6 +578,43 @@ def test_an_unreadable_state_is_not_advanced(midas_data_root):
     coin_flip_state_path(_series_path()).write_text("{not json")
     result = _advance(_START + timedelta(days=6))
     assert result.appended == 0 and len(result.concerns) == 1
+
+
+@pytest.mark.parametrize("universe", [["growth-stocks"], [], ["ZZZ.XX"]])
+def test_a_universe_with_nothing_priceable_is_not_advanced(
+    midas_data_root, capsys, universe
+):
+    """Review fix 2: `resolve_agent_universe` returns a universe's bare name
+    when its file is missing. With nothing priceable in it, the old step sold
+    the whole established book to cash, drew nothing and appended the result.
+    Now the agent is not advanced and one concern says why."""
+    _store("AAA", [(d, 10.0 + i) for i, d in enumerate(_days(_START, 5))])
+    _store("ZZZ.XX", [(d, 10.0) for d in _days(_START, 5)])  # no currency
+    _seed_state(_held_state("AAA", 100, "2026-01-01", 10.0, cash=50.0))
+    series = _series_path().read_text()
+    state = coin_flip_state_path(_series_path()).read_text()
+    result = _advance(date(2026, 1, 4), tickers=universe, max_positions=1)
+    assert result.appended == 0 and len(result.concerns) == 1
+    assert _AGENT in result.concerns[0] and "no priceable candidate" in result.concerns[0]
+    assert "[WARN]" in capsys.readouterr().out
+    assert _series_path().read_text() == series
+    assert coin_flip_state_path(_series_path()).read_text() == state
+
+
+def test_an_unpriceable_universe_is_a_concern_of_the_build(midas_data_root, capsys):
+    cfg = get_config()
+    days = _days(_START, 10)
+    _seed_benchmarks(cfg, days)
+    _seed_store(n_days=10)
+    universes = _desk_universes(cfg, ["AAA", "BBB", "CCC"])
+    build_all_baselines(universes, _START, _START + timedelta(days=5))
+    agent = next(iter(universes))
+    capsys.readouterr()
+    totals = build_all_baselines(
+        {**universes, agent: ["missing-universe"]}, _START, _START + timedelta(days=9)
+    )
+    assert totals.concern == 1
+    assert "[WARN] baselines: 1 concern(s)" in capsys.readouterr().out
 
 
 # ---------------------------------------------------------------------------

@@ -668,6 +668,12 @@ def advance_coin_flip(
       as the seam it is). The session lifts it into a ``Concerns:`` trailer,
       ``build_all_baselines`` counts it, and ``check_session_freshness`` sees
       the series fall behind the snapshots.
+    - **Refuse, empty draw** — an established series whose universe has no
+      priceable ticker on the first new date (a missing universe file
+      resolves to its bare name): advancing would sell the book to cash and
+      draw nothing, so nothing is written and one concern names the agent.
+      The instrument registry plays no part in this test: a registry that
+      fails closed carries every holding untraded, which liquidates nothing.
 
     A holding whose file is gone, or whose store no longer holds a close dated
     its mark (truncated, or that row withdrawn), or whose currency no longer
@@ -739,6 +745,20 @@ def advance_coin_flip(
 
     universe = sorted(set(tickers))
     closes = _Closes(set(universe) | set(state.holdings), currency)
+    first = (date.fromisoformat(state.date) + timedelta(days=1)).isoformat()
+    if not any(closes.priced(t, first) for t in universe):
+        # A universe whose file is missing resolves to its bare name
+        # (`resolve_agent_universe`); stepping it would sell the whole book to
+        # cash and draw nothing. Priceability only grows with the date, so
+        # none on the first new date means none would be drawn that day.
+        concerns.append(
+            f"coinflip {agent_id}: no priceable candidate in its universe of "
+            f"{len(universe)} ticker(s) on {first} (no close, no resolvable "
+            f"currency or no {currency} rate for any of them; a missing "
+            f"universe file resolves to its bare name); not advanced, the book "
+            f"is not sold to cash. Fix the agent's universe."
+        )
+        return done(0)
     excluded = _excluded(agent_id, set(universe) | set(state.holdings), concerns)
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
     states = _run(
