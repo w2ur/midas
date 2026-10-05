@@ -3,7 +3,11 @@
 Data model: each baseline is a list of daily snapshots
 {date, portfolio_value, cash, positions_value, currency} mirroring
 the shape of data/portfolios/<agent>/snapshots.json so the site can
-consume baselines with minimal new code.
+consume baselines with minimal new code. A passive benchmark row priced
+from the store also records the closes it used ({mark_date, mark_close,
+base_date, base_close}, see ``compute_passive_benchmark``); rows published
+before those fields existed keep theirs in a ``<series>_marks.json`` sidecar
+beside the series, never on the row (``merge_baseline_series``).
 
 Ticker choices:
 - VGK  (Vanguard FTSE Europe ETF, USD-listed) replaces IMEU.L / IWDA.L UCITS
@@ -23,9 +27,11 @@ de minimis, matching the existing snapshot-benchmark pattern in the site.
 from __future__ import annotations
 
 import json
+import math
+from dataclasses import dataclass, fields
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Collection, Iterator
+from typing import Collection, Iterator, Mapping
 
 import pandas as pd
 
@@ -77,6 +83,18 @@ def compute_passive_benchmark(
 
     Non-trading days carry the last observed close. Missing OHLCV data returns
     an empty list (caller treats as "no line to draw").
+
+    **Each priced row records the two closes it was priced from**:
+    ``mark_date``/``mark_close`` (the newest close on or before the row's date,
+    i.e. the forward-filled one on a day the store has no bar for) and
+    ``base_date``/``base_close`` (the first close in the window). The value is
+    ``initial * mark_close / base_close`` exactly, so the row is
+    self-describing: ``merge_baseline_series`` can tell a point that
+    forward-filled a close which landed later (expected, permanent, not a
+    concern) from a point whose recorded close the store has since revised
+    (a genuinely wrong published price). Without them those two look
+    identical — the 2026-10-01 session refused 1,830 points as one count, 11
+    of them real. ``EUR_CASH_FLAT`` reads no price and records no marks.
     """
     initial = _initial()
     if spec.ticker == "EUR_CASH_FLAT":
@@ -96,14 +114,18 @@ def compute_passive_benchmark(
         return []
 
     first_close: float | None = None
+    first_date: str | None = None
     last_close: float | None = None
+    last_date: str | None = None
     out: list[dict] = []
     for d in _daterange(from_date, to_date):
         iso = d.isoformat()
         if iso in closes:
             last_close = closes[iso]
+            last_date = iso
             if first_close is None:
                 first_close = last_close
+                first_date = iso
         if first_close is None or last_close is None:
             continue  # no data yet for the range
         value = initial * (last_close / first_close)
@@ -114,6 +136,10 @@ def compute_passive_benchmark(
                 "cash": 0.0,
                 "positions_value": value,
                 "currency": spec.currency,
+                "mark_date": last_date,
+                "mark_close": last_close,
+                "base_date": first_date,
+                "base_close": first_close,
             }
         )
     return out
@@ -224,39 +250,228 @@ def _write_json(path: Path, data: list[dict]) -> None:
     path.write_text(json.dumps(data, indent=2) + "\n")
 
 
+#: Relative tolerance for "the store's mark/base ratio equals the recorded
+#: one". A constant rescale of the whole history (units, a restated split)
+#: cancels in the ratio, but not bit-exactly (x3 moves 123.45/100.1 by an
+#: ulp, ~1e-16). 1e-12 clears that by four orders and sits six below the
+#: smallest revision that moves a 10k point by a cent (1e-6).
+RATIO_REL_TOL = 1e-12
+
+#: The fields a benchmark row records about the closes it was priced from.
+MARK_FIELDS = ("mark_date", "mark_close", "base_date", "base_close")
+
+
+@dataclass(frozen=True)
+class MergeCounts:
+    """What one merge (or a whole build) did with each computed row.
+
+    ``appended`` is a new date. Every other field is a published date the
+    recomputation disagrees with, classified by ``merge_baseline_series``;
+    the published row is kept in every case. Only ``concern`` is a finding.
+    """
+
+    appended: int = 0
+    stale_mark: int = 0
+    rescaled: int = 0
+    concern: int = 0
+    unclassified: int = 0
+    path_recompute: int = 0
+
+    def __add__(self, other: "MergeCounts") -> "MergeCounts":
+        return MergeCounts(
+            *(getattr(self, f.name) + getattr(other, f.name) for f in fields(self))
+        )
+
+    @property
+    def mismatched(self) -> int:
+        """Published dates the recomputation disagreed with, all classes."""
+        return (
+            self.stale_mark
+            + self.rescaled
+            + self.concern
+            + self.unclassified
+            + self.path_recompute
+        )
+
+
+#: The expected classes, each printed as one ``[INFO]`` summary line by
+#: ``build_all_baselines``, in this order, with what it means.
+EXPECTED_CLASSES: tuple[tuple[str, str], ...] = (
+    (
+        "stale_mark",
+        "published point(s) forward-filled a close that landed later; the "
+        "recorded marks still hold in the store",
+    ),
+    (
+        "rescaled",
+        "published point(s) whose recorded closes were rescaled in the store "
+        "with their ratio unchanged",
+    ),
+    (
+        "unclassified",
+        "legacy published point(s) with no recorded marks differ from a "
+        "recomputation",
+    ),
+    (
+        "path_recompute",
+        "coin-flip point(s) differ from a recomputation of the seeded path",
+    ),
+)
+
+
+def marks_sidecar_path(path: Path) -> Path:
+    """``benchmark.json`` -> ``benchmark_marks.json``, beside it."""
+    return path.with_name(f"{path.stem}_marks.json")
+
+
+def _load_marks_sidecar(path: Path) -> dict[str, dict]:
+    """``{date: marks}`` from the sidecar beside ``path``, or ``{}``.
+
+    An unreadable sidecar warns and classifies nothing (every legacy mismatch
+    then reads ``unclassified``): the merge prints rather than raises, and the
+    warning is what reaches the session's ``Concerns:`` path.
+    """
+    sidecar = marks_sidecar_path(path)
+    if not sidecar.exists():
+        return {}
+    try:
+        rows = json.loads(sidecar.read_text())
+        return {
+            r["date"]: {k: r[k] for k in MARK_FIELDS}
+            for r in rows
+        }
+    except (ValueError, TypeError, KeyError) as exc:
+        print(
+            f"  [WARN] {sidecar.parent.name}/{sidecar.name} is unreadable "
+            f"({exc.__class__.__name__}); legacy rows of {path.name} cannot be "
+            f"classified — a concern, the sidecar must be repaired."
+        )
+        return {}
+
+
+def _ratio_holds(marks: dict, closes: Mapping[str, float] | None) -> bool:
+    """Does the store still price the recorded mark/base ratio?
+
+    A recorded close the store no longer holds cannot be confirmed, so it
+    does not hold: an unconfirmable mark fails toward the concern.
+    """
+    if closes is None:
+        return False
+    mark = closes.get(marks["mark_date"])
+    base = closes.get(marks["base_date"])
+    if mark is None or base is None or base == 0 or marks["base_close"] == 0:
+        return False
+    recorded = marks["mark_close"] / marks["base_close"]
+    return math.isclose(mark / base, recorded, rel_tol=RATIO_REL_TOL, abs_tol=0.0)
+
+
+def _has_later_close(
+    marks: dict, row_date: str, closes: Mapping[str, float] | None
+) -> bool:
+    """Does the store now hold a close in (mark_date, row_date]?"""
+    if closes is None or marks["mark_date"] >= row_date:
+        return False
+    return any(marks["mark_date"] < d <= row_date for d in closes)
+
+
+def _classify(
+    published: dict,
+    computed: dict,
+    *,
+    kind: str,
+    sidecar: dict[str, dict],
+    closes: Mapping[str, float] | None,
+) -> str | None:
+    """The class of a published row against its recomputation, or None if equal."""
+    if kind == "coinflip":
+        return None if published == computed else "path_recompute"
+    if "mark_date" in published:
+        if published == computed:
+            return None
+        marks = {k: published[k] for k in MARK_FIELDS}
+    else:
+        # Legacy row: compare on value and currency only, so that adding the
+        # mark fields to the recomputation refuses nothing by itself.
+        if (
+            published.get("portfolio_value") == computed.get("portfolio_value")
+            and published.get("currency") == computed.get("currency")
+        ):
+            return None
+        marks = sidecar.get(published["date"])
+        if marks is None:
+            return "unclassified"
+    if marks["mark_date"] != marks["base_date"] and not _ratio_holds(marks, closes):
+        return "concern"
+    if _has_later_close(marks, published["date"], closes):
+        return "stale_mark"
+    return "rescaled"
+
+
 def merge_baseline_series(
-    path: Path, computed: list[dict], *, restate: bool = False
-) -> tuple[int, int]:
-    """Append-or-refuse merge of a freshly computed series onto a baseline file.
+    path: Path,
+    computed: list[dict],
+    *,
+    restate: bool = False,
+    kind: str = "benchmark",
+    closes: Mapping[str, float] | None = None,
+) -> MergeCounts:
+    """Append-or-keep merge of a freshly computed series onto a baseline file,
+    classifying every published point the recomputation disagrees with.
 
     Reaches the same outcome as ``PortfolioManager.add_snapshot`` on the other
     curve plotted on the same dossier chart — a published point is immutable
-    to a later run — by a simpler mechanism than that function's, and safely
-    so: ``add_snapshot`` keys replacement on ``session_date`` identity because
-    a trading day's valuation can be legitimately re-run intraday; a baseline
-    date has no such concept, it is a deterministic function of a
-    same-day-immutable OHLCV store, so any value mismatch on an already-
-    published date is itself the signal that the upstream store changed
-    retroactively — refusing on any mismatch is therefore equivalent to
-    ``add_snapshot``'s session-identity check, not a looser stand-in for it.
-    A date not yet on disk is appended; a date already on disk is refused —
-    the on-disk row is kept exactly as published, even if ``computed`` now
-    disagrees with it because an OHLCV price was revised upstream.
+    to a later run. A date not yet on disk is appended; a date already on
+    disk is kept exactly as published, whatever ``computed`` now says.
     ``restate=True`` is the explicit, one-time escape hatch: every date in
     ``computed`` overwrites its on-disk counterpart, used only for a
-    deliberate, publicly logged restatement.
+    deliberate, publicly logged restatement (and counted in no class).
 
-    Refusals are printed, not raised — a session that dies because one
-    benchmark point drifted is worse than one that surfaces it. The same
-    posture covers the case where ``computed`` is empty but the file already
-    holds history: within-range gaps are already forward-filled (see
-    ``compute_passive_benchmark`` above), so an empty ``computed`` against an
+    **What changed (plan 1.5, 2026-10-04): a mismatch is classified, not
+    refused as one undifferentiated count.** The old docstring argued that
+    any mismatch on a published date is the signal that the store changed
+    retroactively. Measured on the 2026-10-01 session, 1,830 refusals carried
+    11 genuine revisions; the rest were points that forward-filled a close
+    which landed later, and coin-flip path recomputes. A count dominated by
+    the expected case is a guard nobody reads. Classes, per published date:
+
+    - ``concern`` — **the only finding.** The row's recorded
+      ``mark_close/base_close`` differs from the store's close on the same
+      two dates (relative ``RATIO_REL_TOL``), or the store no longer holds
+      one of them: a close the row was priced from was revised. A row with
+      ``mark_date == base_date`` is never a concern — its value is the
+      initial capital by construction. Printed as one ``[WARN]`` per row.
+    - ``stale_mark`` — the ratio holds, ``mark_date`` is before the row's
+      date, and the store now holds a close in ``(mark_date, date]``: the
+      point forward-filled a close that had not landed yet. The published
+      row is right for what it saw and mismatches forever; no horizon makes
+      it drift.
+    - ``rescaled`` — the ratio holds and no later close landed, yet the row
+      differs: the store's closes were rescaled (units, a restated split)
+      with their ratio unchanged, which a ratio series cancels.
+    - ``unclassified`` — a legacy row (no mark fields) with no entry in the
+      marks sidecar.
+    - ``path_recompute`` — ``kind="coinflip"``: any coin-flip mismatch, until
+      plan 1.6 replaces that merge with a stateful advance. Never a concern.
+
+    **Where the recorded marks come from.** A row written since plan 1.5
+    carries them (``compute_passive_benchmark``). A legacy row is never
+    rewritten to add them (the append-only gate freezes it byte for byte);
+    its marks were derived from the writer's own store by
+    ``scripts/derive_legacy_benchmark_marks.py`` into a dated sidecar beside
+    the series (``benchmark_marks.json``, ``msci_world_marks.json``). Row
+    fields are read first, then the sidecar. A legacy row compares on
+    ``portfolio_value`` and ``currency`` only, so adding the fields to the
+    recomputation moves nothing by itself.
+
+    Nothing here raises — a session that dies because one benchmark point
+    drifted is worse than one that surfaces it. The same posture covers the
+    case where ``computed`` is empty but the file already holds history:
+    within-range gaps are already forward-filled (see
+    ``compute_passive_benchmark``), so an empty ``computed`` against an
     established baseline means a whole ticker file is missing — a persistent
-    condition, not a blip — and silently freezing the file without a word
-    would look identical to success. That case is a no-op merge (nothing to
-    append, nothing to refuse) but still prints, unlike a brand-new agent's
-    first-ever build, where an empty ``computed`` against no prior file is
-    the ordinary "no data yet" case and stays silent.
+    condition, not a blip — and it prints a ``[WARN]``, unlike a brand-new
+    agent's first-ever build, where an empty ``computed`` against no prior
+    file is the ordinary "no data yet" case and stays silent.
 
     Parameters
     ----------
@@ -266,13 +481,23 @@ def merge_baseline_series(
         Freshly computed series for the full [from_date, to_date] window.
     restate:
         When True, every date overwrites the on-disk row instead of being
-        refused. Reserved for a deliberate restatement.
+        kept. Reserved for a deliberate restatement.
+    kind:
+        ``"benchmark"`` (a passive benchmark or the global reference: marks
+        are classified) or ``"coinflip"`` (every mismatch is
+        ``path_recompute``).
+    closes:
+        The store's ``{date: close}`` for the benchmark's ticker. Without it
+        no recorded mark can be confirmed, so every mark-bearing mismatch is
+        a concern.
 
     Returns
     -------
-    tuple[int, int]
-        (appended, refused) counts.
+    MergeCounts
+        Appended dates and the mismatches per class.
     """
+    if kind not in ("benchmark", "coinflip"):
+        raise ValueError(f"unknown baseline kind {kind!r}")
     existing: list[dict] = json.loads(path.read_text()) if path.exists() else []
     if not computed and existing:
         print(
@@ -281,28 +506,44 @@ def merge_baseline_series(
             f"ticker file (within-range gaps are already forward-filled), "
             f"not a transient blip. Keeping the published file as-is."
         )
-        return 0, 0
+        return MergeCounts()
+    sidecar = _load_marks_sidecar(path) if kind == "benchmark" and existing else {}
     by_date = {row["date"]: row for row in existing}
-    appended = 0
-    refused = 0
+    tally = {f.name: 0 for f in fields(MergeCounts)}
     for row in computed:
         date_key = row["date"]
         if date_key not in by_date:
             by_date[date_key] = row
-            appended += 1
+            tally["appended"] += 1
             continue
         if restate:
             by_date[date_key] = row
             continue
-        if by_date[date_key] != row:
-            refused += 1
+        published = by_date[date_key]
+        verdict = _classify(
+            published, row, kind=kind, sidecar=sidecar, closes=closes
+        )
+        if verdict is None:
+            continue
+        tally[verdict] += 1
+        if verdict == "concern":
+            marks = (
+                {k: published[k] for k in MARK_FIELDS}
+                if "mark_date" in published
+                else sidecar[date_key]
+            )
+            store = closes or {}
             print(
-                f"  [WARN] {path.name}: {date_key} already published — "
-                f"refusing to overwrite with a revised value."
+                f"  [WARN] {path.parent.name}/{path.name}: {date_key} concern — "
+                f"published from {marks['mark_date']} at {marks['mark_close']} "
+                f"over {marks['base_date']} at {marks['base_close']}; the store "
+                f"now holds {store.get(marks['mark_date'])} over "
+                f"{store.get(marks['base_date'])}: a recorded close was revised. "
+                f"The published value was kept."
             )
     merged = [by_date[d] for d in sorted(by_date)]
     _write_json(path, merged)
-    return appended, refused
+    return MergeCounts(**tally)
 
 
 def _series_restated(
@@ -335,23 +576,28 @@ def build_all_baselines(
     *,
     restate_series: Collection[str] | None = None,
     changelog_entry: str | None = None,
-) -> None:
+) -> MergeCounts:
     """Produce all per-agent baseline files + the global reference file.
 
     Iterates get_config().trading_roster; agents whose benchmark is None are
-    skipped. Append-or-refuse: an already-published date is kept as-is unless
+    skipped. Append-or-keep: an already-published date is kept as-is unless
     the series is named in ``restate_series`` (see ``_series_restated`` for
-    the scoping rules, and for why this is not a bool). Missing OHLCV data for a brand-new agent (no
-    prior file) yields an empty file — "no line to draw" for the site.
-    Missing OHLCV data against an *established* baseline is not empty: the
-    old file is kept frozen and a [WARN] is printed by
+    the scoping rules, and for why this is not a bool). Missing OHLCV data
+    for a brand-new agent (no prior file) yields an empty file — "no line to
+    draw" for the site. Missing OHLCV data against an *established* baseline
+    is not empty: the old file is kept frozen and a [WARN] is printed by
     ``merge_baseline_series`` (see its docstring for why those two cases
-    differ). Per-date refusal warnings print as they occur; this function
-    also prints one aggregated (appended, refused) summary across every
-    file it merges, mirroring the shape of
-    ``scripts.daily_session.step_update_snapshots``'s aggregate line, so a
-    session with refusals scattered across many agents surfaces one count
-    instead of dozens of individual prints.
+    differ, and for the mismatch classes).
+
+    **What reaches the session's ``Concerns:`` path.** The session model
+    turns printed ``[WARN]`` lines into commit trailers, so only a
+    ``concern`` prints as one: each row as it is found, then one aggregate
+    ``[WARN] baselines: N concern(s)`` line. Every expected class
+    (``stale_mark``, ``rescaled``, ``unclassified``, ``path_recompute``)
+    prints exactly one ``[INFO] … not a concern`` summary line across every
+    file this build merged, when non-zero, and never a per-row line — the
+    2026-10-01 session printed 1,830 per-row warnings for 11 real
+    revisions. Returns the totals.
 
     **A non-empty ``restate_series`` requires ``changelog_entry``** — the
     anchor of the METHODOLOGY.md entry disclosing what moves and why, verified
@@ -370,21 +616,18 @@ def build_all_baselines(
     cfg = get_config()
     max_positions_by_agent = max_positions_by_agent or {}
     baselines_dir = cfg.baselines_dir
-    total_appended = 0
-    total_refused = 0
+    totals = MergeCounts()
     for agent_id in cfg.trading_roster:
         spec = cfg.roster[agent_id].benchmark
         if spec is None:
             continue
         agent_dir = baselines_dir / agent_id
-        bench = compute_passive_benchmark(spec, from_date, to_date)
-        appended, refused = merge_baseline_series(
+        totals += merge_baseline_series(
             agent_dir / "benchmark.json",
-            bench,
+            compute_passive_benchmark(spec, from_date, to_date),
             restate=_series_restated(restate_series, agent_id, "benchmark"),
+            closes=_benchmark_closes(spec),
         )
-        total_appended += appended
-        total_refused += refused
 
         tickers = universes_by_agent.get(agent_id, [])
         max_pos = max_positions_by_agent.get(agent_id, 5)
@@ -396,26 +639,36 @@ def build_all_baselines(
             from_date=from_date,
             to_date=to_date,
         )
-        appended, refused = merge_baseline_series(
+        totals += merge_baseline_series(
             agent_dir / "coinflip.json",
             coin,
             restate=_series_restated(restate_series, agent_id, "coinflip"),
+            kind="coinflip",
         )
-        total_appended += appended
-        total_refused += refused
 
-    appended, refused = merge_baseline_series(
+    totals += merge_baseline_series(
         baselines_dir / "global" / "msci_world.json",
         compute_global_reference(from_date, to_date),
         restate=_series_restated(restate_series, "global", "msci_world"),
+        closes=_benchmark_closes(cfg.global_reference),
     )
-    total_appended += appended
-    total_refused += refused
 
-    if total_refused:
+    for name, meaning in EXPECTED_CLASSES:
+        count = getattr(totals, name)
+        if count:
+            print(f"  [INFO] baselines: {count} {name} — {meaning}; not a concern.")
+    if totals.concern:
         print(
-            f"  [WARN] baselines: {total_refused} published point(s) refused, "
-            f"{total_appended} new point(s) appended, across the baseline "
-            f"files this build touched — an OHLCV price likely changed "
-            f"since it was last published; the published values were kept."
+            f"  [WARN] baselines: {totals.concern} concern(s) — a close a "
+            f"published benchmark point was priced from has been revised in "
+            f"the store (rows above); the published values were kept. "
+            f"{totals.appended} new point(s) appended."
         )
+    return totals
+
+
+def _benchmark_closes(spec: BenchmarkSpec) -> dict[str, float] | None:
+    """The store's closes for a benchmark, or None for one that reads no price."""
+    if spec.ticker == "EUR_CASH_FLAT":
+        return None
+    return _load_ohlcv(spec.ticker)

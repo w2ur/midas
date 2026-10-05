@@ -1639,10 +1639,14 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
 def step_build_baselines() -> None:
     """Step 9a — Baselines.
 
-    Recomputes data/baselines/ for Day 1 → today, append-or-refuse per date
+    Recomputes data/baselines/ for Day 1 → today, append-or-keep per date
     (engine.baselines.merge_baseline_series) — the same mutability contract
     as PortfolioManager.add_snapshot on the agent curve it shares a chart
-    with. Runs AFTER portfolio mutations so the benchmark window matches the
+    with. A published point the recomputation disagrees with is kept and
+    classified; only a ``concern`` (a recorded benchmark close the store has
+    since revised) prints as ``[WARN]``, so only it reaches the session's
+    ``Concerns:`` trailer. The expected classes print one ``[INFO] … not a
+    concern`` line each. Runs AFTER portfolio mutations so the benchmark window matches the
     freshly-appended agent snapshots. Uses backfill_baselines constants as
     the single source of truth for universes + max_positions.
     """

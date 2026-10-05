@@ -413,6 +413,9 @@ def test_cast_tests_reclaimed_into_manifest():
         # Drives scripts/check_session_freshness.py, the same shape: a
         # live-repo CI tool backing session-integrity, absent from CORE_SCRIPTS.
         "test_session_freshness.py",
+        # Drives scripts/derive_legacy_benchmark_marks.py, a one-off read of
+        # this repo's git history; core does not ship it.
+        "test_derive_legacy_benchmark_marks.py",
         # Drives scripts/prompt_hash.py against docs/triggers/, both live-desk
         # RemoteTrigger infrastructure that core does not carry.
         "test_prompt_hash.py",

@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from engine.baselines import merge_baseline_series
+from engine.baselines import MergeCounts, merge_baseline_series
 
 
 def _write(path: Path, rows: list[dict]) -> None:
@@ -57,7 +57,7 @@ def test_merge_baseline_series_appends_new_dates(tmp_path):
         },
     ]
 
-    assert merge_baseline_series(path, computed) == (1, 0)
+    assert merge_baseline_series(path, computed) == MergeCounts(appended=1)
     on_disk = json.loads(path.read_text())
     assert [row["date"] for row in on_disk] == ["2026-08-04", "2026-08-05"]
 
@@ -89,9 +89,11 @@ def test_merge_baseline_series_refuses_to_move_a_published_point(tmp_path):
         }
     ]
 
-    appended, refused = merge_baseline_series(path, computed)
+    counts = merge_baseline_series(path, computed)
 
-    assert (appended, refused) == (0, 1)
+    # A legacy row with no recorded marks: kept, and counted unclassified
+    # (classification lives in tests/test_baselines_marks.py).
+    assert counts == MergeCounts(unclassified=1)
     assert json.loads(path.read_text())[0]["portfolio_value"] == 8695.39
 
 
@@ -120,7 +122,7 @@ def test_merge_baseline_series_restate_flag_overwrites(tmp_path):
         }
     ]
 
-    assert merge_baseline_series(path, computed, restate=True) == (0, 0)
+    assert merge_baseline_series(path, computed, restate=True) == MergeCounts()
     assert json.loads(path.read_text())[0]["portfolio_value"] == 8679.04
 
 
@@ -137,7 +139,7 @@ def test_merge_baseline_series_creates_file_when_none_exists(tmp_path):
         }
     ]
 
-    assert merge_baseline_series(path, computed) == (1, 0)
+    assert merge_baseline_series(path, computed) == MergeCounts(appended=1)
     assert json.loads(path.read_text()) == computed
 
 
@@ -155,7 +157,7 @@ def test_merge_baseline_series_identical_replay_is_not_a_refusal(tmp_path, capsy
     ]
     _write(path, rows)
 
-    assert merge_baseline_series(path, rows) == (0, 0)
+    assert merge_baseline_series(path, rows) == MergeCounts()
     assert "[WARN]" not in capsys.readouterr().out
 
 
@@ -181,7 +183,7 @@ def test_merge_baseline_series_warns_on_total_fetch_failure_against_history(
 
     result = merge_baseline_series(path, [])
 
-    assert result == (0, 0)
+    assert result == MergeCounts()
     out = capsys.readouterr().out
     assert "[WARN]" in out
     assert "benchmark.json" in out
@@ -207,22 +209,22 @@ def test_merge_baseline_series_silent_for_brand_new_agent_with_no_data(
 
     result = merge_baseline_series(path, [])
 
-    assert result == (0, 0)
+    assert result == MergeCounts()
     assert "[WARN]" not in capsys.readouterr().out
     assert json.loads(path.read_text()) == []
 
 
 @pytest.mark.live_cast
-def test_build_all_baselines_prints_one_aggregate_summary_on_refusal(
+def test_build_all_baselines_prints_one_aggregate_summary_on_concern(
     midas_data_root, capsys
 ):
     """A revised price across many baseline files must surface as one
     aggregated line, not one scattered [WARN] per file.
 
-    The "2 published point(s) refused" figure is a live-roster-specific
+    The "2 concern(s)" figure is a live-roster-specific
     fact (the ``world`` agent's own benchmark shares the URTH ticker with
-    the global reference, so one revision refuses two files) — the demo
-    desk has no such agent and would refuse exactly one. Hence
+    the global reference, so one revision flags two files) — the demo
+    desk has no such agent and would flag exactly one. Hence
     ``live_cast``, matching the convention in ``tests/conftest.py``.
     """
     from datetime import date as _date
@@ -276,9 +278,9 @@ def test_build_all_baselines_prints_one_aggregate_summary_on_refusal(
 
     out = capsys.readouterr().out
     # One aggregate line, even though the world agent's own benchmark.json
-    # and the global msci_world.json share the URTH ticker and both refuse.
+    # and the global msci_world.json share the URTH ticker and both flag it.
     assert out.count("[WARN] baselines:") == 1
-    assert "2 published point(s) refused" in out
+    assert "[WARN] baselines: 2 concern(s)" in out
 
 
 # ---------------------------------------------------------------------------

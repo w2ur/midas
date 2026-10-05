@@ -121,6 +121,9 @@ LIVE_ONLY_TESTS = {
     # Imports app/, the Streamlit dashboard. Core ships the engine and the
     # orchestration, not this desk's local UI.
     "test_app_formatting.py",
+    # Drives scripts/derive_legacy_benchmark_marks.py, a one-off read over
+    # this repo's git history that core does not ship.
+    "test_derive_legacy_benchmark_marks.py",
     # Reads workers/trigger-gate/, the Cloudflare dispatch-gate. That Worker is
     # live-desk quota infrastructure keyed to this repo's own workflow file and
     # allocator channels; core ships neither.
