@@ -377,7 +377,7 @@ def _step(
     universe: list[str],
     excluded: Collection[str],
     max_positions: int,
-    frozen: dict[str, str],
+    frozen: dict[str, tuple[str, CoinFlipHolding]],
 ) -> CoinFlipState:
     """One day of the coin flip: value the book at ``iso``, then repick.
 
@@ -402,7 +402,9 @@ def _step(
     the close used. A candidate whose currency is unresolved or whose rate is
     unavailable is not in the draw; a holding in either condition is carried
     at its recorded mark (``CoinFlipHolding.mark_value``) like one the store
-    cannot price, and ``frozen`` records why, in the broker's vocabulary:
+    cannot price, and ``frozen`` records why, in the broker's vocabulary, with
+    the holding as it was when it first froze (it may have been bought earlier
+    in the same run, so the run's starting state need not hold it):
     ``NO_PRICE_DATA``, ``CURRENCY_UNRESOLVED`` (including a ticker that now
     resolves to a currency other than the one its mark was recorded in) or
     ``NO_FX_RATE``.
@@ -428,7 +430,7 @@ def _step(
             if rate is None:
                 reason = NO_FX_RATE
         if reason is not None:
-            frozen.setdefault(ticker, reason)
+            frozen.setdefault(ticker, (reason, h))
             carried[ticker] = h
             carried_value += h.mark_value
             continue
@@ -502,7 +504,7 @@ def _run(
     universe: list[str],
     excluded: Collection[str],
     max_positions: int,
-    frozen: dict[str, str],
+    frozen: dict[str, tuple[str, CoinFlipHolding]],
 ) -> list[CoinFlipState]:
     """Every daily state after ``state.date`` through ``to_date``."""
     out: list[CoinFlipState] = []
@@ -611,7 +613,7 @@ def _fresh_path(
     if not closes.has_any() or to_date < from_date:
         return []
     excluded = _excluded(agent_id, tickers, concerns)
-    frozen: dict[str, str] = {}
+    frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
     first = _step(
         agent_id,
         {},
@@ -738,7 +740,7 @@ def advance_coin_flip(
     universe = sorted(set(tickers))
     closes = _Closes(set(universe) | set(state.holdings), currency)
     excluded = _excluded(agent_id, set(universe) | set(state.holdings), concerns)
-    frozen: dict[str, str] = {}
+    frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
     states = _run(
         agent_id,
         state,
@@ -749,26 +751,24 @@ def advance_coin_flip(
         max_positions=max_positions,
         frozen=frozen,
     )
-    for ticker, reason in sorted(frozen.items()):
-        h = state.holdings.get(ticker)
+    for ticker, (reason, h) in sorted(frozen.items()):
         if reason == NO_PRICE_DATA:
             why = (
-                f"has no close dated its mark {h.mark_date if h else '?'} in "
-                f"the store (file gone, truncated, or that row withdrawn)"
+                f"has no close dated its mark {h.mark_date} in the store (file "
+                f"gone, truncated, or that row withdrawn)"
             )
         elif reason == CURRENCY_UNRESOLVED:
             why = (
                 f"resolves to no quote currency matching its recorded "
-                f"{h.currency if h else '?'} (now {closes.currency(ticker)})"
+                f"{h.currency} (now {closes.currency(ticker)})"
             )
         else:
-            why = (
-                f"has no {h.currency if h else '?'}->{currency} rate at its "
-                f"latest close"
-            )
+            why = f"has no {h.currency}->{currency} rate at its latest close"
         concerns.append(
             f"coinflip {agent_id}: {ticker} {reason} — {why}; held at its "
-            f"recorded mark and kept in the book."
+            f"recorded mark of {h.mark_date} ({h.shares} x {h.mark_close:g} "
+            f"{h.currency} at {h.mark_rate:g} = {h.mark_value:.2f} {currency}) "
+            f"and kept in the book."
         )
     _write_json(series_path, series + [_row(s, currency) for s in states])
     write_coin_flip_state(state_path, states[-1], agent_id)

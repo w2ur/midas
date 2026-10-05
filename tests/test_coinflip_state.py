@@ -477,6 +477,23 @@ def test_a_held_name_that_loses_its_rate_is_frozen_and_raises_a_concern(
     assert held["U"] == CoinFlipHolding(10, "2026-01-01", 30.0, "USD", 0.9)
 
 
+def test_a_name_bought_and_frozen_in_the_same_run_names_its_actual_mark(midas_data_root):
+    """Review fix 5: a frozen ticker bought during the run is not in the run's
+    starting state, and its concern used to print mark `?`. It names the mark
+    it was bought at. The shape: bought 01-02, its rate is a zero row on 01-03
+    (`get_rate` answers None), so it freezes on 01-03."""
+    _store("U", [(d, 30.0) for d in _days(_START, 3)])
+    _store("EURUSD=X", [("2026-01-01", 1.25), ("2026-01-02", 1.25), ("2026-01-03", 0.0)])
+    _seed_state(CoinFlipState(date="2026-01-01", portfolio_value=1_000.0, cash=1_000.0, holdings={}))
+    result = _advance(date(2026, 1, 3), tickers=["U"], max_positions=1, currency="EUR")
+    assert len(result.concerns) == 1
+    concern = result.concerns[0]
+    assert "NO_FX_RATE" in concern and "?" not in concern
+    # Bought 01-02: floor(1000 / (30 x 0.8)) = 41 shares, held at that mark.
+    assert "2026-01-02" in concern and "41 x 30" in concern and "USD->EUR" in concern
+    assert _rows()[-1]["portfolio_value"] == pytest.approx(1_000.0)
+
+
 def test_a_held_name_whose_currency_no_longer_resolves_is_frozen(midas_data_root, capsys):
     """Its override removed, `ZZZ.XX` resolves to nothing: CURRENCY_UNRESOLVED."""
     _store("ZZZ.XX", [(d, 10.0) for d in _days(_START, 4)])
