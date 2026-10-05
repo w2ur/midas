@@ -443,3 +443,123 @@ def test_no_scope_means_nothing_restates(midas_data_root, capsys):
     capsys.readouterr()
 
     assert _values(bench_path) == before
+
+
+# ---------------------------------------------------------------------------
+# Date-scoped restatement (plan 1.5, owner decision 2026-10-05)
+#
+# 11 published benchmark rows were priced from provisional vendor bars that
+# were later revised. Restating their whole series would also move the ~400
+# rows that merely forward-filled a close which landed later (`stale_mark`,
+# right for what they saw), so the scope has to name a single date:
+# `"<agent>/<kind>@<YYYY-MM-DD>"`.
+# ---------------------------------------------------------------------------
+
+_ANCHOR = "dated-scope-test"
+
+
+def _disclose(root) -> None:
+    (root / "METHODOLOGY.md").write_text(
+        f'- <a id="{_ANCHOR}"></a>**A dated restatement.**\n', encoding="utf-8"
+    )
+
+
+def _build_dated(cfg, universes, scope, anchor=_ANCHOR):
+    from datetime import date as _date
+
+    from engine.baselines import build_all_baselines
+
+    return build_all_baselines(
+        universes_by_agent=universes,
+        from_date=_date(2026, 4, 17),
+        to_date=_date(2026, 4, 21),
+        restate_series=scope,
+        changelog_entry=anchor,
+    )
+
+
+def test_a_dated_scope_overwrites_only_that_date_of_that_series(midas_data_root, capsys):
+    from engine.config import get_config
+
+    cfg = get_config()
+    _disclose(midas_data_root)
+    universes = _seed_desk(cfg)
+    _build(cfg, universes)
+
+    priced = _priced_agents(cfg)
+    target, bystander = priced[0], priced[1]
+    target_path = cfg.baselines_dir / target / "benchmark.json"
+    bystander_path = cfg.baselines_dir / bystander / "benchmark.json"
+    before = _values(target_path)
+    bystander_before = _values(bystander_path)
+
+    # Every close from 04-19 on is revised, so 04-19, 04-20 and 04-21 all
+    # disagree with what is published.
+    _seed_desk(cfg, last_close=999.0)
+    import json
+
+    ramp_changed = cfg.ohlcv_dir / f"{cfg.roster[target].benchmark.ticker}.jsonl"
+    lines = [
+        '{"date":"%s","close":%s}' % (d, c)
+        for d, c in zip(_DAYS, [100.0, 101.0, 150.0, 160.0, 170.0])
+    ]
+    ramp_changed.write_text("\n".join(lines) + "\n")
+
+    _build_dated(cfg, universes, {f"{target}/benchmark@2026-04-19"})
+    capsys.readouterr()
+
+    after = _values(target_path)
+    assert after["2026-04-19"] != before["2026-04-19"], "the dated scope restated nothing"
+    # Fail-once control: the neighbours disagree with a recomputation too, so
+    # "unchanged" below is the scope holding them, not an absence of drift.
+    assert after["2026-04-20"] == before["2026-04-20"]
+    assert after["2026-04-21"] == before["2026-04-21"]
+    assert after["2026-04-17"] == before["2026-04-17"]
+    assert _values(bystander_path) == bystander_before
+    # The restated row carries its new marks like any new row.
+    row = {r["date"]: r for r in json.loads(target_path.read_text())}["2026-04-19"]
+    assert {"mark_date", "mark_close", "base_date", "base_close"} <= set(row)
+    assert row["mark_close"] == 150.0
+
+
+def test_a_dated_scope_needs_a_changelog_entry(midas_data_root):
+    from engine.config import get_config
+    from engine.disclosure import UndisclosedRestatementError
+
+    cfg = get_config()
+    _disclose(midas_data_root)  # a fork without METHODOLOGY.md is exempt
+    universes = _seed_desk(cfg)
+    agent = _priced_agents(cfg)[0]
+    with pytest.raises(UndisclosedRestatementError):
+        _build_dated(cfg, universes, {f"{agent}/benchmark@2026-04-19"}, anchor=None)
+
+
+@pytest.mark.parametrize(
+    "scope, message",
+    [
+        ("{agent}/benchmark@2026-4-19", "date"),
+        ("{agent}/benchmark@not-a-date", "date"),
+        ("{agent}/benchmark@", "date"),
+        ("{agent}/mystery@2026-04-19", "kind"),
+        ("{agent}/coinflip@2026-04-19", "coin flip"),
+        ("nobody/benchmark@2026-04-19", "agent"),
+        ("benchmark@2026-04-19", "<agent>/<kind>@<YYYY-MM-DD>"),
+        ("{agent}/benchmark@2026-06-01", "not in the computed"),
+    ],
+)
+def test_a_malformed_dated_scope_is_refused_before_anything_is_written(
+    midas_data_root, scope, message
+):
+    from engine.config import get_config
+
+    cfg = get_config()
+    _disclose(midas_data_root)
+    universes = _seed_desk(cfg)
+    _build(cfg, universes)
+    agent = _priced_agents(cfg)[0]
+    path = cfg.baselines_dir / agent / "benchmark.json"
+    snapshot = path.read_text()
+
+    with pytest.raises(ValueError, match=message):
+        _build_dated(cfg, universes, {scope.format(agent=agent)})
+    assert path.read_text() == snapshot

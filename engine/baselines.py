@@ -800,6 +800,7 @@ def merge_baseline_series(
     computed: list[dict],
     *,
     restate: bool = False,
+    restate_dates: Collection[str] = (),
     closes: Mapping[str, float] | None = None,
 ) -> MergeCounts:
     """Append-or-keep merge of a freshly computed series onto a baseline file,
@@ -812,6 +813,10 @@ def merge_baseline_series(
     ``restate=True`` is the explicit, one-time escape hatch: every date in
     ``computed`` overwrites its on-disk counterpart, used only for a
     deliberate, publicly logged restatement (and counted in no class).
+    ``restate_dates`` is the same escape hatch narrowed to named dates: only
+    those rows overwrite, every other row keeps append/classify behaviour (and
+    is counted in its class). A date in ``restate_dates`` that ``computed``
+    does not hold raises ``ValueError`` before the file is written.
 
     **What changed (plan 1.5, 2026-10-04): a mismatch is classified, not
     refused as one undifferentiated count.** The old docstring argued that
@@ -873,6 +878,8 @@ def merge_baseline_series(
     restate:
         When True, every date overwrites the on-disk row instead of being
         kept. Reserved for a deliberate restatement.
+    restate_dates:
+        ISO dates whose on-disk row is overwritten; no other row is.
     closes:
         The store's ``{date: close}`` for the benchmark's ticker. Without it
         no recorded mark can be confirmed, so every mark-bearing mismatch is
@@ -892,6 +899,12 @@ def merge_baseline_series(
             f"not a transient blip. Keeping the published file as-is."
         )
         return MergeCounts()
+    absent = sorted(set(restate_dates) - {row["date"] for row in computed})
+    if absent:
+        raise ValueError(
+            f"{path.parent.name}/{path.name}: restate date(s) {absent} not in "
+            f"the computed series — nothing would be restated"
+        )
     sidecar = _load_marks_sidecar(path) if existing else {}
     by_date = {row["date"]: row for row in existing}
     tally = {f.name: 0 for f in fields(MergeCounts)}
@@ -901,7 +914,7 @@ def merge_baseline_series(
             by_date[date_key] = row
             tally["appended"] += 1
             continue
-        if restate:
+        if restate or date_key in restate_dates:
             by_date[date_key] = row
             continue
         published = by_date[date_key]
@@ -936,7 +949,12 @@ def _series_restated(
 
     A scope entry is either a bare kind (`"benchmark"` — every agent's
     passive benchmark) or a fully-qualified `"<agent>/<kind>"`
-    (`"goldfinger/benchmark"`, `"global/msci_world"`).
+    (`"goldfinger/benchmark"`, `"global/msci_world"`). A third form,
+    `"<agent>/<kind>@<YYYY-MM-DD>"`, restates ONE DATE of one series
+    (`_series_restated_dates`) and makes this function answer False for it:
+    the rest of that series keeps append/classify behaviour. It exists
+    because the rows that genuinely needed restating (priced from provisional
+    bars, 2026-10-05) sat inside series whose other rows must not move.
 
     **The coin flip cannot be restated** (plan 1.6, 2026-10-05):
     ``build_all_baselines`` refuses a scope naming it, bare or qualified. It is
@@ -958,6 +976,52 @@ def _series_restated(
     if not restate_series:
         return False
     return kind in restate_series or f"{agent}/{kind}" in restate_series
+
+
+#: The series kinds a dated scope may name, and where their agent comes from.
+_DATED_KINDS = ("benchmark", "msci_world")
+
+_DATED_FORM = "<agent>/<kind>@<YYYY-MM-DD>"
+
+
+def _parse_dated_scope(entry: str, agents: Collection[str]) -> tuple[str, str, str]:
+    """``(agent, kind, date)`` of a ``"<agent>/<kind>@<date>"`` entry, or raise."""
+    series, sep, day = entry.partition("@")
+    agent, slash, kind = series.partition("/")
+    if not (sep and slash and agent and kind):
+        raise ValueError(f"{entry!r}: a dated scope reads {_DATED_FORM}")
+    try:
+        if date.fromisoformat(day).isoformat() != day:
+            raise ValueError
+    except ValueError:
+        raise ValueError(
+            f"{entry!r}: {day!r} is not an ISO date ({_DATED_FORM})"
+        ) from None
+    if kind == "coinflip":
+        raise ValueError(f"{entry!r}: {_COINFLIP_RESTATE_REFUSED}")
+    if kind not in _DATED_KINDS:
+        raise ValueError(
+            f"{entry!r}: unknown series kind {kind!r}; a dated scope takes one "
+            f"of {list(_DATED_KINDS)}"
+        )
+    if agent != "global" and agent not in agents:
+        raise ValueError(f"{entry!r}: unknown agent {agent!r}")
+    if (agent == "global") != (kind == "msci_world"):
+        raise ValueError(
+            f"{entry!r}: msci_world belongs to 'global', benchmark to an agent"
+        )
+    return agent, kind, day
+
+
+def _series_restated_dates(
+    restate_series: Collection[str] | None, agent: str, kind: str
+) -> frozenset[str]:
+    """The dates of this one series a dated scope entry names."""
+    return frozenset(
+        e.partition("@")[2]
+        for e in restate_series or ()
+        if "@" in e and e.partition("@")[0] == f"{agent}/{kind}"
+    )
 
 
 #: What a refused coin-flip restatement scope says.
@@ -1013,17 +1077,22 @@ def build_all_baselines(
     from Python, so there was no ``--changelog-entry`` flag to require. The
     routine session call passes no scope and is unaffected.
     """
+    cfg = get_config()
     refused = sorted(
-        s for s in restate_series or () if s == "coinflip" or s.endswith("/coinflip")
+        s
+        for s in restate_series or ()
+        if s == "coinflip" or s.partition("@")[0].endswith("/coinflip")
     )
     if refused:
         raise ValueError(f"{refused}: {_COINFLIP_RESTATE_REFUSED}")
+    for entry in restate_series or ():
+        if "@" in entry:
+            _parse_dated_scope(entry, cfg.trading_roster)
     if restate_series:
         require_changelog_entry(
             changelog_entry,
             what=f"Restating baseline series {sorted(restate_series)}",
         )
-    cfg = get_config()
     max_positions_by_agent = max_positions_by_agent or {}
     baselines_dir = cfg.baselines_dir
     totals = MergeCounts()
@@ -1036,6 +1105,7 @@ def build_all_baselines(
             agent_dir / "benchmark.json",
             compute_passive_benchmark(spec, from_date, to_date),
             restate=_series_restated(restate_series, agent_id, "benchmark"),
+            restate_dates=_series_restated_dates(restate_series, agent_id, "benchmark"),
             closes=_benchmark_closes(spec),
         )
 
@@ -1056,6 +1126,7 @@ def build_all_baselines(
         baselines_dir / "global" / "msci_world.json",
         compute_global_reference(from_date, to_date),
         restate=_series_restated(restate_series, "global", "msci_world"),
+        restate_dates=_series_restated_dates(restate_series, "global", "msci_world"),
         closes=_benchmark_closes(cfg.global_reference),
     )
 
