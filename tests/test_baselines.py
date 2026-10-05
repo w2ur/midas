@@ -109,10 +109,10 @@ def test_coin_flip_deterministic_same_seed(tmp_ohlcv):
         _write_ohlcv(tmp_ohlcv, t, rows)
 
     a = compute_coin_flip(
-        "test-agent", ["A", "B", "C"], "EUR", 2, date(2026, 4, 17), date(2026, 4, 21)
+        "test-agent", ["A", "B", "C"], "USD", 2, date(2026, 4, 17), date(2026, 4, 21)
     )
     b = compute_coin_flip(
-        "test-agent", ["A", "B", "C"], "EUR", 2, date(2026, 4, 17), date(2026, 4, 21)
+        "test-agent", ["A", "B", "C"], "USD", 2, date(2026, 4, 17), date(2026, 4, 21)
     )
     assert [s["portfolio_value"] for s in a] == [s["portfolio_value"] for s in b]
 
@@ -131,10 +131,10 @@ def test_coin_flip_different_agents_diverge(tmp_ohlcv):
 
     tickers = ["A", "B", "C", "D", "E"]
     a = compute_coin_flip(
-        "agent-alpha", tickers, "EUR", 2, date(2026, 4, 17), date(2026, 4, 21)
+        "agent-alpha", tickers, "USD", 2, date(2026, 4, 17), date(2026, 4, 21)
     )
     b = compute_coin_flip(
-        "agent-beta", tickers, "EUR", 2, date(2026, 4, 17), date(2026, 4, 21)
+        "agent-beta", tickers, "USD", 2, date(2026, 4, 17), date(2026, 4, 21)
     )
     assert any(ax["portfolio_value"] != bx["portfolio_value"] for ax, bx in zip(a, b))
 
@@ -142,10 +142,10 @@ def test_coin_flip_different_agents_diverge(tmp_ohlcv):
 def test_coin_flip_starts_at_ten_thousand(tmp_ohlcv):
     _write_ohlcv(tmp_ohlcv, "A", [("2026-04-17", 10.0)])
     snaps = compute_coin_flip(
-        "x", ["A"], "EUR", 1, date(2026, 4, 17), date(2026, 4, 17)
+        "x", ["A"], "USD", 1, date(2026, 4, 17), date(2026, 4, 17)
     )
     assert snaps[0]["portfolio_value"] == pytest.approx(_INITIAL)
-    assert snaps[0]["currency"] == "EUR"
+    assert snaps[0]["currency"] == "USD"
 
 
 @pytest.mark.live_cast

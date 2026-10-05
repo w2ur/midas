@@ -39,6 +39,7 @@ def desk(midas_data_root, monkeypatch):
     cfg = get_config()
     for t, base in (("AAA", 10.0), ("BBB", 20.0), ("CCC", 7.0)):
         _store(t, [base * (1 + 0.01 * i) for i in range(len(_DAYS))])
+    _store("EURUSD=X", [1.0] * len(_DAYS))  # the EUR books hold bare (USD) tickers
     universes = {a: ["AAA", "BBB", "CCC"] for a in _agents(cfg)}
     monkeypatch.setattr(backfill, "_universes_by_agent", lambda: universes)
     monkeypatch.setattr(backfill, "_max_positions_by_agent", lambda: {a: 2 for a in universes})

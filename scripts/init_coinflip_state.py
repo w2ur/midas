@@ -14,7 +14,9 @@ coin-flip row**:
 - the book is that row's ``portfolio_value``, in cash, and the first repick
   runs at that date's close in the *current* store, with the agent's
   *current* universe and ``max_positions`` (the same resolvers the session
-  uses), sizing whole shares. There is no flat cash day: the next session's
+  uses), sizing whole shares in the series' currency (each close converted
+  at its own date; a ticker with no resolvable currency or no rate is not
+  drawn). There is no flat cash day: the next session's
   first new row is already invested.
 
 That repick is the one seam the migration introduces, at the state date,
@@ -92,9 +94,10 @@ def main(argv: list[str] | None = None) -> int:
             max_positions.get(agent_id, 5),
             date.fromisoformat(last["date"]),
             float(last["portfolio_value"]),
+            cfg.roster[agent_id].benchmark.currency,
         )
         held = ", ".join(
-            f"{t} x{h.shares} @ {h.mark_close:g} ({h.mark_date})"
+            f"{t} x{h.shares} @ {h.mark_close:g} {h.currency} x{h.mark_rate:g} ({h.mark_date})"
             for t, h in sorted(state.holdings.items())
         )
         print(

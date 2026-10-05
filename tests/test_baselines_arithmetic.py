@@ -209,7 +209,7 @@ class TestCoinFlipIsNotScaleInvariant:
         return compute_coin_flip(
             agent_id="scale-probe",
             tickers=["AAA", "BBB", "CCC"],
-            currency="EUR",
+            currency="USD",
             max_positions=2,
             from_date=date(2026, 1, 1),
             to_date=date(2026, 1, 20),

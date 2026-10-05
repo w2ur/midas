@@ -76,11 +76,12 @@ def _series_path() -> Path:
     return get_config().baselines_dir / _AGENT / "coinflip.json"
 
 
-def _advance(to: date, tickers=None, max_positions: int = 2):
+def _advance(to: date, tickers=None, max_positions: int = 2, currency: str = "USD"):
+    # Bare test tickers resolve to USD, so a USD book needs no FX.
     return advance_coin_flip(
         agent_id=_AGENT,
         tickers=list(tickers or _BASES),
-        currency="EUR",
+        currency=currency,
         max_positions=max_positions,
         series_path=_series_path(),
         from_date=_START,
@@ -99,12 +100,13 @@ def _rows() -> list[dict]:
 
 def test_a_fresh_path_starts_at_initial_capital_and_holds_whole_shares(midas_data_root):
     _seed_store()
-    rows = compute_coin_flip(_AGENT, list(_BASES), "EUR", 2, _START, _START + timedelta(days=5))
+    rows = compute_coin_flip(_AGENT, list(_BASES), "USD", 2, _START, _START + timedelta(days=5))
     assert [r["date"] for r in rows] == _days(_START, 6)
     assert rows[0]["portfolio_value"] == pytest.approx(get_config().initial_capital)
     for r in rows:
         assert r["portfolio_value"] == pytest.approx(r["cash"] + r["positions_value"])
-        assert r["currency"] == "EUR"
+        assert r["currency"] == "USD"
+    assert all(r["positions_value"] > 0 for r in rows)
 
 
 def test_each_day_repicks_with_a_seed_of_agent_and_date(midas_data_root):
@@ -117,14 +119,14 @@ def test_each_day_repicks_with_a_seed_of_agent_and_date(midas_data_root):
         day = _START + timedelta(days=offset)
         expected = random.Random(make_seed(_AGENT, day.isoformat())).sample(sorted(_BASES), 2)
         for order in orders:
-            state = init_coin_flip_state(_AGENT, order, 2, day, 10_000.0)
+            state = init_coin_flip_state(_AGENT, order, 2, day, 10_000.0, "USD")
             assert sorted(state.holdings) == sorted(expected), (day, order)
 
 
 def test_weights_are_equal_and_capped_at_one_over_n(midas_data_root):
     """Fewer candidates than max_positions leaves the residue in cash (LimitWeights(1/n))."""
     _store("AAA", [(d, 10.0) for d in _days(_START, 3)])
-    state = init_coin_flip_state(_AGENT, ["AAA"], 4, _START, 10_000.0)
+    state = init_coin_flip_state(_AGENT, ["AAA"], 4, _START, 10_000.0, "USD")
     assert state.holdings["AAA"].shares == 250  # 10k / 4 / 10
     assert state.cash == pytest.approx(7_500.0)
 
@@ -132,7 +134,7 @@ def test_weights_are_equal_and_capped_at_one_over_n(midas_data_root):
 def test_a_ticker_is_a_candidate_only_from_its_first_close(midas_data_root):
     _store("AAA", [(d, 10.0) for d in _days(_START, 5)])
     _store("LATE", [(d, 10.0) for d in _days(_START + timedelta(days=3), 2)])
-    state = init_coin_flip_state(_AGENT, ["AAA", "LATE"], 2, _START, 10_000.0)
+    state = init_coin_flip_state(_AGENT, ["AAA", "LATE"], 2, _START, 10_000.0, "USD")
     assert set(state.holdings) == {"AAA"}
 
 
@@ -184,24 +186,30 @@ def test_a_universe_swap_changes_no_published_row(midas_data_root):
     assert _rows()[: len(published)] == published
 
 
+@pytest.mark.parametrize("book", ["USD", "EUR"])
 def test_a_store_rescale_changes_no_published_row_and_not_the_next_value(
-    midas_data_root,
+    midas_data_root, book
 ):
     """Review 2 MUST 2: holdings are valued by a ratio, so a constant rescale of a
     held symbol's whole history cancels. The first new row matches the
-    un-rescaled run to 1e-9; only the repick on it sizes at the new scale."""
+    un-rescaled run to 1e-9; only the repick on it sizes at the new scale.
+    In a EUR book of USD names (the conversion path) the rescale still cancels:
+    the rate multiplies the native price, it does not enter the ratio."""
     import shutil
+
+    if book == "EUR":
+        _store("EURUSD=X", [(d, 1.05 + 0.01 * i) for i, d in enumerate(_days(_START, 12))])
 
     def run(rescale: bool) -> tuple[list[dict], list[dict]]:
         shutil.rmtree(get_config().baselines_dir, ignore_errors=True)
         _seed_store()
-        _advance(_START + timedelta(days=4))
+        _advance(_START + timedelta(days=4), currency=book)
         published = _rows()
         held = sorted(load_coin_flip_state(coin_flip_state_path(_series_path())).holdings)
         assert held, "the fixture must hold something for the rescale to bite"
         if rescale:
             _seed_store(scale={t: 2.0 for t in held})
-        _advance(_START + timedelta(days=5))
+        _advance(_START + timedelta(days=5), currency=book)
         return published, _rows()
 
     published, plain = run(rescale=False)
@@ -223,7 +231,7 @@ def _held_state(ticker: str, shares: int, mark_date: str, mark_close: float, cas
         date=mark_date,
         portfolio_value=cash + shares * mark_close,
         cash=cash,
-        holdings={ticker: CoinFlipHolding(shares, mark_date, mark_close)},
+        holdings={ticker: CoinFlipHolding(shares, mark_date, mark_close, "USD", 1.0)},
     )
 
 
@@ -240,7 +248,7 @@ def _seed_state(state: CoinFlipState) -> None:
                     "portfolio_value": state.portfolio_value,
                     "cash": state.cash,
                     "positions_value": state.portfolio_value - state.cash,
-                    "currency": "EUR",
+                    "currency": "USD",
                 }
             ]
         )
@@ -268,7 +276,7 @@ def test_a_held_file_that_is_gone_holds_at_its_mark_and_says_so(midas_data_root,
     assert len(result.concerns) == 1
     assert [r["portfolio_value"] for r in _rows()[1:]] == [1_500.0] * 3
     state = load_coin_flip_state(coin_flip_state_path(_series_path()))
-    assert state.holdings["GONE"] == CoinFlipHolding(100, "2026-01-01", 10.0)
+    assert state.holdings["GONE"] == CoinFlipHolding(100, "2026-01-01", 10.0, "USD", 1.0)
     # The rest of the book is still repicked: BBB bought from the cash.
     assert state.holdings["BBB"].shares == 100
 
@@ -301,7 +309,7 @@ def test_a_mark_row_withdrawn_from_the_store_holds_at_its_mark_and_says_so(
     assert len(result.concerns) == 1
     assert _rows()[-1]["portfolio_value"] == pytest.approx(2_000.0)
     state = load_coin_flip_state(coin_flip_state_path(_series_path()))
-    assert state.holdings["AAA"] == CoinFlipHolding(100, "2026-01-02", 20.0)
+    assert state.holdings["AAA"] == CoinFlipHolding(100, "2026-01-02", 20.0, "USD", 1.0)
 
 
 def _suspend(symbol: str, status: str = "suspended") -> None:
@@ -331,7 +339,9 @@ def test_a_suspended_or_delisted_symbol_is_never_a_candidate(midas_data_root, st
         _store(t, [(d, 10.0) for d in _days(_START, 3)])
     _suspend("BAD", status)
     for offset in range(3):
-        state = init_coin_flip_state(_AGENT, ["AAA", "BAD"], 2, _START + timedelta(days=offset), 1e4)
+        state = init_coin_flip_state(
+            _AGENT, ["AAA", "BAD"], 2, _START + timedelta(days=offset), 1e4, "USD"
+        )
         assert set(state.holdings) == {"AAA"}
 
 
@@ -355,6 +365,125 @@ def test_an_unreadable_registry_fails_closed_and_says_so(midas_data_root, capsys
     assert any("instrument status" in c for c in result.concerns)
     assert "[WARN]" in capsys.readouterr().out
     assert all(r["positions_value"] == 0.0 for r in _rows())
+
+
+# ---------------------------------------------------------------------------
+# Currency: every amount is in the book currency
+# ---------------------------------------------------------------------------
+
+
+def _currencies(mapping: dict[str, str]) -> None:
+    """Seed the override map (layer 1 of `engine.quotes.ticker_currency`)."""
+    from engine.config import reset_config_cache
+
+    path = get_config().ticker_currencies_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(mapping))
+    reset_config_cache()
+
+
+def test_a_mixed_currency_book_is_sized_and_valued_in_the_book_currency(
+    midas_data_root, monkeypatch
+):
+    """Regression: until 2026-10-05 `_step` summed native closes into the book
+    (world held AXFO.ST at 3 x 249.3 SEK, counted as EUR 747.9). Now each
+    close is converted at the rate of its own date, before sizing and before
+    summing. Every number below is hand-computed."""
+    import engine.fx as fx
+
+    _currencies({"E.PA": "EUR", "S.ST": "SEK", "G.L": "GBP", "U": "USD"})
+    d1, d2 = "2026-01-01", "2026-01-02"
+    for t, c1, c2 in (("E.PA", 50.0, 55.0), ("S.ST", 100.0, 110.0), ("G.L", 20.0, 21.0), ("U", 30.0, 33.0)):
+        _store(t, [(d1, c1), (d2, c2)])
+    # EUR per unit, per day. engine.fx has no SEK route, so the rates are
+    # injected; the real store's SEK gap is pinned by the next test.
+    rates = {("SEK", d1): 0.09, ("GBP", d1): 1.15, ("USD", d1): 0.9,
+             ("SEK", d2): 0.10, ("GBP", d2): 1.20, ("USD", d2): 0.8}
+
+    def get_rate(frm, to, on=None):
+        assert to == "EUR"
+        return 1.0 if frm == to else rates.get((frm, on.isoformat()))
+
+    monkeypatch.setattr(fx, "get_rate", get_rate)
+    assert get_config().initial_capital == 10_000.0
+    _advance(date(2026, 1, 2), tickers=["E.PA", "S.ST", "G.L", "U"], max_positions=4, currency="EUR")
+    rows = _rows()
+    # Day 1: a EUR 2,500 sleeve each. E.PA 50 x 50.00 = 2,500.00; S.ST
+    # floor(2500 / 9.00) = 277 -> 2,493.00; G.L floor(2500 / 23.00) = 108 ->
+    # 2,484.00; U floor(2500 / 27.00) = 92 -> 2,484.00. Cash 39.00.
+    assert rows[0]["portfolio_value"] == pytest.approx(10_000.0)
+    assert rows[0]["cash"] == pytest.approx(39.0)
+    # Day 2: 39 + 50x55 + 277x110x0.10 + 108x21x1.20 + 92x33x0.80
+    #      = 39 + 2,750 + 3,047 + 2,721.6 + 2,428.8 = 10,986.40
+    assert rows[1]["portfolio_value"] == pytest.approx(10_986.40)
+    assert all(r["currency"] == "EUR" for r in rows)
+    held = load_coin_flip_state(coin_flip_state_path(_series_path())).holdings
+    assert {t: h.currency for t, h in held.items()} == {
+        "E.PA": "EUR", "S.ST": "SEK", "G.L": "GBP", "U": "USD"
+    }
+    assert held["S.ST"].mark_rate == pytest.approx(0.10)
+
+
+def test_a_candidate_with_no_resolvable_currency_is_never_drawn(midas_data_root):
+    """`ZZZ.XX` has no override, no registry entry and an unknown suffix, so
+    `ticker_currency` answers None: it is never a candidate, whatever the seed."""
+    from engine.quotes import ticker_currency
+
+    assert ticker_currency("ZZZ.XX") is None
+    for t in ("AAA", "ZZZ.XX"):
+        _store(t, [(d, 10.0) for d in _days(_START, 10)])
+    for offset in range(10):
+        state = init_coin_flip_state(
+            _AGENT, ["AAA", "ZZZ.XX"], 2, _START + timedelta(days=offset), 1e4, "USD"
+        )
+        assert set(state.holdings) == {"AAA"}
+
+
+def test_a_candidate_with_no_rate_into_the_book_is_never_drawn(midas_data_root):
+    """The real `engine.fx` has no SEK route: a SEK name is not drawn into a
+    EUR book (it would otherwise be summed unconverted, the defect)."""
+    from engine.fx import get_rate
+
+    _currencies({"S.ST": "SEK", "E.PA": "EUR"})
+    assert get_rate("SEK", "EUR", _START) is None
+    for t in ("S.ST", "E.PA"):
+        _store(t, [(d, 10.0) for d in _days(_START, 10)])
+    for offset in range(10):
+        state = init_coin_flip_state(
+            _AGENT, ["S.ST", "E.PA"], 2, _START + timedelta(days=offset), 1e4, "EUR"
+        )
+        assert set(state.holdings) == {"E.PA"}
+
+
+def test_a_held_name_that_loses_its_rate_is_frozen_and_raises_a_concern(
+    midas_data_root, capsys
+):
+    """A held USD name in a EUR book whose rate file is gone: NO_FX_RATE, held
+    at its recorded mark in the book currency, kept, and one concern."""
+    _store("U", [(d, 30.0 + i) for i, d in enumerate(_days(_START, 4))])
+    state = CoinFlipState(
+        date="2026-01-01",
+        portfolio_value=100.0 + 10 * 30.0 * 0.9,
+        cash=100.0,
+        holdings={"U": CoinFlipHolding(10, "2026-01-01", 30.0, "USD", 0.9)},
+    )
+    _seed_state(state)
+    result = _advance(date(2026, 1, 3), tickers=["U"], max_positions=1, currency="EUR")
+    warns = [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l]
+    assert len(result.concerns) == 1 and len(warns) == 1
+    assert "NO_FX_RATE" in warns[0] and _AGENT in warns[0] and "U" in warns[0]
+    assert [r["portfolio_value"] for r in _rows()[1:]] == pytest.approx([370.0, 370.0])
+    held = load_coin_flip_state(coin_flip_state_path(_series_path())).holdings
+    assert held["U"] == CoinFlipHolding(10, "2026-01-01", 30.0, "USD", 0.9)
+
+
+def test_a_held_name_whose_currency_no_longer_resolves_is_frozen(midas_data_root, capsys):
+    """Its override removed, `ZZZ.XX` resolves to nothing: CURRENCY_UNRESOLVED."""
+    _store("ZZZ.XX", [(d, 10.0) for d in _days(_START, 4)])
+    _seed_state(_held_state("ZZZ.XX", 10, "2026-01-01", 10.0, cash=5.0))
+    result = _advance(date(2026, 1, 2), tickers=["ZZZ.XX"], max_positions=1)
+    assert len(result.concerns) == 1 and "CURRENCY_UNRESOLVED" in result.concerns[0]
+    assert _rows()[-1]["portfolio_value"] == pytest.approx(105.0)
 
 
 # ---------------------------------------------------------------------------
@@ -451,22 +580,25 @@ _TICKERS = ["P", "Q", "R", "S"]
     gaps=st.lists(st.booleans(), min_size=9, max_size=9),
     n=st.integers(min_value=1, max_value=7),
     max_positions=st.integers(min_value=0, max_value=5),
+    book=st.sampled_from(["USD", "EUR"]),
 )
 def test_n_days_in_one_call_equal_n_one_day_calls(
-    midas_data_root, paths, gaps, n, max_positions
+    midas_data_root, paths, gaps, n, max_positions, book
 ):
-    """Advancing N days in one call equals N one-day calls from the persisted state."""
+    """Advancing N days in one call equals N one-day calls from the persisted
+    state, in a native book and in a converted one (EUR book, USD names)."""
     import shutil
 
     days = _days(_START, 9)
     for ticker, closes in zip(_TICKERS, paths):
         # A gap (no bar) on a day exercises the last-close-on-or-before rule.
         _store(ticker, [(d, c) for d, c, g in zip(days, closes, gaps) if not g or d == days[0]])
+    _store("EURUSD=X", [(d, 1.1 + 0.03 * ((i * 5) % 7)) for i, d in enumerate(days)])
     base = get_config().baselines_dir
     shutil.rmtree(base, ignore_errors=True)
 
     def run(to: date):
-        return _advance(to, tickers=_TICKERS, max_positions=max_positions)
+        return _advance(to, tickers=_TICKERS, max_positions=max_positions, currency=book)
 
     run(_START)
     run(_START + timedelta(days=n))
@@ -497,6 +629,9 @@ def _seed_benchmarks(cfg, days: list[str]) -> None:
         if spec is not None and spec.ticker != "EUR_CASH_FLAT":
             _store(spec.ticker, [(d, 100.0 + i) for i, d in enumerate(days)])
     _store(cfg.global_reference.ticker, [(d, 100.0 + i) for i, d in enumerate(days)])
+    # The desk's EUR books hold the bare (USD) test tickers: a flat 1.0 rate
+    # keeps these build tests about the build, not about conversion.
+    _store("EURUSD=X", [(d, 1.0) for d in days])
 
 
 def test_a_coinflip_concern_is_counted_in_the_build(midas_data_root, capsys):

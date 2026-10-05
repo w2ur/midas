@@ -22,6 +22,11 @@ currency). The price ratio used to compute daily value is currency-invariant,
 so the ETF's actual trading currency (USD for VGK/URTH) is not relevant to
 the comparison. FX-noise over the short observation window is accepted as
 de minimis, matching the existing snapshot-benchmark pattern in the site.
+
+That argument holds for one ticker's ratio and **not for the coin flip**,
+which sums several tickers' closes into one book: each close is converted
+into the series currency at its own date before it is summed (``_Closes``,
+``_step``; METHODOLOGY ``#stateful-coinflip-2026-10-05``).
 """
 
 from __future__ import annotations
@@ -150,8 +155,16 @@ def compute_passive_benchmark(
 # The coin flip: a stateful, path-continuous control (plan 1.6, 2026-10-05)
 # ---------------------------------------------------------------------------
 
-#: Version of the persisted coin-flip state document.
-COINFLIP_STATE_SCHEMA = 1
+#: Version of the persisted coin-flip state document. 2 (2026-10-05) added
+#: each holding's ``currency`` and ``mark_rate``: version 1 recorded native
+#: closes and summed them into the book unconverted.
+COINFLIP_STATE_SCHEMA = 2
+
+#: Why a held name cannot be valued, in the broker's own vocabulary
+#: (``engine.valuation.PositionValuation.reason``).
+NO_PRICE_DATA = "NO_PRICE_DATA"
+CURRENCY_UNRESOLVED = "CURRENCY_UNRESOLVED"
+NO_FX_RATE = "NO_FX_RATE"
 
 
 @dataclass(frozen=True)
@@ -159,18 +172,32 @@ class CoinFlipHolding:
     """One position of the coin flip, recorded scale-invariantly.
 
     ``mark_close`` is what one share was worth when the holding was last
-    marked, and ``mark_date`` the store date of the close that mark was read
-    from. The next valuation is ``shares * mark_close * close(d) /
-    close(mark_date)``, both closes read from the *current* store, so a
-    constant rescale of the symbol's history (a unit change, a restated split)
-    cancels. ``mark_date`` is the close's own date rather than the state date
-    so that a close landing late for the state date is credited to the next
-    row instead of being lost from the path.
+    marked, **in its own quote currency** ``currency`` (the ISO code
+    ``engine.quotes.ticker_currency`` resolves), and ``mark_date`` the store
+    date of the close that mark was read from. ``mark_rate`` is the book
+    currency per unit of ``currency`` on ``mark_date`` (``engine.fx.get_rate``),
+    so ``shares * mark_close * mark_rate`` is the holding's value in the book
+    at its mark — what a holding that cannot be valued is held at.
+
+    The next valuation is ``shares * (mark_close * close(d) /
+    close(mark_date)) * rate(d)``: the bracket is the native price at ``d``,
+    both closes read from the *current* store, so a constant rescale of the
+    symbol's history (a unit change, a restated split) cancels; the rate is
+    read at the date of the close used. ``mark_date`` is the close's own date
+    rather than the state date so that a close landing late for the state
+    date is credited to the next row instead of being lost from the path.
     """
 
     shares: int
     mark_date: str
     mark_close: float
+    currency: str
+    mark_rate: float
+
+    @property
+    def mark_value(self) -> float:
+        """The holding's value in the book currency at its mark."""
+        return self.shares * self.mark_close * self.mark_rate
 
 
 @dataclass(frozen=True)
@@ -223,8 +250,10 @@ def coin_flip_state_doc(state: CoinFlipState, agent_id: str) -> dict:
         "holdings": {
             t: {
                 "shares": h.shares,
+                "currency": h.currency,
                 "mark_date": h.mark_date,
                 "mark_close": h.mark_close,
+                "mark_rate": h.mark_rate,
             }
             for t, h in sorted(state.holdings.items())
         },
@@ -248,8 +277,14 @@ def load_coin_flip_state(path: Path) -> CoinFlipState:
         holdings = {}
         for ticker, h in doc["holdings"].items():
             date.fromisoformat(h["mark_date"])
+            if not isinstance(h["currency"], str) or not h["currency"]:
+                raise ValueError(f"{ticker}: holding has no currency")
             holdings[ticker] = CoinFlipHolding(
-                int(h["shares"]), h["mark_date"], float(h["mark_close"])
+                int(h["shares"]),
+                h["mark_date"],
+                float(h["mark_close"]),
+                h["currency"],
+                float(h["mark_rate"]),
             )
         return CoinFlipState(
             date=doc["date"],
@@ -264,17 +299,59 @@ def load_coin_flip_state(path: Path) -> CoinFlipState:
 
 
 class _Closes:
-    """The current store's closes, with the last close on or before a date."""
+    """The current store's closes, with the last close on or before a date,
+    and each ticker's currency and its rate into the book currency.
 
-    def __init__(self, tickers: Collection[str]) -> None:
+    Every amount the coin flip sums is in ``book_currency``: a close is in
+    its ticker's quote currency, and is converted at the rate of the close's
+    own date before it is added to anything (CLAUDE.md, "cross-currency
+    positions must be converted before summing, on EVERY pricing path").
+    """
+
+    def __init__(self, tickers: Collection[str], book_currency: str) -> None:
+        self.book_currency = book_currency
         self._dates: dict[str, list[str]] = {}
         self._values: dict[str, list[float]] = {}
+        self._currencies: dict[str, str | None] = {}
+        self._rates: dict[tuple[str, str], float | None] = {}
         for t in tickers:
             closes = _load_ohlcv(t)
             if closes:
                 ordered = sorted(closes)
                 self._dates[t] = ordered
                 self._values[t] = [closes[d] for d in ordered]
+
+    def currency(self, ticker: str) -> str | None:
+        """The ticker's ISO quote currency, or None when no layer resolves it."""
+        if ticker not in self._currencies:
+            from engine.quotes import ticker_currency
+
+            self._currencies[ticker] = ticker_currency(ticker)
+        return self._currencies[ticker]
+
+    def rate(self, currency: str, iso: str) -> float | None:
+        """Book currency per unit of ``currency`` on ``iso``, or None."""
+        key = (currency, iso)
+        if key not in self._rates:
+            from engine.fx import get_rate
+
+            r = get_rate(currency, self.book_currency, date.fromisoformat(iso))
+            self._rates[key] = r if r is not None and r > 0 else None
+        return self._rates[key]
+
+    def priced(self, ticker: str, iso: str) -> tuple[str, float, str, float] | None:
+        """``(close date, native close, currency, rate)`` at ``iso``, or None
+        when the ticker has no close, no resolvable currency or no rate."""
+        mark = self.at(ticker, iso)
+        if mark is None:
+            return None
+        ccy = self.currency(ticker)
+        if ccy is None:
+            return None
+        rate = self.rate(ccy, mark[0])
+        if rate is None:
+            return None
+        return mark[0], mark[1], ccy, rate
 
     def has_any(self) -> bool:
         return bool(self._dates)
@@ -300,7 +377,7 @@ def _step(
     universe: list[str],
     excluded: Collection[str],
     max_positions: int,
-    frozen: set[str],
+    frozen: dict[str, str],
 ) -> CoinFlipState:
     """One day of the coin flip: value the book at ``iso``, then repick.
 
@@ -318,6 +395,17 @@ def _step(
     longer price" includes a store that no longer holds the close the holding
     was marked at, on its own date (a withdrawn or nulled row): an earlier
     close is a different price, so the holding is held at its mark instead.
+
+    **Every amount is in the book currency** (``closes.book_currency``): a
+    holding is valued ``shares * native price * rate`` and a pick is sized
+    ``floor(target / (native close * rate))``, the rate read at the date of
+    the close used. A candidate whose currency is unresolved or whose rate is
+    unavailable is not in the draw; a holding in either condition is carried
+    at its recorded mark (``CoinFlipHolding.mark_value``) like one the store
+    cannot price, and ``frozen`` records why, in the broker's vocabulary:
+    ``NO_PRICE_DATA``, ``CURRENCY_UNRESOLVED`` (including a ticker that now
+    resolves to a currency other than the one its mark was recorded in) or
+    ``NO_FX_RATE``.
     """
     carried: dict[str, CoinFlipHolding] = {}
     carried_value = 0.0
@@ -326,26 +414,37 @@ def _step(
         h = holdings[ticker]
         base = closes.at(ticker, h.mark_date)
         now = closes.at(ticker, iso)
+        reason: str | None = None
+        rate: float | None = None
         # The mark must still be in the store on its own date: a row withdrawn
         # since would make the last close before it the base, a different
         # price, and mis-value the holding by the move between the two dates.
         if base is None or base[0] != h.mark_date or now is None or base[1] <= 0:
-            frozen.add(ticker)
+            reason = NO_PRICE_DATA
+        elif closes.currency(ticker) != h.currency:
+            reason = CURRENCY_UNRESOLVED
+        else:
+            rate = closes.rate(h.currency, now[0])
+            if rate is None:
+                reason = NO_FX_RATE
+        if reason is not None:
+            frozen.setdefault(ticker, reason)
             carried[ticker] = h
-            carried_value += h.shares * h.mark_close
+            carried_value += h.mark_value
             continue
+        assert base is not None and now is not None and rate is not None
         price = h.mark_close * now[1] / base[1]
         if ticker in excluded:
-            carried[ticker] = CoinFlipHolding(h.shares, now[0], price)
-            carried_value += h.shares * price
+            carried[ticker] = CoinFlipHolding(h.shares, now[0], price, h.currency, rate)
+            carried_value += h.shares * price * rate
         else:
-            liquid += h.shares * price
+            liquid += h.shares * price * rate
     total = liquid + carried_value
 
     candidates = sorted(
         t
         for t in set(universe)
-        if t not in excluded and t not in carried and closes.at(t, iso) is not None
+        if t not in excluded and t not in carried and closes.priced(t, iso) is not None
     )
     k = min(max(max_positions, 0), len(candidates))
     picks = random.Random(make_seed(agent_id, iso)).sample(candidates, k)
@@ -353,15 +452,16 @@ def _step(
     new: dict[str, CoinFlipHolding] = dict(carried)
     spent = 0.0
     for ticker in sorted(picks):
-        mark = closes.at(ticker, iso)
-        assert mark is not None
-        if mark[1] <= 0:
+        quote = closes.priced(ticker, iso)
+        assert quote is not None
+        mark_date, mark_close, ccy, rate = quote
+        if mark_close <= 0:
             continue
-        shares = math.floor(liquid * weight / mark[1])
+        shares = math.floor(liquid * weight / (mark_close * rate))
         if shares <= 0:
             continue
-        new[ticker] = CoinFlipHolding(shares, mark[0], mark[1])
-        spent += shares * mark[1]
+        new[ticker] = CoinFlipHolding(shares, mark_date, mark_close, ccy, rate)
+        spent += shares * mark_close * rate
     return CoinFlipState(
         date=iso, portfolio_value=total, cash=liquid - spent, holdings=new
     )
@@ -402,7 +502,7 @@ def _run(
     universe: list[str],
     excluded: Collection[str],
     max_positions: int,
-    frozen: set[str],
+    frozen: dict[str, str],
 ) -> list[CoinFlipState]:
     """Every daily state after ``state.date`` through ``to_date``."""
     out: list[CoinFlipState] = []
@@ -428,15 +528,17 @@ def init_coin_flip_state(
     max_positions: int,
     on: date,
     value: float,
+    currency: str,
 ) -> CoinFlipState:
-    """A coin flip worth ``value`` in cash, repicked at ``on``'s close.
+    """A coin flip worth ``value`` (in ``currency``, the series' book
+    currency) in cash, repicked at ``on``'s close.
 
     The start of a fresh path (``value`` = initial capital at day one) and the
     plan 1.6 migration (``value`` = the last published row's value at its
     date): in both, the first repick happens on the start date itself, so
     there is no flat cash day.
     """
-    closes = _Closes(tickers)
+    closes = _Closes(tickers, currency)
     concerns: list[str] = []
     excluded = _excluded(agent_id, tickers, concerns)
     for c in concerns:
@@ -450,7 +552,7 @@ def init_coin_flip_state(
         universe=tickers,
         excluded=excluded,
         max_positions=max_positions,
-        frozen=set(),
+        frozen={},
     )
 
 
@@ -486,7 +588,9 @@ def compute_coin_flip(
     recomputed.
     """
     concerns: list[str] = []
-    states = _fresh_path(agent_id, tickers, max_positions, from_date, to_date, concerns)
+    states = _fresh_path(
+        agent_id, tickers, currency, max_positions, from_date, to_date, concerns
+    )
     for c in concerns:
         print(f"  [WARN] {c}")
     return [_row(st, currency) for st in states]
@@ -495,6 +599,7 @@ def compute_coin_flip(
 def _fresh_path(
     agent_id: str,
     tickers: list[str],
+    currency: str,
     max_positions: int,
     from_date: date,
     to_date: date,
@@ -502,11 +607,11 @@ def _fresh_path(
 ) -> list[CoinFlipState]:
     """Every daily state from ``from_date`` (initial capital, repicked that
     day) through ``to_date``; ``[]`` when no ticker has any close."""
-    closes = _Closes(tickers)
+    closes = _Closes(tickers, currency)
     if not closes.has_any() or to_date < from_date:
         return []
     excluded = _excluded(agent_id, tickers, concerns)
-    frozen: set[str] = set()
+    frozen: dict[str, str] = {}
     first = _step(
         agent_id,
         {},
@@ -563,8 +668,11 @@ def advance_coin_flip(
       the series fall behind the snapshots.
 
     A holding whose file is gone, or whose store no longer holds a close dated
-    its mark (truncated, or that row withdrawn), is held at its recorded mark
-    and kept in the book, with one concern naming the agent and the ticker.
+    its mark (truncated, or that row withdrawn), or whose currency no longer
+    resolves (or whose rate into ``currency`` is unavailable), is held at its
+    recorded mark and kept in the book, with one concern naming the agent, the
+    ticker and the condition (``NO_PRICE_DATA``, ``CURRENCY_UNRESOLVED``,
+    ``NO_FX_RATE``). Every amount is in ``currency`` (``_step``).
     """
     state_path = coin_flip_state_path(series_path)
     name = f"{series_path.parent.name}/{series_path.name}"
@@ -593,7 +701,7 @@ def advance_coin_flip(
             )
             return done(0)
         states = _fresh_path(
-            agent_id, tickers, max_positions, from_date, to_date, concerns
+            agent_id, tickers, currency, max_positions, from_date, to_date, concerns
         )
         if not states:
             if not series_path.exists():
@@ -628,9 +736,9 @@ def advance_coin_flip(
         return done(0)
 
     universe = sorted(set(tickers))
-    closes = _Closes(set(universe) | set(state.holdings))
+    closes = _Closes(set(universe) | set(state.holdings), currency)
     excluded = _excluded(agent_id, set(universe) | set(state.holdings), concerns)
-    frozen: set[str] = set()
+    frozen: dict[str, str] = {}
     states = _run(
         agent_id,
         state,
@@ -641,12 +749,26 @@ def advance_coin_flip(
         max_positions=max_positions,
         frozen=frozen,
     )
-    for ticker in sorted(frozen):
+    for ticker, reason in sorted(frozen.items()):
         h = state.holdings.get(ticker)
+        if reason == NO_PRICE_DATA:
+            why = (
+                f"has no close dated its mark {h.mark_date if h else '?'} in "
+                f"the store (file gone, truncated, or that row withdrawn)"
+            )
+        elif reason == CURRENCY_UNRESOLVED:
+            why = (
+                f"resolves to no quote currency matching its recorded "
+                f"{h.currency if h else '?'} (now {closes.currency(ticker)})"
+            )
+        else:
+            why = (
+                f"has no {h.currency if h else '?'}->{currency} rate at its "
+                f"latest close"
+            )
         concerns.append(
-            f"coinflip {agent_id}: {ticker} has no close dated its mark "
-            f"{h.mark_date if h else '?'} in the store (file gone, truncated, or "
-            f"that row withdrawn); held at its recorded mark and kept in the book."
+            f"coinflip {agent_id}: {ticker} {reason} — {why}; held at its "
+            f"recorded mark and kept in the book."
         )
     _write_json(series_path, series + [_row(s, currency) for s in states])
     write_coin_flip_state(state_path, states[-1], agent_id)

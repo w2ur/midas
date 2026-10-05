@@ -512,7 +512,7 @@ class TestCoinFlipState:
     def _state(self, repo: Path, date: str, cash: float) -> None:
         from engine.baselines import CoinFlipHolding, CoinFlipState, coin_flip_state_doc
 
-        state = CoinFlipState(date, 100.0, cash, {"AAA": CoinFlipHolding(1, date, 100.0 - cash)})
+        state = CoinFlipState(date, 100.0, cash, {"AAA": CoinFlipHolding(1, date, 100.0 - cash, "USD", 1.0)})
         path = repo / "data" / "baselines" / "book" / "state" / "coinflip.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(coin_flip_state_doc(state, "book")), encoding="utf-8")
