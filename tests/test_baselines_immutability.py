@@ -91,9 +91,10 @@ def test_merge_baseline_series_refuses_to_move_a_published_point(tmp_path):
 
     counts = merge_baseline_series(path, computed)
 
-    # A legacy row with no recorded marks: kept, and counted unclassified
-    # (classification lives in tests/test_baselines_marks.py).
-    assert counts == MergeCounts(unclassified=1)
+    # A legacy row with no recorded marks and no sidecar beside it: kept, and
+    # a concern, since nothing can classify it (classification lives in
+    # tests/test_baselines_marks.py).
+    assert counts == MergeCounts(concern=1)
     assert json.loads(path.read_text())[0]["portfolio_value"] == 8695.39
 
 

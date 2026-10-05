@@ -19,7 +19,9 @@ classified against the store:
   after its mark. Expected; the published row is right for what it saw.
 - ``rescaled``: the ratio holds but the closes changed (a units or split
   rebase of the whole history). A ratio series cancels a constant factor.
-- ``unclassified``: a legacy row with no recorded marks anywhere.
+- ``unclassified``: a legacy row with no entry in a readable marks sidecar.
+  A legacy row whose sidecar is missing or unreadable is a ``concern``: the
+  sidecar is what classifies it, so its absence fails toward the finding.
 
 The coin flip no longer comes through this merge: since plan 1.6 it advances
 from a persisted state (``tests/test_coinflip_state.py``).
@@ -254,14 +256,44 @@ def test_adding_the_fields_refuses_nothing_on_a_legacy_row(midas_data_root, tmp_
     assert path.read_bytes() == before
 
 
-def test_a_legacy_row_without_a_sidecar_is_unclassified(midas_data_root, tmp_path, capsys):
+def test_a_legacy_row_whose_sidecar_is_missing_is_a_concern(midas_data_root, tmp_path, capsys):
+    """Review fix 3: a missing sidecar used to read as `{}`, so every
+    mismatched legacy row was `unclassified` ([INFO], not a concern) — the
+    guard failed open on the one file that classifies those rows."""
     path = tmp_path / "benchmark.json"
     _write_store("TEST", _FIRST_STORE)
     _write(path, _strip_marks(compute_passive_benchmark(_SPEC, _FROM, _TO)))
 
     counts = _remerge(path, [("2026-04-16", 100.0), ("2026-04-17", 111.0)])
 
+    assert counts == MergeCounts(concern=4)
+    warns = [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l]
+    assert len(warns) == 4 and all("benchmark_marks.json is missing" in l for l in warns)
+
+
+def test_a_legacy_row_absent_from_a_readable_sidecar_is_unclassified(
+    midas_data_root, tmp_path, capsys
+):
+    path = tmp_path / "benchmark.json"
+    _write_store("TEST", _FIRST_STORE)
+    _write(path, _strip_marks(compute_passive_benchmark(_SPEC, _FROM, _TO)))
+    _write(path.with_name("benchmark_marks.json"), [])
+
+    counts = _remerge(path, [("2026-04-16", 100.0), ("2026-04-17", 111.0)])
+
     assert counts == MergeCounts(unclassified=4)
+    assert "[WARN]" not in capsys.readouterr().out
+
+
+def test_a_missing_sidecar_beside_mark_bearing_rows_only_is_no_concern(
+    midas_data_root, tmp_path, capsys
+):
+    """No legacy row, no sidecar needed: the rows carry their own marks."""
+    path = tmp_path / "benchmark.json"
+    _publish(path, _FIRST_STORE)
+    assert _remerge(path, _FIRST_STORE + [("2026-04-20", 120.0)]) == MergeCounts(
+        stale_mark=1
+    )
     assert "[WARN]" not in capsys.readouterr().out
 
 
@@ -286,15 +318,32 @@ def test_row_fields_outrank_the_sidecar(midas_data_root, tmp_path):
     )
 
 
-def test_an_unreadable_sidecar_warns_and_classifies_nothing(
-    midas_data_root, tmp_path, capsys
-):
+def test_an_unreadable_sidecar_is_a_counted_concern(midas_data_root, tmp_path, capsys):
+    """Review fix 3: the unreadable-sidecar [WARN] is one concern of its own,
+    and each mismatched legacy row it can no longer classify is another."""
     path = tmp_path / "benchmark.json"
     _publish(path, _FIRST_STORE, legacy=True)
     path.with_name("benchmark_marks.json").write_text("{not json")
     counts = _remerge(path, [("2026-04-16", 100.0), ("2026-04-17", 111.0)])
-    assert counts == MergeCounts(unclassified=4)
-    assert "[WARN]" in capsys.readouterr().out
+    assert counts == MergeCounts(concern=5)
+    out = capsys.readouterr().out
+    assert "benchmark_marks.json is unreadable" in out
+
+
+def test_an_unreadable_sidecar_is_a_concern_of_the_build(midas_data_root, capsys):
+    """The build's totals and aggregate line carry it, even with no mismatch."""
+    cfg = get_config()
+    universes = _seed_desk(cfg, {})
+    _build(universes)
+    agent = next(a for a in cfg.trading_roster if cfg.roster[a].benchmark is not None
+                 and cfg.roster[a].benchmark.ticker != "EUR_CASH_FLAT")
+    path = cfg.baselines_dir / agent / "benchmark.json"
+    _write(path, _strip_marks(json.loads(path.read_text())))
+    path.with_name("benchmark_marks.json").write_text("{not json")
+    capsys.readouterr()
+    totals = _build(universes)
+    assert totals.concern == 1
+    assert "[WARN] baselines: 1 concern(s)" in capsys.readouterr().out
 
 
 def test_msci_world_sidecar_name(midas_data_root, tmp_path):

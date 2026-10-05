@@ -862,8 +862,8 @@ EXPECTED_CLASSES: tuple[tuple[str, str], ...] = (
     ),
     (
         "unclassified",
-        "legacy published point(s) with no recorded marks differ from a "
-        "recomputation",
+        "legacy published point(s) with no entry in their marks sidecar differ "
+        "from a recomputation",
     ),
 )
 
@@ -873,29 +873,34 @@ def marks_sidecar_path(path: Path) -> Path:
     return path.with_name(f"{path.stem}_marks.json")
 
 
-def _load_marks_sidecar(path: Path) -> dict[str, dict]:
-    """``{date: marks}`` from the sidecar beside ``path``, or ``{}``.
+def _load_marks_sidecar(path: Path) -> tuple[dict[str, dict] | None, str | None]:
+    """``({date: marks}, None)`` from the sidecar beside ``path``, or
+    ``(None, "missing")`` / ``(None, "unreadable")``.
 
-    An unreadable sidecar warns and classifies nothing (every legacy mismatch
-    then reads ``unclassified``): the merge prints rather than raises, and the
-    warning is what reaches the session's ``Concerns:`` path.
+    **A missing or unreadable sidecar fails toward the concern** (review fix
+    3, 2026-10-05): it used to read as ``{}``, so every mismatched legacy row
+    became ``unclassified`` ([INFO], not a concern) — the guard failing open
+    on the one file that classifies those rows. The merge calls this only for
+    a series that has legacy rows, and turns each of their mismatches into a
+    concern; an unreadable sidecar is also a concern of its own (it prints
+    here, and the merge counts it), while a missing one is silent until a
+    legacy row mismatches. Nothing raises.
     """
     sidecar = marks_sidecar_path(path)
     if not sidecar.exists():
-        return {}
+        return None, "missing"
     try:
         rows = json.loads(sidecar.read_text())
-        return {
-            r["date"]: {k: r[k] for k in MARK_FIELDS}
-            for r in rows
-        }
+        return {r["date"]: {k: r[k] for k in MARK_FIELDS} for r in rows}, None
     except (ValueError, TypeError, KeyError) as exc:
         print(
             f"  [WARN] {sidecar.parent.name}/{sidecar.name} is unreadable "
             f"({exc.__class__.__name__}); legacy rows of {path.name} cannot be "
-            f"classified — a concern, the sidecar must be repaired."
+            f"classified, so each one that differs from its recomputation is a "
+            f"concern. The sidecar must be repaired "
+            f"(scripts/derive_legacy_benchmark_marks.py)."
         )
-        return {}
+        return None, "unreadable"
 
 
 def _ratio_holds(marks: dict, closes: Mapping[str, float] | None) -> bool:
@@ -927,10 +932,14 @@ def _classify(
     published: dict,
     computed: dict,
     *,
-    sidecar: dict[str, dict],
+    sidecar: dict[str, dict] | None,
     closes: Mapping[str, float] | None,
 ) -> str | None:
-    """The class of a published row against its recomputation, or None if equal."""
+    """The class of a published row against its recomputation, or None if equal.
+
+    ``sidecar`` is None when the series' marks sidecar is missing or
+    unreadable: a mismatched legacy row is then a concern, never
+    ``unclassified``."""
     if "mark_date" in published:
         if published == computed:
             return None
@@ -943,6 +952,8 @@ def _classify(
             and published.get("currency") == computed.get("currency")
         ):
             return None
+        if sidecar is None:
+            return "concern"
         marks = sidecar.get(published["date"])
         if marks is None:
             return "unclassified"
@@ -1002,8 +1013,10 @@ def merge_baseline_series(
     - ``rescaled`` — the ratio holds and no later close landed, yet the row
       differs: the store's closes were rescaled (units, a restated split)
       with their ratio unchanged, which a ratio series cancels.
-    - ``unclassified`` — a legacy row (no mark fields) with no entry in the
-      marks sidecar.
+    - ``unclassified`` — a legacy row (no mark fields) with no entry in a
+      readable marks sidecar. A legacy row of a series whose sidecar is
+      missing or unreadable is a ``concern`` instead, and an unreadable
+      sidecar is one concern of its own (``_load_marks_sidecar``).
 
     **The coin flip does not come through here** (plan 1.6, 2026-10-05): it
     is advanced from a persisted state over new dates only
@@ -1066,9 +1079,14 @@ def merge_baseline_series(
             f"{path.parent.name}/{path.name}: restate date(s) {absent} not in "
             f"the computed series — nothing would be restated"
         )
-    sidecar = _load_marks_sidecar(path) if existing else {}
+    sidecar: dict[str, dict] | None = {}
+    sidecar_problem: str | None = None
+    if any("mark_date" not in r for r in existing):
+        sidecar, sidecar_problem = _load_marks_sidecar(path)
     by_date = {row["date"]: row for row in existing}
     tally = {f.name: 0 for f in fields(MergeCounts)}
+    if sidecar_problem == "unreadable":
+        tally["concern"] += 1
     for row in computed:
         date_key = row["date"]
         if date_key not in by_date:
@@ -1083,7 +1101,20 @@ def merge_baseline_series(
         if verdict is None:
             continue
         tally[verdict] += 1
-        if verdict == "concern":
+        if verdict == "concern" and "mark_date" not in published and sidecar is None:
+            sidecar_name = marks_sidecar_path(path).name
+            print(
+                f"  [WARN] {path.parent.name}/{path.name}: {date_key} concern — "
+                f"a legacy row (no recorded marks) published at "
+                f"{published.get('portfolio_value')} differs from its "
+                f"recomputation {row.get('portfolio_value')}, and "
+                f"{sidecar_name} is {sidecar_problem}, so it cannot be "
+                f"classified. The published value was kept. Remedy: restore "
+                f"{sidecar_name} (scripts/derive_legacy_benchmark_marks.py), "
+                f"then re-run; restate the row only if it is then a concern."
+            )
+        elif verdict == "concern":
+            assert sidecar is not None or "mark_date" in published
             marks = (
                 {k: published[k] for k in MARK_FIELDS}
                 if "mark_date" in published
