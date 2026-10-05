@@ -127,9 +127,11 @@ LIVE_ONLY_TESTS = {
     # Holds the committed benchmark marks sidecars to the committed baseline
     # series; core ships neither.
     "test_benchmark_marks_live.py",
-    # Drives scripts/init_coinflip_state.py, the one-off plan 1.6 migration of
-    # this desk's published coin flips, which core does not ship.
+    # Drive scripts/init_coinflip_state.py (the one-off plan 1.6 migration of
+    # this desk's published coin flips) and scripts/audit_coinflip_seams.py
+    # (a read over this repo's git history); core ships neither script.
     "test_init_coinflip_state.py",
+    "test_audit_coinflip_seams.py",
     # Reads workers/trigger-gate/, the Cloudflare dispatch-gate. That Worker is
     # live-desk quota infrastructure keyed to this repo's own workflow file and
     # allocator channels; core ships neither.
