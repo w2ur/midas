@@ -162,6 +162,10 @@ def test_a_revised_close_on_a_recorded_mark_is_a_concern(midas_data_root, tmp_pa
     assert out.count("[WARN]") == 4
     assert "2026-04-17" in out and "110.0" in out and "111.0" in out
     assert json.loads(path.read_text()) == published
+    # Review M1: the concern names its remedy, as the scope that would fix it.
+    assert f"{path.parent.name}/benchmark@2026-04-17" in out
+    assert "METHODOLOGY changelog anchor" in out
+    assert "human-authored" in out and "[restate]" in out
 
 
 def test_a_revised_base_is_a_concern(midas_data_root, tmp_path):

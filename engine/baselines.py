@@ -848,7 +848,10 @@ def merge_baseline_series(
       two dates (relative ``RATIO_REL_TOL``), or the store no longer holds
       one of them: a close the row was priced from was revised. A row with
       ``mark_date == base_date`` is never a concern — its value is the
-      initial capital by construction. Printed as one ``[WARN]`` per row.
+      initial capital by construction. Printed as one ``[WARN]`` per row,
+      naming its remedy: the dated scope ``"<agent>/<kind>@<date>"`` with a
+      METHODOLOGY changelog anchor, from a human-authored ``[restate]``
+      commit.
     - ``stale_mark`` — the ratio holds, ``mark_date`` is before the row's
       date, and the store now holds a close in ``(mark_date, date]``: the
       point forward-filled a close that had not landed yet. The published
@@ -951,7 +954,10 @@ def merge_baseline_series(
                 f"over {marks['base_date']} at {marks['base_close']}; the store "
                 f"now holds {store.get(marks['mark_date'])} over "
                 f"{store.get(marks['base_date'])}: a recorded close was revised. "
-                f"The published value was kept."
+                f"The published value was kept. Remedy: restate the row with the "
+                f"dated scope \"{path.parent.name}/{path.stem}@{date_key}\" and "
+                f"a METHODOLOGY changelog anchor, from a human-authored "
+                f"[restate] commit."
             )
     merged = [by_date[d] for d in sorted(by_date)]
     _write_json(path, merged)
