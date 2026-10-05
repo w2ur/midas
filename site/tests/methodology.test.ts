@@ -35,6 +35,7 @@ describe("methodology document split", () => {
     // The order is *document* order, not date order — the changelog is only
     // loosely reverse-chronological.
     expect(doc.changelogAnchors).toEqual([
+      "provisional-bars-restate-2026-10-05",
       "stateful-coinflip-2026-10-05",
       "stale-marks-2026-10-03",
       "close-runs-never-deployed-2026-09-28",
@@ -81,7 +82,7 @@ describe("methodology document split", () => {
       expect(changelog.html).toContain(`id="${id}"`);
       expect(essay.htmlBefore + essay.htmlAfter).not.toContain(`id="${id}"`);
     }
-    expect(changelog.entryCount).toBe(31);
+    expect(changelog.entryCount).toBe(32);
   });
 
   it("does not print the changelog heading twice on the changelog page", () => {
