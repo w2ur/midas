@@ -282,6 +282,28 @@ def test_a_held_file_with_no_close_before_its_mark_holds_at_its_mark(midas_data_
     assert _rows()[-1]["portfolio_value"] == pytest.approx(100.0)
 
 
+def test_a_mark_row_withdrawn_from_the_store_holds_at_its_mark_and_says_so(
+    midas_data_root, capsys
+):
+    """Review fix round 1: the close a holding was marked at must still be in
+    the store on its own date. If that row is withdrawn between two advances,
+    the last close before it is a different price, and valuing from it would
+    mis-value the holding by the move between the two dates with no concern.
+    It is case (b): held at its mark, one concern naming agent and ticker."""
+    _store("AAA", [("2026-01-01", 10.0), ("2026-01-02", 20.0)])
+    _seed_state(_held_state("AAA", 100, "2026-01-02", 20.0))
+    # The 01-02 row is withdrawn; 01-03 lands at 21 (the old code would value
+    # 100 x 20 x 21 / 10 = 4,200, a +110% move that never happened).
+    _store("AAA", [("2026-01-01", 10.0), ("2026-01-03", 21.0)])
+    result = _advance(date(2026, 1, 3), tickers=["AAA"], max_positions=1)
+    warns = [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l]
+    assert len(warns) == 1 and _AGENT in warns[0] and "AAA" in warns[0]
+    assert len(result.concerns) == 1
+    assert _rows()[-1]["portfolio_value"] == pytest.approx(2_000.0)
+    state = load_coin_flip_state(coin_flip_state_path(_series_path()))
+    assert state.holdings["AAA"] == CoinFlipHolding(100, "2026-01-02", 20.0)
+
+
 def _suspend(symbol: str, status: str = "suspended") -> None:
     path = get_config().ohlcv_dir.parent / "instrument_status.json"
     path.parent.mkdir(parents=True, exist_ok=True)

@@ -303,7 +303,10 @@ def _step(
     day's pick does not depend on any earlier draw or on the order a universe
     lists its tickers; and a holding the store can no longer price, or one the
     instrument registry marks ``suspended``/``delisted``, is carried as it is
-    (it cannot be traded) while the rest of the book is repicked.
+    (it cannot be traded) while the rest of the book is repicked. "Can no
+    longer price" includes a store that no longer holds the close the holding
+    was marked at, on its own date (a withdrawn or nulled row): an earlier
+    close is a different price, so the holding is held at its mark instead.
     """
     carried: dict[str, CoinFlipHolding] = {}
     carried_value = 0.0
@@ -312,7 +315,10 @@ def _step(
         h = holdings[ticker]
         base = closes.at(ticker, h.mark_date)
         now = closes.at(ticker, iso)
-        if base is None or now is None or base[1] <= 0:
+        # The mark must still be in the store on its own date: a row withdrawn
+        # since would make the last close before it the base, a different
+        # price, and mis-value the holding by the move between the two dates.
+        if base is None or base[0] != h.mark_date or now is None or base[1] <= 0:
             frozen.add(ticker)
             carried[ticker] = h
             carried_value += h.shares * h.mark_close
@@ -543,9 +549,9 @@ def advance_coin_flip(
       ``Concerns:`` trailer, and ``check_session_freshness`` sees the series
       fall behind the snapshots.
 
-    A holding whose file is gone, or that has no close on or before its mark,
-    is held at its recorded mark and kept in the book, with one concern
-    naming the agent and the ticker.
+    A holding whose file is gone, or whose store no longer holds a close dated
+    its mark (truncated, or that row withdrawn), is held at its recorded mark
+    and kept in the book, with one concern naming the agent and the ticker.
     """
     state_path = coin_flip_state_path(series_path)
     name = f"{series_path.parent.name}/{series_path.name}"
@@ -622,9 +628,9 @@ def advance_coin_flip(
     for ticker in sorted(frozen):
         h = state.holdings.get(ticker)
         concerns.append(
-            f"coinflip {agent_id}: {ticker} has no close on or before its mark "
-            f"{h.mark_date if h else '?'} in the store (file gone or truncated); "
-            f"held at its recorded mark and kept in the book."
+            f"coinflip {agent_id}: {ticker} has no close dated its mark "
+            f"{h.mark_date if h else '?'} in the store (file gone, truncated, or "
+            f"that row withdrawn); held at its recorded mark and kept in the book."
         )
     _write_json(series_path, series + [_row(s, currency) for s in states])
     write_coin_flip_state(state_path, states[-1], agent_id)
