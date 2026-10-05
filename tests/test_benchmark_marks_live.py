@@ -58,7 +58,13 @@ def test_every_priced_series_has_a_sidecar() -> None:
 
 def test_every_sidecar_reproduces_its_series() -> None:
     initial = get_config().initial_capital
-    found = {p.name: inconsistencies(p, initial) for p in _sidecars()}
+    # Keyed on the path under data/baselines: every agent's sidecar is named
+    # `benchmark_marks.json`, so keying on the bare name kept only the last one
+    # and left every other agent's sidecar unchecked.
+    found = {
+        p.relative_to(BASELINES).as_posix(): inconsistencies(p, initial)
+        for p in _sidecars()
+    }
     assert found and not any(found.values()), found
 
 
