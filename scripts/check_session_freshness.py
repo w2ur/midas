@@ -4,8 +4,9 @@
 `session-integrity` (and the inline copy in `auto-merge-session`) used to
 answer "did Step 9 refresh the baselines?" by grepping the changed-file list
 for `^data/baselines/`. That proxy holds only while every Step 9 writes
-something, and `merge_baseline_series` is append-or-refuse — so a session whose
-series was already rebuilt earlier the same day writes nothing and looks
+something, and `merge_baseline_series` is append-or-keep (published rows are
+kept, mismatches classified) — so a session whose series was already rebuilt
+earlier the same day appends nothing and looks
 identical to a session that skipped the step. On 2026-08-07 commit
 `a4dc9dce2 [restate]` did exactly that, and both guards failed a correct
 session.

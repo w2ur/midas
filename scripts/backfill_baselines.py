@@ -2,10 +2,11 @@
 
 Passive benchmarks and the global reference are append-or-keep
 (engine.baselines.merge_baseline_series): an already-published date is kept
-as-is, new dates are appended. Pass ``restate_series={...}`` (with a
-``changelog_entry``) to build_all_baselines directly for a deliberate,
-publicly logged restatement — this script does not expose that on the CLI,
-it is a Python-level escape hatch, not a routine one. Each coin flip is
+as-is and a mismatch is classified, new dates are appended. Pass
+``restate_series={...}`` (with a ``changelog_entry``) to build_all_baselines
+directly for a deliberate, publicly logged restatement, which rewrites only
+the scoped published rows and appends nothing — this script does not
+expose that on the CLI, it is a Python-level escape hatch, not a routine one. Each coin flip is
 advanced from its persisted state (``data/baselines/<agent>/state/
 coinflip.json``) over new dates only and can never be restated: a scope
 naming it is refused (plan 1.6). Universe ticker lists and max_positions are
