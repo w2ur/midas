@@ -67,6 +67,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
@@ -92,7 +93,10 @@ from engine.baselines import (  # noqa: E402
     write_coin_flip_state,
 )
 from engine.config import get_config  # noqa: E402
-from engine.disclosure import require_changelog_entry  # noqa: E402
+from engine.disclosure import (  # noqa: E402
+    UndisclosedRestatementError,
+    require_changelog_entry,
+)
 from engine.fx import store_cache  # noqa: E402
 from scripts._coinflip_history import extract, first_writer, rev as _rev  # noqa: E402
 from scripts._coinflip_history import git as _git  # noqa: E402
@@ -431,6 +435,10 @@ def render(results: list[Restated]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Exit 0 done, 2 could not run: an ``Unknown``, an undisclosed
+    ``--apply``, or any other exception (its traceback on stderr). A crash is
+    never a 1, the code a finding would take (round-5 review, 2026-10-06; the
+    same rule as ``audit_coinflip_seams.main``)."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repo", type=Path, default=_PROJECT_ROOT)
     parser.add_argument("--tip", default="HEAD")
@@ -438,7 +446,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--apply", action="store_true", help="write series and states")
     parser.add_argument("--changelog-entry", help="METHODOLOGY.md anchor (required with --apply)")
     args = parser.parse_args(argv)
+    try:
+        return _run(args)
+    except Unknown as exc:
+        print(f"UNKNOWN: {exc}", file=sys.stderr)
+        return 2
+    except UndisclosedRestatementError as exc:
+        print(f"REFUSED: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # noqa: BLE001 — any crash is an unknown, never a 1
+        traceback.print_exc(file=sys.stderr)
+        print(f"UNKNOWN: {exc.__class__.__name__}: {exc}", file=sys.stderr)
+        return 2
 
+
+def _run(args: argparse.Namespace) -> int:
     if args.apply:
         require_changelog_entry(
             args.changelog_entry, what="Restating every coin-flip series"
@@ -446,17 +468,13 @@ def main(argv: list[str] | None = None) -> int:
     repo = args.repo.resolve()
     agents = [a for a in coinflip_agents() if not args.agent or a in args.agent]
     if not agents:
-        print("UNKNOWN: no coin-flip series to restate", file=sys.stderr)
-        return 2
+        raise Unknown("no coin-flip series to restate")
     workdir = Path(tempfile.mkdtemp(prefix="restate-coinflip-"))
     try:
         resolver = TreeResolver(repo, workdir)
         # Each FX pair file is read once for the whole replay (engine.fx).
         with store_cache():
             results = [restate_agent(repo, args.tip, a, PERIODS, resolver) for a in agents]
-    except Unknown as exc:
-        print(f"UNKNOWN: {exc}", file=sys.stderr)
-        return 2
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
@@ -474,7 +492,6 @@ def main(argv: list[str] | None = None) -> int:
         write_coin_flip_state(coin_flip_state_path(r.series_path), r.state, r.agent)
     print(f"\nWrote {len(results)} series and their states.")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

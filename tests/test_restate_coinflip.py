@@ -32,7 +32,6 @@ from engine.baselines import (  # noqa: E402
     write_coin_flip_state,
 )
 from engine.config import get_config, reset_config_cache  # noqa: E402
-from engine.disclosure import UndisclosedRestatementError  # noqa: E402
 
 AGENT = "probe"
 ANCHOR = "probe-restate"
@@ -221,12 +220,11 @@ class TestGate:
         assert "Dry run: nothing written" in out
         assert AGENT in out
 
-    def test_apply_without_an_anchor_refuses(self, desk):
+    def test_apply_without_an_anchor_refuses(self, desk, capsys):
         before = desk.series.read_bytes()
-        with pytest.raises(UndisclosedRestatementError):
-            _main(desk, "--apply")
-        with pytest.raises(UndisclosedRestatementError):
-            _main(desk, "--apply", "--changelog-entry", "no-such-anchor")
+        assert _main(desk, "--apply") == 2
+        assert _main(desk, "--apply", "--changelog-entry", "no-such-anchor") == 2
+        assert capsys.readouterr().err.count("REFUSED:") == 2
         assert desk.series.read_bytes() == before
         assert not coin_flip_state_path(desk.series).exists()
 
@@ -340,3 +338,20 @@ def test_the_script_names_no_bare_python3_interpreter():
     path = ROOT / "scripts" / "restate_coinflip.py"
     assert not path.read_text().startswith("#!")
     assert not os.access(path, os.X_OK)
+
+
+def test_any_crash_exits_2_with_its_traceback(desk, monkeypatch, capsys):
+    """Regression: round-5 review, 2026-10-06. ``main`` caught only
+    ``Unknown``: any other exception escaped as Python's exit 1, the code a
+    finding takes. It is a 2, could not run, with the traceback on stderr."""
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("planted crash")
+
+    monkeypatch.setattr(rc, "restate_agent", boom)
+    before = desk.series.read_bytes()
+    assert _main(desk) == 2
+    err = capsys.readouterr().err
+    assert "Traceback (most recent call last)" in err and "planted crash" in err
+    assert "UNKNOWN: RuntimeError: planted crash" in err
+    assert desk.series.read_bytes() == before
