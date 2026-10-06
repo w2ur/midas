@@ -586,6 +586,8 @@ def test_a_cash_flat_row_differing_only_in_other_fields_is_no_concern(
     assert "[WARN]" not in capsys.readouterr().out
 
 
+# The demo desk has no cash-flat benchmark agent; the live cast does.
+@pytest.mark.live_cast
 def test_the_build_names_a_cash_flat_mismatch_as_such(midas_data_root, capsys):
     cfg = get_config()
     universes = _seed_desk(cfg, {})
@@ -628,6 +630,8 @@ def test_the_cash_flat_flag_is_the_spec_property_not_a_literal():
     assert not BenchmarkSpec("S&P", "SPY", "USD").is_cash_flat
 
 
+# The demo desk has no cash-flat benchmark agent; the live cast does.
+@pytest.mark.live_cast
 def test_a_restatement_passes_the_cash_flat_flag(midas_data_root, monkeypatch):
     """Round-4 review, 2026-10-06: the restatement path called the merge
     without the flag, so a cash-flat series it rewrote was treated as a

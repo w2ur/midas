@@ -247,6 +247,8 @@ class TestEveryStoredPairIsRouted:
 
     _DAY = date(2025, 1, 2)
 
+    # Reads the live committed OHLCV store, which core does not ship.
+    @pytest.mark.live_cast
     def test_the_table_lists_every_pair_in_the_committed_store(self):
         from engine.config import get_config
 
