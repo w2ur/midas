@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Read-only audit: the splice seams in the published coin-flip series.
 
 Until plan 1.6 (2026-10-05) each session recomputed every coin flip from day one

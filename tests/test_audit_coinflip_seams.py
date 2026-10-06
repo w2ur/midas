@@ -249,3 +249,28 @@ def test_a_missing_blob_whose_name_holds_a_space_reads_as_absent(desk):
         assert blobs.get("HEAD:data/market/ohlcv/AAA.jsonl")
     finally:
         blobs.close()
+
+
+def test_extract_refuses_no_path_and_the_audit_calls_such_a_tree_unresolved(tmp_path):
+    """Regression: round-6 review. ``git archive`` with no path archives the
+    whole tree, so an epoch tree holding none of ``EPOCH_PATHS`` was
+    extracted in full. ``extract`` refuses; the audit reports the tree
+    unresolved (its unknown path)."""
+    from scripts._coinflip_history import extract
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    for args in (["init", "-q"], ["config", "user.email", "t@t"], ["config", "user.name", "t"]):
+        subprocess.run(["git", *args], cwd=repo, check=True)
+    (repo / "README").write_text("x")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+    target = tmp_path / "out"
+    target.mkdir()
+    with pytest.raises(ValueError):
+        extract(repo, "HEAD", [], target)
+    assert not any(target.iterdir())
+    cache: dict = {}
+    out = audit.resolve_inputs(repo, "HEAD", tmp_path / "w", cache)
+    assert "unresolved" in out
+    assert not any((tmp_path / "w").rglob("README"))

@@ -68,7 +68,11 @@ def is_ancestor(repo: Path, ancestor: str, of: str) -> bool:
 
 
 def extract(repo: Path, at: str, paths: list[str], target: Path) -> None:
-    """Write ``paths`` of ``at``'s tree under ``target`` (``git archive``)."""
+    """Write ``paths`` of ``at``'s tree under ``target`` (``git archive``).
+    An empty ``paths`` raises ``ValueError``: ``git archive`` with no path
+    archives the whole tree."""
+    if not paths:
+        raise ValueError("extract() needs at least one path")
     archive = git(repo, "archive", at, *paths, binary=True)
     subprocess.run(["tar", "-x", "-C", str(target)], input=archive, check=True)
 
