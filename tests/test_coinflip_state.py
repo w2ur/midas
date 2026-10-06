@@ -545,6 +545,26 @@ def test_a_name_bought_and_frozen_in_the_same_run_names_its_actual_mark(midas_da
     assert _rows()[-1]["portfolio_value"] == pytest.approx(1_000.0)
 
 
+def test_a_fresh_path_reports_a_holding_it_froze(midas_data_root, capsys):
+    """Regression: round-3 review, 2026-10-06. `_fresh_path` collected the
+    holdings `_step` froze and dropped them, so a brand-new agent's first
+    build reported no NO_FX_RATE freeze. Same fixture as the advance case
+    above, with no state: the fresh path buys U on 01-01 and 01-02 and
+    freezes it on 01-03."""
+    _store("U", [(d, 30.0) for d in _days(_START, 3)])
+    _store("EURUSD=X", [("2026-01-01", 1.25), ("2026-01-02", 1.25), ("2026-01-03", 0.0)])
+    _currencies({"E.PA": "EUR"})
+    _store("E.PA", [(d, 1e9) for d in _days(_START, 3)])
+    result = _advance(date(2026, 1, 3), tickers=["U", "E.PA"], max_positions=2, currency="EUR")
+    assert result.appended == 3 and len(result.concerns) == 1
+    concern = result.concerns[0]
+    assert _AGENT in concern and "U NO_FX_RATE" in concern and "2026-01-02" in concern
+    assert f"  [WARN] {concern}" in capsys.readouterr().out.splitlines()
+    rows = compute_coin_flip(_AGENT, ["U", "E.PA"], "EUR", 2, _START, date(2026, 1, 3))
+    assert "NO_FX_RATE" in capsys.readouterr().out
+    assert rows == _rows()
+
+
 def test_a_held_name_whose_currency_no_longer_resolves_is_frozen(midas_data_root, capsys):
     """Its override removed, `ZZZ.XX` resolves to nothing: CURRENCY_UNRESOLVED."""
     _store("ZZZ.XX", [(d, 10.0) for d in _days(_START, 4)])

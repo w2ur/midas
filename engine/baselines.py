@@ -559,6 +559,38 @@ class _Stop:
     why: str
 
 
+def _frozen_concerns(
+    agent_id: str,
+    frozen: Mapping[str, tuple[str, CoinFlipHolding]],
+    closes: _Closes,
+    currency: str,
+) -> list[str]:
+    """One ``[WARN]`` concern per holding ``_step`` froze, naming the agent,
+    the ticker, the reason and the mark it is held at. The one wording, for
+    a fresh path and an advance alike."""
+    out: list[str] = []
+    for ticker, (reason, h) in sorted(frozen.items()):
+        if reason == NO_PRICE_DATA:
+            why = (
+                f"has no close dated its mark {h.mark_date} in the store (file "
+                f"gone, truncated, or that row withdrawn)"
+            )
+        elif reason == CURRENCY_UNRESOLVED:
+            why = (
+                f"resolves to no quote currency matching its recorded "
+                f"{h.currency} (now {closes.currency(ticker)})"
+            )
+        else:
+            why = f"has no {h.currency}->{currency} rate on a date it was valued"
+        out.append(
+            f"coinflip {agent_id}: {ticker} {reason} — {why}; held at its "
+            f"recorded mark of {h.mark_date} ({h.shares} x {h.mark_close:g} "
+            f"{h.currency} at {h.mark_rate:g} = {h.mark_value:.2f} {currency}) "
+            f"and kept in the book."
+        )
+    return out
+
+
 def _stop_concern(
     agent_id: str, universe_size: int, stop: _Stop, kept_through: str | None
 ) -> str:
@@ -738,6 +770,10 @@ def _fresh_path(
         frozen=frozen,
     )
     states = [first] + rest
+    # A holding bought on this path can freeze on it too (review round 3,
+    # 2026-10-06): its concern was dropped here and reported only by an
+    # advance, so a brand-new agent's first build hid it.
+    concerns.extend(_frozen_concerns(agent_id, frozen, closes, currency))
     if stop is not None:
         concerns.append(
             _stop_concern(agent_id, len(set(tickers)), stop, states[-1].date)
@@ -870,25 +906,7 @@ def advance_coin_flip(
         max_positions=max_positions,
         frozen=frozen,
     )
-    for ticker, (reason, h) in sorted(frozen.items()):
-        if reason == NO_PRICE_DATA:
-            why = (
-                f"has no close dated its mark {h.mark_date} in the store (file "
-                f"gone, truncated, or that row withdrawn)"
-            )
-        elif reason == CURRENCY_UNRESOLVED:
-            why = (
-                f"resolves to no quote currency matching its recorded "
-                f"{h.currency} (now {closes.currency(ticker)})"
-            )
-        else:
-            why = f"has no {h.currency}->{currency} rate on a date it was valued"
-        concerns.append(
-            f"coinflip {agent_id}: {ticker} {reason} — {why}; held at its "
-            f"recorded mark of {h.mark_date} ({h.shares} x {h.mark_close:g} "
-            f"{h.currency} at {h.mark_rate:g} = {h.mark_value:.2f} {currency}) "
-            f"and kept in the book."
-        )
+    concerns.extend(_frozen_concerns(agent_id, frozen, closes, currency))
     if stop is not None:
         concerns.append(
             _stop_concern(
