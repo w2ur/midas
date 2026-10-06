@@ -11,6 +11,8 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from engine import fx
 
@@ -358,3 +360,90 @@ class TestRateTickers:
     def test_no_route_and_no_conversion_name_nothing(self):
         assert fx.rate_tickers("SEK", "EUR") == ()
         assert fx.rate_tickers("EUR", "EUR") == ()
+
+
+# ---------------------------------------------------------------------------
+# store_cache and the bisected lookup (round-4 review, 2026-10-06)
+# ---------------------------------------------------------------------------
+
+
+class TestStoreCache:
+    def _count_loads(self, monkeypatch) -> list[str]:
+        loads: list[str] = []
+        real = fx._load_store_series
+
+        def counting(ticker):
+            loads.append(ticker)
+            return real(ticker)
+
+        monkeypatch.setattr(fx, "_load_store_series", counting)
+        return loads
+
+    def test_inside_a_block_each_pair_file_is_read_once(self, fake_ohlcv, monkeypatch):
+        _write_jsonl(fake_ohlcv / "EURUSD=X.jsonl", [{"date": "2025-01-02", "close": 1.25}])
+        loads = self._count_loads(monkeypatch)
+        with fx.store_cache():
+            for day in range(2, 30):
+                assert fx.get_rate("USD", "EUR", date(2025, 1, day)) == pytest.approx(0.8)
+        assert loads == ["EURUSD=X"]
+
+    def test_outside_a_block_every_ask_reads_the_file_afresh(self, fake_ohlcv, monkeypatch):
+        """The broker's behaviour is unchanged: a rewrite between two asks is seen."""
+        path = fake_ohlcv / "EURUSD=X.jsonl"
+        _write_jsonl(path, [{"date": "2025-01-02", "close": 1.25}])
+        loads = self._count_loads(monkeypatch)
+        assert fx.get_rate("EUR", "USD", date(2025, 1, 3)) == 1.25
+        _write_jsonl(path, [{"date": "2025-01-02", "close": 1.5}])
+        assert fx.get_rate("EUR", "USD", date(2025, 1, 3)) == 1.5
+        assert loads == ["EURUSD=X", "EURUSD=X"]
+
+    def test_the_cache_ends_with_the_outermost_block(self, fake_ohlcv):
+        path = fake_ohlcv / "EURUSD=X.jsonl"
+        _write_jsonl(path, [{"date": "2025-01-02", "close": 1.25}])
+        with fx.store_cache():
+            assert fx.get_rate("EUR", "USD", date(2025, 1, 3)) == 1.25
+            with fx.store_cache():
+                pass
+            _write_jsonl(path, [{"date": "2025-01-02", "close": 1.5}])
+            assert fx.get_rate("EUR", "USD", date(2025, 1, 3)) == 1.25, "still cached"
+        assert fx._SERIES_CACHE is None
+        assert fx.get_rate("EUR", "USD", date(2025, 1, 3)) == 1.5
+
+    def test_a_coin_flip_advance_reads_its_rate_file_once(self, fake_ohlcv, monkeypatch):
+        """The consumer: a multi-day converted advance used to re-read
+        EURUSD=X for every day it valued."""
+        from datetime import timedelta
+
+        from engine.baselines import advance_coin_flip
+        from engine.config import get_config
+
+        days = [(date(2026, 1, 1) + timedelta(days=i)).isoformat() for i in range(8)]
+        for t, c in (("U", 30.0), ("V", 40.0)):
+            _write_jsonl(fake_ohlcv / f"{t}.jsonl", [{"date": d, "close": c} for d in days])
+        _write_jsonl(fake_ohlcv / "EURUSD=X.jsonl", [{"date": d, "close": 1.25} for d in days])
+        loads = self._count_loads(monkeypatch)
+        advance_coin_flip(
+            agent_id="probe", tickers=["U", "V"], currency="EUR", max_positions=2,
+            series_path=get_config().baselines_dir / "probe" / "coinflip.json",
+            from_date=date(2026, 1, 1), to_date=date(2026, 1, 8),
+        )
+        assert loads == ["EURUSD=X"]
+
+
+_ISO_DAYS = st.dates(min_value=date(2024, 1, 1), max_value=date(2027, 12, 31))
+
+
+@given(
+    series=st.dictionaries(
+        _ISO_DAYS.map(date.isoformat),
+        st.floats(min_value=1e-6, max_value=1e6, allow_nan=False, allow_infinity=False),
+        max_size=40,
+    ),
+    target=_ISO_DAYS,
+)
+def test_the_bisected_lookup_equals_the_linear_scan(series, target):
+    """`_latest_on_or_before` bisects sorted dates; the answer is the one the
+    linear `max` over every date gave, for any series and any target."""
+    eligible = [d for d in series if d <= target.isoformat()]
+    expected = series[max(eligible)] if eligible else None
+    assert fx._latest_on_or_before(series, target) == expected

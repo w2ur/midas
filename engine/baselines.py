@@ -42,6 +42,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Collection, Iterator, Mapping, Sequence
 
+from engine import fx as _fx
 from engine.config import BenchmarkSpec, get_config
 from engine.disclosure import require_changelog_entry
 from engine.selectors.seeding import make_seed
@@ -836,6 +837,7 @@ def _run(
     return out
 
 
+@_fx.store_cache()
 def init_coin_flip_state(
     agent_id: str,
     tickers: list[str],
@@ -870,6 +872,7 @@ def init_coin_flip_state(
     )
 
 
+@_fx.store_cache()
 def compute_coin_flip(
     agent_id: str,
     tickers: list[str],
@@ -973,6 +976,7 @@ def _fresh_path(
     return states
 
 
+@_fx.store_cache()
 def advance_coin_flip(
     agent_id: str,
     tickers: list[str],
@@ -1746,6 +1750,7 @@ def _restatement_plan(
     return plan
 
 
+@_fx.store_cache()
 def build_all_baselines(
     universes_by_agent: dict[str, list[str]],
     from_date: date,

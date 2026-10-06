@@ -11,10 +11,12 @@ store nor needed for portfolio-level reporting.
 
 from __future__ import annotations
 
+import bisect
 import json
 import math
+from contextlib import contextmanager
 from datetime import date
-from typing import Iterable
+from typing import Iterable, Iterator
 
 from engine.config import get_config
 
@@ -89,13 +91,60 @@ def _load_store_series(ticker: str) -> dict[str, float]:
     return series
 
 
+#: ``{ticker: (sorted dates, values)}`` while a ``store_cache()`` block is
+#: open, else None: every lookup then reads the file afresh, as it always did.
+_SERIES_CACHE: dict[str, tuple[list[str], list[float]]] | None = None
+
+
+@contextmanager
+def store_cache() -> Iterator[None]:
+    """Read each pair's file at most once inside the block.
+
+    **Opt-in and scoped** (round-4 review, 2026-10-06). The coin flip asks a
+    rate for every currency and every date of a run, and each ask re-read and
+    re-parsed the whole pair file, then scanned every date. A build or a
+    replay opens this block around a run in which the store is not rewritten;
+    nothing outside a block is cached, so the broker, which reads a rate a
+    few times per session and may run after a store write in the same
+    process, behaves exactly as before. Re-entrant: an inner block reuses the
+    outer one's cache, and only the outermost exit drops it.
+    """
+    global _SERIES_CACHE
+    if _SERIES_CACHE is not None:
+        yield
+        return
+    _SERIES_CACHE = {}
+    try:
+        yield
+    finally:
+        _SERIES_CACHE = None
+
+
+def _sorted(series: dict[str, float]) -> tuple[list[str], list[float]]:
+    dates = sorted(series)
+    return dates, [series[d] for d in dates]
+
+
+def _sorted_store_series(ticker: str) -> tuple[list[str], list[float]]:
+    """``_load_store_series`` as sorted ``(dates, values)``, memoised inside a
+    ``store_cache()`` block."""
+    if _SERIES_CACHE is None:
+        return _sorted(_load_store_series(ticker))
+    if ticker not in _SERIES_CACHE:
+        _SERIES_CACHE[ticker] = _sorted(_load_store_series(ticker))
+    return _SERIES_CACHE[ticker]
+
+
+def _latest_in(dates: list[str], values: list[float], target: date) -> float | None:
+    """The value of the newest date ≤ ``target`` in sorted ``dates``, by
+    bisection (it was a linear scan of every date on every ask)."""
+    i = bisect.bisect_right(dates, target.isoformat())
+    return values[i - 1] if i else None
+
+
 def _latest_on_or_before(series: dict[str, float], target: date) -> float | None:
     """Return the latest value with date ≤ target, or None if none."""
-    target_iso = target.isoformat()
-    eligible = [d for d in series if d <= target_iso]
-    if not eligible:
-        return None
-    return series[max(eligible)]
+    return _latest_in(*_sorted(series), target)
 
 
 def get_rate(
@@ -160,7 +209,7 @@ def _stored_rate(ticker: str, inverted: bool, on: date) -> float | None:
     A close that is not a positive finite number is no rate: zero used to be
     the only one refused, while a negative or NaN close would have priced.
     """
-    val = _latest_on_or_before(_load_store_series(ticker), on)
+    val = _latest_in(*_sorted_store_series(ticker), on)
     if val is None or not math.isfinite(val) or val <= 0:
         return None
     return 1.0 / val if inverted else val

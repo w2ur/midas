@@ -85,6 +85,7 @@ from engine.baselines import (  # noqa: E402
 )
 from engine.config import get_config  # noqa: E402
 from engine.disclosure import require_changelog_entry  # noqa: E402
+from engine.fx import store_cache  # noqa: E402
 
 #: A period field that means "the first writer's own tree" (``<writer>^``).
 WRITER = "<writer>^"
@@ -468,7 +469,9 @@ def main(argv: list[str] | None = None) -> int:
     workdir = Path(tempfile.mkdtemp(prefix="restate-coinflip-"))
     try:
         resolver = TreeResolver(repo, workdir)
-        results = [restate_agent(repo, args.tip, a, PERIODS, resolver) for a in agents]
+        # Each FX pair file is read once for the whole replay (engine.fx).
+        with store_cache():
+            results = [restate_agent(repo, args.tip, a, PERIODS, resolver) for a in agents]
     except Unknown as exc:
         print(f"UNKNOWN: {exc}", file=sys.stderr)
         return 2
