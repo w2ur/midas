@@ -613,11 +613,11 @@ def _step(
             else:
                 rate, reason = closes.rate(h.currency, iso)
         if reason is not None:
-            # The reason current now, at the holding's first mark (round-5
-            # review): a holding that froze for one reason and is still
-            # frozen for another names the one that holds at the end.
-            first = frozen[ticker][1] if ticker in frozen else h
-            frozen[ticker] = (reason, first)
+            # The reason current now, at the holding's mark (round-5 review):
+            # a holding that froze for one reason and is still frozen for
+            # another names the one that holds at the end. A frozen holding is
+            # carried as the very same ``h``, so ``h`` is its original mark.
+            frozen[ticker] = (reason, h)
             if thawed is not None:
                 thawed.pop(ticker, None)
             carried[ticker] = h
@@ -723,8 +723,10 @@ def _frozen_concerns(
             )
         elif reason == NO_PRICE_DATA:
             why = (
-                "has its mark's close in the store, but the newest close it "
-                "was valued at is not a positive finite number"
+                "has its mark's close in the store, but either the newest "
+                "close it was valued at is not a positive finite number, or "
+                "the valuation ratio (that close over the mark's close) is "
+                "not finite"
             )
         elif reason == CURRENCY_UNRESOLVED:
             why = (

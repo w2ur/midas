@@ -1059,6 +1059,20 @@ def test_a_holding_whose_newest_close_is_not_a_price_is_frozen_and_the_state_rel
     assert _rows()[-1]["portfolio_value"] == pytest.approx(5.0 + 100 * 11.0)
 
 
+def test_a_frozen_concern_is_worded_true_for_a_ratio_overflow_too(midas_data_root):
+    """Regression: round-6 review, 2026-10-06. A holding frozen because the
+    valuation ratio overflowed (every close finite and positive) was reported
+    as "the newest close ... is not a positive finite number", which is
+    false of it. The wording now covers the ratio."""
+    _store("AAA", [("2026-01-01", 1.0), ("2026-01-02", 10.0)])
+    _store("BBB", [(d, 1e9) for d in _days(_START, 2)])
+    _seed_state(_held_state("AAA", 1, "2026-01-01", 1e308))
+    result = _advance(date(2026, 1, 2), tickers=["AAA", "BBB"], max_positions=1)
+    assert len(result.concerns) == 1 and "AAA NO_PRICE_DATA" in result.concerns[0]
+    assert "valuation ratio" in result.concerns[0]
+    assert "not finite" in result.concerns[0]
+
+
 class _StubCloses:
     """A ``_Closes`` whose currency and rate answers are set per test."""
 

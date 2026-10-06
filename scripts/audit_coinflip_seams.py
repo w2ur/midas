@@ -254,7 +254,12 @@ def resolve_inputs(repo: Path, rev: str, workdir: Path, cache: dict) -> dict:
         return cache[key]
     target = workdir / key
     target.mkdir(parents=True, exist_ok=True)
-    extract(repo, rev, [p for p in EPOCH_PATHS if _exists(repo, rev, p)], target)
+    paths = [p for p in EPOCH_PATHS if _exists(repo, rev, p)]
+    if not paths:
+        # Nothing to run: an unresolvable tree, never the whole tree archived.
+        cache[key] = {"unresolved": f"{rev} holds none of {', '.join(EPOCH_PATHS)}"}
+        return cache[key]
+    extract(repo, rev, paths, target)
     r = subprocess.run(
         [sys.executable, "-c", _RESOLVE],
         cwd=target,
