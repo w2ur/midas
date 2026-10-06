@@ -571,6 +571,21 @@ def test_a_cash_flat_series_that_matches_is_silent(midas_data_root, tmp_path, ca
     assert "[WARN]" not in capsys.readouterr().out
 
 
+def test_a_cash_flat_row_differing_only_in_other_fields_is_no_concern(
+    midas_data_root, tmp_path, capsys
+):
+    """Regression: round-4 review, 2026-10-06. The cash-flat branch compared
+    the whole row, so a field added to (or dropped from) the writer's rows
+    made every published row a CASH_FLAT_MISMATCH concern, though no number
+    moved. It compares value and currency, as a legacy row does."""
+    path = tmp_path / "benchmark.json"
+    rows = compute_passive_benchmark(_CASH_FLAT, _FROM, _TO)
+    _write(path, [{k: v for k, v in r.items() if k != "positions_value"} for r in rows])
+    recomputed = [dict(r, note="a field the writer added since") for r in rows]
+    assert merge_baseline_series(path, recomputed, cash_flat=True) == MergeCounts()
+    assert "[WARN]" not in capsys.readouterr().out
+
+
 def test_the_build_names_a_cash_flat_mismatch_as_such(midas_data_root, capsys):
     cfg = get_config()
     universes = _seed_desk(cfg, {})

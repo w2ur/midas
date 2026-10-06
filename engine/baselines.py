@@ -1410,7 +1410,9 @@ def merge_baseline_series(
     restore-the-sidecar remedy a legacy row is given could never be carried
     out. A mismatch there means the initial capital or the series currency
     changed: one ``[WARN]`` per row says so (``CASH_FLAT_MISMATCH``) and the
-    sidecar is never read.
+    sidecar is never read. It compares ``portfolio_value`` and ``currency``
+    only, as a legacy row does: a row whose other fields differ (one the
+    writer added since, or dropped) has not changed its number.
 
     **A restatement reads no sidecar** (``restate=True``): every row it is
     handed overwrites its published counterpart unclassified, so a sidecar
@@ -1493,7 +1495,12 @@ def merge_baseline_series(
             continue
         published = by_date[date_key]
         if cash_flat:
-            if published != row:
+            # Value and currency only, as a legacy row is compared: a field
+            # the writer added or dropped since is not a changed number.
+            if (
+                published.get("portfolio_value"),
+                published.get("currency"),
+            ) != (row.get("portfolio_value"), row.get("currency")):
                 tally["cash_flat"] += 1
                 print(
                     f"  [WARN] {path.parent.name}/{path.name}: {date_key} concern — "
