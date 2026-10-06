@@ -260,6 +260,9 @@ def test_build_all_baselines_prints_one_aggregate_summary_on_concern(
     universes_by_agent = {aid: ["FAKE-A", "FAKE-B"] for aid in agents_with_bench}
     _seed("FAKE-A", [("2026-04-17", 10.0), ("2026-04-18", 12.0)])
     _seed("FAKE-B", [("2026-04-17", 20.0), ("2026-04-18", 19.0)])
+    # The EUR books' coin flips hold the bare (USD) fake tickers: a flat rate
+    # keeps them drawable, so this test is about the benchmark revision only.
+    _seed("EURUSD=X", [("2026-04-17", 1.0), ("2026-04-18", 1.0)])
 
     build_all_baselines(
         universes_by_agent=universes_by_agent,
@@ -323,6 +326,7 @@ def _seed_desk(cfg, last_close: float = 105.0, fake_a_last: float = 12.0) -> dic
     _seed(cfg.global_reference.ticker, ramp)
     _seed("FAKE-A", [10.0, 10.5, 11.0, 11.5, fake_a_last])
     _seed("FAKE-B", [20.0, 20.5, 20.0, 19.5, 19.0])
+    _seed("EURUSD=X", [1.0] * len(_DAYS))  # the EUR books' coin flips hold USD names
     return {aid: ["FAKE-A", "FAKE-B"] for aid in agents}
 
 

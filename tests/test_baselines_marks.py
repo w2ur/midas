@@ -414,6 +414,9 @@ def _seed_desk(cfg, closes: dict[str, list[float]]) -> dict[str, list[str]]:
         _write_store(t, list(zip(_DAYS, closes.get(t, ramp))))
     _write_store("FAKE-A", list(zip(_DAYS, [10.0, 10.5, 11.0, 11.5, 12.0])))
     _write_store("FAKE-B", list(zip(_DAYS, [20.0, 20.5, 20.0, 19.5, 19.0])))
+    # The EUR books' coin flips hold the bare (USD) fake tickers; a flat rate
+    # keeps them drawable, so these tests stay about the benchmark merge.
+    _write_store("EURUSD=X", [(d, 1.0) for d in _DAYS])
     return {a: ["FAKE-A", "FAKE-B"] for a in cfg.trading_roster}
 
 
