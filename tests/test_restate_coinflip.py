@@ -355,3 +355,121 @@ def test_any_crash_exits_2_with_its_traceback(desk, monkeypatch, capsys):
     assert "Traceback (most recent call last)" in err and "planted crash" in err
     assert "UNKNOWN: RuntimeError: planted crash" in err
     assert desk.series.read_bytes() == before
+
+
+# ---------------------------------------------------------------------------
+# Round-5 review, 2026-10-06: the instrument registry, point in time
+# ---------------------------------------------------------------------------
+
+REGISTRY = "data/market/instrument_status.json"
+
+
+def _registry_doc(*symbols: str) -> str:
+    return json.dumps(
+        {
+            "schema": 1,
+            "instruments": {
+                s: {"status": "suspended", "since": DAYS[0], "source": "test", "reason": "planted"}
+                for s in symbols
+            },
+        }
+    )
+
+
+def _desk_with(tmp_path, monkeypatch, before_session) -> Desk:
+    """The ``desk`` history, with ``before_session(desk, i)`` run before the
+    session that first writes row ``i``."""
+    d = Desk(tmp_path / "repo")
+    for i, day in enumerate(PUBLISHED):
+        if i == REFRESH_AT:
+            d.set_universe(U2)
+            d.commit("[data] universe refresh")
+        before_session(d, i)
+        d.session(day)
+    monkeypatch.setenv("MIDAS_DATA_DIR", str(d.repo))
+    reset_config_cache()
+    monkeypatch.setattr(rc, "PERIODS", (rc.Period(DAYS[0], None, rc.WRITER, rc.WRITER, "test"),))
+    return d
+
+
+def _replay_rows(desk: Desk, tmp_path: Path, excluded: set[str]) -> list[dict]:
+    work = tmp_path / f"w-replay-{len(list(tmp_path.glob('w-replay-*')))}"
+    inputs = rc.schedule(
+        desk.repo, "HEAD", AGENT, f"data/baselines/{AGENT}/coinflip.json",
+        PUBLISHED, rc.PERIODS, rc.TreeResolver(desk.repo, work),
+    )
+    inputs = [rc.DayInputs(i.tickers, i.max_positions, i.writer) for i in inputs]
+    closes = rc._Closes(sorted(set(PRICES)), "USD")
+    states = rc.replay(
+        AGENT, None, 10_000.0, PUBLISHED, inputs, closes=closes, excluded=excluded, frozen={}
+    )
+    return [rc._row(s, "USD") for s in states]
+
+
+class TestPointInTimeRegistry:
+    def test_todays_registry_never_reaches_back_over_earlier_rows(self, desk, tmp_path):
+        """Regression: round-5 review, 2026-10-06. The replay excluded what
+        TODAY's registry marks on every past date. AAA, suspended only in the
+        working tree now, was never in any writer's registry: the restated
+        path is the one with nothing excluded."""
+        (desk.repo / REGISTRY).write_text(_registry_doc("AAA"))
+        restated = _restated(desk, tmp_path)
+        assert restated.rows == _replay_rows(desk, tmp_path, set())
+        # The control: excluding AAA moves the path, so the probe can fail.
+        assert restated.rows != _replay_rows(desk, tmp_path, {"AAA"})
+        assert restated.concerns == []
+
+    def test_a_suspension_cleared_since_still_excludes_the_dates_it_covered(
+        self, tmp_path, monkeypatch
+    ):
+        """DDD is suspended in the trees that wrote rows 5..7 and cleared
+        before row 8: excluded on exactly those dates, although today's
+        registry is empty."""
+        introduced: list[str] = []
+
+        def plant(d: Desk, i: int) -> None:
+            if i == REFRESH_AT:
+                (d.repo / REGISTRY).write_text(_registry_doc("DDD"))
+                introduced.append(d.commit("feat: registry"))
+            if i == 8:
+                (d.repo / REGISTRY).write_text(_registry_doc())
+                d.commit("chore(data): clear DDD")
+
+        d = _desk_with(tmp_path, monkeypatch, plant)
+        monkeypatch.setattr(rc, "REGISTRY_INTRODUCED", introduced[0])
+        inputs = rc.schedule(
+            d.repo, "HEAD", AGENT, f"data/baselines/{AGENT}/coinflip.json",
+            PUBLISHED, rc.PERIODS, rc.TreeResolver(d.repo, tmp_path / "w"),
+        )
+        assert [sorted(i.excluded) for i in inputs] == [
+            ["DDD"] if REFRESH_AT <= k < 8 else [] for k in range(len(PUBLISHED))
+        ]
+        assert all(i.registry_problem is None for i in inputs)
+
+    @pytest.mark.parametrize("broken", ["unreadable", "missing"])
+    def test_a_registry_that_fails_closed_in_a_writer_tree_is_a_concern(
+        self, tmp_path, monkeypatch, broken
+    ):
+        """After the registry existed, a writer tree whose registry is
+        unreadable or missing fails closed (every symbol excluded on its
+        dates), as engine.instrument_status does, and says so."""
+        introduced: list[str] = []
+
+        def plant(d: Desk, i: int) -> None:
+            if i == 2:
+                (d.repo / REGISTRY).write_text(_registry_doc())
+                introduced.append(d.commit("feat: registry"))
+            if i == 4:
+                if broken == "unreadable":
+                    (d.repo / REGISTRY).write_text("{not json")
+                else:
+                    (d.repo / REGISTRY).unlink()
+                d.commit("break the registry")
+
+        d = _desk_with(tmp_path, monkeypatch, plant)
+        monkeypatch.setattr(rc, "REGISTRY_INTRODUCED", introduced[0])
+        restated = _restated(d, tmp_path)
+        assert len(restated.concerns) == 1
+        concern = restated.concerns[0]
+        assert "failing closed" in concern and REGISTRY in concern
+        assert f"6 date(s), {PUBLISHED[4]}..{PUBLISHED[9]}" in concern

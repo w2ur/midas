@@ -56,6 +56,17 @@ def exists(repo: Path, at: str, path: str) -> bool:
         return False
 
 
+def is_ancestor(repo: Path, ancestor: str, of: str) -> bool:
+    """Whether ``ancestor`` is ``of`` or in its history. False when
+    ``ancestor`` names no commit of ``repo``."""
+    r = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, of], cwd=repo, capture_output=True
+    )
+    if r.returncode not in (0, 1) and rev(repo, f"{ancestor}^{{commit}}") is not None:
+        raise subprocess.CalledProcessError(r.returncode, r.args, r.stdout, r.stderr)
+    return r.returncode == 0
+
+
 def extract(repo: Path, at: str, paths: list[str], target: Path) -> None:
     """Write ``paths`` of ``at``'s tree under ``target`` (``git archive``)."""
     archive = git(repo, "archive", at, *paths, binary=True)

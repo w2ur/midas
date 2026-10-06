@@ -36,6 +36,16 @@ is encoded per period in ``PERIODS``, never discovered:
   ``AGENT_UNIVERSES`` / ``AGENT_MAX_POSITIONS`` constants these trees ran with.
 - 2026-06-30 on: membership and map from each first writer's own tree.
 
+**Point-in-time instrument registry** (round-5 review, 2026-10-06). The
+symbols excluded on date D are the ones ``data/market/instrument_status.json``
+marks in the same tree that supplies D's universe, never today's registry: a
+suspension recorded later must not reach back over rows written before it, and
+one cleared since must still exclude the dates it covered. A tree that predates
+the registry (``REGISTRY_INTRODUCED``, d2bf52b06, not in its history) excludes
+nothing. A tree after it whose registry is missing or unreadable fails closed,
+as ``engine.instrument_status`` does: every symbol of the agent is excluded on
+those dates, and that is a concern.
+
 **Prices and currencies are the current store's** and the current currency
 resolution (``_Closes``), so a vendor revision made after a row was first
 written is in the restated row. That is the method's known limit.
@@ -68,7 +78,7 @@ import subprocess
 import sys
 import tempfile
 import traceback
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -82,7 +92,6 @@ from engine.baselines import (  # noqa: E402
     CoinFlipHolding,
     CoinFlipState,
     _Closes,
-    _excluded,
     _frozen_concerns,
     _row,
     _EmptyDraw,
@@ -98,11 +107,20 @@ from engine.disclosure import (  # noqa: E402
     require_changelog_entry,
 )
 from engine.fx import store_cache  # noqa: E402
-from scripts._coinflip_history import extract, first_writer, rev as _rev  # noqa: E402
+from engine.instrument_status import RegistryUnreadable, _parse as _parse_registry  # noqa: E402
+from scripts._coinflip_history import extract, first_writer, is_ancestor  # noqa: E402
+from scripts._coinflip_history import rev as _rev  # noqa: E402
 from scripts._coinflip_history import git as _git  # noqa: E402
 
 #: A period field that means "the first writer's own tree" (``<writer>^``).
 WRITER = "<writer>^"
+
+#: The instrument registry, read from a tree as of that tree.
+REGISTRY_PATH = "data/market/instrument_status.json"
+
+#: The commit that created the registry. A tree without it in its history had
+#: no registry, and nothing is excluded on the dates it supplies.
+REGISTRY_INTRODUCED = "d2bf52b0623774955609099f60de3585bf749624"
 
 
 @dataclass(frozen=True)
@@ -186,6 +204,25 @@ class TreeResolver:
         self.repo = repo
         self.workdir = workdir
         self._cache: dict[tuple, dict[str, tuple[list[str], int]]] = {}
+        self._registries: dict[str, tuple[frozenset[str] | None, str | None]] = {}
+
+    def registry(self, at: str) -> tuple[frozenset[str] | None, str | None]:
+        """``(marked symbols, None)`` from ``at``'s own registry, or ``(None,
+        why)`` when it fails closed: missing from a tree that should hold it,
+        or unreadable. ``frozenset()`` for a tree that predates it."""
+        blob = _rev(self.repo, f"{at}:{REGISTRY_PATH}")
+        if blob is None:
+            if not is_ancestor(self.repo, REGISTRY_INTRODUCED, at):
+                return frozenset(), None
+            return None, f"{REGISTRY_PATH} is missing from a tree after the registry existed"
+        if blob not in self._registries:
+            try:
+                entries = _parse_registry(_git(self.repo, "cat-file", "-p", blob))
+            except RegistryUnreadable as exc:
+                self._registries[blob] = (None, f"{REGISTRY_PATH} is unreadable ({exc})")
+            else:
+                self._registries[blob] = (frozenset(entries), None)
+        return self._registries[blob]
 
     def resolve(self, universes_rev: str, roster_rev: str) -> dict[str, tuple[list[str], int]]:
         code = _rev(self.repo, f"{universes_rev}:engine")
@@ -244,6 +281,10 @@ class DayInputs:
     tickers: tuple[str, ...]
     max_positions: int
     writer: str
+    #: The symbols the registry of the universe's tree marks on this date.
+    excluded: frozenset[str] = frozenset()
+    #: Why that registry failed closed (every symbol excluded), or None.
+    registry_problem: str | None = None
 
 
 def schedule(
@@ -276,7 +317,8 @@ def schedule(
         tickers, max_pos = resolved[agent]
         if not tickers:
             raise Unknown(f"{agent} {d}: empty universe at {urev}")
-        out.append(DayInputs(tuple(tickers), max_pos, w))
+        marked, problem = resolver.registry(urev)
+        out.append(DayInputs(tuple(tickers), max_pos, w, marked or frozenset(), problem))
     return out
 
 
@@ -319,7 +361,7 @@ def replay(
             d,
             closes=closes,
             universe=universe,
-            excluded=excluded,
+            excluded=set(excluded) | inp.excluded,
             max_positions=inp.max_positions,
             frozen=frozen,
             empty=empty,
@@ -377,7 +419,22 @@ def restate_agent(
     union = sorted({t for i in inputs for t in i.tickers})
     closes = _Closes(union, currency)
     concerns: list[str] = []
-    excluded = _excluded(agent, union, concerns)
+    # A registry that failed closed marks every symbol on its dates, as
+    # engine.instrument_status does, and says so once per cause.
+    failed: dict[str, list[str]] = {}
+    for d, i in zip(dates, inputs):
+        if i.registry_problem:
+            failed.setdefault(i.registry_problem, []).append(d)
+    for problem, on in sorted(failed.items()):
+        concerns.append(
+            f"coinflip {agent}: {problem} in the writer tree of {len(on)} date(s), "
+            f"{on[0]}..{on[-1]} — failing closed, no symbol is a candidate and "
+            f"every holding is carried untraded on those dates."
+        )
+    inputs = [
+        replace(i, excluded=frozenset(union)) if i.registry_problem else i for i in inputs
+    ]
+    excluded: set[str] = set()
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
     thawed: dict[str, tuple[str, str]] = {}
     states = replay(
