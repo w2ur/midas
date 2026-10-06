@@ -92,9 +92,9 @@ def test_merge_baseline_series_refuses_to_move_a_published_point(tmp_path):
     counts = merge_baseline_series(path, computed)
 
     # A legacy row with no recorded marks and no sidecar beside it: kept, and
-    # a concern, since nothing can classify it (classification lives in
-    # tests/test_baselines_marks.py).
-    assert counts == MergeCounts(concern=1)
+    # a concern of the sidecar cause, since nothing can classify it
+    # (classification lives in tests/test_baselines_marks.py).
+    assert counts == MergeCounts(sidecar=1) and counts.concern == 1
     assert json.loads(path.read_text())[0]["portfolio_value"] == 8695.39
 
 
@@ -284,7 +284,7 @@ def test_build_all_baselines_prints_one_aggregate_summary_on_concern(
     # One aggregate line, even though the world agent's own benchmark.json
     # and the global msci_world.json share the URTH ticker and both flag it.
     assert out.count("[WARN] baselines:") == 1
-    assert "[WARN] baselines: 2 concern(s)" in out
+    assert "[WARN] baselines: 2 concern(s) — 2 benchmark point(s) priced from" in out
 
 
 # ---------------------------------------------------------------------------

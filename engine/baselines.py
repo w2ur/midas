@@ -969,25 +969,59 @@ RATIO_REL_TOL = 1e-12
 MARK_FIELDS = ("mark_date", "mark_close", "base_date", "base_close")
 
 
+#: The ``[WARN]`` sentence for a cash-flat series whose published row no
+#: longer equals its recomputation.
+CASH_FLAT_MISMATCH = (
+    "a cash-flat series marks no price, so nothing in the store can have "
+    "moved it: the initial capital or the series currency changed since the "
+    "row was published (roster.yaml / engine.config). There are no marks and "
+    "no sidecar to restore. The published value was kept. Remedy: restore "
+    "the initial capital or currency; if the change is meant, restate the "
+    "series with a METHODOLOGY changelog anchor from a human-authored "
+    "[restate] commit."
+)
+
+
 @dataclass(frozen=True)
 class MergeCounts:
     """What one merge (or a whole build) did with each computed row.
 
-    ``appended`` is a new date. Every other field is a published date the
-    recomputation disagrees with, classified by ``merge_baseline_series``;
-    the published row is kept in every case. Only ``concern`` is a finding.
+    ``appended`` is a new date. ``stale_mark``, ``rescaled`` and
+    ``unclassified`` are published dates the recomputation disagrees with,
+    expected and not findings; the published row is kept in every case.
+
+    **The findings are counted by cause** (round-3 review, 2026-10-06), and
+    ``concern`` is their sum. The build's aggregate line used to call every
+    benchmark concern a price revision, a broken sidecar included:
+
+    - ``revised`` — a close a published point was priced from was revised;
+    - ``sidecar`` — a marks sidecar is unreadable (one each), or a legacy
+      point cannot be classified because its sidecar is missing or
+      unreadable (one each);
+    - ``cash_flat`` — a cash-flat point no longer equals its recomputation
+      (``CASH_FLAT_MISMATCH``);
+    - ``coinflip`` — a coin flip refused, stopped or froze a holding
+      (``CoinFlipAdvance.concerns``).
     """
 
     appended: int = 0
     stale_mark: int = 0
     rescaled: int = 0
-    concern: int = 0
+    revised: int = 0
     unclassified: int = 0
+    sidecar: int = 0
+    cash_flat: int = 0
+    coinflip: int = 0
 
     def __add__(self, other: "MergeCounts") -> "MergeCounts":
         return MergeCounts(
             *(getattr(self, f.name) + getattr(other, f.name) for f in fields(self))
         )
+
+    @property
+    def concern(self) -> int:
+        """Every finding, all causes."""
+        return self.revised + self.sidecar + self.cash_flat + self.coinflip
 
     @property
     def mismatched(self) -> int:
@@ -1130,6 +1164,7 @@ def merge_baseline_series(
     *,
     restate: bool = False,
     closes: Mapping[str, float] | None = None,
+    cash_flat: bool = False,
 ) -> MergeCounts:
     """Append-or-keep merge of a freshly computed series onto a baseline file,
     classifying every published point the recomputation disagrees with.
@@ -1177,6 +1212,18 @@ def merge_baseline_series(
       missing or unreadable is a ``concern`` instead, and an unreadable
       sidecar is one concern of its own (``_load_marks_sidecar``).
 
+    Every concern is counted by its cause (``MergeCounts``): a revised close
+    (``revised``), a sidecar that cannot classify (``sidecar``), or a
+    cash-flat mismatch (``cash_flat``).
+
+    **A cash-flat series has its own class** (``cash_flat=True``, the
+    ``EUR_CASH_FLAT`` benchmark; round-3 review, 2026-10-06). It reads no
+    price and records no marks, so it has no sidecar, and the
+    restore-the-sidecar remedy a legacy row is given could never be carried
+    out. A mismatch there means the initial capital or the series currency
+    changed: one ``[WARN]`` per row says so (``CASH_FLAT_MISMATCH``) and the
+    sidecar is never read.
+
     **The coin flip does not come through here** (plan 1.6, 2026-10-05): it
     is advanced from a persisted state over new dates only
     (``advance_coin_flip``), so it has no recomputation to classify. The
@@ -1216,6 +1263,9 @@ def merge_baseline_series(
         The store's ``{date: close}`` for the benchmark's ticker. Without it
         no recorded mark can be confirmed, so every mark-bearing mismatch is
         a concern.
+    cash_flat:
+        The series is a cash-flat benchmark (``EUR_CASH_FLAT``): no marks,
+        no sidecar, and a mismatch is a ``cash_flat`` concern.
 
     Returns
     -------
@@ -1233,13 +1283,13 @@ def merge_baseline_series(
         return MergeCounts()
     sidecar: dict[str, dict] | None = {}
     sidecar_problem: str | None = None
-    if any("mark_date" not in r for r in existing):
+    if not cash_flat and any("mark_date" not in r for r in existing):
         sidecar, sidecar_problem = _load_marks_sidecar(path)
     by_date = {row["date"]: row for row in existing}
     close_dates = sorted(closes) if closes is not None else None
     tally = {f.name: 0 for f in fields(MergeCounts)}
     if sidecar_problem == "unreadable":
-        tally["concern"] += 1
+        tally["sidecar"] += 1
     for row in computed:
         date_key = row["date"]
         if date_key not in by_date:
@@ -1250,13 +1300,29 @@ def merge_baseline_series(
             by_date[date_key] = row
             continue
         published = by_date[date_key]
+        if cash_flat:
+            if published != row:
+                tally["cash_flat"] += 1
+                print(
+                    f"  [WARN] {path.parent.name}/{path.name}: {date_key} concern — "
+                    f"published at {published.get('portfolio_value')} "
+                    f"{published.get('currency')}, recomputed at "
+                    f"{row.get('portfolio_value')} {row.get('currency')}; "
+                    f"{CASH_FLAT_MISMATCH}"
+                )
+            continue
         verdict = _classify(
             published, row, sidecar=sidecar, closes=closes, dates=close_dates
         )
         if verdict is None:
             continue
+        legacy_unclassifiable = (
+            verdict == "concern" and "mark_date" not in published and sidecar is None
+        )
+        if verdict == "concern":
+            verdict = "sidecar" if legacy_unclassifiable else "revised"
         tally[verdict] += 1
-        if verdict == "concern" and "mark_date" not in published and sidecar is None:
+        if legacy_unclassifiable:
             sidecar_name = marks_sidecar_path(path).name
             print(
                 f"  [WARN] {path.parent.name}/{path.name}: {date_key} concern — "
@@ -1268,7 +1334,7 @@ def merge_baseline_series(
                 f"{sidecar_name} (scripts/derive_legacy_benchmark_marks.py), "
                 f"then re-run; restate the row only if it is then a concern."
             )
-        elif verdict == "concern":
+        elif verdict == "revised":
             assert sidecar is not None or "mark_date" in published
             marks = (
                 {k: published[k] for k in MARK_FIELDS}
@@ -1519,7 +1585,9 @@ def build_all_baselines(
     flip that cannot be advanced or holds a ticker the store can no longer
     price, then one aggregate ``[WARN] baselines: N concern(s)`` line whose
     N counts both (``MergeCounts.concern`` in the returned totals; review
-    M2). Every expected class (``stale_mark``, ``rescaled``,
+    M2), broken down by cause (``MergeCounts``: price revisions, sidecar
+    problems, cash-flat mismatches, coin-flip concerns), so a broken sidecar
+    is never reported as a price revision. Every expected class (``stale_mark``, ``rescaled``,
     ``unclassified``)
     prints exactly one ``[INFO] … not a concern`` summary line across every
     file this build merged, when non-zero, and never a per-row line — the
@@ -1553,7 +1621,6 @@ def build_all_baselines(
     max_positions_by_agent = max_positions_by_agent or {}
     baselines_dir = cfg.baselines_dir
     totals = MergeCounts()
-    coin_concerns = 0
     for agent_id in cfg.trading_roster:
         spec = cfg.roster[agent_id].benchmark
         if spec is None:
@@ -1564,6 +1631,7 @@ def build_all_baselines(
             agent_dir / "benchmark.json",
             compute_passive_benchmark(spec, from_date, to_date, closes=closes),
             closes=closes,
+            cash_flat=spec.ticker == "EUR_CASH_FLAT",
         )
 
         tickers = universes_by_agent.get(agent_id, [])
@@ -1577,8 +1645,7 @@ def build_all_baselines(
             from_date=from_date,
             to_date=to_date,
         )
-        coin_concerns += len(coin.concerns)
-        totals += MergeCounts(appended=coin.appended, concern=len(coin.concerns))
+        totals += MergeCounts(appended=coin.appended, coinflip=len(coin.concerns))
 
     ref_closes = _benchmark_closes(cfg.global_reference)
     totals += merge_baseline_series(
@@ -1592,14 +1659,33 @@ def build_all_baselines(
         if count:
             print(f"  [INFO] baselines: {count} {name} — {meaning}; not a concern.")
     if totals.concern:
-        parts = []
-        if totals.concern - coin_concerns:
-            parts.append(
-                f"{totals.concern - coin_concerns} benchmark point(s) priced from "
-                f"a close the store has since revised (published values kept)"
+        parts = [
+            f"{n} {what}"
+            for n, what in (
+                (
+                    totals.revised,
+                    "benchmark point(s) priced from a close the store has since "
+                    "revised (published values kept)",
+                ),
+                (
+                    totals.sidecar,
+                    "marks sidecar problem(s): a sidecar unreadable, or a legacy "
+                    "point it cannot classify because its sidecar is missing or "
+                    "unreadable (not a price revision)",
+                ),
+                (
+                    totals.cash_flat,
+                    "cash-flat benchmark point(s) that no longer equal their "
+                    "recomputation (initial capital or currency changed)",
+                ),
+                (
+                    totals.coinflip,
+                    "coin flip concern(s) (a refusal, a stop, or a holding held "
+                    "at its mark)",
+                ),
             )
-        if coin_concerns:
-            parts.append(f"{coin_concerns} coin flip concern(s)")
+            if n
+        ]
         print(
             f"  [WARN] baselines: {totals.concern} concern(s) — "
             f"{'; '.join(parts)}; each [WARN] above names its remedy. "

@@ -161,7 +161,7 @@ def test_a_revised_close_on_a_recorded_mark_is_a_concern(midas_data_root, tmp_pa
     counts = _remerge(path, [("2026-04-16", 100.0), ("2026-04-17", 111.0)])
 
     # 04-17 and the three days forward-filling it; 04-16 is its own base.
-    assert counts == MergeCounts(concern=4)
+    assert counts == MergeCounts(revised=4) and counts.concern == 4
     out = capsys.readouterr().out
     assert out.count("[WARN]") == 4
     assert "2026-04-17" in out and "110.0" in out and "111.0" in out
@@ -268,7 +268,7 @@ def test_a_legacy_row_whose_sidecar_is_missing_is_a_concern(midas_data_root, tmp
 
     counts = _remerge(path, [("2026-04-16", 100.0), ("2026-04-17", 111.0)])
 
-    assert counts == MergeCounts(concern=4)
+    assert counts == MergeCounts(sidecar=4) and counts.concern == 4
     warns = [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l]
     assert len(warns) == 4 and all("benchmark_marks.json is missing" in l for l in warns)
 
@@ -327,7 +327,7 @@ def test_an_unreadable_sidecar_is_a_counted_concern(midas_data_root, tmp_path, c
     _publish(path, _FIRST_STORE, legacy=True)
     path.with_name("benchmark_marks.json").write_text("{not json")
     counts = _remerge(path, [("2026-04-16", 100.0), ("2026-04-17", 111.0)])
-    assert counts == MergeCounts(concern=5)
+    assert counts == MergeCounts(sidecar=5) and counts.concern == 5
     out = capsys.readouterr().out
     assert "benchmark_marks.json is unreadable" in out
 
@@ -344,8 +344,13 @@ def test_an_unreadable_sidecar_is_a_concern_of_the_build(midas_data_root, capsys
     path.with_name("benchmark_marks.json").write_text("{not json")
     capsys.readouterr()
     totals = _build(universes)
-    assert totals.concern == 1
-    assert "[WARN] baselines: 1 concern(s)" in capsys.readouterr().out
+    assert totals == MergeCounts(sidecar=1)
+    out = capsys.readouterr().out
+    # Regression: round-3 review, 2026-10-06 — the aggregate line called
+    # this a price revision. It names the sidecar and never "revised".
+    aggregate = next(l for l in out.splitlines() if "[WARN] baselines:" in l)
+    assert aggregate.startswith("  [WARN] baselines: 1 concern(s) — 1 marks sidecar problem(s)")
+    assert "since revised" not in aggregate
 
 
 def test_msci_world_sidecar_name(midas_data_root, tmp_path):
@@ -388,11 +393,12 @@ def test_restate_overwrites_and_classifies_nothing(midas_data_root, tmp_path):
 
 
 def test_counts_add_up():
-    a = MergeCounts(appended=1, stale_mark=2, concern=1)
-    b = MergeCounts(rescaled=3, unclassified=5)
+    a = MergeCounts(appended=1, stale_mark=2, revised=1, sidecar=2)
+    b = MergeCounts(rescaled=3, unclassified=5, cash_flat=1, coinflip=4)
     total = a + b
-    assert total == MergeCounts(1, 2, 3, 1, 5)
-    assert total.mismatched == 11
+    assert total == MergeCounts(1, 2, 3, 1, 5, 2, 1, 4)
+    assert total.concern == 1 + 2 + 1 + 4
+    assert total.mismatched == 2 + 3 + 5 + 8
 
 
 # ---------------------------------------------------------------------------
@@ -518,3 +524,66 @@ def test_has_later_close_bisect_matches_the_scan(store, mark, row, priced):
     scan = closes is not None and mark < row and any(mark < d <= row for d in closes)
     dates = sorted(closes) if closes is not None else None
     assert _has_later_close({"mark_date": mark}, row, dates) == scan
+
+
+# ---------------------------------------------------------------------------
+# A cash-flat series (EUR_CASH_FLAT) reads no sidecar
+# ---------------------------------------------------------------------------
+
+_CASH_FLAT = BenchmarkSpec("Cash", "EUR_CASH_FLAT", "EUR")
+
+
+def test_a_cash_flat_mismatch_is_its_own_concern_not_a_sidecar_one(
+    midas_data_root, tmp_path, capsys
+):
+    """Regression: round-3 review, 2026-10-06. EUR_CASH_FLAT records no
+    marks and has no sidecar, so a mismatch became a legacy-row concern
+    whose remedy (restore the sidecar) cannot be carried out. A cash-flat
+    series marks no price: a mismatch means the initial capital or the
+    currency changed, and the [WARN] says that."""
+    path = tmp_path / "benchmark.json"
+    published = compute_passive_benchmark(_CASH_FLAT, _FROM, _TO)
+    _write(path, [dict(r, portfolio_value=12_000.0, cash=12_000.0) for r in published])
+    path.with_name("benchmark_marks.json").write_text("{not json")  # never read
+
+    counts = merge_baseline_series(
+        path, compute_passive_benchmark(_CASH_FLAT, _FROM, _TO), cash_flat=True
+    )
+
+    assert counts == MergeCounts(cash_flat=5) and counts.concern == 5
+    warns = [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l]
+    assert len(warns) == 5
+    assert all("initial capital or the series currency changed" in l for l in warns)
+    assert not any("sidecar is" in l or "unreadable" in l for l in warns)
+
+
+def test_a_cash_flat_series_that_matches_is_silent(midas_data_root, tmp_path, capsys):
+    path = tmp_path / "benchmark.json"
+    rows = compute_passive_benchmark(_CASH_FLAT, _FROM, _TO)
+    _write(path, rows)
+    assert merge_baseline_series(path, rows, cash_flat=True) == MergeCounts()
+    assert "[WARN]" not in capsys.readouterr().out
+
+
+def test_the_build_names_a_cash_flat_mismatch_as_such(midas_data_root, capsys):
+    cfg = get_config()
+    universes = _seed_desk(cfg, {})
+    _build(universes)
+    agent = next(
+        a for a in cfg.trading_roster
+        if cfg.roster[a].benchmark is not None
+        and cfg.roster[a].benchmark.ticker == "EUR_CASH_FLAT"
+    )
+    path = cfg.baselines_dir / agent / "benchmark.json"
+    rows = json.loads(path.read_text())
+    rows[0] = dict(rows[0], portfolio_value=9_999.0)
+    _write(path, rows)
+    capsys.readouterr()
+    totals = _build(universes)
+    assert totals == MergeCounts(cash_flat=1)
+    aggregate = next(
+        l for l in capsys.readouterr().out.splitlines() if "[WARN] baselines:" in l
+    )
+    assert "1 cash-flat benchmark point(s)" in aggregate
+    assert "since revised" not in aggregate and "sidecar" not in aggregate
+
