@@ -1224,6 +1224,10 @@ def merge_baseline_series(
     changed: one ``[WARN]`` per row says so (``CASH_FLAT_MISMATCH``) and the
     sidecar is never read.
 
+    **A restatement reads no sidecar** (``restate=True``): every row it is
+    handed overwrites its published counterpart unclassified, so a sidecar
+    it loaded could only print a ``[WARN]`` about rows nothing compares.
+
     **The coin flip does not come through here** (plan 1.6, 2026-10-05): it
     is advanced from a persisted state over new dates only
     (``advance_coin_flip``), so it has no recomputation to classify. The
@@ -1283,7 +1287,7 @@ def merge_baseline_series(
         return MergeCounts()
     sidecar: dict[str, dict] | None = {}
     sidecar_problem: str | None = None
-    if not cash_flat and any("mark_date" not in r for r in existing):
+    if not restate and not cash_flat and any("mark_date" not in r for r in existing):
         sidecar, sidecar_problem = _load_marks_sidecar(path)
     by_date = {row["date"]: row for row in existing}
     close_dates = sorted(closes) if closes is not None else None

@@ -527,7 +527,7 @@ def test_has_later_close_bisect_matches_the_scan(store, mark, row, priced):
 
 
 # ---------------------------------------------------------------------------
-# A cash-flat series (EUR_CASH_FLAT) reads no sidecar
+# A cash-flat series (EUR_CASH_FLAT) and a restatement read no sidecar
 # ---------------------------------------------------------------------------
 
 _CASH_FLAT = BenchmarkSpec("Cash", "EUR_CASH_FLAT", "EUR")
@@ -587,3 +587,14 @@ def test_the_build_names_a_cash_flat_mismatch_as_such(midas_data_root, capsys):
     assert "1 cash-flat benchmark point(s)" in aggregate
     assert "since revised" not in aggregate and "sidecar" not in aggregate
 
+
+def test_a_restatement_reads_no_sidecar(midas_data_root, tmp_path, capsys):
+    """Regression: round-3 review, 2026-10-06. `restate=True` overwrites
+    every row it is handed unclassified, yet still loaded the sidecar and
+    printed its unreadable [WARN] (and counted it)."""
+    path = tmp_path / "benchmark.json"
+    _publish(path, _FIRST_STORE, legacy=True)
+    path.with_name("benchmark_marks.json").write_text("{not json")
+    revised = [("2026-04-16", 100.0), ("2026-04-17", 111.0)]
+    assert _remerge(path, revised, restate=True) == MergeCounts()
+    assert "[WARN]" not in capsys.readouterr().out
