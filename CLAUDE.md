@@ -91,10 +91,17 @@ changelog entry, found five days later by an unrelated cross-check. A
 precondition, not an audit: an audit tells you afterwards that you forgot.
 
 **Restatement scope is a set, not a bool.** `build_all_baselines(restate_series=…)`
-takes `{"coinflip"}`, `{"benchmark"}` or `{"<agent>/<kind>"}`. The bool it
+takes `{"benchmark"}`, `{"<agent>/<kind>"}` or one date of one series, `{"<agent>/<kind>@<YYYY-MM-DD>"}`. **A restatement is restate-only**: every
+entry is validated before any write, and the call rewrites only the scoped rows
+— no appends, no coin-flip advance. The bool it
 replaced could only say "everything", which on 2026-08-07 moved eight passive
 benchmarks that should not have moved (on fresher *prices*, not units) and they
-had to be restored by hand.
+had to be restored by hand. **A coin-flip scope is refused**: since 2026-10-05
+each coin flip advances from `data/baselines/<agent>/state/coinflip.json` over
+new dates only, and a recompute over history would splice a new path under the
+published one and give it look-ahead. The one restatement of that history
+(2026-10-06) went through `scripts/restate_coinflip.py`, gated and point-in-time;
+never loosen the refusal to restate a coin flip.
 
 **One missing-price policy** (`engine.valuation.value_position`). Snapshots used
 to fall back to `avg_cost`, the leaderboard valued at **zero**, and restatement

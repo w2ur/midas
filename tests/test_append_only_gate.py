@@ -499,3 +499,36 @@ def test_no_new_mutation_route_has_opened():
         "the gate fired on commits outside the known set — either a new "
         f"published-row mutation landed, or the gate is miscalibrated: {unexpected}"
     )
+
+
+class TestCoinFlipState:
+    """Plan 1.6: `data/baselines/<agent>/state/coinflip.json` is rewritten on
+    every advance, so the gate must not freeze it. Its fnmatch glob
+    `data/baselines/*/*.json` does match the path (`*` crosses `/`); the
+    state stays outside by shape — an object, not an array of dated rows,
+    which `_rows_at` reads as nothing to check. The series beside it stays
+    frozen (the control)."""
+
+    def _state(self, repo: Path, date: str, cash: float) -> None:
+        from engine.baselines import CoinFlipHolding, CoinFlipState, coin_flip_state_doc
+
+        state = CoinFlipState(date, 100.0, cash, {"AAA": CoinFlipHolding(1, date, 100.0 - cash, "USD", 1.0)})
+        path = repo / "data" / "baselines" / "book" / "state" / "coinflip.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(coin_flip_state_doc(state, "book")), encoding="utf-8")
+
+    def test_advancing_the_state_passes(self, repo):
+        self._state(repo, "2026-04-17", 10.0)
+        _commit(repo, "seed")
+        self._state(repo, "2026-04-18", 20.0)
+        _commit(repo, "chore: weekday session 2026-04-18")
+        result = _gate(repo)
+        assert result.returncode == 0, result.stdout
+
+    def test_the_series_beside_it_is_still_frozen(self, repo):
+        series = repo / "data" / "baselines" / "book" / "coinflip.json"
+        series.write_text(json.dumps([{"date": "2026-04-17", "portfolio_value": 1.0}]))
+        _commit(repo, "seed")
+        series.write_text(json.dumps([{"date": "2026-04-17", "portfolio_value": 2.0}]))
+        _commit(repo, "chore: weekday session 2026-04-18")
+        assert _gate(repo).returncode == 1

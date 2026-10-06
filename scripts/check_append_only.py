@@ -11,8 +11,9 @@ otherwise, naming the rows.
 
 Immutability of the published record is already enforced where rows are
 written: `PortfolioManager.add_snapshot` refuses a later session's rewrite of
-an earlier session's row, and `engine.baselines.merge_baseline_series` is
-append-or-refuse. Both are real and both are tested.
+an earlier session's row, and `engine.baselines.merge_baseline_series` keeps
+every published row (append-or-keep, a mismatch classified, never written).
+Both are real and both are tested.
 
 Neither sees a hand edit, a one-off script, a bad merge resolution, or a
 future writer that forgets to go through them. Every published-data incident
@@ -156,8 +157,9 @@ def _same_session_correction(path: str, old: dict, new: dict) -> bool:
     Baseline series get no exemption at all. They are derived from the price
     series, so there is no "same writer" — a moved baseline point is a revised
     close reaching back under a frozen agent curve, which is the exact
-    asymmetry `engine.baselines.merge_baseline_series` was made append-or-refuse
-    to close on 2026-08-06.
+    asymmetry `engine.baselines.merge_baseline_series` was made append-or-keep
+    to close on 2026-08-06 (it keeps a published row and classifies the
+    mismatch).
     """
     if not path.endswith(_SESSION_KEYED):
         return False

@@ -214,3 +214,41 @@ def test_refresh_leaderboard_writes_current_json(midas_data_root, monkeypatch):
         "_step_build_tax_shadow wrote to the real data/tax_shadow/ directory "
         "instead of the tmp_path sandbox — path injection is broken."
     )
+
+
+def test_both_writers_build_baselines_through_the_same_step():
+    """Plan 1.6 (review 2 SHOULD 3): one function writes `coinflip.json` and
+    then its state (`engine.baselines.advance_coin_flip`), and both the
+    weekday session and the bot-authored weekend refresh reach it through the
+    same `step_build_baselines` — so neither can advance the coin flip some
+    other way."""
+    import inspect
+
+    from engine import baselines
+    from scripts import daily_session, refresh_leaderboard
+
+    assert refresh_leaderboard._step_build_baselines is daily_session.step_build_baselines
+    assert "build_all_baselines" in inspect.getsource(daily_session.step_build_baselines)
+    assert "advance_coin_flip(" in inspect.getsource(baselines.build_all_baselines)
+
+
+def test_nothing_else_writes_a_coin_flip_series_or_state():
+    """The single-writer claim, held at the source: outside the engine's own
+    advance, the one-off migration and the gated one-off restatement
+    (2026-10-06, METHODOLOGY #coinflip-restated-2026-10-06), no script or
+    engine module names the coin-flip state path or writes `coinflip.json`."""
+    root = Path(__file__).resolve().parents[1]
+    allowed = {
+        "engine/baselines.py",
+        "scripts/init_coinflip_state.py",
+        "scripts/restate_coinflip.py",
+    }
+    offenders = []
+    for path in [*root.glob("engine/**/*.py"), *root.glob("scripts/*.py")]:
+        rel = path.relative_to(root).as_posix()
+        if rel in allowed:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "write_coin_flip_state" in text or "coin_flip_state_path" in text:
+            offenders.append(rel)
+    assert offenders == []
