@@ -78,6 +78,7 @@ from engine.baselines import (  # noqa: E402
     _row,
     _EmptyDraw,
     _step,
+    _thawed_notes,
     _write_json,
     coin_flip_state_path,
     write_coin_flip_state,
@@ -307,6 +308,7 @@ def replay(
     closes: _Closes,
     excluded: set[str],
     frozen: dict[str, tuple[str, CoinFlipHolding]],
+    thawed: dict[str, tuple[str, str]] | None = None,
 ) -> list[CoinFlipState]:
     """One path over ``dates``. With ``start`` None the first date starts from
     ``initial`` in cash and is repicked at its close (a fresh path's first day);
@@ -334,6 +336,7 @@ def replay(
             max_positions=inp.max_positions,
             frozen=frozen,
             empty=empty,
+            thawed=thawed,
         )
         if any(e.held for e in empty):
             raise Unknown(
@@ -357,6 +360,7 @@ class Restated:
     restated_last: float
     last_date: str
     concerns: list[str]
+    notes: list[str]
 
 
 def restate_agent(
@@ -388,8 +392,10 @@ def restate_agent(
     concerns: list[str] = []
     excluded = _excluded(agent, union, concerns)
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
+    thawed: dict[str, tuple[str, str]] = {}
     states = replay(
-        agent, None, initial, dates, inputs, closes=closes, excluded=excluded, frozen=frozen
+        agent, None, initial, dates, inputs,
+        closes=closes, excluded=excluded, frozen=frozen, thawed=thawed,
     )
     concerns.extend(_frozen_concerns(agent, frozen, closes, currency))
     rows = [_row(s, currency) for s in states]
@@ -413,6 +419,7 @@ def restate_agent(
         rows[-1]["portfolio_value"],
         dates[-1],
         concerns,
+        _thawed_notes(agent, thawed),
     )
 
 
@@ -471,6 +478,8 @@ def main(argv: list[str] | None = None) -> int:
     for r in results:
         for c in r.concerns:
             print(f"  [WARN] {c}")
+        for n in r.notes:
+            print(f"  [INFO] {n}")
     print(render(results))
     if not args.apply:
         print("\nDry run: nothing written. --apply --changelog-entry <anchor> writes.")

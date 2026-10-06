@@ -510,6 +510,7 @@ def _step(
     max_positions: int,
     frozen: dict[str, tuple[str, CoinFlipHolding]],
     empty: list[_EmptyDraw] | None = None,
+    thawed: dict[str, tuple[str, str]] | None = None,
 ) -> CoinFlipState:
     """One day of the coin flip: value the book at ``iso``, then repick.
 
@@ -541,6 +542,14 @@ def _step(
     ``NO_PRICE_DATA``, ``CURRENCY_UNRESOLVED`` (including a ticker that now
     resolves to a currency other than the one its mark was recorded in) or
     ``NO_FX_RATE``.
+
+    **``frozen`` holds what is frozen now, not what ever froze** (round-4
+    review, 2026-10-06). A holding valued again on a later step (its row or
+    rate back) leaves ``frozen`` and enters ``thawed`` as ``{ticker: (reason,
+    date valued again)}``; it may then be sold like any other. A multi-day
+    advance used to report every holding that froze on any of its days, so a
+    one-day gap healed inside the window still raised a concern about a
+    holding that was no longer held at its mark.
 
     **An empty draw carries the book; it never sells it to cash** (round-4
     review, 2026-10-06). With no candidate, a repick would sell every
@@ -574,9 +583,15 @@ def _step(
             rate, reason = closes.rate(h.currency, iso)
         if reason is not None:
             frozen.setdefault(ticker, (reason, h))
+            if thawed is not None:
+                thawed.pop(ticker, None)
             carried[ticker] = h
             carried_value += h.mark_value
             continue
+        if ticker in frozen:
+            was, _ = frozen.pop(ticker)
+            if thawed is not None:
+                thawed[ticker] = (was, iso)
         assert base is not None and now is not None and rate is not None
         price = h.mark_close * now[1] / base[1]
         revalued = CoinFlipHolding(h.shares, now[0], price, h.currency, rate)
@@ -651,9 +666,10 @@ def _frozen_concerns(
     closes: _Closes,
     currency: str,
 ) -> list[str]:
-    """One ``[WARN]`` concern per holding ``_step`` froze, naming the agent,
-    the ticker, the reason and the mark it is held at. The one wording, for
-    a fresh path and an advance alike."""
+    """One ``[WARN]`` concern per holding still frozen at the end of the run
+    (``frozen``, see ``_step``), naming the agent, the ticker, the reason and
+    the mark it is held at. The one wording, for a fresh path and an advance
+    alike."""
     out: list[str] = []
     for ticker, (reason, h) in sorted(frozen.items()):
         if reason == NO_PRICE_DATA:
@@ -675,6 +691,19 @@ def _frozen_concerns(
             f"and kept in the book."
         )
     return out
+
+
+def _thawed_notes(
+    agent_id: str, thawed: Mapping[str, tuple[str, str]]
+) -> list[str]:
+    """One ``[INFO]`` note per holding that froze during the run and was
+    valued again before its end: not a concern, the book no longer holds it
+    at its mark."""
+    return [
+        f"coinflip {agent_id}: {ticker} was held at its mark ({reason}) earlier "
+        f"in this run and valued again on {on}; not a concern."
+        for ticker, (reason, on) in sorted(thawed.items())
+    ]
 
 
 def _empty_draw_concerns(
@@ -778,6 +807,7 @@ def _run(
     max_positions: int,
     frozen: dict[str, tuple[str, CoinFlipHolding]],
     empty: list[_EmptyDraw],
+    thawed: dict[str, tuple[str, str]],
 ) -> list[CoinFlipState]:
     """Every daily state after ``state.date`` through ``to_date``.
 
@@ -800,6 +830,7 @@ def _run(
             max_positions=max_positions,
             frozen=frozen,
             empty=empty,
+            thawed=thawed,
         )
         out.append(state)
     return out
@@ -904,6 +935,7 @@ def _fresh_path(
     excluded = _excluded(agent_id, tickers, concerns)
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
     empty: list[_EmptyDraw] = []
+    thawed: dict[str, tuple[str, str]] = {}
     first = _step(
         agent_id,
         {},
@@ -915,6 +947,7 @@ def _fresh_path(
         max_positions=max_positions,
         frozen=frozen,
         empty=empty,
+        thawed=thawed,
     )
     rest = _run(
         agent_id,
@@ -926,12 +959,14 @@ def _fresh_path(
         max_positions=max_positions,
         frozen=frozen,
         empty=empty,
+        thawed=thawed,
     )
     states = [first] + rest
     # A holding bought on this path can freeze on it too (review round 3,
     # 2026-10-06): its concern was dropped here and reported only by an
     # advance, so a brand-new agent's first build hid it.
     concerns.extend(_frozen_concerns(agent_id, frozen, closes, currency))
+    notes.extend(_thawed_notes(agent_id, thawed))
     warn, info = _empty_draw_concerns(agent_id, len(set(tickers)), empty, currency)
     concerns.extend(warn)
     notes.extend(info)
@@ -985,9 +1020,11 @@ def advance_coin_flip(
     A holding whose file is gone, or whose store no longer holds a close dated
     its mark (truncated, or that row withdrawn), or whose currency no longer
     resolves (or whose rate into ``currency`` is unavailable), is held at its
-    recorded mark and kept in the book, with one concern naming the agent, the
-    ticker and the condition (``NO_PRICE_DATA``, ``CURRENCY_UNRESOLVED``,
-    ``NO_FX_RATE``). Every amount is in ``currency`` (``_step``).
+    recorded mark and kept in the book. If it is still so on ``to_date``, one
+    concern names the agent, the ticker and the condition (``NO_PRICE_DATA``,
+    ``CURRENCY_UNRESOLVED``, ``NO_FX_RATE``); if it was valued again before
+    then, an ``[INFO]`` note says so and it is no concern. Every amount is in
+    ``currency`` (``_step``).
     """
     state_path = coin_flip_state_path(series_path)
     name = f"{series_path.parent.name}/{series_path.name}"
@@ -1058,6 +1095,7 @@ def advance_coin_flip(
     excluded = _excluded(agent_id, set(universe) | set(state.holdings), concerns)
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
     empty: list[_EmptyDraw] = []
+    thawed: dict[str, tuple[str, str]] = {}
     states = _run(
         agent_id,
         state,
@@ -1068,8 +1106,10 @@ def advance_coin_flip(
         max_positions=max_positions,
         frozen=frozen,
         empty=empty,
+        thawed=thawed,
     )
     concerns.extend(_frozen_concerns(agent_id, frozen, closes, currency))
+    notes.extend(_thawed_notes(agent_id, thawed))
     warn, info = _empty_draw_concerns(agent_id, len(universe), empty, currency)
     concerns.extend(warn)
     notes.extend(info)

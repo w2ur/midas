@@ -565,6 +565,52 @@ def test_a_fresh_path_reports_a_holding_it_froze(midas_data_root, capsys):
     assert rows == _rows()
 
 
+def _rate_gap_on_day_3_then_back(days: int = 4) -> None:
+    """A held USD name in a EUR book whose rate is a zero row on 01-03 only;
+    E.PA, too dear to buy, keeps every day drawable."""
+    _store("U", [(d, 30.0) for d in _days(_START, days)])
+    _store(
+        "EURUSD=X",
+        [(d, 0.0 if d == "2026-01-03" else 1.25) for d in _days(_START, days)],
+    )
+    _currencies({"E.PA": "EUR"})
+    _store("E.PA", [(d, 1e9) for d in _days(_START, days)])
+    _seed_state(
+        CoinFlipState(
+            date="2026-01-01",
+            portfolio_value=100.0 + 10 * 30.0 * 0.8,
+            cash=100.0,
+            holdings={"U": CoinFlipHolding(10, "2026-01-01", 30.0, "USD", 0.8)},
+        )
+    )
+
+
+def test_a_holding_frozen_and_valued_again_inside_the_window_is_no_concern(
+    midas_data_root, capsys
+):
+    """Regression: round-4 review, 2026-10-06. A multi-day advance reported
+    every holding that froze on any of its days: U froze on 01-03 (no rate)
+    and was valued again and sold on 01-04, yet the run raised a NO_FX_RATE
+    concern about a holding no longer held at its mark. It is an [INFO]
+    note now; a holding still frozen at the end stays a concern."""
+    _rate_gap_on_day_3_then_back()
+    result = _advance(date(2026, 1, 4), tickers=["U", "E.PA"], max_positions=2, currency="EUR")
+    assert result.appended == 3 and result.concerns == []
+    out = capsys.readouterr().out
+    assert "[WARN]" not in out
+    assert any(
+        "[INFO]" in l and "U was held at its mark (NO_FX_RATE)" in l and "2026-01-04" in l
+        for l in out.splitlines()
+    )
+
+
+def test_a_holding_still_frozen_at_the_end_of_the_window_is_a_concern(midas_data_root):
+    """The control: the same gap, the window ending on it."""
+    _rate_gap_on_day_3_then_back()
+    result = _advance(date(2026, 1, 3), tickers=["U", "E.PA"], max_positions=2, currency="EUR")
+    assert len(result.concerns) == 1 and "U NO_FX_RATE" in result.concerns[0]
+
+
 def test_a_held_name_whose_currency_no_longer_resolves_is_frozen(midas_data_root, capsys):
     """Its override removed, `ZZZ.XX` resolves to nothing: CURRENCY_UNRESOLVED."""
     _store("ZZZ.XX", [(d, 10.0) for d in _days(_START, 4)])
