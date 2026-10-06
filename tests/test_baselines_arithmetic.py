@@ -30,6 +30,7 @@ from pathlib import Path
 import pytest
 from hypothesis import given, strategies as st
 
+from engine.config import CASH_FLAT_TICKER
 from engine.baselines import (
     _daterange,
     _load_ohlcv,
@@ -131,7 +132,7 @@ class TestPassiveBenchmarkArithmetic:
 
     def test_cash_sentinel_is_flat_and_fully_in_cash(self, ohlcv):
         series = compute_passive_benchmark(
-            _spec("EUR_CASH_FLAT"), date(2026, 1, 1), date(2026, 1, 4)
+            _spec(CASH_FLAT_TICKER), date(2026, 1, 1), date(2026, 1, 4)
         )
         assert len(series) == 4
         assert {r["portfolio_value"] for r in series} == {_INITIAL}
@@ -142,7 +143,7 @@ class TestPassiveBenchmarkArithmetic:
         """It must not depend on a file named EUR_CASH_FLAT.jsonl existing."""
         assert not (ohlcv / "EUR_CASH_FLAT.jsonl").exists()
         assert compute_passive_benchmark(
-            _spec("EUR_CASH_FLAT"), date(2026, 1, 1), date(2026, 1, 1)
+            _spec(CASH_FLAT_TICKER), date(2026, 1, 1), date(2026, 1, 1)
         )
 
 

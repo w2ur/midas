@@ -247,12 +247,12 @@ def test_build_all_baselines_prints_one_aggregate_summary_on_concern(
         if cfg.roster[aid].benchmark is not None
     }
     for bench in agents_with_bench.values():
-        if bench.ticker == "EUR_CASH_FLAT":
+        if bench.is_cash_flat:
             continue
         _seed(bench.ticker, [("2026-04-17", 100.0), ("2026-04-18", 105.0)])
 
     global_ref = cfg.global_reference
-    assert global_ref.ticker != "EUR_CASH_FLAT", (
+    assert not global_ref.is_cash_flat, (
         "test needs a price-driven global reference to force a refusal"
     )
     _seed(global_ref.ticker, [("2026-04-17", 100.0), ("2026-04-18", 105.0)])
@@ -321,7 +321,7 @@ def _seed_desk(cfg, last_close: float = 105.0, fake_a_last: float = 12.0) -> dic
         if cfg.roster[aid].benchmark is not None
     }
     for bench in agents.values():
-        if bench.ticker != "EUR_CASH_FLAT":
+        if not bench.is_cash_flat:
             _seed(bench.ticker, ramp)
     _seed(cfg.global_reference.ticker, ramp)
     _seed("FAKE-A", [10.0, 10.5, 11.0, 11.5, fake_a_last])
@@ -354,7 +354,7 @@ def _priced_agents(cfg):
         aid
         for aid in cfg.trading_roster
         if cfg.roster[aid].benchmark is not None
-        and cfg.roster[aid].benchmark.ticker != "EUR_CASH_FLAT"
+        and not cfg.roster[aid].benchmark.is_cash_flat
     ]
 
 

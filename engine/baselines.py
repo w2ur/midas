@@ -117,7 +117,7 @@ def compute_passive_benchmark(
     omitted, it is read from the store here.
     """
     initial = _initial()
-    if spec.ticker == "EUR_CASH_FLAT":
+    if spec.is_cash_flat:
         return [
             {
                 "date": d.isoformat(),
@@ -1688,6 +1688,8 @@ class _Restatement:
 
     path: Path
     rows: list[dict]
+    #: The series is a cash-flat benchmark (``BenchmarkSpec.is_cash_flat``).
+    cash_flat: bool = False
 
 
 def _restatement_plan(
@@ -1736,7 +1738,11 @@ def _restatement_plan(
             )
         targets = (published if whole else dated) & computed.keys()
         if targets:
-            plan.append(_Restatement(path, [computed[d] for d in sorted(targets)]))
+            plan.append(
+                _Restatement(
+                    path, [computed[d] for d in sorted(targets)], spec.is_cash_flat
+                )
+            )
     return plan
 
 
@@ -1812,7 +1818,9 @@ def build_all_baselines(
         )
         plan = _restatement_plan(entries, cfg, from_date, to_date)
         for item in plan:
-            merge_baseline_series(item.path, item.rows, restate=True)
+            merge_baseline_series(
+                item.path, item.rows, restate=True, cash_flat=item.cash_flat
+            )
             print(
                 f"  [INFO] baselines: restated {len(item.rows)} published row(s) "
                 f"of {item.path.parent.name}/{item.path.name}; nothing appended."
@@ -1831,7 +1839,7 @@ def build_all_baselines(
             agent_dir / "benchmark.json",
             compute_passive_benchmark(spec, from_date, to_date, closes=closes),
             closes=closes,
-            cash_flat=spec.ticker == "EUR_CASH_FLAT",
+            cash_flat=spec.is_cash_flat,
         )
 
         tickers = universes_by_agent.get(agent_id, [])
@@ -1897,6 +1905,6 @@ def build_all_baselines(
 
 def _benchmark_closes(spec: BenchmarkSpec) -> dict[str, float] | None:
     """The store's closes for a benchmark, or None for one that reads no price."""
-    if spec.ticker == "EUR_CASH_FLAT":
+    if spec.is_cash_flat:
         return None
     return _load_ohlcv(spec.ticker)

@@ -133,10 +133,10 @@ def series_to_derive(cfg) -> list[tuple[str, str]]:
     out = []
     for agent_id in cfg.trading_roster:
         spec = cfg.roster[agent_id].benchmark
-        if spec is None or spec.ticker == "EUR_CASH_FLAT":
+        if spec is None or spec.is_cash_flat:
             continue
         out.append((f"data/baselines/{agent_id}/benchmark.json", spec.ticker))
-    if cfg.global_reference.ticker != "EUR_CASH_FLAT":
+    if not cfg.global_reference.is_cash_flat:
         out.append(("data/baselines/global/msci_world.json", cfg.global_reference.ticker))
     return out
 

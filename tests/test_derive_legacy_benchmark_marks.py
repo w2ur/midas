@@ -169,7 +169,7 @@ def test_cash_flat_benchmarks_get_no_sidecar(midas_data_root):
     cash = [
         a for a in cfg.trading_roster
         if cfg.roster[a].benchmark is not None
-        and cfg.roster[a].benchmark.ticker == "EUR_CASH_FLAT"
+        and cfg.roster[a].benchmark.is_cash_flat
     ]
     paths = {p for p, _ in derive.series_to_derive(cfg)}
     for agent in cash:

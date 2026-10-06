@@ -7,7 +7,7 @@ from engine.baselines import (
     compute_passive_benchmark,
     compute_coin_flip,
 )
-from engine.config import BenchmarkSpec, get_config
+from engine.config import CASH_FLAT_TICKER, BenchmarkSpec, get_config
 
 # Snapshot value — initial capital is 10k in the committed roster.yaml.
 _INITIAL = 10_000.0
@@ -78,7 +78,7 @@ def test_passive_benchmark_carries_weekend_close(tmp_ohlcv):
 
 
 def test_passive_benchmark_flat_cash_sentinel(tmp_ohlcv):
-    spec = BenchmarkSpec("EUR cash", "EUR_CASH_FLAT", "EUR")
+    spec = BenchmarkSpec("EUR cash", CASH_FLAT_TICKER, "EUR")
     snaps = compute_passive_benchmark(spec, date(2026, 4, 17), date(2026, 4, 20))
     assert len(snaps) == 4
     assert all(s["portfolio_value"] == pytest.approx(_INITIAL) for s in snaps)
@@ -183,14 +183,14 @@ def test_build_all_baselines_writes_files(tmp_ohlcv):
 
     # Minimal OHLCV for every referenced ticker.
     for bench in agents_with_bench.values():
-        if bench.ticker == "EUR_CASH_FLAT":
+        if bench.is_cash_flat:
             continue
         _write_ohlcv(
             tmp_ohlcv, bench.ticker, [("2026-04-17", 100.0), ("2026-04-18", 105.0)]
         )
     # Global reference ticker.
     global_ref = cfg.global_reference
-    if global_ref.ticker != "EUR_CASH_FLAT":
+    if not global_ref.is_cash_flat:
         _write_ohlcv(
             tmp_ohlcv, global_ref.ticker, [("2026-04-17", 100.0), ("2026-04-18", 105.0)]
         )

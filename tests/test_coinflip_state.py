@@ -961,7 +961,7 @@ def _desk_universes(cfg, tickers) -> dict[str, list[str]]:
 def _seed_benchmarks(cfg, days: list[str]) -> None:
     for aid in cfg.trading_roster:
         spec = cfg.roster[aid].benchmark
-        if spec is not None and spec.ticker != "EUR_CASH_FLAT":
+        if spec is not None and not spec.is_cash_flat:
             _store(spec.ticker, [(d, 100.0 + i) for i, d in enumerate(days)])
     _store(cfg.global_reference.ticker, [(d, 100.0 + i) for i, d in enumerate(days)])
     # The desk's EUR books hold the bare (USD) test tickers: a flat 1.0 rate

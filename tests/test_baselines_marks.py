@@ -43,7 +43,7 @@ from engine.baselines import (
     compute_passive_benchmark,
     merge_baseline_series,
 )
-from engine.config import BenchmarkSpec, get_config
+from engine.config import CASH_FLAT_TICKER, BenchmarkSpec, get_config
 
 _SPEC = BenchmarkSpec("Test", "TEST", "EUR")
 
@@ -123,7 +123,7 @@ def test_rows_record_the_closes_they_were_priced_from(midas_data_root):
 
 def test_cash_flat_rows_carry_no_marks(midas_data_root):
     """EUR_CASH_FLAT reads no price: there is no close to record."""
-    spec = BenchmarkSpec("Cash", "EUR_CASH_FLAT", "EUR")
+    spec = BenchmarkSpec("Cash", CASH_FLAT_TICKER, "EUR")
     rows = compute_passive_benchmark(spec, _FROM, _TO)
     assert all("mark_date" not in r for r in rows)
 
@@ -339,7 +339,7 @@ def test_an_unreadable_sidecar_is_a_concern_of_the_build(midas_data_root, capsys
     universes = _seed_desk(cfg, {})
     _build(universes)
     agent = next(a for a in cfg.trading_roster if cfg.roster[a].benchmark is not None
-                 and cfg.roster[a].benchmark.ticker != "EUR_CASH_FLAT")
+                 and not cfg.roster[a].benchmark.is_cash_flat)
     path = cfg.baselines_dir / agent / "benchmark.json"
     _write(path, _strip_marks(json.loads(path.read_text())))
     path.with_name("benchmark_marks.json").write_text("{not json")
@@ -421,7 +421,7 @@ def _seed_desk(cfg, closes: dict[str, list[float]]) -> dict[str, list[str]]:
         for a in cfg.trading_roster
         if cfg.roster[a].benchmark is not None
     } | {cfg.global_reference.ticker}
-    tickers.discard("EUR_CASH_FLAT")
+    tickers.discard(CASH_FLAT_TICKER)
     for t in tickers:
         _write_store(t, list(zip(_DAYS, closes.get(t, ramp))))
     _write_store("FAKE-A", list(zip(_DAYS, [10.0, 10.5, 11.0, 11.5, 12.0])))
@@ -505,7 +505,7 @@ def test_the_build_reads_each_benchmark_file_once(midas_data_root, monkeypatch):
     per_ticker = Counter(
         cfg.roster[a].benchmark.ticker
         for a in agents
-        if cfg.roster[a].benchmark.ticker != "EUR_CASH_FLAT"
+        if not cfg.roster[a].benchmark.is_cash_flat
     )
     per_ticker[cfg.global_reference.ticker] += 1
     assert per_ticker, "the fixture must price at least one benchmark"
@@ -536,7 +536,7 @@ def test_has_later_close_bisect_matches_the_scan(store, mark, row, priced):
 # A cash-flat series (EUR_CASH_FLAT) and a restatement read no sidecar
 # ---------------------------------------------------------------------------
 
-_CASH_FLAT = BenchmarkSpec("Cash", "EUR_CASH_FLAT", "EUR")
+_CASH_FLAT = BenchmarkSpec("Cash", CASH_FLAT_TICKER, "EUR")
 
 
 def test_a_cash_flat_mismatch_is_its_own_concern_not_a_sidecar_one(
@@ -593,7 +593,7 @@ def test_the_build_names_a_cash_flat_mismatch_as_such(midas_data_root, capsys):
     agent = next(
         a for a in cfg.trading_roster
         if cfg.roster[a].benchmark is not None
-        and cfg.roster[a].benchmark.ticker == "EUR_CASH_FLAT"
+        and cfg.roster[a].benchmark.is_cash_flat
     )
     path = cfg.baselines_dir / agent / "benchmark.json"
     rows = json.loads(path.read_text())
@@ -619,3 +619,39 @@ def test_a_restatement_reads_no_sidecar(midas_data_root, tmp_path, capsys):
     revised = [("2026-04-16", 100.0), ("2026-04-17", 111.0)]
     assert _remerge(path, revised, restate=True) == MergeCounts()
     assert "[WARN]" not in capsys.readouterr().out
+
+
+def test_the_cash_flat_flag_is_the_spec_property_not_a_literal():
+    """Round-4 review, 2026-10-06: the literal was compared in four places;
+    one constant and one property now."""
+    assert BenchmarkSpec("Cash", CASH_FLAT_TICKER, "EUR").is_cash_flat
+    assert not BenchmarkSpec("S&P", "SPY", "USD").is_cash_flat
+
+
+def test_a_restatement_passes_the_cash_flat_flag(midas_data_root, monkeypatch):
+    """Round-4 review, 2026-10-06: the restatement path called the merge
+    without the flag, so a cash-flat series it rewrote was treated as a
+    priced one. It passes the spec's own flag."""
+    import engine.baselines as baselines
+
+    cfg = get_config()
+    universes = _seed_desk(cfg, {})
+    _build(universes)
+    agent = next(
+        a for a in cfg.trading_roster
+        if cfg.roster[a].benchmark is not None and cfg.roster[a].benchmark.is_cash_flat
+    )
+    seen: list[tuple[str, bool]] = []
+    real = baselines.merge_baseline_series
+
+    def spy(path, rows, **kw):
+        seen.append((path.parent.name, kw.get("cash_flat", False)))
+        return real(path, rows, **kw)
+
+    monkeypatch.setattr(baselines, "merge_baseline_series", spy)
+    monkeypatch.setattr(baselines, "require_changelog_entry", lambda *a, **k: None)
+    build_all_baselines(
+        universes, date.fromisoformat(_DAYS[0]), date.fromisoformat(_DAYS[-1]),
+        restate_series={f"{agent}/benchmark"}, changelog_entry="x",
+    )
+    assert seen == [(agent, True)]
