@@ -177,7 +177,7 @@ def _holdings_by_day(desk: Desk, tmp_path: Path, periods=None) -> dict[str, set[
 
 class TestPointInTimeUniverse:
     def test_the_first_writer_picks_the_universe(self, desk, tmp_path):
-        writers = rc.first_writers(desk.repo, "HEAD", f"data/baselines/{AGENT}/coinflip.json")
+        writers = rc.first_writer(desk.repo, "HEAD", f"data/baselines/{AGENT}/coinflip.json")
         assert writers == desk.writers  # not the [restate] commit that rewrote them
 
     def test_a_ticker_never_held_before_it_enters_the_universe(self, desk, tmp_path):
@@ -305,3 +305,26 @@ class TestEmptyDraw:
             closes=closes, excluded=set(), frozen={},
         )
         assert [s.cash for s in states] == [10_000.0, 10_000.0]
+
+
+def test_the_two_writer_rules_are_shared_named_and_differ(desk):
+    """Round-5 review, 2026-10-06. The restatement and the seam audit each
+    carried their own copy of the git walk, and the restatement's docstring
+    called its rule "the same convention" as the audit's, which it is not.
+    Both now import one module that names both rules: the restatement takes
+    the FIRST writer (no look-ahead), the audit the LAST (its control must
+    reproduce the value the tip publishes). On a history whose last commit
+    rewrote rows 2..10, the two disagree on exactly those rows."""
+    import audit_coinflip_seams as audit
+
+    from scripts import _coinflip_history as history
+
+    rel = f"data/baselines/{AGENT}/coinflip.json"
+    first = history.first_writer(desk.repo, "HEAD", rel)
+    last = history.last_writer(desk.repo, "HEAD", rel)
+    head = _git(desk.repo, "rev-parse", "HEAD")
+    assert first == desk.writers
+    assert last == {PUBLISHED[0]: desk.writers[PUBLISHED[0]], **{d: head for d in PUBLISHED[1:]}}
+    assert rc.first_writer is history.first_writer
+    assert audit.last_writer is history.last_writer
+    assert "same convention" not in (rc.__doc__ or "")

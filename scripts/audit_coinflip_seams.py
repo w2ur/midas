@@ -13,7 +13,10 @@ path. This script counts those seams. It writes nothing.
 Method, per agent:
 
 1. **Writers.** Walk the git history of ``data/baselines/<agent>/coinflip.json``
-   up to ``--tip``; the writer of a row is the last commit that set its value.
+   up to ``--tip``; the writer of a row is the last commit that set its value
+   (``scripts._coinflip_history.last_writer``: the control below must
+   reproduce the published value, which is that commit's computation).
+   ``restate_coinflip`` uses the *first* writer instead, for its own reason.
 2. **Boundaries.** Every pair of consecutive published dates ``(p, d)`` whose
    writers differ. A boundary at or after the agent's state migration (a writer
    whose tree holds ``data/baselines/<agent>/state/coinflip.json``) is not a
@@ -67,6 +70,13 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
+from scripts._coinflip_history import (  # noqa: E402
+    exists as _exists,
+    extract,
+    git as _git,
+    last_writer,
+)
+
 #: A recomputation reproduces a published row within this relative tolerance.
 #: Same code and same inputs reproduce bit for bit; the slack is for a pandas
 #: or bt build differing in the last ulp.
@@ -101,13 +111,6 @@ _ROW = re.compile(
 
 class Unknown(Exception):
     """The audit cannot measure what it was asked to (exit 2)."""
-
-
-def _git(repo: Path, *args: str, binary: bool = False):
-    out = subprocess.run(
-        ["git", *args], cwd=repo, capture_output=True, check=True
-    ).stdout
-    return out if binary else out.decode()
 
 
 class _Blobs:
@@ -169,21 +172,10 @@ def _closes(blob: bytes | None, since: str, adjusted: bool) -> dict[str, float]:
 def series_writers(
     repo: Path, tip: str, agent: str
 ) -> tuple[dict[str, float], dict[str, str]]:
-    """Published ``{date: value}`` at ``tip`` and ``{date: writer sha}``."""
+    """Published ``{date: value}`` at ``tip`` and ``{date: writer sha}``, the
+    writer being the last one that set the value (``last_writer``)."""
     path = f"data/baselines/{agent}/coinflip.json"
-    commits = _git(repo, "log", "--format=%H", "--reverse", tip, "--", path).split()
-    current: dict[str, float] = {}
-    writer: dict[str, str] = {}
-    for c in commits:
-        try:
-            rows = json.loads(_git(repo, "show", f"{c}:{path}"))
-        except (subprocess.CalledProcessError, ValueError):
-            continue  # deleted or unreadable at this commit: nothing written
-        values = {r["date"]: r["portfolio_value"] for r in rows}
-        for d, v in values.items():
-            if current.get(d) != v:
-                writer[d] = c
-        current = values
+    writer = last_writer(repo, tip, path)
     published = {
         r["date"]: r["portfolio_value"]
         for r in json.loads(_git(repo, "show", f"{tip}:{path}"))
@@ -192,11 +184,7 @@ def series_writers(
 
 
 def has_state(repo: Path, sha: str, agent: str) -> bool:
-    try:
-        _git(repo, "cat-file", "-e", f"{sha}:data/baselines/{agent}/state/coinflip.json")
-        return True
-    except subprocess.CalledProcessError:
-        return False
+    return _exists(repo, sha, f"data/baselines/{agent}/state/coinflip.json")
 
 
 @dataclass(frozen=True)
@@ -266,11 +254,7 @@ def resolve_inputs(repo: Path, rev: str, workdir: Path, cache: dict) -> dict:
         return cache[key]
     target = workdir / key
     target.mkdir(parents=True, exist_ok=True)
-    present = [p for p in EPOCH_PATHS if _exists(repo, rev, p)]
-    archive = subprocess.run(
-        ["git", "archive", rev, *present], cwd=repo, capture_output=True, check=True
-    ).stdout
-    subprocess.run(["tar", "-x", "-C", str(target)], input=archive, check=True)
+    extract(repo, rev, [p for p in EPOCH_PATHS if _exists(repo, rev, p)], target)
     r = subprocess.run(
         [sys.executable, "-c", _RESOLVE],
         cwd=target,
@@ -286,14 +270,6 @@ def resolve_inputs(repo: Path, rev: str, workdir: Path, cache: dict) -> dict:
     inputs["adjusted"] = 'row.get("adj_close")' in source
     cache[key] = inputs
     return cache[key]
-
-
-def _exists(repo: Path, rev: str, path: str) -> bool:
-    try:
-        _git(repo, "cat-file", "-e", f"{rev}:{path}")
-        return True
-    except subprocess.CalledProcessError:
-        return False
 
 
 # ---------------------------------------------------------------------------

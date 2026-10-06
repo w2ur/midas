@@ -138,6 +138,8 @@ LIVE_ONLY_TESTS = {
     "test_audit_coinflip_seams.py",
     # Drives scripts/restate_coinflip.py, the one-off restatement of this
     # desk's published coin flips from its own git history; not in CORE_SCRIPTS.
+    # It also tests scripts/_coinflip_history.py, the git helpers those two
+    # scripts share, which ships nowhere either (not in CORE_SCRIPTS).
     "test_restate_coinflip.py",
     # Reads workers/trigger-gate/, the Cloudflare dispatch-gate. That Worker is
     # live-desk quota infrastructure keyed to this repo's own workflow file and

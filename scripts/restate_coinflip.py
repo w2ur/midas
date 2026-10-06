@@ -15,10 +15,13 @@ seam.
 must never touch a coin flip. This is the one dedicated, gated path.
 
 **Point-in-time universe.** The universe of date D is the one the commit that
-FIRST wrote row D ran with — its parent's tree, the inputs the writing session
-read (the same convention as ``audit_coinflip_seams``). A later commit that
+FIRST wrote row D ran with (``scripts._coinflip_history.first_writer``) — its
+parent's tree, the inputs the writing session read. A later commit that
 rewrote the row (a restatement) never picks the universe: that would let a
-universe chosen later decide earlier picks. Membership is resolved by that
+universe chosen later decide earlier picks. ``audit_coinflip_seams`` reads the
+same ``<writer>^`` trees but attributes a row to its LAST writer, because its
+control must reproduce the value the tip publishes; the two rules differ on
+purpose, and the shared module names both. Membership is resolved by that
 tree's OWN ``engine/universes`` code over that tree's OWN ``data/universes``
 (some universes are lists in code, ``engine/universes/assets.py``, not files),
 extracted from git and run with the network blocked; the agent -> universe-name
@@ -86,6 +89,8 @@ from engine.baselines import (  # noqa: E402
 from engine.config import get_config  # noqa: E402
 from engine.disclosure import require_changelog_entry  # noqa: E402
 from engine.fx import store_cache  # noqa: E402
+from scripts._coinflip_history import extract, first_writer, rev as _rev  # noqa: E402
+from scripts._coinflip_history import git as _git  # noqa: E402
 
 #: A period field that means "the first writer's own tree" (``<writer>^``).
 WRITER = "<writer>^"
@@ -145,36 +150,9 @@ class Unknown(Exception):
     """The restatement cannot be computed without guessing (exit 2)."""
 
 
-def _git(repo: Path, *args: str, binary: bool = False):
-    out = subprocess.run(["git", *args], cwd=repo, capture_output=True, check=True).stdout
-    return out if binary else out.decode()
-
-
-def _rev(repo: Path, spec: str) -> str | None:
-    try:
-        return _git(repo, "rev-parse", "--verify", "-q", spec).strip() or None
-    except subprocess.CalledProcessError:
-        return None
-
-
 # ---------------------------------------------------------------------------
 # History
 # ---------------------------------------------------------------------------
-
-
-def first_writers(repo: Path, tip: str, relpath: str) -> dict[str, str]:
-    """``{date: sha}`` of the first commit, up to ``tip``, whose ``relpath``
-    holds a row for that date."""
-    commits = _git(repo, "log", "--format=%H", "--reverse", tip, "--", relpath).split()
-    first: dict[str, str] = {}
-    for c in commits:
-        try:
-            rows = json.loads(_git(repo, "show", f"{c}:{relpath}"))
-        except (subprocess.CalledProcessError, ValueError):
-            continue
-        for r in rows:
-            first.setdefault(r["date"], c)
-    return first
 
 
 def period_for(day: str, periods: tuple[Period, ...]) -> Period | None:
@@ -228,8 +206,7 @@ class TreeResolver:
         paths = ["engine", "data/universes"]
         if _rev(self.repo, f"{universes_rev}:roster.yaml"):
             paths.append("roster.yaml")
-        archive = _git(self.repo, "archive", universes_rev, *paths, binary=True)
-        subprocess.run(["tar", "-x", "-C", str(target)], input=archive, check=True)
+        extract(self.repo, universes_rev, paths, target)
         r = subprocess.run(
             [sys.executable, "-c", _RESOLVE, json.dumps(names)],
             cwd=target,
@@ -270,7 +247,7 @@ def schedule(
     resolver: TreeResolver,
 ) -> list[DayInputs]:
     """Each published date's universe and ``max_positions``, point in time."""
-    writers = first_writers(repo, tip, relpath)
+    writers = first_writer(repo, tip, relpath)
     out: list[DayInputs] = []
     for d in dates:
         w = writers.get(d)
