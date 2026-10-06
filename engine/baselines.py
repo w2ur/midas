@@ -436,6 +436,12 @@ class _Draw:
     no_rate: frozenset[str]
 
 
+def _priced(value: float) -> bool:
+    """A close is a price only if it is a positive finite number: the one
+    test, for a candidate (``_draw``) and for a holding (``_step``) alike."""
+    return math.isfinite(value) and value > 0
+
+
 def _draw(
     closes: _Closes,
     universe: Collection[str],
@@ -467,7 +473,7 @@ def _draw(
             why[HELD_UNTRADED] += 1
             continue
         mark = closes.at(t, iso)
-        if mark is None or not math.isfinite(mark[1]) or mark[1] <= 0:
+        if mark is None or not _priced(mark[1]):
             why[NO_PRICE_DATA] += 1
             continue
         ccy = closes.currency(t)
@@ -540,9 +546,10 @@ def _step(
     cannot price, and ``frozen`` records why, in the broker's vocabulary, with
     the holding as it was when it first froze (it may have been bought earlier
     in the same run, so the run's starting state need not hold it):
-    ``NO_PRICE_DATA``, ``CURRENCY_UNRESOLVED`` (including a ticker that now
-    resolves to a currency other than the one its mark was recorded in) or
-    ``NO_FX_RATE``.
+    ``NO_PRICE_DATA`` (no close dated the mark, or a mark or newest close that
+    is not a positive finite number), ``CURRENCY_UNRESOLVED`` (including a
+    ticker that now resolves to a currency other than the one its mark was
+    recorded in) or ``NO_FX_RATE``.
 
     **``frozen`` holds what is frozen now, not what ever froze** (round-4
     review, 2026-10-06). A holding valued again on a later step (its row or
@@ -576,12 +583,27 @@ def _step(
         # The mark must still be in the store on its own date: a row withdrawn
         # since would make the last close before it the base, a different
         # price, and mis-value the holding by the move between the two dates.
-        if base is None or base[0] != h.mark_date or now is None or base[1] <= 0:
+        # A close that is not a positive finite number is no price, for a
+        # holding as for a candidate (``_priced``, round-5 review): a 0 or NaN
+        # newest close used to be carried as a 0 or NaN ``mark_close``, which
+        # ``load_coin_flip_state`` refuses, and the series stalled for good.
+        price: float | None = None
+        if (
+            base is None
+            or base[0] != h.mark_date
+            or now is None
+            or not _priced(base[1])
+            or not _priced(now[1])
+        ):
             reason = NO_PRICE_DATA
-        elif closes.currency(ticker) != h.currency:
-            reason = CURRENCY_UNRESOLVED
         else:
-            rate, reason = closes.rate(h.currency, iso)
+            price = h.mark_close * now[1] / base[1]
+            if not _priced(price):  # an overflow or underflow of the ratio
+                reason = NO_PRICE_DATA
+            elif closes.currency(ticker) != h.currency:
+                reason = CURRENCY_UNRESOLVED
+            else:
+                rate, reason = closes.rate(h.currency, iso)
         if reason is not None:
             frozen.setdefault(ticker, (reason, h))
             if thawed is not None:
@@ -593,8 +615,7 @@ def _step(
             was, _ = frozen.pop(ticker)
             if thawed is not None:
                 thawed[ticker] = (was, iso)
-        assert base is not None and now is not None and rate is not None
-        price = h.mark_close * now[1] / base[1]
+        assert now is not None and rate is not None and price is not None
         revalued = CoinFlipHolding(h.shares, now[0], price, h.currency, rate)
         if ticker in excluded:
             carried[ticker] = revalued
@@ -673,10 +694,19 @@ def _frozen_concerns(
     alike."""
     out: list[str] = []
     for ticker, (reason, h) in sorted(frozen.items()):
-        if reason == NO_PRICE_DATA:
+        base = closes.at(ticker, h.mark_date)
+        if reason == NO_PRICE_DATA and (
+            base is None or base[0] != h.mark_date or not _priced(base[1])
+        ):
             why = (
                 f"has no close dated its mark {h.mark_date} in the store (file "
-                f"gone, truncated, or that row withdrawn)"
+                f"gone, truncated, or that row withdrawn), or that close is not "
+                f"a positive finite number"
+            )
+        elif reason == NO_PRICE_DATA:
+            why = (
+                "has its mark's close in the store, but the newest close it "
+                "was valued at is not a positive finite number"
             )
         elif reason == CURRENCY_UNRESOLVED:
             why = (

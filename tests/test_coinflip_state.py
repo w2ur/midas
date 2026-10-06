@@ -1020,3 +1020,34 @@ def test_a_replay_over_a_universe_refresh_gives_no_coinflip_concern(midas_data_r
         rows = json.loads((cfg.baselines_dir / aid / "coinflip.json").read_text())
         assert rows[:6] == json.loads(before)
         assert len(rows) == 10
+
+
+# ---------------------------------------------------------------------------
+# Round-5 review, 2026-10-06
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("bad", [0.0, float("nan"), -3.0])
+def test_a_holding_whose_newest_close_is_not_a_price_is_frozen_and_the_state_reloads(
+    midas_data_root, bad
+):
+    """Regression: round-5 review, 2026-10-06. A held name whose newest close
+    was 0 or NaN was revalued at it and carried with that ``mark_close``;
+    ``load_coin_flip_state`` refuses it, so the next advance refused the state
+    and the series stalled for good. The holding is frozen at its last valid
+    mark (NO_PRICE_DATA), the state written round-trips, and the next advance
+    goes on."""
+    _store("AAA", [("2026-01-01", 10.0), ("2026-01-02", bad), ("2026-01-03", 11.0)])
+    _store("BBB", [(d, 1e9) for d in _days(_START, 3)])  # drawable, too dear to buy
+    _seed_state(_held_state("AAA", 100, "2026-01-01", 10.0, cash=5.0))
+    result = _advance(date(2026, 1, 2), tickers=["AAA", "BBB"], max_positions=1)
+    assert result.appended == 1
+    assert len(result.concerns) == 1 and "AAA NO_PRICE_DATA" in result.concerns[0]
+    assert "not a positive finite number" in result.concerns[0]
+    state = load_coin_flip_state(coin_flip_state_path(_series_path()))
+    assert state.holdings["AAA"] == CoinFlipHolding(100, "2026-01-01", 10.0, "USD", 1.0)
+    assert _rows()[-1]["portfolio_value"] == pytest.approx(1_005.0)
+    nxt = _advance(date(2026, 1, 3), tickers=["AAA", "BBB"], max_positions=1)
+    assert nxt.appended == 1 and nxt.concerns == []
+    assert _rows()[-1]["portfolio_value"] == pytest.approx(5.0 + 100 * 11.0)
+
