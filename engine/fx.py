@@ -16,9 +16,10 @@ import json
 import math
 from contextlib import contextmanager
 from datetime import date
+from pathlib import Path
 from typing import Iterable, Iterator
 
-from engine.config import get_config, register_reset_callback
+from engine.config import get_config
 
 #: Every currency pair the store holds a rate for, as its vendor ticker.
 #: ``ABCDEF=X`` stores how many ``DEF`` one ``ABC`` buys. **The one table**:
@@ -91,9 +92,9 @@ def _load_store_series(ticker: str) -> dict[str, float]:
     return series
 
 
-#: ``{ticker: (sorted dates, values)}`` while a ``store_cache()`` block is
+#: ``{file path: (sorted dates, values)}`` while a ``store_cache()`` block is
 #: open, else None: every lookup then reads the file afresh, as it always did.
-_SERIES_CACHE: dict[str, tuple[list[str], list[float]]] | None = None
+_SERIES_CACHE: dict[Path, tuple[list[str], list[float]]] | None = None
 
 
 @contextmanager
@@ -118,18 +119,6 @@ def store_cache() -> Iterator[None]:
         yield
     finally:
         _SERIES_CACHE = None
-
-
-def _drop_cached_series() -> None:
-    """Empty an open block's cache when the config is reset (round-5 review,
-    2026-10-06). The cache is keyed on the ticker alone, so a block that
-    outlived a ``MIDAS_DATA_DIR`` switch kept serving the old store's rates.
-    The block stays open; the new store is read on the next ask."""
-    if _SERIES_CACHE is not None:
-        _SERIES_CACHE.clear()
-
-
-register_reset_callback(_drop_cached_series)
 
 
 def _sorted(series: dict[str, float]) -> tuple[list[str], list[float]]:
@@ -162,9 +151,12 @@ def _store_value(ticker: str, on: date) -> float | None:
     outside one."""
     if _SERIES_CACHE is None:
         return _latest_on_or_before(_load_store_series(ticker), on)
-    if ticker not in _SERIES_CACHE:
-        _SERIES_CACHE[ticker] = _sorted(_load_store_series(ticker))
-    return _latest_in(*_SERIES_CACHE[ticker], on)
+    # Keyed on the resolved file, not the ticker: a block that outlives a
+    # ``MIDAS_DATA_DIR`` switch reads the new store's file, never the old one's.
+    path = get_config().ohlcv_dir / f"{ticker}.jsonl"
+    if path not in _SERIES_CACHE:
+        _SERIES_CACHE[path] = _sorted(_load_store_series(ticker))
+    return _latest_in(*_SERIES_CACHE[path], on)
 
 
 def get_rate(
