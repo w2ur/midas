@@ -328,3 +328,15 @@ def test_the_two_writer_rules_are_shared_named_and_differ(desk):
     assert rc.first_writer is history.first_writer
     assert audit.last_writer is history.last_writer
     assert "same convention" not in (rc.__doc__ or "")
+
+
+def test_the_script_names_no_bare_python3_interpreter():
+    """Round-5 review, 2026-10-06. The script opened with
+    ``#!/usr/bin/env python3``, which resolves to an interpreter outside the
+    project venv. Like the other engine-importing scripts, it has no shebang
+    and is not executable: it is run with ``.venv/bin/python``."""
+    import os
+
+    path = ROOT / "scripts" / "restate_coinflip.py"
+    assert not path.read_text().startswith("#!")
+    assert not os.access(path, os.X_OK)

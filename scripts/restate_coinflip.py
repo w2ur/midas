@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Restate every published coin flip on one continuous, converted path.
 
 The published ``data/baselines/<agent>/coinflip.json`` series before plan 1.6
@@ -46,6 +45,12 @@ absolute and relative difference, and the published and restated value at the
 last date. ``--apply`` requires ``--changelog-entry <anchor>`` (verified by
 ``engine.disclosure.require_changelog_entry``) and writes every series and its
 state together, after every agent has been computed.
+
+Run it with the project's interpreter, ``.venv/bin/python
+scripts/restate_coinflip.py``. It carries no shebang, like the other scripts
+that import this project's ``engine/`` (a ``uv run --script`` header declares
+standalone dependencies, and this script's are the project's venv), and never a
+bare ``python3``, which resolves to an interpreter this project does not use.
 
 Exit codes: 0 done; 2 unknown — a date with no first writer, no period, a tree
 or universe that cannot be resolved, a published series that is not one row
