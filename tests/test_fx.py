@@ -193,7 +193,7 @@ class TestGetRate:
 
 
 # ---------------------------------------------------------------------------
-# get_rate — indirect (via USD) and via fallback usd_pair_map
+# get_rate — composed through USD, and the USD-quoted pairs
 # ---------------------------------------------------------------------------
 
 
@@ -235,6 +235,76 @@ class TestGetRateIndirect:
             [{"date": "2025-01-02", "close": 0.65}],
         )
         assert fx.get_rate("AUD", "USD", date(2025, 1, 2)) == pytest.approx(0.65)
+
+
+class TestEveryStoredPairIsRouted:
+    """Regression: round-3 review, 2026-10-06. The store held GBPUSD=X and
+    USDJPY=X, yet GBP->USD and JPY->USD answered None: the routes were two
+    hand-written maps and the USD one omitted both pairs. Routes now come
+    from one table, and the table must name every pair the store holds."""
+
+    _DAY = date(2025, 1, 2)
+
+    def test_the_table_lists_every_pair_in_the_committed_store(self):
+        from engine.config import get_config
+
+        stored = sorted(p.stem for p in get_config().ohlcv_dir.glob("*=X.jsonl"))
+        assert stored, "the probe must see the committed store's pairs"
+        assert sorted(fx.STORE_PAIRS) == stored
+
+    @pytest.mark.parametrize("pair", fx.STORE_PAIRS)
+    def test_both_directions_of_every_stored_pair_resolve(self, fake_ohlcv, pair):
+        _write_jsonl(fake_ohlcv / f"{pair}.jsonl", [{"date": "2025-01-02", "close": 1.25}])
+        base, quote = pair[:3], pair[3:6]
+        assert fx.get_rate(base, quote, self._DAY) == pytest.approx(1.25)
+        assert fx.get_rate(quote, base, self._DAY) == pytest.approx(0.8)
+
+    @pytest.mark.parametrize(
+        ("frm", "to", "expected"),
+        [
+            ("GBP", "USD", 1.27),
+            ("USD", "GBP", 1 / 1.27),
+            ("JPY", "USD", 1 / 150.0),
+            ("USD", "JPY", 150.0),
+        ],
+    )
+    def test_gbp_and_jpy_reach_usd(self, fake_ohlcv, frm, to, expected):
+        _write_jsonl(fake_ohlcv / "GBPUSD=X.jsonl", [{"date": "2025-01-02", "close": 1.27}])
+        _write_jsonl(fake_ohlcv / "USDJPY=X.jsonl", [{"date": "2025-01-02", "close": 150.0}])
+        assert fx.get_rate(frm, to, self._DAY) == pytest.approx(expected)
+
+    @pytest.mark.parametrize(
+        ("to", "pair", "close", "expected"),
+        [
+            ("CHF", "USDCHF=X", 0.90, 1.10 * 0.90),
+            ("CAD", "USDCAD=X", 1.35, 1.10 * 1.35),
+            ("AUD", "AUDUSD=X", 0.65, 1.10 / 0.65),
+            ("NZD", "NZDUSD=X", 0.60, 1.10 / 0.60),
+        ],
+    )
+    def test_eur_still_composes_through_usd(self, fake_ohlcv, to, pair, close, expected):
+        _write_jsonl(fake_ohlcv / "EURUSD=X.jsonl", [{"date": "2025-01-02", "close": 1.10}])
+        _write_jsonl(fake_ohlcv / f"{pair}.jsonl", [{"date": "2025-01-02", "close": close}])
+        assert fx.get_rate("EUR", to, self._DAY) == pytest.approx(expected)
+        assert fx.get_rate(to, "EUR", self._DAY) == pytest.approx(1 / expected)
+
+    def test_gbp_composes_to_chf_through_usd(self, fake_ohlcv):
+        _write_jsonl(fake_ohlcv / "GBPUSD=X.jsonl", [{"date": "2025-01-02", "close": 1.27}])
+        _write_jsonl(fake_ohlcv / "USDCHF=X.jsonl", [{"date": "2025-01-02", "close": 0.90}])
+        assert fx.get_rate("GBP", "CHF", self._DAY) == pytest.approx(1.27 * 0.90)
+
+    def test_an_unstored_currency_still_has_no_route(self, fake_ohlcv):
+        for pair in fx.STORE_PAIRS:
+            _write_jsonl(fake_ohlcv / f"{pair}.jsonl", [{"date": "2025-01-02", "close": 1.1}])
+        assert fx.get_rate("SEK", "EUR", self._DAY) is None
+        assert fx.get_rate("USD", "SEK", self._DAY) is None
+
+    @pytest.mark.parametrize("bad", [-1.1, float("nan"), float("inf")])
+    def test_a_close_that_is_not_a_positive_finite_number_is_no_rate(self, fake_ohlcv, bad):
+        path = fake_ohlcv / "EURUSD=X.jsonl"
+        path.write_text(json.dumps({"date": "2025-01-02", "close": bad}) + "\n")
+        assert fx.get_rate("EUR", "USD", self._DAY) is None
+        assert fx.get_rate("CHF", "EUR", self._DAY) is None
 
 
 # ---------------------------------------------------------------------------
