@@ -147,6 +147,9 @@ def desk(tmp_path, monkeypatch) -> Desk:
     monkeypatch.setenv("MIDAS_DATA_DIR", str(d.repo))
     reset_config_cache()
     monkeypatch.setattr(rc, "PERIODS", (rc.Period(DAYS[0], None, rc.WRITER, rc.WRITER, "test"),))
+    # The real era commit is not in a synthetic repo: the desk's own first
+    # commit stands in, so every tree here is of the registry's era.
+    monkeypatch.setattr(rc, "REGISTRY_INTRODUCED", d.setup_sha)
     yield d
     reset_config_cache()
 
@@ -169,7 +172,7 @@ def _holdings_by_day(desk: Desk, tmp_path: Path, periods=None) -> dict[str, set[
     )
     closes = rc._Closes(sorted(set(PRICES)), "USD")
     states = rc.replay(
-        AGENT, None, 10_000.0, PUBLISHED, inputs, closes=closes, excluded=set(), frozen={}
+        AGENT, None, 10_000.0, PUBLISHED, inputs, closes=closes, frozen={}
     )
     return {s.date: set(s.holdings) for s in states}
 
@@ -220,6 +223,17 @@ class TestGate:
         assert "Dry run: nothing written" in out
         assert AGENT in out
 
+    def test_a_dry_run_with_concerns_is_a_finding_exit_1(self, desk, capsys):
+        """Regression: round-6 review, 2026-10-06. A dry run that found
+        concerns ("--apply would refuse") exited 0, the code of a healthy
+        run. It is a finding: 1. A clean dry run stays 0, ``Unknown`` 2."""
+        for t in PRICES:
+            (desk.repo / "data" / "market" / "ohlcv" / f"{t}.jsonl").write_text(
+                "\n".join(json.dumps({"date": d, "close": 1e9}) for d in DAYS) + "\n"
+            )
+        assert _main(desk) == 1
+        assert "--apply would refuse" in capsys.readouterr().out
+
     def test_apply_without_an_anchor_refuses(self, desk, capsys):
         before = desk.series.read_bytes()
         assert _main(desk, "--apply") == 2
@@ -245,14 +259,14 @@ class TestRestartInvariance:
             PUBLISHED, rc.PERIODS, resolver,
         )
         closes = rc._Closes(sorted(set(PRICES)), "USD")
-        whole = rc.replay(AGENT, None, 10_000.0, PUBLISHED, inputs, closes=closes, excluded=set(), frozen={})
+        whole = rc.replay(AGENT, None, 10_000.0, PUBLISHED, inputs, closes=closes, frozen={})
         for k in range(1, len(PUBLISHED)):
-            head = rc.replay(AGENT, None, 10_000.0, PUBLISHED[:k], inputs[:k], closes=closes, excluded=set(), frozen={})
+            head = rc.replay(AGENT, None, 10_000.0, PUBLISHED[:k], inputs[:k], closes=closes, frozen={})
             path = tmp_path / f"state-{k}.json"
             write_coin_flip_state(path, head[-1], AGENT)
             tail = rc.replay(
                 AGENT, load_coin_flip_state(path), 10_000.0, PUBLISHED[k:], inputs[k:],
-                closes=closes, excluded=set(), frozen={},
+                closes=closes, frozen={},
             )
             assert head + tail == whole, f"split at {PUBLISHED[k]}"
 
@@ -272,7 +286,7 @@ class TestRestartInvariance:
         )
         inputs.append(rc.DayInputs(tuple(U2), 2, "next"))
         closes = rc._Closes(sorted(set(PRICES)), "USD")
-        whole = rc.replay(AGENT, None, 10_000.0, DAYS, inputs, closes=closes, excluded=set(), frozen={})
+        whole = rc.replay(AGENT, None, 10_000.0, DAYS, inputs, closes=closes, frozen={})
         assert appended == rc._row(whole[-1], "USD")
 
 
@@ -293,14 +307,14 @@ class TestEmptyDraw:
         with pytest.raises(rc.Unknown, match="could sell"):
             rc.replay(
                 AGENT, None, 10_000.0, DAYS[:2], self._inputs([["AAA"], ["GONE"]]),
-                closes=closes, excluded=set(), frozen={},
+                closes=closes, frozen={},
             )
 
     def test_an_all_cash_book_with_nothing_to_draw_steps_in_cash(self, desk):
         closes = rc._Closes(["GONE"], "USD")
         states = rc.replay(
             AGENT, None, 10_000.0, DAYS[:2], self._inputs([["GONE"], ["GONE"]]),
-            closes=closes, excluded=set(), frozen={},
+            closes=closes, frozen={},
         )
         assert [s.cash for s in states] == [10_000.0, 10_000.0]
 
@@ -328,14 +342,16 @@ def test_the_two_writer_rules_are_shared_named_and_differ(desk):
     assert "same convention" not in (rc.__doc__ or "")
 
 
-def test_the_script_names_no_bare_python3_interpreter():
-    """Round-5 review, 2026-10-06. The script opened with
-    ``#!/usr/bin/env python3``, which resolves to an interpreter outside the
-    project venv. Like the other engine-importing scripts, it has no shebang
-    and is not executable: it is run with ``.venv/bin/python``."""
+@pytest.mark.parametrize("name", ["restate_coinflip.py", "audit_coinflip_seams.py"])
+def test_the_script_names_no_bare_python3_interpreter(name):
+    """Round-5 review, 2026-10-06 (the audit script, round 6). The scripts
+    opened with ``#!/usr/bin/env python3``, which resolves to an interpreter
+    outside the project venv. Like the other engine-importing scripts, they
+    have no shebang and are not executable: they are run with
+    ``.venv/bin/python``."""
     import os
 
-    path = ROOT / "scripts" / "restate_coinflip.py"
+    path = ROOT / "scripts" / name
     assert not path.read_text().startswith("#!")
     assert not os.access(path, os.X_OK)
 
@@ -389,6 +405,7 @@ def _desk_with(tmp_path, monkeypatch, before_session) -> Desk:
     monkeypatch.setenv("MIDAS_DATA_DIR", str(d.repo))
     reset_config_cache()
     monkeypatch.setattr(rc, "PERIODS", (rc.Period(DAYS[0], None, rc.WRITER, rc.WRITER, "test"),))
+    monkeypatch.setattr(rc, "REGISTRY_INTRODUCED", d.setup_sha)
     return d
 
 
@@ -398,10 +415,12 @@ def _replay_rows(desk: Desk, tmp_path: Path, excluded: set[str]) -> list[dict]:
         desk.repo, "HEAD", AGENT, f"data/baselines/{AGENT}/coinflip.json",
         PUBLISHED, rc.PERIODS, rc.TreeResolver(desk.repo, work),
     )
-    inputs = [rc.DayInputs(i.tickers, i.max_positions, i.writer) for i in inputs]
+    inputs = [
+        rc.DayInputs(i.tickers, i.max_positions, i.writer, frozenset(excluded)) for i in inputs
+    ]
     closes = rc._Closes(sorted(set(PRICES)), "USD")
     states = rc.replay(
-        AGENT, None, 10_000.0, PUBLISHED, inputs, closes=closes, excluded=excluded, frozen={}
+        AGENT, None, 10_000.0, PUBLISHED, inputs, closes=closes, frozen={}
     )
     return [rc._row(s, "USD") for s in states]
 
@@ -464,6 +483,11 @@ class TestPointInTimeRegistry:
                     (d.repo / REGISTRY).write_text("{not json")
                 else:
                     (d.repo / REGISTRY).unlink()
+                    # A tripwire refusal writes a quarantine row: a registry
+                    # missing beside one is lost, not a fresh data root.
+                    quarantine = d.repo / "data" / "market" / "quarantine"
+                    quarantine.mkdir(parents=True, exist_ok=True)
+                    (quarantine / "2026-01-02.jsonl").write_text("{}\n")
                 d.commit("break the registry")
 
         d = _desk_with(tmp_path, monkeypatch, plant)
@@ -474,6 +498,77 @@ class TestPointInTimeRegistry:
         concern = registry[0]
         assert "failing closed" in concern
         assert f"6 date(s), {PUBLISHED[4]}..{PUBLISHED[9]}" in concern
+
+
+class TestRegistryRound6:
+    """Round-6 review, 2026-10-06: the registry verdict must not fail open."""
+
+    def test_an_unresolvable_era_commit_is_unknown_not_pre_registry(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """Regression: round-6 review. With ``REGISTRY_INTRODUCED`` absent from
+        the clone (shallow, pruned), every tree looked pre-registry and
+        excluded nothing, silently. It is ``Unknown``: exit 2."""
+        d = _desk_with(tmp_path, monkeypatch, lambda d, i: None)
+        monkeypatch.setattr(rc, "REGISTRY_INTRODUCED", "0" * 40)
+        with pytest.raises(rc.Unknown, match="registry era commit"):
+            rc.TreeResolver(d.repo, tmp_path / "w").registry("HEAD")
+        assert _main(d) == 2
+        assert "UNKNOWN" in capsys.readouterr().err
+
+    def test_a_missing_registry_beside_no_quarantine_is_an_empty_registry(
+        self, tmp_path, monkeypatch
+    ):
+        """Regression: round-6 review. The engine reads a missing registry as
+        empty unless a quarantine row exists beside it; the replay called any
+        missing one a failure."""
+
+        def plant(d: Desk, i: int) -> None:
+            if i == 2:
+                (d.repo / REGISTRY).write_text(_registry_doc())
+                d.commit("feat: registry")
+            if i == 4:
+                (d.repo / REGISTRY).unlink()
+                d.commit("registry gone, nothing was ever quarantined")
+
+        d = _desk_with(tmp_path, monkeypatch, plant)
+        restated = _restated(d, tmp_path)
+        assert not [c for c in restated.concerns if REGISTRY in c]
+
+    def test_failing_dates_are_printed_as_contiguous_runs(self, tmp_path, monkeypatch):
+        """Regression: round-6 review. ``first..last`` over dates that were
+        not contiguous claimed the dates between them failed too."""
+
+        def plant(d: Desk, i: int) -> None:
+            if i == 2:
+                (d.repo / REGISTRY).write_text(_registry_doc())
+                d.commit("feat: registry")
+            if i in (4, 8):
+                (d.repo / REGISTRY).write_text("{not json")
+                d.commit("break the registry")
+            if i == 6:
+                (d.repo / REGISTRY).write_text(_registry_doc())
+                d.commit("repair the registry")
+
+        d = _desk_with(tmp_path, monkeypatch, plant)
+        concern = [c for c in _restated(d, tmp_path).concerns if REGISTRY in c][0]
+        broken = [PUBLISHED[k] for k in (4, 5, 8, 9)]
+        assert f"{broken[0]}..{broken[1]}, {broken[2]}..{broken[3]}" in concern
+        assert f"{PUBLISHED[4]}..{PUBLISHED[9]}" not in concern
+
+    def test_the_verdict_is_computed_once_per_tree_rev(self, tmp_path, monkeypatch):
+        """Regression: round-6 review. Every date re-ran the registry's git
+        calls even for a fixed-rev period that supplies one tree to all."""
+        d = _desk_with(tmp_path, monkeypatch, lambda d, i: None)
+        resolver = rc.TreeResolver(d.repo, tmp_path / "w")
+        calls: list[str] = []
+        real = rc._rev
+        monkeypatch.setattr(rc, "_rev", lambda repo, spec: (calls.append(spec), real(repo, spec))[1])
+        first = resolver.registry("HEAD")
+        n = len(calls)
+        assert n > 0
+        assert resolver.registry("HEAD") == first
+        assert len(calls) == n
 
 
 class TestApplyRefusesConcerns:

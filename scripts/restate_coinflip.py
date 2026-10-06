@@ -42,9 +42,13 @@ marks in the same tree that supplies D's universe, never today's registry: a
 suspension recorded later must not reach back over rows written before it, and
 one cleared since must still exclude the dates it covered. A tree that predates
 the registry (``REGISTRY_INTRODUCED``, d2bf52b06, not in its history) excludes
-nothing. A tree after it whose registry is missing or unreadable fails closed,
-as ``engine.instrument_status`` does: every symbol of the agent is excluded on
-those dates, and that is a concern.
+nothing; if that commit is not in this clone the era cannot be told and the
+run is ``Unknown``. A tree after it whose registry is unreadable, or missing
+beside a non-empty ``data/market/quarantine`` (``engine.instrument_status``'s
+own ``_lost`` rule, applied to that tree), fails closed as the engine does:
+every symbol of the agent is excluded on those dates, and that is a concern. A
+registry missing beside no quarantine is an empty registry, as the engine
+reads it.
 
 **Prices and currencies are the current store's** and the current currency
 resolution (``_Closes``), so a vendor revision made after a row was first
@@ -67,13 +71,14 @@ that import this project's ``engine/`` (a ``uv run --script`` header declares
 standalone dependencies, and this script's are the project's venv), and never a
 bare ``python3``, which resolves to an interpreter this project does not use.
 
-Exit codes: 0 done; 2 unknown — a date with no first writer, no period, a tree
+Exit codes: 0 done (a clean dry run, or an applied one); 1 a finding: a dry
+run whose replay raised concerns, which ``--apply`` would refuse; 2 unknown — a date with no first writer, no period, a tree
 or universe that cannot be resolved, a published series that is not one row
 per calendar day, a date on which nothing in the universe can be drawn
 while the book holds names it could sell, any crash (traceback on stderr), or
 an ``--apply`` refused (undisclosed, or a replay with any concern). Never a
-guess. A dry run with concerns still exits 0, prints them as ``[WARN]`` lines
-and says that ``--apply`` would refuse.
+guess. A dry run with concerns prints them as ``[WARN]`` lines, says that
+``--apply`` would refuse, and exits 1.
 """
 
 from __future__ import annotations
@@ -116,7 +121,8 @@ from engine.disclosure import (  # noqa: E402
     require_changelog_entry,
 )
 from engine.fx import store_cache  # noqa: E402
-from engine.instrument_status import RegistryUnreadable, _parse as _parse_registry  # noqa: E402
+from engine.instrument_status import RegistryUnreadable, _lost as _registry_lost  # noqa: E402
+from engine.instrument_status import _parse as _parse_registry  # noqa: E402
 from scripts._coinflip_history import extract, first_writer, is_ancestor  # noqa: E402
 from scripts._coinflip_history import rev as _rev  # noqa: E402
 from scripts._coinflip_history import git as _git  # noqa: E402
@@ -214,16 +220,50 @@ class TreeResolver:
         self.workdir = workdir
         self._cache: dict[tuple, dict[str, tuple[list[str], int]]] = {}
         self._registries: dict[str, tuple[frozenset[str] | None, str | None]] = {}
+        self._verdicts: dict[str, tuple[frozenset[str] | None, str | None]] = {}
 
     def registry(self, at: str) -> tuple[frozenset[str] | None, str | None]:
         """``(marked symbols, None)`` from ``at``'s own registry, or ``(None,
-        why)`` when it fails closed: missing from a tree that should hold it,
-        or unreadable. ``frozenset()`` for a tree that predates it."""
+        why)`` when it fails closed: unreadable, or missing from a tree of the
+        registry's era beside a non-empty quarantine (``engine.instrument_status``'s
+        own ``_lost`` rule, applied to that tree). A tree of the era whose
+        registry is missing beside an empty or absent quarantine is an empty
+        registry, as the engine reads it; ``frozenset()`` also for a tree that
+        predates the registry. Raises ``Unknown`` when ``REGISTRY_INTRODUCED``
+        cannot be resolved in this clone, since no tree can then be placed
+        before or after it. The verdict is cached per ``at``."""
+        if at not in self._verdicts:
+            self._verdicts[at] = self._registry(at)
+        return self._verdicts[at]
+
+    def _registry(self, at: str) -> tuple[frozenset[str] | None, str | None]:
+        if _rev(self.repo, f"{REGISTRY_INTRODUCED}^{{commit}}") is None:
+            raise Unknown(
+                f"registry era commit {REGISTRY_INTRODUCED[:9]} is not in this clone "
+                f"(shallow or pruned history?): cannot tell whether {at} predates "
+                f"the instrument registry"
+            )
         blob = _rev(self.repo, f"{at}:{REGISTRY_PATH}")
         if blob is None:
             if not is_ancestor(self.repo, REGISTRY_INTRODUCED, at):
                 return frozenset(), None
-            return None, f"{REGISTRY_PATH} is missing from a tree after the registry existed"
+            # The engine's own rule, on a skeleton of that tree: the registry
+            # file absent, one empty placeholder per quarantine file it holds.
+            market = Path(self.workdir) / f"registry-{len(self._verdicts)}" / "market"
+            quarantine = market / "quarantine"
+            quarantine.mkdir(parents=True)
+            names = _git(
+                self.repo, "ls-tree", "--name-only", at, "data/market/quarantine/"
+            ).split()
+            for name in names:
+                if name.endswith(".jsonl"):
+                    (quarantine / Path(name).name).touch()
+            if _registry_lost(market / "instrument_status.json"):
+                return None, (
+                    f"{REGISTRY_PATH} is missing from a tree after the registry "
+                    f"existed, beside a non-empty quarantine"
+                )
+            return frozenset(), None
         if blob not in self._registries:
             try:
                 entries = _parse_registry(_git(self.repo, "cat-file", "-p", blob))
@@ -344,7 +384,6 @@ def replay(
     inputs: list[DayInputs],
     *,
     closes: _Closes,
-    excluded: set[str],
     frozen: dict[str, tuple[str, CoinFlipHolding]],
     thawed: dict[str, tuple[str, str]] | None = None,
     empty: list[tuple[int, _EmptyDraw]] | None = None,
@@ -372,7 +411,7 @@ def replay(
             d,
             closes=closes,
             universe=universe,
-            excluded=set(excluded) | inp.excluded,
+            excluded=set(inp.excluded),
             max_positions=inp.max_positions,
             frozen=frozen,
             empty=day_empty,
@@ -387,6 +426,17 @@ def replay(
             empty.extend((len(set(universe)), e) for e in day_empty)
         states.append(state)
     return states
+
+
+def _runs(days: list[str]) -> str:
+    """Sorted ISO ``days`` as contiguous runs: ``a..b, c`` (a lone day alone)."""
+    out: list[list[str]] = []
+    for d in days:
+        if out and date.fromisoformat(d) - date.fromisoformat(out[-1][-1]) == timedelta(days=1):
+            out[-1].append(d)
+        else:
+            out.append([d])
+    return ", ".join(r[0] if len(r) == 1 else f"{r[0]}..{r[-1]}" for r in out)
 
 
 @dataclass(frozen=True)
@@ -441,19 +491,18 @@ def restate_agent(
     for problem, on in sorted(failed.items()):
         concerns.append(
             f"coinflip {agent}: {problem} in the writer tree of {len(on)} date(s), "
-            f"{on[0]}..{on[-1]} — failing closed, no symbol is a candidate and "
+            f"{_runs(on)} — failing closed, no symbol is a candidate and "
             f"every holding is carried untraded on those dates."
         )
     inputs = [
         replace(i, excluded=frozenset(union)) if i.registry_problem else i for i in inputs
     ]
-    excluded: set[str] = set()
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
     thawed: dict[str, tuple[str, str]] = {}
     empty: list[tuple[int, _EmptyDraw]] = []
     states = replay(
         agent, None, initial, dates, inputs,
-        closes=closes, excluded=excluded, frozen=frozen, thawed=thawed, empty=empty,
+        closes=closes, frozen=frozen, thawed=thawed, empty=empty,
     )
     concerns.extend(_frozen_concerns(agent, frozen, closes, currency))
     notes: list[str] = []
@@ -519,7 +568,7 @@ def render(results: list[Restated]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Exit 0 done, 2 could not run: an ``Unknown``, an undisclosed
+    """Exit 0 done, 1 a dry run with concerns (a finding), 2 could not run: an ``Unknown``, an undisclosed
     ``--apply``, or any other exception (its traceback on stderr). A crash is
     never a 1, the code a finding would take (round-5 review, 2026-10-06; the
     same rule as ``audit_coinflip_seams.main``)."""
@@ -573,6 +622,7 @@ def _run(args: argparse.Namespace) -> int:
         print("\nDry run: nothing written. --apply --changelog-entry <anchor> writes.")
         if concerns:
             print(f"--apply would refuse: {concerns} concern(s) above.")
+            return 1
         return 0
     if concerns:
         print(
