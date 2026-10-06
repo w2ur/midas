@@ -498,6 +498,10 @@ class _EmptyDraw:
     #: The book held names it could have sold: they were carried untraded
     #: instead of being sold to cash with nothing to buy.
     held: bool
+    #: The holdings carried untraded on ``date`` whatever the draw (frozen
+    #: at their mark, or marked by the registry). A book holding only these
+    #: had nothing to sell, but it was not in cash either.
+    carried: tuple[str, ...] = ()
 
 
 def _counted(why: Mapping[str, int]) -> str:
@@ -568,7 +572,9 @@ def _step(
     and the cash is untouched; with nothing to sell (all cash, or every
     holding already carried) the step is the ordinary one, since nothing is
     lost. Either way the date is appended to ``empty`` (``_EmptyDraw``) for
-    the caller to report, and the step returns a state: the advance never
+    the caller to report (with the holdings carried whatever the draw, so a
+    book of carried positions is not reported as cash), and the step returns
+    a state: the advance never
     stalls on a date that stays undrawable, which a guard that stopped the
     run there did (it stopped again on every later run).
     """
@@ -635,7 +641,13 @@ def _step(
     if not draw.quotes:
         if empty is not None:
             empty.append(
-                _EmptyDraw(iso, _counted(draw.why), tuple(sorted(draw.no_rate)), bool(sellable))
+                _EmptyDraw(
+                    iso,
+                    _counted(draw.why),
+                    tuple(sorted(draw.no_rate)),
+                    bool(sellable),
+                    tuple(sorted(carried)),
+                )
             )
         if sellable:
             return CoinFlipState(
@@ -754,8 +766,11 @@ def _empty_draw_concerns(
     A run of consecutive dates with the same cause is one line. Where the
     book held names it could sell, the line is a ``[WARN]`` concern naming
     the agent, the dates and the reason: the book was carried untraded, and
-    its curve is flat in trading for those dates. Where it held nothing to
-    sell, nothing was lost and the line is an ``[INFO]`` note.
+    its curve is flat in trading for those dates. Where it held only
+    positions already carried (frozen or registry-marked), it is a
+    ``[WARN]`` concern too, naming them (round-5 review, 2026-10-06): it
+    used to say "stepped in cash" of a book that was not in cash. Only a
+    genuinely all-cash book gets the ``[INFO]`` note: nothing was lost.
 
     **The remedy depends on the cause** (round-4 review, 2026-10-06). It used
     to tell every cause to fix the agent's universe file. For a missing rate
@@ -771,7 +786,8 @@ def _empty_draw_concerns(
         prev = runs[-1][-1] if runs else None
         if (
             prev is not None
-            and (prev.why, prev.no_rate, prev.held) == (d.why, d.no_rate, d.held)
+            and (prev.why, prev.no_rate, prev.held, prev.carried)
+            == (d.why, d.no_rate, d.held, d.carried)
             and date.fromisoformat(d.date) - date.fromisoformat(prev.date) == timedelta(days=1)
         ):
             runs[-1].append(d)
@@ -823,6 +839,14 @@ def _empty_draw_concerns(
                 f"{universe_size} ticker(s) {when} ({first.why}); the book was "
                 f"carried untraded and revalued, not sold to cash, and the "
                 f"advance went on. {remedy}".rstrip()
+            )
+        elif first.carried:
+            concerns.append(
+                f"coinflip {agent_id}: no candidate in its universe of "
+                f"{universe_size} ticker(s) {when} ({first.why}), and the book "
+                f"held only carried positions ({', '.join(first.carried)}): "
+                f"nothing to sell, but not in cash, so its curve is flat in "
+                f"trading for those dates. {remedy}".rstrip()
             )
         else:
             notes.append(
@@ -966,7 +990,8 @@ def _fresh_path(
     day) through ``to_date``; ``[]`` when no ticker has any close.
 
     A date with no candidate is a concern when the book held names it could
-    sell, a note otherwise (``_empty_draw_concerns``); the first day starts
+    sell or carried positions, a note when it was all cash
+    (``_empty_draw_concerns``); the first day starts
     from cash, so it is at most a note."""
     closes = _Closes(tickers, currency)
     if not closes.has_any() or to_date < from_date:
@@ -1052,8 +1077,9 @@ def advance_coin_flip(
       sell are carried untraded and revalued instead, and the advance goes on
       (``_step``). When the book holds such names, one ``[WARN]`` concern per
       run of dates names the agent, the dates, the reasons and the remedy for
-      that cause (``_empty_draw_concerns``); with nothing to sell it is an
-      ``[INFO]`` line. Until round 4 (2026-10-06) the advance stopped before
+      that cause (``_empty_draw_concerns``); a book holding only carried
+      positions is a ``[WARN]`` concern naming them, and only an all-cash book
+      is an ``[INFO]`` line. Until round 4 (2026-10-06) the advance stopped before
       such a date, and a rate or a universe that stays missing stopped it
       there on every later run.
 

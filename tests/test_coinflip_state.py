@@ -297,7 +297,12 @@ def test_a_mark_row_withdrawn_from_the_store_holds_at_its_mark_and_says_so(
     the store on its own date. If that row is withdrawn between two advances,
     the last close before it is a different price, and valuing from it would
     mis-value the holding by the move between the two dates with no concern.
-    It is case (b): held at its mark, one concern naming agent and ticker."""
+    It is case (b): held at its mark, one concern naming agent and ticker.
+
+    Round 5 (2026-10-06): AAA is the whole universe, so the date has no
+    candidate while the book holds only that carried position; that is a
+    second concern now (it was an [INFO] "stepped in cash" of a book that
+    was not in cash)."""
     _store("AAA", [("2026-01-01", 10.0), ("2026-01-02", 20.0)])
     _seed_state(_held_state("AAA", 100, "2026-01-02", 20.0))
     # The 01-02 row is withdrawn; 01-03 lands at 21 (the old code would value
@@ -305,8 +310,10 @@ def test_a_mark_row_withdrawn_from_the_store_holds_at_its_mark_and_says_so(
     _store("AAA", [("2026-01-01", 10.0), ("2026-01-03", 21.0)])
     result = _advance(date(2026, 1, 3), tickers=["AAA"], max_positions=1)
     warns = [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l]
-    assert len(warns) == 1 and _AGENT in warns[0] and "AAA" in warns[0]
-    assert len(result.concerns) == 1
+    frozen = [l for l in warns if "NO_PRICE_DATA —" in l]
+    assert len(frozen) == 1 and _AGENT in frozen[0] and "AAA" in frozen[0]
+    assert len(result.concerns) == 2
+    assert any("held only carried positions (AAA)" in c for c in result.concerns)
     assert _rows()[-1]["portfolio_value"] == pytest.approx(2_000.0)
     state = load_coin_flip_state(coin_flip_state_path(_series_path()))
     assert state.holdings["AAA"] == CoinFlipHolding(100, "2026-01-02", 20.0, "USD", 1.0)
@@ -1085,4 +1092,21 @@ def test_a_frozen_holding_records_the_reason_current_at_the_end():
     assert frozen["U"] == (NO_FX_RATE, held)
     _step(_AGENT, s1.holdings, s1.cash, "2026-01-03", closes=_StubCloses(None, None, None), **kw)
     assert frozen["U"] == (CURRENCY_UNRESOLVED, held)
+
+
+def test_an_empty_draw_over_a_book_of_carried_positions_is_a_concern(midas_data_root, capsys):
+    """Regression: round-5 review, 2026-10-06. With nothing drawable and a
+    book holding only a frozen position, the run printed "[INFO] ... nothing
+    to sell; stepped in cash" of a book that was not in cash. It is a [WARN]
+    concern naming the agent, the dates and the carried tickers."""
+    _seed_state(_held_state("GONE", 100, "2026-01-01", 10.0, cash=0.0))
+    result = _advance(date(2026, 1, 3), tickers=["NOFILE"], max_positions=1)
+    assert result.appended == 2
+    empty = [c for c in result.concerns if "no candidate" in c]
+    assert len(empty) == 1
+    assert _AGENT in empty[0] and "2026-01-02..2026-01-03 (2 dates)" in empty[0]
+    assert "GONE" in empty[0] and "not in cash" in empty[0]
+    out = capsys.readouterr().out
+    assert "stepped in cash" not in out
+    assert f"  [WARN] {empty[0]}" in out.splitlines()
 
