@@ -54,7 +54,12 @@ Dry run by default: prints, per agent, how many rows change, the largest
 absolute and relative difference, and the published and restated value at the
 last date. ``--apply`` requires ``--changelog-entry <anchor>`` (verified by
 ``engine.disclosure.require_changelog_entry``) and writes every series and its
-state together, after every agent has been computed.
+state together, after every agent has been computed. **It publishes only a
+clean replay** (round-5 review, 2026-10-06): any concern — a registry that
+failed closed, a holding still frozen at the end, an empty draw over carried
+holdings, a restated path that never leaves cash — and it exits 2 having
+written nothing. There is no flag to accept them: fix the cause, or restate
+by hand with the owner's judgment.
 
 Run it with the project's interpreter, ``.venv/bin/python
 scripts/restate_coinflip.py``. It carries no shebang, like the other scripts
@@ -64,8 +69,11 @@ bare ``python3``, which resolves to an interpreter this project does not use.
 
 Exit codes: 0 done; 2 unknown — a date with no first writer, no period, a tree
 or universe that cannot be resolved, a published series that is not one row
-per calendar day, or a date on which nothing in the universe can be drawn
-while the book holds names it could sell. Never a guess.
+per calendar day, a date on which nothing in the universe can be drawn
+while the book holds names it could sell, any crash (traceback on stderr), or
+an ``--apply`` refused (undisclosed, or a replay with any concern). Never a
+guess. A dry run with concerns still exits 0, prints them as ``[WARN]`` lines
+and says that ``--apply`` would refuse.
 """
 
 from __future__ import annotations
@@ -92,6 +100,7 @@ from engine.baselines import (  # noqa: E402
     CoinFlipHolding,
     CoinFlipState,
     _Closes,
+    _empty_draw_concerns,
     _frozen_concerns,
     _row,
     _EmptyDraw,
@@ -338,6 +347,7 @@ def replay(
     excluded: set[str],
     frozen: dict[str, tuple[str, CoinFlipHolding]],
     thawed: dict[str, tuple[str, str]] | None = None,
+    empty: list[tuple[int, _EmptyDraw]] | None = None,
 ) -> list[CoinFlipState]:
     """One path over ``dates``. With ``start`` None the first date starts from
     ``initial`` in cash and is repicked at its close (a fresh path's first day);
@@ -348,12 +358,13 @@ def replay(
     restatement that would publish a carried day is a judgment the owner
     makes, not one this script makes. A date with no candidate and nothing to
     sell steps in cash, as the session does: nothing is lost. The test is
-    ``_step``'s own (``_EmptyDraw``), never a second copy of it."""
+    ``_step``'s own (``_EmptyDraw``), never a second copy of it. Every empty
+    draw is appended to ``empty`` with the size of that date's universe."""
     states: list[CoinFlipState] = []
     state = start
     for d, inp in zip(dates, inputs):
         universe = list(inp.tickers)
-        empty: list[_EmptyDraw] = []
+        day_empty: list[_EmptyDraw] = []
         state = _step(
             agent,
             state.holdings if state is not None else {},
@@ -364,14 +375,16 @@ def replay(
             excluded=set(excluded) | inp.excluded,
             max_positions=inp.max_positions,
             frozen=frozen,
-            empty=empty,
+            empty=day_empty,
             thawed=thawed,
         )
-        if any(e.held for e in empty):
+        if any(e.held for e in day_empty):
             raise Unknown(
-                f"{agent} {d}: nothing in its universe can be drawn ({empty[0].why}) "
+                f"{agent} {d}: nothing in its universe can be drawn ({day_empty[0].why}) "
                 f"and the book holds names it could sell"
             )
+        if empty is not None:
+            empty.extend((len(set(universe)), e) for e in day_empty)
         states.append(state)
     return states
 
@@ -437,11 +450,25 @@ def restate_agent(
     excluded: set[str] = set()
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
     thawed: dict[str, tuple[str, str]] = {}
+    empty: list[tuple[int, _EmptyDraw]] = []
     states = replay(
         agent, None, initial, dates, inputs,
-        closes=closes, excluded=excluded, frozen=frozen, thawed=thawed,
+        closes=closes, excluded=excluded, frozen=frozen, thawed=thawed, empty=empty,
     )
     concerns.extend(_frozen_concerns(agent, frozen, closes, currency))
+    notes: list[str] = []
+    for size in sorted({n for n, _ in empty}):
+        warn, info = _empty_draw_concerns(
+            agent, size, [e for n, e in empty if n == size], currency
+        )
+        concerns.extend(warn)
+        notes.extend(info)
+    if not any(s.holdings for s in states):
+        concerns.append(
+            f"coinflip {agent}: the restated path never leaves cash over its "
+            f"{len(states)} date(s), {dates[0]}..{dates[-1]}; a coin flip that "
+            f"never buys is no control."
+        )
     rows = [_row(s, currency) for s in states]
     if rows[0]["portfolio_value"] != initial:
         raise Unknown(f"{agent}: the restated first row does not keep {initial}")
@@ -463,7 +490,7 @@ def restate_agent(
         rows[-1]["portfolio_value"],
         dates[-1],
         concerns,
-        _thawed_notes(agent, thawed),
+        notes + _thawed_notes(agent, thawed),
     )
 
 
@@ -541,9 +568,19 @@ def _run(args: argparse.Namespace) -> int:
         for n in r.notes:
             print(f"  [INFO] {n}")
     print(render(results))
+    concerns = sum(len(r.concerns) for r in results)
     if not args.apply:
         print("\nDry run: nothing written. --apply --changelog-entry <anchor> writes.")
+        if concerns:
+            print(f"--apply would refuse: {concerns} concern(s) above.")
         return 0
+    if concerns:
+        print(
+            f"REFUSED: the replay raised {concerns} concern(s) ([WARN] above); "
+            f"--apply writes nothing while any stands.",
+            file=sys.stderr,
+        )
+        return 2
     for r in results:
         _write_json(r.series_path, r.rows)
         write_coin_flip_state(coin_flip_state_path(r.series_path), r.state, r.agent)

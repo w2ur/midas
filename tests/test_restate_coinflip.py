@@ -469,7 +469,64 @@ class TestPointInTimeRegistry:
         d = _desk_with(tmp_path, monkeypatch, plant)
         monkeypatch.setattr(rc, "REGISTRY_INTRODUCED", introduced[0])
         restated = _restated(d, tmp_path)
-        assert len(restated.concerns) == 1
-        concern = restated.concerns[0]
-        assert "failing closed" in concern and REGISTRY in concern
+        registry = [c for c in restated.concerns if REGISTRY in c]
+        assert len(registry) == 1
+        concern = registry[0]
+        assert "failing closed" in concern
         assert f"6 date(s), {PUBLISHED[4]}..{PUBLISHED[9]}" in concern
+
+
+class TestApplyRefusesConcerns:
+    """Regression: round-5 review, 2026-10-06. ``--apply`` published
+    whatever the replay produced, concerns and all. It now refuses (exit 2,
+    nothing written) while any concern stands; there is no flag to accept
+    them."""
+
+    def _assert_refused(self, d: Desk, capsys) -> str:
+        before = d.series.read_bytes()
+        assert _main(d, "--apply", "--changelog-entry", ANCHOR) == 2
+        captured = capsys.readouterr()
+        assert "REFUSED" in captured.err and "[WARN]" in captured.out
+        assert d.series.read_bytes() == before
+        assert not coin_flip_state_path(d.series).exists()
+        return captured.out
+
+    def test_an_unreadable_registry_refuses_and_writes_nothing(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        introduced: list[str] = []
+
+        def plant(d: Desk, i: int) -> None:
+            if i == 2:
+                (d.repo / REGISTRY).write_text("{not json")
+                introduced.append(d.commit("feat: a broken registry"))
+
+        d = _desk_with(tmp_path, monkeypatch, plant)
+        monkeypatch.setattr(rc, "REGISTRY_INTRODUCED", introduced[0])
+        self._assert_refused(d, capsys)
+
+    def test_a_path_that_never_leaves_cash_refuses(self, desk, capsys):
+        # Every close now dearer than the whole book: nothing is ever bought.
+        for t in PRICES:
+            (desk.repo / "data" / "market" / "ohlcv" / f"{t}.jsonl").write_text(
+                "\n".join(json.dumps({"date": d, "close": 1e9}) for d in DAYS) + "\n"
+            )
+        assert "never leaves cash" in self._assert_refused(desk, capsys)
+
+    def test_frozen_and_carried_holdings_refuse(self, desk, capsys):
+        # AAA is the only name the store prices, bought on day one; its close
+        # is 0 from day two, so it is frozen at its mark (NO_PRICE_DATA) and
+        # every later date has no candidate while the book holds only it.
+        ohlcv = desk.repo / "data" / "market" / "ohlcv"
+        (ohlcv / "AAA.jsonl").write_text(
+            "\n".join(json.dumps({"date": d, "close": 1.0 if d == DAYS[0] else 0.0}) for d in DAYS)
+            + "\n"
+        )
+        for t in ("BBB", "CCC", "DDD"):
+            (ohlcv / f"{t}.jsonl").unlink()
+        out = self._assert_refused(desk, capsys)
+        assert "AAA NO_PRICE_DATA" in out
+        assert "held only carried positions (AAA)" in out
+
+    def test_a_clean_replay_still_applies(self, desk):
+        assert _main(desk, "--apply", "--changelog-entry", ANCHOR) == 0
