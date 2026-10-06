@@ -531,13 +531,17 @@ def test_a_name_bought_and_frozen_in_the_same_run_names_its_actual_mark(midas_da
     (`get_rate` answers None), so it freezes on 01-03."""
     _store("U", [(d, 30.0) for d in _days(_START, 3)])
     _store("EURUSD=X", [("2026-01-01", 1.25), ("2026-01-02", 1.25), ("2026-01-03", 0.0)])
+    # A EUR name keeps 01-03 drawable (a date with nothing drawable stops the
+    # run instead), and at 1e9 it is never bought.
+    _currencies({"E.PA": "EUR"})
+    _store("E.PA", [(d, 1e9) for d in _days(_START, 3)])
     _seed_state(CoinFlipState(date="2026-01-01", portfolio_value=1_000.0, cash=1_000.0, holdings={}))
-    result = _advance(date(2026, 1, 3), tickers=["U"], max_positions=1, currency="EUR")
+    result = _advance(date(2026, 1, 3), tickers=["U", "E.PA"], max_positions=2, currency="EUR")
     assert len(result.concerns) == 1
     concern = result.concerns[0]
     assert "NO_FX_RATE" in concern and "?" not in concern
-    # Bought 01-02: floor(1000 / (30 x 0.8)) = 41 shares, held at that mark.
-    assert "2026-01-02" in concern and "41 x 30" in concern and "USD->EUR" in concern
+    # Bought 01-02: floor(500 / (30 x 0.8)) = 20 shares, held at that mark.
+    assert "2026-01-02" in concern and "20 x 30" in concern and "USD->EUR" in concern
     assert _rows()[-1]["portfolio_value"] == pytest.approx(1_000.0)
 
 
@@ -641,9 +645,58 @@ def test_a_universe_with_nothing_priceable_is_not_advanced(
     result = _advance(date(2026, 1, 4), tickers=universe, max_positions=1)
     assert result.appended == 0 and len(result.concerns) == 1
     assert _AGENT in result.concerns[0] and "no priceable candidate" in result.concerns[0]
+    assert "2026-01-02" in result.concerns[0] and "not advanced" in result.concerns[0]
     assert "[WARN]" in capsys.readouterr().out
     assert _series_path().read_text() == series
     assert coin_flip_state_path(_series_path()).read_text() == state
+
+
+def _rate_withdrawn_on_day_3() -> None:
+    """Two USD names in a EUR book; EURUSD=X is a zero row on 01-03 only, so
+    01-03 is the one date with nothing drawable."""
+    for t, c in (("U", 30.0), ("V", 40.0)):
+        _store(t, [(d, c) for d in _days(_START, 4)])
+    _store(
+        "EURUSD=X",
+        [("2026-01-01", 1.25), ("2026-01-02", 1.25), ("2026-01-03", 0.0), ("2026-01-04", 1.25)],
+    )
+
+
+def test_a_later_date_with_nothing_drawable_stops_the_advance_there(midas_data_root, capsys):
+    """Regression: round-3 review, 2026-10-06. The empty-draw guard looked at
+    the first new date only ("priceability only grows with the date"), which
+    FX broke: a rate withdrawn on a later date made that whole day
+    undrawable, and the step sold the book to cash. Now every date is
+    checked; the advance keeps the good days, persists the state there and
+    names the agent, the date and the reason."""
+    _rate_withdrawn_on_day_3()
+    _seed_state(
+        CoinFlipState(
+            date="2026-01-01",
+            portfolio_value=100.0 + 10 * 30.0 * 0.8,
+            cash=100.0,
+            holdings={"U": CoinFlipHolding(10, "2026-01-01", 30.0, "USD", 0.8)},
+        )
+    )
+    result = _advance(date(2026, 1, 4), tickers=["U", "V"], max_positions=1, currency="EUR")
+    assert result.appended == 1 and len(result.concerns) == 1
+    concern = result.concerns[0]
+    assert _AGENT in concern and "2026-01-03" in concern and "NO_FX_RATE x2" in concern
+    assert "advanced through 2026-01-02 only" in concern
+    warns = [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l]
+    assert warns == [f"  [WARN] {concern}"]
+    assert [r["date"] for r in _rows()] == ["2026-01-01", "2026-01-02"]
+    state = load_coin_flip_state(coin_flip_state_path(_series_path()))
+    assert state.date == "2026-01-02" and state.portfolio_value == _rows()[-1]["portfolio_value"]
+    assert state.holdings, "the book was not sold to cash"
+
+
+def test_a_fresh_path_stops_at_a_later_date_with_nothing_drawable(midas_data_root):
+    _rate_withdrawn_on_day_3()
+    result = _advance(date(2026, 1, 4), tickers=["U", "V"], max_positions=1, currency="EUR")
+    assert result.appended == 2 and len(result.concerns) == 1
+    assert "2026-01-03" in result.concerns[0]
+    assert load_coin_flip_state(coin_flip_state_path(_series_path())).date == "2026-01-02"
 
 
 def test_an_unpriceable_universe_is_a_concern_of_the_build(midas_data_root, capsys):

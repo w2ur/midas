@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import bisect
 import json
+from collections import Counter
 import math
 import random
 from dataclasses import dataclass, fields
@@ -529,6 +530,57 @@ def _row(state: CoinFlipState, currency: str) -> dict:
     }
 
 
+def _unpriceable(closes: _Closes, universe: Collection[str], iso: str) -> str | None:
+    """None when some ticker of ``universe`` can be drawn on ``iso``;
+    otherwise why none can, counted by reason (``"NO_FX_RATE x3, ..."``).
+
+    The instrument registry plays no part: a registry that fails closed
+    carries every holding untraded, which liquidates nothing.
+    """
+    why: Counter[str] = Counter()
+    for t in sorted(universe):
+        if closes.at(t, iso) is None:
+            why[NO_PRICE_DATA] += 1
+            continue
+        rate, reason = closes.rate(closes.currency(t), iso)
+        if rate is None:
+            why[reason or NO_FX_RATE] += 1
+            continue
+        return None
+    return ", ".join(f"{r} x{n}" for r, n in sorted(why.items())) or "no ticker at all"
+
+
+@dataclass(frozen=True)
+class _Stop:
+    """Where a run stopped short of ``to_date``: the first date on which
+    nothing in the universe could be drawn, and why (``_unpriceable``)."""
+
+    date: str
+    why: str
+
+
+def _stop_concern(
+    agent_id: str, universe_size: int, stop: _Stop, kept_through: str | None
+) -> str:
+    """The ``[WARN]`` concern for a run the empty-draw guard stopped.
+
+    ``kept_through`` is the last date written, or None when the stop fell on
+    the first new date and nothing was.
+    """
+    outcome = (
+        f"advanced through {kept_through} only, and the state is kept there"
+        if kept_through is not None
+        else "not advanced"
+    )
+    return (
+        f"coinflip {agent_id}: no priceable candidate in its universe of "
+        f"{universe_size} ticker(s) on {stop.date} ({stop.why}; a missing "
+        f"universe file resolves to its bare name); {outcome}, the book is not "
+        f"sold to cash. Fix the agent's universe or the store's rates; the "
+        f"next run resumes from the state."
+    )
+
+
 def _run(
     agent_id: str,
     state: CoinFlipState,
@@ -539,10 +591,23 @@ def _run(
     excluded: Collection[str],
     max_positions: int,
     frozen: dict[str, tuple[str, CoinFlipHolding]],
-) -> list[CoinFlipState]:
-    """Every daily state after ``state.date`` through ``to_date``."""
+) -> tuple[list[CoinFlipState], _Stop | None]:
+    """Every daily state after ``state.date`` through ``to_date``, stopping
+    before the first date with no drawable candidate.
+
+    **The empty-draw guard runs on every date** (round-3 review,
+    2026-10-06). Stepping such a date would sell the whole book to cash and
+    draw nothing. It used to be checked on the first new date only, on the
+    argument that priceability only grows with the date, which stopped being
+    true with FX: a rate can be zero or withdrawn on a later date. The run
+    returns the states before that date and the ``_Stop``; the caller keeps
+    them and says where and why it stopped.
+    """
     out: list[CoinFlipState] = []
     for d in _daterange(date.fromisoformat(state.date) + timedelta(days=1), to_date):
+        why = _unpriceable(closes, universe, d.isoformat())
+        if why is not None:
+            return out, _Stop(d.isoformat(), why)
         state = _step(
             agent_id,
             state.holdings,
@@ -555,7 +620,7 @@ def _run(
             frozen=frozen,
         )
         out.append(state)
-    return out
+    return out, None
 
 
 def init_coin_flip_state(
@@ -642,7 +707,10 @@ def _fresh_path(
     concerns: list[str],
 ) -> list[CoinFlipState]:
     """Every daily state from ``from_date`` (initial capital, repicked that
-    day) through ``to_date``; ``[]`` when no ticker has any close."""
+    day) through ``to_date``; ``[]`` when no ticker has any close.
+
+    The first day starts from cash, so it has no book to sell and is not
+    guarded; every later day is (``_run``), and a stop is one concern."""
     closes = _Closes(tickers, currency)
     if not closes.has_any() or to_date < from_date:
         return []
@@ -659,7 +727,7 @@ def _fresh_path(
         max_positions=max_positions,
         frozen=frozen,
     )
-    return [first] + _run(
+    rest, stop = _run(
         agent_id,
         first,
         to_date,
@@ -669,6 +737,12 @@ def _fresh_path(
         max_positions=max_positions,
         frozen=frozen,
     )
+    states = [first] + rest
+    if stop is not None:
+        concerns.append(
+            _stop_concern(agent_id, len(set(tickers)), stop, states[-1].date)
+        )
+    return states
 
 
 def advance_coin_flip(
@@ -702,12 +776,17 @@ def advance_coin_flip(
       as the seam it is). The session lifts it into a ``Concerns:`` trailer,
       ``build_all_baselines`` counts it, and ``check_session_freshness`` sees
       the series fall behind the snapshots.
-    - **Refuse, empty draw** — an established series whose universe has no
-      priceable ticker on the first new date (a missing universe file
-      resolves to its bare name): advancing would sell the book to cash and
-      draw nothing, so nothing is written and one concern names the agent.
-      The instrument registry plays no part in this test: a registry that
-      fails closed carries every holding untraded, which liquidates nothing.
+    - **Stop, empty draw** — a new date on which nothing in the universe can
+      be drawn (no close, no resolvable currency, or no rate into
+      ``currency`` on that date; a missing universe file resolves to its bare
+      name): stepping it would sell the book to cash and draw nothing. The
+      advance stops before it: the dates before it are appended and the state
+      is persisted at the last of them (nothing is written when it is the
+      first new date), and one concern names the agent, the date and the
+      reasons (``_run``, checked on every date since 2026-10-06, not only the
+      first). The instrument registry plays no part in this test: a registry
+      that fails closed carries every holding untraded, which liquidates
+      nothing.
 
     A holding whose file is gone, or whose store no longer holds a close dated
     its mark (truncated, or that row withdrawn), or whose currency no longer
@@ -779,23 +858,9 @@ def advance_coin_flip(
 
     universe = sorted(set(tickers))
     closes = _Closes(set(universe) | set(state.holdings), currency)
-    first = (date.fromisoformat(state.date) + timedelta(days=1)).isoformat()
-    if not any(closes.priced(t, first) for t in universe):
-        # A universe whose file is missing resolves to its bare name
-        # (`resolve_agent_universe`); stepping it would sell the whole book to
-        # cash and draw nothing. Priceability only grows with the date, so
-        # none on the first new date means none would be drawn that day.
-        concerns.append(
-            f"coinflip {agent_id}: no priceable candidate in its universe of "
-            f"{len(universe)} ticker(s) on {first} (no close, no resolvable "
-            f"currency or no {currency} rate for any of them; a missing "
-            f"universe file resolves to its bare name); not advanced, the book "
-            f"is not sold to cash. Fix the agent's universe."
-        )
-        return done(0)
     excluded = _excluded(agent_id, set(universe) | set(state.holdings), concerns)
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
-    states = _run(
+    states, stop = _run(
         agent_id,
         state,
         to_date,
@@ -824,6 +889,14 @@ def advance_coin_flip(
             f"{h.currency} at {h.mark_rate:g} = {h.mark_value:.2f} {currency}) "
             f"and kept in the book."
         )
+    if stop is not None:
+        concerns.append(
+            _stop_concern(
+                agent_id, len(universe), stop, states[-1].date if states else None
+            )
+        )
+    if not states:
+        return done(0)
     _write_json(series_path, series + [_row(s, currency) for s in states])
     write_coin_flip_state(state_path, states[-1], agent_id)
     return done(len(states))
