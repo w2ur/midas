@@ -549,7 +549,9 @@ def _step(
     ``NO_PRICE_DATA`` (no close dated the mark, or a mark or newest close that
     is not a positive finite number), ``CURRENCY_UNRESOLVED`` (including a
     ticker that now resolves to a currency other than the one its mark was
-    recorded in) or ``NO_FX_RATE``.
+    recorded in) or ``NO_FX_RATE``. The reason is the one current on the
+    latest step, not the first one seen (round-5 review, 2026-10-06), so the
+    end-of-run concern names a condition that still holds.
 
     **``frozen`` holds what is frozen now, not what ever froze** (round-4
     review, 2026-10-06). A holding valued again on a later step (its row or
@@ -605,7 +607,11 @@ def _step(
             else:
                 rate, reason = closes.rate(h.currency, iso)
         if reason is not None:
-            frozen.setdefault(ticker, (reason, h))
+            # The reason current now, at the holding's first mark (round-5
+            # review): a holding that froze for one reason and is still
+            # frozen for another names the one that holds at the end.
+            first = frozen[ticker][1] if ticker in frozen else h
+            frozen[ticker] = (reason, first)
             if thawed is not None:
                 thawed.pop(ticker, None)
             carried[ticker] = h

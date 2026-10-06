@@ -1051,3 +1051,38 @@ def test_a_holding_whose_newest_close_is_not_a_price_is_frozen_and_the_state_rel
     assert nxt.appended == 1 and nxt.concerns == []
     assert _rows()[-1]["portfolio_value"] == pytest.approx(5.0 + 100 * 11.0)
 
+
+class _StubCloses:
+    """A ``_Closes`` whose currency and rate answers are set per test."""
+
+    book_currency = "EUR"
+
+    def __init__(self, ccy: str | None, rate: float | None, reason: str | None) -> None:
+        self._ccy, self._rate, self._reason = ccy, rate, reason
+
+    def at(self, ticker: str, iso: str):
+        return ("2026-01-01", 10.0) if ticker == "U" else None
+
+    def currency(self, ticker: str):
+        return self._ccy
+
+    def rate(self, ccy, iso):
+        return (self._rate, self._reason)
+
+
+def test_a_frozen_holding_records_the_reason_current_at_the_end():
+    """Regression: round-5 review, 2026-10-06. ``frozen.setdefault`` kept the
+    first reason a holding froze for, so a holding that lost its rate and then
+    its currency was still reported NO_FX_RATE at the end of the window, a
+    condition that had cleared. The latest reason is recorded, with the
+    holding's original mark."""
+    from engine.baselines import CURRENCY_UNRESOLVED, NO_FX_RATE, _step
+
+    held = CoinFlipHolding(10, "2026-01-01", 10.0, "USD", 0.8)
+    frozen: dict = {}
+    kw = dict(universe=[], excluded=set(), max_positions=1, frozen=frozen)
+    s1 = _step(_AGENT, {"U": held}, 0.0, "2026-01-02", closes=_StubCloses("USD", None, NO_FX_RATE), **kw)
+    assert frozen["U"] == (NO_FX_RATE, held)
+    _step(_AGENT, s1.holdings, s1.cash, "2026-01-03", closes=_StubCloses(None, None, None), **kw)
+    assert frozen["U"] == (CURRENCY_UNRESOLVED, held)
+
