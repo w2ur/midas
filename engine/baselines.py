@@ -779,8 +779,6 @@ def _empty_draw_concerns(
     revised; the universe-file hint is kept for the empty-universe cause
     only (every ticker without a close, or no ticker at all).
     """
-    from engine.fx import rate_tickers
-
     runs: list[list[_EmptyDraw]] = []
     for d in draws:
         prev = runs[-1][-1] if runs else None
@@ -804,7 +802,7 @@ def _empty_draw_concerns(
         )
         remedies: list[str] = []
         for ccy in first.no_rate:
-            tickers = rate_tickers(ccy, currency)
+            tickers = _fx.rate_tickers(ccy, currency)
             if tickers:
                 remedies.append(
                     f"no {ccy}->{currency} rate on {first.date}: the store's "

@@ -442,8 +442,45 @@ _ISO_DAYS = st.dates(min_value=date(2024, 1, 1), max_value=date(2027, 12, 31))
     target=_ISO_DAYS,
 )
 def test_the_bisected_lookup_equals_the_linear_scan(series, target):
-    """`_latest_on_or_before` bisects sorted dates; the answer is the one the
-    linear `max` over every date gave, for any series and any target."""
+    """The cached path bisects sorted dates (`_latest_in`), the uncached one
+    scans (`_latest_on_or_before`); both give the answer the linear `max`
+    over every date gave, for any series and any target."""
     eligible = [d for d in series if d <= target.isoformat()]
     expected = series[max(eligible)] if eligible else None
     assert fx._latest_on_or_before(series, target) == expected
+    assert fx._latest_in(*fx._sorted(series), target) == expected
+
+
+class TestUncachedPath:
+    """Round-5 review, 2026-10-06. The bisection added for the cached path
+    also ran outside a `store_cache()` block, where each ask reads the file
+    afresh: it sorted the whole series for one lookup, slower than the old
+    O(n) filter-and-max, and left `_latest_on_or_before` with no production
+    caller."""
+
+    def test_an_uncached_ask_never_sorts(self, fake_ohlcv, monkeypatch):
+        _write_jsonl(
+            fake_ohlcv / "EURUSD=X.jsonl",
+            [{"date": "2025-01-03", "close": 1.5}, {"date": "2025-01-02", "close": 1.25}],
+        )
+
+        def no_sort(series):
+            raise AssertionError("the uncached path sorted the series")
+
+        monkeypatch.setattr(fx, "_sorted", no_sort)
+        assert fx.get_rate("EUR", "USD", date(2025, 1, 2)) == 1.25
+        assert fx.get_rate("EUR", "USD", date(2025, 1, 9)) == 1.5
+
+    def test_an_uncached_ask_is_the_linear_scan(self, fake_ohlcv, monkeypatch):
+        _write_jsonl(fake_ohlcv / "EURUSD=X.jsonl", [{"date": "2025-01-02", "close": 1.25}])
+        calls: list[date] = []
+        real = fx._latest_on_or_before
+
+        def counting(series, target):
+            calls.append(target)
+            return real(series, target)
+
+        monkeypatch.setattr(fx, "_latest_on_or_before", counting)
+        assert fx.get_rate("EUR", "USD", date(2025, 1, 3)) == 1.25
+        assert calls == [date(2025, 1, 3)]
+

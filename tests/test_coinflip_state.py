@@ -1110,3 +1110,20 @@ def test_an_empty_draw_over_a_book_of_carried_positions_is_a_concern(midas_data_
     assert "stepped in cash" not in out
     assert f"  [WARN] {empty[0]}" in out.splitlines()
 
+
+def test_baselines_imports_fx_once_at_module_level():
+    """Round-5 review, 2026-10-06: a function-local ``from engine.fx import``
+    duplicated the module-level ``_fx`` import."""
+    import ast
+
+    import engine.baselines as mod
+
+    tree = ast.parse(Path(mod.__file__).read_text())
+    local = [
+        node.lineno
+        for fn in ast.walk(tree)
+        if isinstance(fn, ast.FunctionDef)
+        for node in ast.walk(fn)
+        if isinstance(node, ast.ImportFrom) and node.module == "engine.fx"
+    ]
+    assert local == []

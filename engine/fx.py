@@ -125,26 +125,34 @@ def _sorted(series: dict[str, float]) -> tuple[list[str], list[float]]:
     return dates, [series[d] for d in dates]
 
 
-def _sorted_store_series(ticker: str) -> tuple[list[str], list[float]]:
-    """``_load_store_series`` as sorted ``(dates, values)``, memoised inside a
-    ``store_cache()`` block."""
-    if _SERIES_CACHE is None:
-        return _sorted(_load_store_series(ticker))
-    if ticker not in _SERIES_CACHE:
-        _SERIES_CACHE[ticker] = _sorted(_load_store_series(ticker))
-    return _SERIES_CACHE[ticker]
-
-
 def _latest_in(dates: list[str], values: list[float], target: date) -> float | None:
     """The value of the newest date ≤ ``target`` in sorted ``dates``, by
-    bisection (it was a linear scan of every date on every ask)."""
+    bisection: the cached path, where one sort serves every ask of a run."""
     i = bisect.bisect_right(dates, target.isoformat())
     return values[i - 1] if i else None
 
 
 def _latest_on_or_before(series: dict[str, float], target: date) -> float | None:
-    """Return the latest value with date ≤ target, or None if none."""
-    return _latest_in(*_sorted(series), target)
+    """The latest value with date ≤ ``target``, or None: one O(n) pass, no
+    sort. The uncached path (outside ``store_cache()``), where the series is
+    read afresh for one ask and sorting it would cost more than the scan."""
+    target_iso = target.isoformat()
+    best: str | None = None
+    for d in series:
+        if d <= target_iso and (best is None or d > best):
+            best = d
+    return None if best is None else series[best]
+
+
+def _store_value(ticker: str, on: date) -> float | None:
+    """The stored close of ``ticker`` on or before ``on``: memoised and
+    bisected inside a ``store_cache()`` block, a linear scan of a fresh read
+    outside one."""
+    if _SERIES_CACHE is None:
+        return _latest_on_or_before(_load_store_series(ticker), on)
+    if ticker not in _SERIES_CACHE:
+        _SERIES_CACHE[ticker] = _sorted(_load_store_series(ticker))
+    return _latest_in(*_SERIES_CACHE[ticker], on)
 
 
 def get_rate(
@@ -209,7 +217,7 @@ def _stored_rate(ticker: str, inverted: bool, on: date) -> float | None:
     A close that is not a positive finite number is no rate: zero used to be
     the only one refused, while a negative or NaN close would have priced.
     """
-    val = _latest_in(*_sorted_store_series(ticker), on)
+    val = _store_value(ticker, on)
     if val is None or not math.isfinite(val) or val <= 0:
         return None
     return 1.0 / val if inverted else val
