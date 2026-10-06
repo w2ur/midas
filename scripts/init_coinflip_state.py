@@ -15,8 +15,8 @@ coin-flip row**:
   runs at that date's close in the *current* store, with the agent's
   *current* universe and ``max_positions`` (the same resolvers the session
   uses), sizing whole shares in the series' currency (each close converted
-  at its own date; a ticker with no resolvable currency or no rate is not
-  drawn). There is no flat cash day: the next session's
+  at the rate of the state date, the valuation date, as the books are; a
+  ticker with no resolvable currency or no rate is not drawn). There is no flat cash day: the next session's
   first new row is already invested.
 
 That repick is the one seam the migration introduces, at the state date,

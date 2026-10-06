@@ -387,8 +387,8 @@ def test_a_mixed_currency_book_is_sized_and_valued_in_the_book_currency(
 ):
     """Regression: until 2026-10-05 `_step` summed native closes into the book
     (world held AXFO.ST at 3 x 249.3 SEK, counted as EUR 747.9). Now each
-    close is converted at the rate of its own date, before sizing and before
-    summing. Every number below is hand-computed."""
+    close is converted at the rate of the row's date, before sizing and
+    before summing. Every number below is hand-computed."""
     import engine.fx as fx
 
     _currencies({"E.PA": "EUR", "S.ST": "SEK", "G.L": "GBP", "U": "USD"})
@@ -422,6 +422,51 @@ def test_a_mixed_currency_book_is_sized_and_valued_in_the_book_currency(
         "E.PA": "EUR", "S.ST": "SEK", "G.L": "GBP", "U": "USD"
     }
     assert held["S.ST"].mark_rate == pytest.approx(0.10)
+
+
+def test_a_close_older_than_the_row_converts_at_the_rate_of_the_row(midas_data_root):
+    """Regression: round-3 review, 2026-10-06. The books convert at the
+    valuation date (`engine.valuation.value_position`), the coin flip
+    converted each close at the close's own date, so the two disagreed
+    whenever the store held no close for the row's date. U has no 01-02
+    close: the 01-02 row values 10 x 30 USD at 01-02's rate (1/1.6), exactly
+    as `value_position` values the same position, not at 01-01's (1/1.25)."""
+    from engine.valuation import value_position
+
+    _store("U", [("2026-01-01", 30.0), ("2026-01-03", 33.0)])
+    _store("EURUSD=X", [("2026-01-01", 1.25), ("2026-01-02", 1.6), ("2026-01-03", 2.0)])
+    _seed_state(
+        CoinFlipState(
+            date="2026-01-01",
+            portfolio_value=100.0 + 10 * 30.0 * 0.8,
+            cash=100.0,
+            holdings={"U": CoinFlipHolding(10, "2026-01-01", 30.0, "USD", 0.8)},
+        )
+    )
+    result = _advance(date(2026, 1, 2), tickers=["U"], max_positions=1, currency="EUR")
+    assert result.concerns == []
+    books = value_position("U", 10, "EUR", date(2026, 1, 2))
+    assert books.ok and books.value == pytest.approx(187.5)
+    assert _rows()[-1]["portfolio_value"] == pytest.approx(100.0 + books.value)
+    # The repick sizes at the same converted price: floor(287.5 / 18.75) = 15.
+    held = load_coin_flip_state(coin_flip_state_path(_series_path())).holdings["U"]
+    assert held == CoinFlipHolding(15, "2026-01-01", 30.0, "USD", 1 / 1.6)
+
+
+def test_a_schema_2_state_is_refused_with_its_reason(midas_data_root):
+    """Schema 2 stored the rate at the close's date under the same field
+    name; reading it as a valuation-date rate would be silently wrong."""
+    _seed_store()
+    _advance(_START + timedelta(days=3))
+    path = coin_flip_state_path(_series_path())
+    doc = json.loads(path.read_text())
+    doc["schema"] = 2
+    path.write_text(json.dumps(doc))
+    with pytest.raises(ValueError, match="schema 2 .* valuation date"):
+        load_coin_flip_state(path)
+    result = _advance(_START + timedelta(days=6))
+    assert result.appended == 0 and "schema 2" in result.concerns[0]
+    _assert_names_the_reinit_remedy(result.concerns[0])
 
 
 def test_a_candidate_with_no_resolvable_currency_is_never_drawn(midas_data_root):

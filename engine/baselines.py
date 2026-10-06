@@ -25,8 +25,9 @@ de minimis, matching the existing snapshot-benchmark pattern in the site.
 
 That argument holds for one ticker's ratio and **not for the coin flip**,
 which sums several tickers' closes into one book: each close is converted
-into the series currency at its own date before it is summed (``_Closes``,
-``_step``; METHODOLOGY ``#coinflip-currency-2026-10-05``).
+into the series currency before it is summed, at the rate of the row's own
+date, the rule the books are valued by (``engine.valuation.book_rate``;
+``_Closes``, ``_step``; METHODOLOGY ``#coinflip-currency-2026-10-05``).
 """
 
 from __future__ import annotations
@@ -43,6 +44,12 @@ from typing import Collection, Iterator, Mapping, Sequence
 from engine.config import BenchmarkSpec, get_config
 from engine.disclosure import require_changelog_entry
 from engine.selectors.seeding import make_seed
+from engine.valuation import (
+    CURRENCY_UNRESOLVED,
+    NO_FX_RATE,
+    NO_PRICE_DATA,
+    book_rate,
+)
 
 
 def _initial() -> float:
@@ -164,14 +171,23 @@ def compute_passive_benchmark(
 
 #: Version of the persisted coin-flip state document. 2 (2026-10-05) added
 #: each holding's ``currency`` and ``mark_rate``: version 1 recorded native
-#: closes and summed them into the book unconverted.
-COINFLIP_STATE_SCHEMA = 2
+#: closes and summed them into the book unconverted. 3 (2026-10-06) reads
+#: ``mark_rate`` at the state's date, the valuation date, where 2 read it at
+#: the date of the close: the same field with another meaning, so a version
+#: 2 document is refused rather than read (``load_coin_flip_state``).
+COINFLIP_STATE_SCHEMA = 3
 
-#: Why a held name cannot be valued, in the broker's own vocabulary
-#: (``engine.valuation.PositionValuation.reason``).
-NO_PRICE_DATA = "NO_PRICE_DATA"
-CURRENCY_UNRESOLVED = "CURRENCY_UNRESOLVED"
-NO_FX_RATE = "NO_FX_RATE"
+#: What a version 2 state is told (``load_coin_flip_state``).
+_SCHEMA_2_REFUSED = (
+    "schema 2 recorded each holding's rate at its close's own date; this "
+    "engine values at the rate of the valuation date (schema 3), so the state "
+    "must be written again"
+)
+
+# The reasons a held name cannot be valued (``NO_PRICE_DATA``,
+# ``CURRENCY_UNRESOLVED``, ``NO_FX_RATE``) are ``engine.valuation``'s,
+# imported above and re-exported here for the callers that read them from
+# this module.
 
 
 @dataclass(frozen=True)
@@ -182,17 +198,20 @@ class CoinFlipHolding:
     marked, **in its own quote currency** ``currency`` (the ISO code
     ``engine.quotes.ticker_currency`` resolves), and ``mark_date`` the store
     date of the close that mark was read from. ``mark_rate`` is the book
-    currency per unit of ``currency`` on ``mark_date`` (``engine.fx.get_rate``),
-    so ``shares * mark_close * mark_rate`` is the holding's value in the book
-    at its mark — what a holding that cannot be valued is held at.
+    currency per unit of ``currency`` on the date the holding was last valued
+    (the state's date, ``engine.valuation.book_rate``), so ``shares *
+    mark_close * mark_rate`` is the holding's value in the book at its mark —
+    what a holding that cannot be valued is held at.
 
-    The next valuation is ``shares * (mark_close * close(d) /
+    The next valuation, on ``d``, is ``shares * (mark_close * close(d) /
     close(mark_date)) * rate(d)``: the bracket is the native price at ``d``,
     both closes read from the *current* store, so a constant rescale of the
     symbol's history (a unit change, a restated split) cancels; the rate is
-    read at the date of the close used. ``mark_date`` is the close's own date
-    rather than the state date so that a close landing late for the state
-    date is credited to the next row instead of being lost from the path.
+    read on ``d`` itself, the valuation date, however old the close is — the
+    rule ``engine.valuation.value_position`` values the books by.
+    ``mark_date`` is the close's own date rather than the state date so that
+    a close landing late for the state date is credited to the next row
+    instead of being lost from the path.
     """
 
     shares: int
@@ -278,6 +297,8 @@ def load_coin_flip_state(path: Path) -> CoinFlipState:
     """Read a persisted state. Raises ``ValueError`` on any malformed document."""
     try:
         doc = json.loads(path.read_text())
+        if doc.get("schema") == 2:
+            raise ValueError(_SCHEMA_2_REFUSED)
         if doc.get("schema") != COINFLIP_STATE_SCHEMA:
             raise ValueError(f"schema is not {COINFLIP_STATE_SCHEMA}")
         date.fromisoformat(doc["date"])
@@ -310,9 +331,17 @@ class _Closes:
     and each ticker's currency and its rate into the book currency.
 
     Every amount the coin flip sums is in ``book_currency``: a close is in
-    its ticker's quote currency, and is converted at the rate of the close's
-    own date before it is added to anything (CLAUDE.md, "cross-currency
-    positions must be converted before summing, on EVERY pricing path").
+    its ticker's quote currency, and is converted before it is added to
+    anything (CLAUDE.md, "cross-currency positions must be converted before
+    summing, on EVERY pricing path"), at the rate of the **valuation date**,
+    by ``engine.valuation.book_rate`` — the books' own rule and reasons.
+
+    Only the price read is the coin flip's own: a holding is valued by the
+    ratio of two closes of the same store (``CoinFlipHolding``), which
+    ``value_position``'s absolute close cannot express, and every candidate
+    is read on every day, so the closes are read once and searched here.
+    Currency comes from ``engine.quotes.ticker_currency``, as in
+    ``value_position``.
     """
 
     def __init__(self, tickers: Collection[str], book_currency: str) -> None:
@@ -320,7 +349,7 @@ class _Closes:
         self._dates: dict[str, list[str]] = {}
         self._values: dict[str, list[float]] = {}
         self._currencies: dict[str, str | None] = {}
-        self._rates: dict[tuple[str, str], float | None] = {}
+        self._rates: dict[tuple[str, str], tuple[float | None, str | None]] = {}
         for t in tickers:
             closes = _load_ohlcv(t)
             if closes:
@@ -336,27 +365,26 @@ class _Closes:
             self._currencies[ticker] = ticker_currency(ticker)
         return self._currencies[ticker]
 
-    def rate(self, currency: str, iso: str) -> float | None:
-        """Book currency per unit of ``currency`` on ``iso``, or None."""
+    def rate(self, currency: str | None, iso: str) -> tuple[float | None, str | None]:
+        """``engine.valuation.book_rate`` into the book on the valuation date
+        ``iso``, cached: ``(rate, None)`` or ``(None, reason)``."""
         key = (currency, iso)
         if key not in self._rates:
-            from engine.fx import get_rate
-
-            r = get_rate(currency, self.book_currency, date.fromisoformat(iso))
-            self._rates[key] = r if r is not None and r > 0 else None
+            self._rates[key] = book_rate(
+                currency, self.book_currency, date.fromisoformat(iso)
+            )
         return self._rates[key]
 
     def priced(self, ticker: str, iso: str) -> tuple[str, float, str, float] | None:
-        """``(close date, native close, currency, rate)`` at ``iso``, or None
-        when the ticker has no close, no resolvable currency or no rate."""
+        """``(close date, native close, currency, rate)`` valued on ``iso``,
+        or None when the ticker has no close, no resolvable currency or no
+        rate on ``iso``."""
         mark = self.at(ticker, iso)
         if mark is None:
             return None
         ccy = self.currency(ticker)
-        if ccy is None:
-            return None
-        rate = self.rate(ccy, mark[0])
-        if rate is None:
+        rate, _ = self.rate(ccy, iso)
+        if ccy is None or rate is None:
             return None
         return mark[0], mark[1], ccy, rate
 
@@ -405,8 +433,9 @@ def _step(
 
     **Every amount is in the book currency** (``closes.book_currency``): a
     holding is valued ``shares * native price * rate`` and a pick is sized
-    ``floor(target / (native close * rate))``, the rate read at the date of
-    the close used. A candidate whose currency is unresolved or whose rate is
+    ``floor(target / (native close * rate))``, the rate read on ``iso``, the
+    valuation date, whatever the date of the close (``book_rate``, the rule
+    the books are valued by). A candidate whose currency is unresolved or whose rate is
     unavailable is not in the draw; a holding in either condition is carried
     at its recorded mark (``CoinFlipHolding.mark_value``) like one the store
     cannot price, and ``frozen`` records why, in the broker's vocabulary, with
@@ -433,9 +462,7 @@ def _step(
         elif closes.currency(ticker) != h.currency:
             reason = CURRENCY_UNRESOLVED
         else:
-            rate = closes.rate(h.currency, now[0])
-            if rate is None:
-                reason = NO_FX_RATE
+            rate, reason = closes.rate(h.currency, iso)
         if reason is not None:
             frozen.setdefault(ticker, (reason, h))
             carried[ticker] = h
@@ -790,7 +817,7 @@ def advance_coin_flip(
                 f"{h.currency} (now {closes.currency(ticker)})"
             )
         else:
-            why = f"has no {h.currency}->{currency} rate at its latest close"
+            why = f"has no {h.currency}->{currency} rate on a date it was valued"
         concerns.append(
             f"coinflip {agent_id}: {ticker} {reason} — {why}; held at its "
             f"recorded mark of {h.mark_date} ({h.shares} x {h.mark_close:g} "
