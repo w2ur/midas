@@ -1645,9 +1645,11 @@ def step_build_baselines() -> None:
     agent curve it shares a chart with — and advances each coin flip from its
     persisted state over new dates only (engine.baselines.advance_coin_flip).
     A published benchmark point the recomputation disagrees with is kept and
-    classified; only a ``concern`` (a recorded benchmark close the store has
-    since revised) prints as ``[WARN]``, as does a coin flip that cannot be
-    advanced, so only those reach the session's ``Concerns:`` trailer. The expected classes print one ``[INFO] … not a
+    classified; only a concern prints as ``[WARN]`` (a recorded benchmark
+    close the store has since revised, a marks sidecar that cannot classify,
+    a cash-flat point that changed, or a coin flip that refused, stopped or
+    froze a holding; ``engine.baselines.MergeCounts`` counts each cause), so
+    only those reach the session's ``Concerns:`` trailer. The expected classes print one ``[INFO] … not a
     concern`` line each. Runs AFTER portfolio mutations so the benchmark window matches the
     freshly-appended agent snapshots. Uses backfill_baselines constants as
     the single source of truth for universes + max_positions.
