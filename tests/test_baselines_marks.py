@@ -327,7 +327,8 @@ def test_an_unreadable_sidecar_is_a_counted_concern(midas_data_root, tmp_path, c
     _publish(path, _FIRST_STORE, legacy=True)
     path.with_name("benchmark_marks.json").write_text("{not json")
     counts = _remerge(path, [("2026-04-16", 100.0), ("2026-04-17", 111.0)])
-    assert counts == MergeCounts(sidecar=5) and counts.concern == 5
+    assert counts == MergeCounts(sidecar=4, sidecar_file=1) and counts.concern == 5
+    assert counts.mismatched == 4, "the file is a concern, not a mismatched row"
     out = capsys.readouterr().out
     assert "benchmark_marks.json is unreadable" in out
 
@@ -344,7 +345,7 @@ def test_an_unreadable_sidecar_is_a_concern_of_the_build(midas_data_root, capsys
     path.with_name("benchmark_marks.json").write_text("{not json")
     capsys.readouterr()
     totals = _build(universes)
-    assert totals == MergeCounts(sidecar=1)
+    assert totals == MergeCounts(sidecar_file=1)
     out = capsys.readouterr().out
     # Regression: round-3 review, 2026-10-06 — the aggregate line called
     # this a price revision. It names the sidecar and never "revised".
@@ -394,11 +395,16 @@ def test_restate_overwrites_and_classifies_nothing(midas_data_root, tmp_path):
 
 def test_counts_add_up():
     a = MergeCounts(appended=1, stale_mark=2, revised=1, sidecar=2)
-    b = MergeCounts(rescaled=3, unclassified=5, cash_flat=1, coinflip=4)
+    b = MergeCounts(rescaled=3, unclassified=5, cash_flat=1, coinflip=4, sidecar_file=6)
     total = a + b
-    assert total == MergeCounts(1, 2, 3, 1, 5, 2, 1, 4)
-    assert total.concern == 1 + 2 + 1 + 4
-    assert total.mismatched == 2 + 3 + 5 + 8
+    assert total == MergeCounts(1, 2, 3, 1, 5, 2, 1, 4, 6)
+    assert total.concern == 1 + 2 + 1 + 4 + 6
+    # Regression: round-4 review, 2026-10-06. `mismatched` added `concern`,
+    # so a coin-flip concern and an unreadable sidecar file (neither a
+    # published row) counted as disagreeing rows: this pinned 2+3+5+8. It
+    # counts rows only: stale_mark + rescaled + unclassified + revised +
+    # legacy sidecar rows + cash_flat.
+    assert total.mismatched == 2 + 3 + 5 + 1 + 2 + 1
 
 
 # ---------------------------------------------------------------------------

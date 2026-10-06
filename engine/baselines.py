@@ -1169,9 +1169,9 @@ class MergeCounts:
     benchmark concern a price revision, a broken sidecar included:
 
     - ``revised`` — a close a published point was priced from was revised;
-    - ``sidecar`` — a marks sidecar is unreadable (one each), or a legacy
-      point cannot be classified because its sidecar is missing or
-      unreadable (one each);
+    - ``sidecar`` — a legacy point cannot be classified because its marks
+      sidecar is missing or unreadable (one per point);
+    - ``sidecar_file`` — a marks sidecar is unreadable (one per file);
     - ``cash_flat`` — a cash-flat point no longer equals its recomputation
       (``CASH_FLAT_MISMATCH``);
     - ``coinflip`` — a coin flip refused, carried its book through a date
@@ -1187,6 +1187,7 @@ class MergeCounts:
     sidecar: int = 0
     cash_flat: int = 0
     coinflip: int = 0
+    sidecar_file: int = 0
 
     def __add__(self, other: "MergeCounts") -> "MergeCounts":
         return MergeCounts(
@@ -1196,16 +1197,28 @@ class MergeCounts:
     @property
     def concern(self) -> int:
         """Every finding, all causes."""
-        return self.revised + self.sidecar + self.cash_flat + self.coinflip
+        return (
+            self.revised
+            + self.sidecar
+            + self.sidecar_file
+            + self.cash_flat
+            + self.coinflip
+        )
 
     @property
     def mismatched(self) -> int:
-        """Published dates the recomputation disagreed with, all classes."""
+        """Published rows the recomputation disagreed with, all classes.
+
+        Rows only (round-4 review, 2026-10-06): it used to add ``concern``,
+        which counts an unreadable sidecar file and every coin-flip concern,
+        neither of them a published row that disagreed."""
         return (
             self.stale_mark
             + self.rescaled
-            + self.concern
             + self.unclassified
+            + self.revised
+            + self.sidecar
+            + self.cash_flat
         )
 
 
@@ -1468,7 +1481,7 @@ def merge_baseline_series(
     close_dates = sorted(closes) if closes is not None else None
     tally = {f.name: 0 for f in fields(MergeCounts)}
     if sidecar_problem == "unreadable":
-        tally["sidecar"] += 1
+        tally["sidecar_file"] += 1
     for row in computed:
         date_key = row["date"]
         if date_key not in by_date:
@@ -1848,7 +1861,7 @@ def build_all_baselines(
                     "revised (published values kept)",
                 ),
                 (
-                    totals.sidecar,
+                    totals.sidecar_file + totals.sidecar,
                     "marks sidecar problem(s): a sidecar unreadable, or a legacy "
                     "point it cannot classify because its sidecar is missing or "
                     "unreadable (not a price revision)",
