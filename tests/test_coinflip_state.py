@@ -531,8 +531,8 @@ def test_a_name_bought_and_frozen_in_the_same_run_names_its_actual_mark(midas_da
     (`get_rate` answers None), so it freezes on 01-03."""
     _store("U", [(d, 30.0) for d in _days(_START, 3)])
     _store("EURUSD=X", [("2026-01-01", 1.25), ("2026-01-02", 1.25), ("2026-01-03", 0.0)])
-    # A EUR name keeps 01-03 drawable (a date with nothing drawable stops the
-    # run instead), and at 1e9 it is never bought.
+    # A EUR name keeps 01-03 drawable (a date with nothing drawable carries
+    # the book instead), and at 1e9 it is never bought.
     _currencies({"E.PA": "EUR"})
     _store("E.PA", [(d, 1e9) for d in _days(_START, 3)])
     _seed_state(CoinFlipState(date="2026-01-01", portfolio_value=1_000.0, cash=1_000.0, holdings={}))
@@ -704,25 +704,53 @@ def test_a_holding_of_zero_shares_still_loads(midas_data_root):
 
 
 @pytest.mark.parametrize("universe", [["growth-stocks"], [], ["ZZZ.XX"]])
-def test_a_universe_with_nothing_priceable_is_not_advanced(
+def test_a_universe_with_nothing_priceable_carries_the_book(
     midas_data_root, capsys, universe
 ):
-    """Review fix 2: `resolve_agent_universe` returns a universe's bare name
-    when its file is missing. With nothing priceable in it, the old step sold
-    the whole established book to cash, drew nothing and appended the result.
-    Now the agent is not advanced and one concern says why."""
+    """Review fix 2, then regression: round-4 review, 2026-10-06.
+    `resolve_agent_universe` returns a universe's bare name when its file is
+    missing. With nothing priceable in it, the first step sold the whole
+    established book to cash and drew nothing; the fix after it stopped the
+    advance there, and since the universe stays missing every later run
+    stopped at the same date. Now the book is carried untraded and revalued,
+    the advance goes on, and one concern names the agent, the dates and the
+    remedy for the cause."""
     _store("AAA", [(d, 10.0 + i) for i, d in enumerate(_days(_START, 5))])
     _store("ZZZ.XX", [(d, 10.0) for d in _days(_START, 5)])  # no currency
     _seed_state(_held_state("AAA", 100, "2026-01-01", 10.0, cash=50.0))
-    series = _series_path().read_text()
-    state = coin_flip_state_path(_series_path()).read_text()
     result = _advance(date(2026, 1, 4), tickers=universe, max_positions=1)
-    assert result.appended == 0 and len(result.concerns) == 1
-    assert _AGENT in result.concerns[0] and "no priceable candidate" in result.concerns[0]
-    assert "2026-01-02" in result.concerns[0] and "not advanced" in result.concerns[0]
-    assert "[WARN]" in capsys.readouterr().out
-    assert _series_path().read_text() == series
-    assert coin_flip_state_path(_series_path()).read_text() == state
+    assert result.appended == 3 and len(result.concerns) == 1
+    concern = result.concerns[0]
+    assert _AGENT in concern and "2026-01-02..2026-01-04 (3 dates)" in concern
+    assert "not sold to cash" in concern
+    # The remedy follows the cause: the universe-file hint for a universe
+    # with no close at all, the currency map for an unresolvable name.
+    assert ("universe file" in concern) == (universe != ["ZZZ.XX"])
+    assert ("ticker_currencies.json" in concern) == (universe == ["ZZZ.XX"])
+    assert f"  [WARN] {concern}" in capsys.readouterr().out.splitlines()
+    assert [r["portfolio_value"] for r in _rows()[1:]] == pytest.approx(
+        [50.0 + 100 * 11.0, 50.0 + 100 * 12.0, 50.0 + 100 * 13.0]
+    )
+    state = load_coin_flip_state(coin_flip_state_path(_series_path()))
+    assert state.date == "2026-01-04" and state.cash == 50.0
+    assert state.holdings == {"AAA": CoinFlipHolding(100, "2026-01-04", 13.0, "USD", 1.0)}
+
+
+def test_a_universe_whose_only_close_is_not_positive_carries_the_book(midas_data_root):
+    """Regression: round-4 review, 2026-10-06. A close of 0 had a date, so the
+    old pre-pass counted the day drawable; the step then sold the book to
+    cash and skipped the 0 close at sizing, leaving all cash. A close that is
+    not a positive number is no price: the day has no candidate and the
+    book (BBB, which left the universe) is carried."""
+    _store("AAA", [(d, 0.0) for d in _days(_START, 3)])
+    _store("BBB", [(d, 20.0 + i) for i, d in enumerate(_days(_START, 3))])
+    _seed_state(_held_state("BBB", 10, "2026-01-01", 20.0, cash=5.0))
+    result = _advance(date(2026, 1, 3), tickers=["AAA"], max_positions=1)
+    assert result.appended == 2 and len(result.concerns) == 1
+    assert "NO_PRICE_DATA x1" in result.concerns[0]
+    state = load_coin_flip_state(coin_flip_state_path(_series_path()))
+    assert set(state.holdings) == {"BBB"} and state.cash == 5.0
+    assert _rows()[-1]["portfolio_value"] == pytest.approx(5.0 + 10 * 22.0)
 
 
 def _rate_withdrawn_on_day_3() -> None:
@@ -736,41 +764,73 @@ def _rate_withdrawn_on_day_3() -> None:
     )
 
 
-def test_a_later_date_with_nothing_drawable_stops_the_advance_there(midas_data_root, capsys):
-    """Regression: round-3 review, 2026-10-06. The empty-draw guard looked at
-    the first new date only ("priceability only grows with the date"), which
-    FX broke: a rate withdrawn on a later date made that whole day
-    undrawable, and the step sold the book to cash. Now every date is
-    checked; the advance keeps the good days, persists the state there and
-    names the agent, the date and the reason."""
+def _cash_state(on: str, cash: float = 1_000.0) -> CoinFlipState:
+    return CoinFlipState(date=on, portfolio_value=cash, cash=cash, holdings={})
+
+
+def test_an_all_cash_book_keeps_advancing_through_an_undrawable_date(
+    midas_data_root, capsys
+):
+    """Regression: round-4 review, 2026-10-06. The advance stopped before a
+    date with nothing drawable even when the book was all cash, where a step
+    loses nothing. It steps it in cash, says so as an [INFO] line, and buys
+    again the next day."""
     _rate_withdrawn_on_day_3()
+    _seed_state(_cash_state("2026-01-02"))
+    result = _advance(date(2026, 1, 4), tickers=["U", "V"], max_positions=1, currency="EUR")
+    assert result.appended == 2 and result.concerns == []
+    out = capsys.readouterr().out
+    assert "[WARN]" not in out
+    assert any("[INFO]" in l and "2026-01-03" in l and _AGENT in l for l in out.splitlines())
+    rows = _rows()
+    assert [r["date"] for r in rows] == ["2026-01-02", "2026-01-03", "2026-01-04"]
+    assert rows[1]["cash"] == 1_000.0
+    state = load_coin_flip_state(coin_flip_state_path(_series_path()))
+    assert state.date == "2026-01-04" and state.holdings, "it buys again on 01-04"
+
+
+def test_a_book_with_liquid_holdings_is_carried_through_an_fx_gap(midas_data_root, capsys):
+    """Regression: round-3 review, then round-4, 2026-10-06. The empty-draw
+    guard first looked at the first new date only, and a rate withdrawn on a
+    later date made the step sell the book to cash; the fix stopped the
+    advance there for good. Now the book is carried on 01-03 (E.PA, a euro
+    name that left the universe, is not sold), the advance goes on, and the
+    concern names the rate ticker, the date and that the coin flip does not
+    trade on a date that reads that row until it is revised; no universe-file
+    hint, which is the wrong remedy for a rate."""
+    _rate_withdrawn_on_day_3()
+    _currencies({"E.PA": "EUR"})
+    _store("E.PA", [(d, 50.0 + i) for i, d in enumerate(_days(_START, 4))])
     _seed_state(
         CoinFlipState(
-            date="2026-01-01",
-            portfolio_value=100.0 + 10 * 30.0 * 0.8,
+            date="2026-01-02",
+            portfolio_value=100.0 + 10 * 51.0,
             cash=100.0,
-            holdings={"U": CoinFlipHolding(10, "2026-01-01", 30.0, "USD", 0.8)},
+            holdings={"E.PA": CoinFlipHolding(10, "2026-01-02", 51.0, "EUR", 1.0)},
         )
     )
     result = _advance(date(2026, 1, 4), tickers=["U", "V"], max_positions=1, currency="EUR")
-    assert result.appended == 1 and len(result.concerns) == 1
+    assert result.appended == 2 and len(result.concerns) == 1
     concern = result.concerns[0]
-    assert _AGENT in concern and "2026-01-03" in concern and "NO_FX_RATE x2" in concern
-    assert "advanced through 2026-01-02 only" in concern
-    warns = [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l]
-    assert warns == [f"  [WARN] {concern}"]
-    assert [r["date"] for r in _rows()] == ["2026-01-01", "2026-01-02"]
+    assert _AGENT in concern and "on 2026-01-03 (NO_FX_RATE x2)" in concern
+    assert "EURUSD=X" in concern and "until the store's row is revised" in concern
+    assert "universe file" not in concern
+    assert [l for l in capsys.readouterr().out.splitlines() if "[WARN]" in l] == [
+        f"  [WARN] {concern}"
+    ]
+    rows = _rows()
+    assert rows[1]["date"] == "2026-01-03"
+    assert rows[1]["portfolio_value"] == pytest.approx(100.0 + 10 * 52.0)
+    assert rows[1]["cash"] == pytest.approx(100.0), "carried, not sold to cash"
     state = load_coin_flip_state(coin_flip_state_path(_series_path()))
-    assert state.date == "2026-01-02" and state.portfolio_value == _rows()[-1]["portfolio_value"]
-    assert state.holdings, "the book was not sold to cash"
+    assert state.date == "2026-01-04" and "E.PA" not in state.holdings, "sold on 01-04"
 
 
-def test_a_fresh_path_stops_at_a_later_date_with_nothing_drawable(midas_data_root):
+def test_a_fresh_path_advances_through_a_later_date_with_nothing_drawable(midas_data_root):
     _rate_withdrawn_on_day_3()
     result = _advance(date(2026, 1, 4), tickers=["U", "V"], max_positions=1, currency="EUR")
-    assert result.appended == 2 and len(result.concerns) == 1
-    assert "2026-01-03" in result.concerns[0]
-    assert load_coin_flip_state(coin_flip_state_path(_series_path())).date == "2026-01-02"
+    assert result.appended == 4
+    assert load_coin_flip_state(coin_flip_state_path(_series_path())).date == "2026-01-04"
 
 
 def test_an_unpriceable_universe_is_a_concern_of_the_build(midas_data_root, capsys):

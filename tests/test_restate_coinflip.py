@@ -280,3 +280,28 @@ class TestRestartInvariance:
 
 def test_the_current_desk_config_is_the_one_read(desk):
     assert get_config().data_dir == desk.repo.resolve()
+
+
+class TestEmptyDraw:
+    """Regression: round-4 review, 2026-10-06. The replay kept its own copy of
+    the empty-draw test (`_unpriceable`), with rules of its own; it now reads
+    `_step`'s (`_EmptyDraw`), and refuses only the case the session carries."""
+
+    def _inputs(self, universes: list[list[str]]) -> list:
+        return [rc.DayInputs(tuple(u), 1, "w") for u in universes]
+
+    def test_a_held_book_with_nothing_to_draw_is_unknown(self, desk):
+        closes = rc._Closes(["AAA", "GONE"], "USD")
+        with pytest.raises(rc.Unknown, match="could sell"):
+            rc.replay(
+                AGENT, None, 10_000.0, DAYS[:2], self._inputs([["AAA"], ["GONE"]]),
+                closes=closes, excluded=set(), frozen={},
+            )
+
+    def test_an_all_cash_book_with_nothing_to_draw_steps_in_cash(self, desk):
+        closes = rc._Closes(["GONE"], "USD")
+        states = rc.replay(
+            AGENT, None, 10_000.0, DAYS[:2], self._inputs([["GONE"], ["GONE"]]),
+            closes=closes, excluded=set(), frozen={},
+        )
+        assert [s.cash for s in states] == [10_000.0, 10_000.0]

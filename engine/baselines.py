@@ -400,19 +400,6 @@ class _Closes:
             )
         return self._rates[key]
 
-    def priced(self, ticker: str, iso: str) -> tuple[str, float, str, float] | None:
-        """``(close date, native close, currency, rate)`` valued on ``iso``,
-        or None when the ticker has no close, no resolvable currency or no
-        rate on ``iso``."""
-        mark = self.at(ticker, iso)
-        if mark is None:
-            return None
-        ccy = self.currency(ticker)
-        rate, _ = self.rate(ccy, iso)
-        if ccy is None or rate is None:
-            return None
-        return mark[0], mark[1], ccy, rate
-
     def has_any(self) -> bool:
         return bool(self._dates)
 
@@ -427,6 +414,90 @@ class _Closes:
         return dates[i - 1], self._values[ticker][i - 1]
 
 
+#: Why a universe ticker is not in a day's draw, beside the valuation
+#: reasons: the instrument registry marks it (the broker's word for the
+#: refusal), or the book already holds it and carries it untraded.
+INSTRUMENT_SUSPENDED = "INSTRUMENT_SUSPENDED"
+HELD_UNTRADED = "HELD_UNTRADED"
+
+
+@dataclass(frozen=True)
+class _Draw:
+    """One day's candidates, each with its quote, and why every other ticker
+    of the universe is not one (``_draw``)."""
+
+    #: ``{ticker: (close date, native close, currency, rate)}``.
+    quotes: dict[str, tuple[str, float, str, float]]
+    #: ``{reason: count}`` over the universe tickers that are not candidates.
+    why: Counter[str]
+    #: The quote currencies a candidate was refused for, with no rate into
+    #: the book on the day.
+    no_rate: frozenset[str]
+
+
+def _draw(
+    closes: _Closes,
+    universe: Collection[str],
+    excluded: Collection[str],
+    carried: Collection[str],
+    iso: str,
+) -> _Draw:
+    """The day's draw: every ticker of ``universe`` that can be bought on
+    ``iso``, and why each other one cannot.
+
+    **The one priceability test** (round-4 review, 2026-10-06). A separate
+    pre-pass used to decide whether a day was drawable and the step then
+    filtered candidates again, with different rules: the pre-pass ignored
+    the registry and the carried names, and neither refused a close that is
+    not a positive number, so a universe whose only close was 0 passed the
+    pre-pass, sold the book to cash and bought nothing. A candidate has a
+    close on or before ``iso`` that is a positive finite number, a resolvable
+    currency and a rate into the book on ``iso``, is not marked by the
+    registry and is not a holding carried untraded.
+    """
+    quotes: dict[str, tuple[str, float, str, float]] = {}
+    why: Counter[str] = Counter()
+    no_rate: set[str] = set()
+    for t in sorted(set(universe)):
+        if t in excluded:
+            why[INSTRUMENT_SUSPENDED] += 1
+            continue
+        if t in carried:
+            why[HELD_UNTRADED] += 1
+            continue
+        mark = closes.at(t, iso)
+        if mark is None or not math.isfinite(mark[1]) or mark[1] <= 0:
+            why[NO_PRICE_DATA] += 1
+            continue
+        ccy = closes.currency(t)
+        rate, reason = closes.rate(ccy, iso)
+        if ccy is None or rate is None:
+            why[reason or CURRENCY_UNRESOLVED] += 1
+            if reason == NO_FX_RATE and ccy is not None:
+                no_rate.add(ccy)
+            continue
+        quotes[t] = (mark[0], mark[1], ccy, rate)
+    return _Draw(quotes, why, frozenset(no_rate))
+
+
+@dataclass(frozen=True)
+class _EmptyDraw:
+    """A date on which ``_draw`` found no candidate."""
+
+    date: str
+    why: str
+    #: Quote currencies with no rate into the book on ``date``.
+    no_rate: tuple[str, ...]
+    #: The book held names it could have sold: they were carried untraded
+    #: instead of being sold to cash with nothing to buy.
+    held: bool
+
+
+def _counted(why: Mapping[str, int]) -> str:
+    """``"NO_FX_RATE x2, NO_PRICE_DATA x1"``, or ``"no ticker at all"``."""
+    return ", ".join(f"{r} x{n}" for r, n in sorted(why.items())) or "no ticker at all"
+
+
 def _step(
     agent_id: str,
     holdings: Mapping[str, CoinFlipHolding],
@@ -438,6 +509,7 @@ def _step(
     excluded: Collection[str],
     max_positions: int,
     frozen: dict[str, tuple[str, CoinFlipHolding]],
+    empty: list[_EmptyDraw] | None = None,
 ) -> CoinFlipState:
     """One day of the coin flip: value the book at ``iso``, then repick.
 
@@ -460,8 +532,8 @@ def _step(
     holding is valued ``shares * native price * rate`` and a pick is sized
     ``floor(target / (native close * rate))``, the rate read on ``iso``, the
     valuation date, whatever the date of the close (``book_rate``, the rule
-    the books are valued by). A candidate whose currency is unresolved or whose rate is
-    unavailable is not in the draw; a holding in either condition is carried
+    the books are valued by). The candidates are ``_draw``'s; a holding in
+    either condition is carried
     at its recorded mark (``CoinFlipHolding.mark_value``) like one the store
     cannot price, and ``frozen`` records why, in the broker's vocabulary, with
     the holding as it was when it first froze (it may have been bought earlier
@@ -469,8 +541,20 @@ def _step(
     ``NO_PRICE_DATA``, ``CURRENCY_UNRESOLVED`` (including a ticker that now
     resolves to a currency other than the one its mark was recorded in) or
     ``NO_FX_RATE``.
+
+    **An empty draw carries the book; it never sells it to cash** (round-4
+    review, 2026-10-06). With no candidate, a repick would sell every
+    holding and buy nothing. When the book holds names it could sell, they
+    are carried instead, revalued at ``iso`` like a registry-marked holding,
+    and the cash is untouched; with nothing to sell (all cash, or every
+    holding already carried) the step is the ordinary one, since nothing is
+    lost. Either way the date is appended to ``empty`` (``_EmptyDraw``) for
+    the caller to report, and the step returns a state: the advance never
+    stalls on a date that stays undrawable, which a guard that stopped the
+    run there did (it stopped again on every later run).
     """
     carried: dict[str, CoinFlipHolding] = {}
+    sellable: dict[str, CoinFlipHolding] = {}
     carried_value = 0.0
     liquid = cash
     for ticker in sorted(holdings):
@@ -495,29 +579,36 @@ def _step(
             continue
         assert base is not None and now is not None and rate is not None
         price = h.mark_close * now[1] / base[1]
+        revalued = CoinFlipHolding(h.shares, now[0], price, h.currency, rate)
         if ticker in excluded:
-            carried[ticker] = CoinFlipHolding(h.shares, now[0], price, h.currency, rate)
-            carried_value += h.shares * price * rate
+            carried[ticker] = revalued
+            carried_value += revalued.mark_value
         else:
-            liquid += h.shares * price * rate
+            sellable[ticker] = revalued
+            liquid += revalued.mark_value
     total = liquid + carried_value
 
-    candidates = sorted(
-        t
-        for t in set(universe)
-        if t not in excluded and t not in carried and closes.priced(t, iso) is not None
-    )
+    draw = _draw(closes, universe, excluded, carried, iso)
+    if not draw.quotes:
+        if empty is not None:
+            empty.append(
+                _EmptyDraw(iso, _counted(draw.why), tuple(sorted(draw.no_rate)), bool(sellable))
+            )
+        if sellable:
+            return CoinFlipState(
+                date=iso,
+                portfolio_value=total,
+                cash=cash,
+                holdings={**carried, **sellable},
+            )
+    candidates = sorted(draw.quotes)
     k = min(max(max_positions, 0), len(candidates))
     picks = random.Random(make_seed(agent_id, iso)).sample(candidates, k)
     weight = 1.0 / max(max_positions, 1)
     new: dict[str, CoinFlipHolding] = dict(carried)
     spent = 0.0
     for ticker in sorted(picks):
-        quote = closes.priced(ticker, iso)
-        assert quote is not None
-        mark_date, mark_close, ccy, rate = quote
-        if mark_close <= 0:
-            continue
+        mark_date, mark_close, ccy, rate = draw.quotes[ticker]
         shares = math.floor(liquid * weight / (mark_close * rate))
         if shares <= 0:
             continue
@@ -554,35 +645,6 @@ def _row(state: CoinFlipState, currency: str) -> dict:
     }
 
 
-def _unpriceable(closes: _Closes, universe: Collection[str], iso: str) -> str | None:
-    """None when some ticker of ``universe`` can be drawn on ``iso``;
-    otherwise why none can, counted by reason (``"NO_FX_RATE x3, ..."``).
-
-    The instrument registry plays no part: a registry that fails closed
-    carries every holding untraded, which liquidates nothing.
-    """
-    why: Counter[str] = Counter()
-    for t in sorted(universe):
-        if closes.at(t, iso) is None:
-            why[NO_PRICE_DATA] += 1
-            continue
-        rate, reason = closes.rate(closes.currency(t), iso)
-        if rate is None:
-            why[reason or NO_FX_RATE] += 1
-            continue
-        return None
-    return ", ".join(f"{r} x{n}" for r, n in sorted(why.items())) or "no ticker at all"
-
-
-@dataclass(frozen=True)
-class _Stop:
-    """Where a run stopped short of ``to_date``: the first date on which
-    nothing in the universe could be drawn, and why (``_unpriceable``)."""
-
-    date: str
-    why: str
-
-
 def _frozen_concerns(
     agent_id: str,
     frozen: Mapping[str, tuple[str, CoinFlipHolding]],
@@ -615,26 +677,94 @@ def _frozen_concerns(
     return out
 
 
-def _stop_concern(
-    agent_id: str, universe_size: int, stop: _Stop, kept_through: str | None
-) -> str:
-    """The ``[WARN]`` concern for a run the empty-draw guard stopped.
+def _empty_draw_concerns(
+    agent_id: str,
+    universe_size: int,
+    draws: Sequence[_EmptyDraw],
+    currency: str,
+) -> tuple[list[str], list[str]]:
+    """``(concerns, notes)`` for the dates ``_step`` found no candidate on.
 
-    ``kept_through`` is the last date written, or None when the stop fell on
-    the first new date and nothing was.
+    A run of consecutive dates with the same cause is one line. Where the
+    book held names it could sell, the line is a ``[WARN]`` concern naming
+    the agent, the dates and the reason: the book was carried untraded, and
+    its curve is flat in trading for those dates. Where it held nothing to
+    sell, nothing was lost and the line is an ``[INFO]`` note.
+
+    **The remedy depends on the cause** (round-4 review, 2026-10-06). It used
+    to tell every cause to fix the agent's universe file. For a missing rate
+    it names the rate ticker(s) and the first date, and says the coin flip
+    stays untraded on every date that reads that row until the store's row is
+    revised; the universe-file hint is kept for the empty-universe cause
+    only (every ticker without a close, or no ticker at all).
     """
-    outcome = (
-        f"advanced through {kept_through} only, and the state is kept there"
-        if kept_through is not None
-        else "not advanced"
-    )
-    return (
-        f"coinflip {agent_id}: no priceable candidate in its universe of "
-        f"{universe_size} ticker(s) on {stop.date} ({stop.why}; a missing "
-        f"universe file resolves to its bare name); {outcome}, the book is not "
-        f"sold to cash. Fix the agent's universe or the store's rates; the "
-        f"next run resumes from the state."
-    )
+    from engine.fx import rate_tickers
+
+    runs: list[list[_EmptyDraw]] = []
+    for d in draws:
+        prev = runs[-1][-1] if runs else None
+        if (
+            prev is not None
+            and (prev.why, prev.no_rate, prev.held) == (d.why, d.no_rate, d.held)
+            and date.fromisoformat(d.date) - date.fromisoformat(prev.date) == timedelta(days=1)
+        ):
+            runs[-1].append(d)
+        else:
+            runs.append([d])
+    concerns: list[str] = []
+    notes: list[str] = []
+    for run in runs:
+        first, last = run[0], run[-1]
+        when = (
+            f"on {first.date}"
+            if len(run) == 1
+            else f"on {first.date}..{last.date} ({len(run)} dates)"
+        )
+        remedies: list[str] = []
+        for ccy in first.no_rate:
+            tickers = rate_tickers(ccy, currency)
+            if tickers:
+                remedies.append(
+                    f"no {ccy}->{currency} rate on {first.date}: the store's "
+                    f"{' and '.join(tickers)} hold(s) no positive close on or "
+                    f"before that date, and the coin flip does not trade on "
+                    f"any date that reads that row until the store's row is "
+                    f"revised"
+                )
+            else:
+                remedies.append(
+                    f"the store holds no pair that routes {ccy}->{currency} "
+                    f"(engine.fx.STORE_PAIRS)"
+                )
+        nothing_priced = all(
+            part.startswith(NO_PRICE_DATA) for part in first.why.split(", ")
+        ) or first.why == _counted({})
+        if nothing_priced:
+            remedies.append(
+                "no ticker of the universe has a close: a missing universe "
+                "file resolves to its bare name, so fix the agent's universe"
+            )
+        if CURRENCY_UNRESOLVED in first.why:
+            remedies.append(
+                "a name whose currency no layer resolves needs an entry in "
+                "data/ticker_currencies.json"
+            )
+        remedy = "; ".join(remedies)
+        remedy = f"{remedy[:1].upper()}{remedy[1:]}." if remedy else ""
+        if first.held:
+            concerns.append(
+                f"coinflip {agent_id}: no candidate in its universe of "
+                f"{universe_size} ticker(s) {when} ({first.why}); the book was "
+                f"carried untraded and revalued, not sold to cash, and the "
+                f"advance went on. {remedy}".rstrip()
+            )
+        else:
+            notes.append(
+                f"coinflip {agent_id}: no candidate in its universe of "
+                f"{universe_size} ticker(s) {when} ({first.why}), with nothing "
+                f"to sell; stepped in cash. {remedy}".rstrip()
+            )
+    return concerns, notes
 
 
 def _run(
@@ -647,23 +777,18 @@ def _run(
     excluded: Collection[str],
     max_positions: int,
     frozen: dict[str, tuple[str, CoinFlipHolding]],
-) -> tuple[list[CoinFlipState], _Stop | None]:
-    """Every daily state after ``state.date`` through ``to_date``, stopping
-    before the first date with no drawable candidate.
+    empty: list[_EmptyDraw],
+) -> list[CoinFlipState]:
+    """Every daily state after ``state.date`` through ``to_date``.
 
-    **The empty-draw guard runs on every date** (round-3 review,
-    2026-10-06). Stepping such a date would sell the whole book to cash and
-    draw nothing. It used to be checked on the first new date only, on the
-    argument that priceability only grows with the date, which stopped being
-    true with FX: a rate can be zero or withdrawn on a later date. The run
-    returns the states before that date and the ``_Stop``; the caller keeps
-    them and says where and why it stopped.
+    No date stops the run (round-4 review, 2026-10-06): a date with no
+    candidate carries the book (``_step``) and is appended to ``empty``. It
+    used to stop the run before such a date and keep the state there, and
+    since a missing rate or universe does not heal by itself the next run
+    stopped at the same date, and so on: the series fell behind for good.
     """
     out: list[CoinFlipState] = []
     for d in _daterange(date.fromisoformat(state.date) + timedelta(days=1), to_date):
-        why = _unpriceable(closes, universe, d.isoformat())
-        if why is not None:
-            return out, _Stop(d.isoformat(), why)
         state = _step(
             agent_id,
             state.holdings,
@@ -674,9 +799,10 @@ def _run(
             excluded=excluded,
             max_positions=max_positions,
             frozen=frozen,
+            empty=empty,
         )
         out.append(state)
-    return out, None
+    return out
 
 
 def init_coin_flip_state(
@@ -745,11 +871,14 @@ def compute_coin_flip(
     recomputed.
     """
     concerns: list[str] = []
+    notes: list[str] = []
     states = _fresh_path(
-        agent_id, tickers, currency, max_positions, from_date, to_date, concerns
+        agent_id, tickers, currency, max_positions, from_date, to_date, concerns, notes
     )
     for c in concerns:
         print(f"  [WARN] {c}")
+    for n in notes:
+        print(f"  [INFO] {n}")
     return [_row(st, currency) for st in states]
 
 
@@ -761,17 +890,20 @@ def _fresh_path(
     from_date: date,
     to_date: date,
     concerns: list[str],
+    notes: list[str],
 ) -> list[CoinFlipState]:
     """Every daily state from ``from_date`` (initial capital, repicked that
     day) through ``to_date``; ``[]`` when no ticker has any close.
 
-    The first day starts from cash, so it has no book to sell and is not
-    guarded; every later day is (``_run``), and a stop is one concern."""
+    A date with no candidate is a concern when the book held names it could
+    sell, a note otherwise (``_empty_draw_concerns``); the first day starts
+    from cash, so it is at most a note."""
     closes = _Closes(tickers, currency)
     if not closes.has_any() or to_date < from_date:
         return []
     excluded = _excluded(agent_id, tickers, concerns)
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
+    empty: list[_EmptyDraw] = []
     first = _step(
         agent_id,
         {},
@@ -782,8 +914,9 @@ def _fresh_path(
         excluded=excluded,
         max_positions=max_positions,
         frozen=frozen,
+        empty=empty,
     )
-    rest, stop = _run(
+    rest = _run(
         agent_id,
         first,
         to_date,
@@ -792,16 +925,16 @@ def _fresh_path(
         excluded=excluded,
         max_positions=max_positions,
         frozen=frozen,
+        empty=empty,
     )
     states = [first] + rest
     # A holding bought on this path can freeze on it too (review round 3,
     # 2026-10-06): its concern was dropped here and reported only by an
     # advance, so a brand-new agent's first build hid it.
     concerns.extend(_frozen_concerns(agent_id, frozen, closes, currency))
-    if stop is not None:
-        concerns.append(
-            _stop_concern(agent_id, len(set(tickers)), stop, states[-1].date)
-        )
+    warn, info = _empty_draw_concerns(agent_id, len(set(tickers)), empty, currency)
+    concerns.extend(warn)
+    notes.extend(info)
     return states
 
 
@@ -836,17 +969,18 @@ def advance_coin_flip(
       as the seam it is). The session lifts it into a ``Concerns:`` trailer,
       ``build_all_baselines`` counts it, and ``check_session_freshness`` sees
       the series fall behind the snapshots.
-    - **Stop, empty draw** — a new date on which nothing in the universe can
-      be drawn (no close, no resolvable currency, or no rate into
-      ``currency`` on that date; a missing universe file resolves to its bare
-      name): stepping it would sell the book to cash and draw nothing. The
-      advance stops before it: the dates before it are appended and the state
-      is persisted at the last of them (nothing is written when it is the
-      first new date), and one concern names the agent, the date and the
-      reasons (``_run``, checked on every date since 2026-10-06, not only the
-      first). The instrument registry plays no part in this test: a registry
-      that fails closed carries every holding untraded, which liquidates
-      nothing.
+    - **Empty draw, carried** — a new date on which nothing in the universe
+      can be drawn (``_draw``: no positive close, no resolvable currency, no
+      rate into ``currency`` on that date, registry-marked or already carried;
+      a missing universe file resolves to its bare name). Selling the book
+      there would leave it in cash with nothing bought, so the names it could
+      sell are carried untraded and revalued instead, and the advance goes on
+      (``_step``). When the book holds such names, one ``[WARN]`` concern per
+      run of dates names the agent, the dates, the reasons and the remedy for
+      that cause (``_empty_draw_concerns``); with nothing to sell it is an
+      ``[INFO]`` line. Until round 4 (2026-10-06) the advance stopped before
+      such a date, and a rate or a universe that stays missing stopped it
+      there on every later run.
 
     A holding whose file is gone, or whose store no longer holds a close dated
     its mark (truncated, or that row withdrawn), or whose currency no longer
@@ -858,10 +992,13 @@ def advance_coin_flip(
     state_path = coin_flip_state_path(series_path)
     name = f"{series_path.parent.name}/{series_path.name}"
     concerns: list[str] = []
+    notes: list[str] = []
 
     def done(appended: int) -> CoinFlipAdvance:
         for c in concerns:
             print(f"  [WARN] {c}")
+        for n in notes:
+            print(f"  [INFO] {n}")
         return CoinFlipAdvance(appended, concerns)
 
     try:
@@ -882,7 +1019,7 @@ def advance_coin_flip(
             )
             return done(0)
         states = _fresh_path(
-            agent_id, tickers, currency, max_positions, from_date, to_date, concerns
+            agent_id, tickers, currency, max_positions, from_date, to_date, concerns, notes
         )
         if not states:
             if not series_path.exists():
@@ -920,7 +1057,8 @@ def advance_coin_flip(
     closes = _Closes(set(universe) | set(state.holdings), currency)
     excluded = _excluded(agent_id, set(universe) | set(state.holdings), concerns)
     frozen: dict[str, tuple[str, CoinFlipHolding]] = {}
-    states, stop = _run(
+    empty: list[_EmptyDraw] = []
+    states = _run(
         agent_id,
         state,
         to_date,
@@ -929,16 +1067,12 @@ def advance_coin_flip(
         excluded=excluded,
         max_positions=max_positions,
         frozen=frozen,
+        empty=empty,
     )
     concerns.extend(_frozen_concerns(agent_id, frozen, closes, currency))
-    if stop is not None:
-        concerns.append(
-            _stop_concern(
-                agent_id, len(universe), stop, states[-1].date if states else None
-            )
-        )
-    if not states:
-        return done(0)
+    warn, info = _empty_draw_concerns(agent_id, len(universe), empty, currency)
+    concerns.extend(warn)
+    notes.extend(info)
     _write_json(series_path, series + [_row(s, currency) for s in states])
     write_coin_flip_state(state_path, states[-1], agent_id)
     return done(len(states))
@@ -1000,7 +1134,8 @@ class MergeCounts:
       unreadable (one each);
     - ``cash_flat`` — a cash-flat point no longer equals its recomputation
       (``CASH_FLAT_MISMATCH``);
-    - ``coinflip`` — a coin flip refused, stopped or froze a holding
+    - ``coinflip`` — a coin flip refused, carried its book through a date
+      with nothing to draw, or froze a holding
       (``CoinFlipAdvance.concerns``).
     """
 
@@ -1685,7 +1820,8 @@ def build_all_baselines(
                 ),
                 (
                     totals.coinflip,
-                    "coin flip concern(s) (a refusal, a stop, or a holding held "
+                    "coin flip concern(s) (a refusal, a book carried through a date "
+                    "with nothing to draw, or a holding held "
                     "at its mark)",
                 ),
             )

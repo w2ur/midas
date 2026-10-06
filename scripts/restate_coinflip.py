@@ -46,8 +46,8 @@ state together, after every agent has been computed.
 
 Exit codes: 0 done; 2 unknown — a date with no first writer, no period, a tree
 or universe that cannot be resolved, a published series that is not one row
-per calendar day, or a date on which nothing in the universe can be drawn.
-Never a guess.
+per calendar day, or a date on which nothing in the universe can be drawn
+while the book holds names it could sell. Never a guess.
 """
 
 from __future__ import annotations
@@ -76,8 +76,8 @@ from engine.baselines import (  # noqa: E402
     _excluded,
     _frozen_concerns,
     _row,
+    _EmptyDraw,
     _step,
-    _unpriceable,
     _write_json,
     coin_flip_state_path,
     write_coin_flip_state,
@@ -310,17 +310,19 @@ def replay(
 ) -> list[CoinFlipState]:
     """One path over ``dates``. With ``start`` None the first date starts from
     ``initial`` in cash and is repicked at its close (a fresh path's first day);
-    otherwise every date steps from the previous state. A non-first date on
-    which nothing can be drawn is ``Unknown``: stepping it would sell the book
-    to cash."""
+    otherwise every date steps from the previous state.
+
+    A date with no candidate whose book held names it could sell is
+    ``Unknown``: the session carries such a book untraded (``_step``), but a
+    restatement that would publish a carried day is a judgment the owner
+    makes, not one this script makes. A date with no candidate and nothing to
+    sell steps in cash, as the session does: nothing is lost. The test is
+    ``_step``'s own (``_EmptyDraw``), never a second copy of it."""
     states: list[CoinFlipState] = []
     state = start
     for d, inp in zip(dates, inputs):
         universe = list(inp.tickers)
-        if state is not None:
-            why = _unpriceable(closes, universe, d)
-            if why is not None:
-                raise Unknown(f"{agent} {d}: nothing in its universe can be drawn ({why})")
+        empty: list[_EmptyDraw] = []
         state = _step(
             agent,
             state.holdings if state is not None else {},
@@ -331,7 +333,13 @@ def replay(
             excluded=excluded,
             max_positions=inp.max_positions,
             frozen=frozen,
+            empty=empty,
         )
+        if any(e.held for e in empty):
+            raise Unknown(
+                f"{agent} {d}: nothing in its universe can be drawn ({empty[0].why}) "
+                f"and the book holds names it could sell"
+            )
         states.append(state)
     return states
 

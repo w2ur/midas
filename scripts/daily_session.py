@@ -1647,8 +1647,8 @@ def step_build_baselines() -> None:
     A published benchmark point the recomputation disagrees with is kept and
     classified; only a concern prints as ``[WARN]`` (a recorded benchmark
     close the store has since revised, a marks sidecar that cannot classify,
-    a cash-flat point that changed, or a coin flip that refused, stopped or
-    froze a holding; ``engine.baselines.MergeCounts`` counts each cause), so
+    a cash-flat point that changed, or a coin flip that refused, carried its
+    book through a date with nothing to draw, or froze a holding; ``engine.baselines.MergeCounts`` counts each cause), so
     only those reach the session's ``Concerns:`` trailer. The expected classes print one ``[INFO] … not a
     concern`` line each. Runs AFTER portfolio mutations so the benchmark window matches the
     freshly-appended agent snapshots. Uses backfill_baselines constants as

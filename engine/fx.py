@@ -135,6 +135,25 @@ def get_rate(
     return to_pivot * from_pivot
 
 
+def rate_tickers(from_currency: str, to_currency: str) -> tuple[str, ...]:
+    """The stored pair(s) ``get_rate`` reads for this conversion: one ticker
+    for a stored pair, the two legs for one composed through USD, and ``()``
+    when no route exists or the currencies are equal. Reads no file; it names
+    the store row a missing rate is waiting for."""
+    if from_currency == to_currency:
+        return ()
+    direct = _ROUTES.get((from_currency, to_currency))
+    if direct is not None:
+        return (direct[0],)
+    if _PIVOT in (from_currency, to_currency):
+        return ()
+    leg_in = _ROUTES.get((from_currency, _PIVOT))
+    leg_out = _ROUTES.get((_PIVOT, to_currency))
+    if leg_in is None or leg_out is None:
+        return ()
+    return (leg_in[0], leg_out[0])
+
+
 def _stored_rate(ticker: str, inverted: bool, on: date) -> float | None:
     """One stored pair's rate on or before ``on``, or None.
 

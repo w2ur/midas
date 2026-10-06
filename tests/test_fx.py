@@ -341,3 +341,20 @@ class TestToEur:
 
     def test_returns_none_when_rate_unavailable(self, fake_ohlcv):
         assert fx.to_eur(100, "USD", date(2025, 1, 2)) is None
+
+
+class TestRateTickers:
+    """`rate_tickers` names the store row(s) a missing rate is waiting for
+    (round-4 review, 2026-10-06: the coin flip's empty-draw concern names
+    them). It must name exactly the pairs `get_rate` reads."""
+
+    def test_a_stored_pair_in_either_direction(self):
+        assert fx.rate_tickers("USD", "EUR") == ("EURUSD=X",)
+        assert fx.rate_tickers("GBP", "USD") == ("GBPUSD=X",)
+
+    def test_a_pair_composed_through_usd_names_both_legs(self):
+        assert fx.rate_tickers("CHF", "EUR") == ("USDCHF=X", "EURUSD=X")
+
+    def test_no_route_and_no_conversion_name_nothing(self):
+        assert fx.rate_tickers("SEK", "EUR") == ()
+        assert fx.rate_tickers("EUR", "EUR") == ()
