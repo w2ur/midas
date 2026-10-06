@@ -484,3 +484,25 @@ class TestUncachedPath:
         assert fx.get_rate("EUR", "USD", date(2025, 1, 3)) == 1.25
         assert calls == [date(2025, 1, 3)]
 
+
+def test_a_config_reset_inside_a_block_serves_the_new_stores_rates(
+    fake_ohlcv, tmp_path, monkeypatch
+):
+    """Regression: round-5 review, 2026-10-06. `_SERIES_CACHE` was keyed on
+    the ticker alone and survived `reset_config_cache()`, so a block open
+    across a `MIDAS_DATA_DIR` switch kept serving the old store's rates."""
+    import shutil
+
+    from engine.config import _LEGACY_ROOT, get_config, reset_config_cache
+
+    _write_jsonl(fake_ohlcv / "EURUSD=X.jsonl", [{"date": "2025-01-02", "close": 1.25}])
+    other = (tmp_path / "other").resolve()
+    other.mkdir()
+    shutil.copy(_LEGACY_ROOT / "roster.yaml", other / "roster.yaml")
+    with fx.store_cache():
+        assert fx.get_rate("EUR", "USD", date(2025, 1, 3)) == 1.25
+        monkeypatch.setenv("MIDAS_DATA_DIR", str(other))
+        reset_config_cache()
+        _write_jsonl(get_config().ohlcv_dir / "EURUSD=X.jsonl", [{"date": "2025-01-02", "close": 2.0}])
+        assert fx.get_rate("EUR", "USD", date(2025, 1, 3)) == 2.0
+        assert fx._SERIES_CACHE is not None, "the block is still open"
