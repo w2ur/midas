@@ -99,7 +99,9 @@ benchmarks that should not have moved (on fresher *prices*, not units) and they
 had to be restored by hand. **A coin-flip scope is refused**: since 2026-10-05
 each coin flip advances from `data/baselines/<agent>/state/coinflip.json` over
 new dates only, and a recompute over history would splice a new path under the
-published one and give it look-ahead.
+published one and give it look-ahead. The one restatement of that history
+(2026-10-06) went through `scripts/restate_coinflip.py`, gated and point-in-time;
+never loosen the refusal to restate a coin flip.
 
 **One missing-price policy** (`engine.valuation.value_position`). Snapshots used
 to fall back to `avg_cost`, the leaderboard valued at **zero**, and restatement
