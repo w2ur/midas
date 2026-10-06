@@ -649,6 +649,60 @@ def test_an_unreadable_state_is_not_advanced(midas_data_root):
     assert result.appended == 0 and len(result.concerns) == 1
 
 
+_NAN, _INF = float("nan"), float("inf")
+
+
+@pytest.mark.parametrize(
+    ("where", "field", "bad"),
+    [
+        ("holding", "shares", -1),
+        ("holding", "shares", 1.5),
+        ("holding", "shares", True),
+        ("holding", "mark_close", 0),
+        ("holding", "mark_close", -2.0),
+        ("holding", "mark_close", _NAN),
+        ("holding", "mark_close", _INF),
+        ("holding", "mark_rate", 0),
+        ("holding", "mark_rate", -0.9),
+        ("holding", "mark_rate", _NAN),
+        ("holding", "mark_rate", _INF),
+        ("state", "cash", _NAN),
+        ("state", "cash", _INF),
+        ("state", "cash", -_INF),
+        ("state", "portfolio_value", _NAN),
+        ("state", "portfolio_value", _INF),
+    ],
+)
+def test_a_state_with_an_invalid_number_is_refused(midas_data_root, where, field, bad):
+    """Regression: round-3 review, 2026-10-06. The loader coerced with
+    `int()`/`float()` only, so 0, negative, NaN and inf (which `json` reads)
+    loaded, and `int(1.5)` truncated. Each is now a `ValueError`, and the
+    advance refuses with the re-init remedy."""
+    _seed_store()
+    _advance(_START + timedelta(days=3))
+    path = coin_flip_state_path(_series_path())
+    doc = json.loads(path.read_text())
+    assert doc["holdings"], "the fixture must hold something"
+    target = doc if where == "state" else next(iter(doc["holdings"].values()))
+    target[field] = bad
+    path.write_text(json.dumps(doc))
+    with pytest.raises(ValueError, match=field):
+        load_coin_flip_state(path)
+    result = _advance(_START + timedelta(days=6))
+    assert result.appended == 0 and len(result.concerns) == 1
+    _assert_names_the_reinit_remedy(result.concerns[0])
+
+
+def test_a_holding_of_zero_shares_still_loads(midas_data_root):
+    _seed_store()
+    _advance(_START + timedelta(days=3))
+    path = coin_flip_state_path(_series_path())
+    doc = json.loads(path.read_text())
+    next(iter(doc["holdings"].values()))["shares"] = 0
+    path.write_text(json.dumps(doc))
+    load_coin_flip_state(path)
+
+
 @pytest.mark.parametrize("universe", [["growth-stocks"], [], ["ZZZ.XX"]])
 def test_a_universe_with_nothing_priceable_is_not_advanced(
     midas_data_root, capsys, universe

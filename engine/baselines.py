@@ -294,8 +294,29 @@ def write_coin_flip_state(path: Path, state: CoinFlipState, agent_id: str) -> No
     path.write_text(json.dumps(coin_flip_state_doc(state, agent_id), indent=2) + "\n")
 
 
+def _finite(value: object, what: str, *, positive: bool = False) -> float:
+    """``value`` as a float, or ``ValueError`` naming ``what``: a number
+    (not a bool), finite, and > 0 when ``positive``."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{what} is not a number ({value!r})")
+    out = float(value)
+    if not math.isfinite(out):
+        raise ValueError(f"{what} is not finite ({value!r})")
+    if positive and out <= 0:
+        raise ValueError(f"{what} is not > 0 ({value!r})")
+    return out
+
+
 def load_coin_flip_state(path: Path) -> CoinFlipState:
-    """Read a persisted state. Raises ``ValueError`` on any malformed document."""
+    """Read a persisted state. Raises ``ValueError`` on any malformed document.
+
+    **Every number is validated** (round-3 review, 2026-10-06): a holding's
+    ``shares`` is a non-negative integer, its ``mark_close`` and ``mark_rate``
+    finite and > 0, and the state's ``cash`` and ``portfolio_value`` finite.
+    ``json`` reads ``NaN`` and ``Infinity``, and ``int()`` truncates ``1.5``;
+    either would have carried a wrong number into every later row. An invalid
+    state is refused like an unreadable one, and its remedy is the re-init.
+    """
     try:
         doc = json.loads(path.read_text())
         if doc.get("schema") == 2:
@@ -308,17 +329,20 @@ def load_coin_flip_state(path: Path) -> CoinFlipState:
             date.fromisoformat(h["mark_date"])
             if not isinstance(h["currency"], str) or not h["currency"]:
                 raise ValueError(f"{ticker}: holding has no currency")
+            shares = h["shares"]
+            if isinstance(shares, bool) or not isinstance(shares, int) or shares < 0:
+                raise ValueError(f"{ticker}: shares is not a non-negative integer ({shares!r})")
             holdings[ticker] = CoinFlipHolding(
-                int(h["shares"]),
+                shares,
                 h["mark_date"],
-                float(h["mark_close"]),
+                _finite(h["mark_close"], f"{ticker}: mark_close", positive=True),
                 h["currency"],
-                float(h["mark_rate"]),
+                _finite(h["mark_rate"], f"{ticker}: mark_rate", positive=True),
             )
         return CoinFlipState(
             date=doc["date"],
-            portfolio_value=float(doc["portfolio_value"]),
-            cash=float(doc["cash"]),
+            portfolio_value=_finite(doc["portfolio_value"], "portfolio_value"),
+            cash=_finite(doc["cash"], "cash"),
             holdings=holdings,
         )
     except ValueError:
