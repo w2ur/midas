@@ -136,6 +136,9 @@ LIVE_ONLY_TESTS = {
     # history), which core does not ship. test_init_coinflip_state.py is not
     # here: init_coinflip_state.py ships, and its test reads only fixtures.
     "test_audit_coinflip_seams.py",
+    # Drives scripts/restate_coinflip.py, the one-off restatement of this
+    # desk's published coin flips from its own git history; not in CORE_SCRIPTS.
+    "test_restate_coinflip.py",
     # Reads workers/trigger-gate/, the Cloudflare dispatch-gate. That Worker is
     # live-desk quota infrastructure keyed to this repo's own workflow file and
     # allocator channels; core ships neither.

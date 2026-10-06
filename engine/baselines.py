@@ -1460,8 +1460,9 @@ def _series_restated(entries: Collection[_ScopeEntry], agent: str, kind: str) ->
     a path advanced from a persisted state, and recomputing it over history
     with today's universe and store would both splice a new path under the
     published one and give it look-ahead (a universe chosen later deciding
-    earlier picks). The 2026-08-07 coin-flip restatement below is the last
-    one there will be.
+    earlier picks). The one coin-flip restatement after it, 2026-10-06, went
+    through its own gated script (``scripts/restate_coinflip.py``, a
+    point-in-time universe per date), never through this function.
 
     This replaced a plain bool, which could only say "restate everything".
     That is not a hypothetical shortcoming: on 2026-08-07 the coin-flip series
