@@ -234,10 +234,15 @@ def test_both_writers_build_baselines_through_the_same_step():
 
 def test_nothing_else_writes_a_coin_flip_series_or_state():
     """The single-writer claim, held at the source: outside the engine's own
-    advance and the one-off migration, no script or engine module names the
-    coin-flip state path or writes `coinflip.json`."""
+    advance, the one-off migration and the gated one-off restatement
+    (2026-10-06, METHODOLOGY #coinflip-restated-2026-10-06), no script or
+    engine module names the coin-flip state path or writes `coinflip.json`."""
     root = Path(__file__).resolve().parents[1]
-    allowed = {"engine/baselines.py", "scripts/init_coinflip_state.py"}
+    allowed = {
+        "engine/baselines.py",
+        "scripts/init_coinflip_state.py",
+        "scripts/restate_coinflip.py",
+    }
     offenders = []
     for path in [*root.glob("engine/**/*.py"), *root.glob("scripts/*.py")]:
         rel = path.relative_to(root).as_posix()

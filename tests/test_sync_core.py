@@ -421,6 +421,9 @@ def test_cast_tests_reclaimed_into_manifest():
         # Drives the coin-flip seam audit over this repo's history; core does
         # not ship that script.
         "test_audit_coinflip_seams.py",
+        # Drives the one-off coin-flip restatement over this repo's history;
+        # core does not ship that script either.
+        "test_restate_coinflip.py",
         # Drives scripts/prompt_hash.py against docs/triggers/, both live-desk
         # RemoteTrigger infrastructure that core does not carry.
         "test_prompt_hash.py",
