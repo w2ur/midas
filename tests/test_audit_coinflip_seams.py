@@ -191,6 +191,54 @@ def test_main_reports_and_exits_0_on_a_measured_history(desk, capsys, tmp_path):
     assert json.loads(out.read_text())["splices"] == 1
 
 
+def _restate_on_one_path(desk: Desk, subject: str = "[restate] fix(baselines): one path") -> str:
+    """Rewrite the published coin flip as one smooth path and write its
+    state, as the 2026-10-06 restatement did; return the commit."""
+    rows = [dict(r, portfolio_value=10_000.0 + i, positions_value=10_000.0 + i)
+            for i, r in enumerate(desk.rows)]
+    (desk.repo / "data" / "baselines" / AGENT / "coinflip.json").write_text(
+        json.dumps(rows, indent=2) + "\n"
+    )
+    state = desk.repo / "data" / "baselines" / AGENT / "state" / "coinflip.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({"date": rows[-1]["date"]}) + "\n")
+    _git(desk.repo, "add", "-A")
+    _git(desk.repo, "commit", "-q", "-m", subject)
+    return _git(desk.repo, "rev-parse", "HEAD")
+
+
+def test_by_default_it_audits_the_history_before_the_restatement(desk, capsys):
+    """Regression: round-4 review, 2026-10-06. After the restatement rewrote
+    every row on one path, the tree held no measurable boundary and the
+    audit exited 2 ("unknown") on a correct tree, forever. By default it now
+    measures the parent of the first [restate] commit that wrote a coin-flip
+    state: the published history the METHODOLOGY entries quote."""
+    desk.session(4, U1)
+    before = desk.session(5, U2)
+    _restate_on_one_path(desk)
+    assert audit.pre_restatement(desk.repo) == before
+    assert audit.main(["--repo", str(desk.repo), "--agent", AGENT, "--jobs", "1"]) == 0
+    out = capsys.readouterr().out
+    assert "1 splices" in out and before[:9] in out
+    # The control: the restated tree itself cannot be measured, and says so.
+    assert audit.main(
+        ["--repo", str(desk.repo), "--agent", AGENT, "--jobs", "1", "--at", "HEAD"]
+    ) == 2
+
+
+def test_a_restate_commit_that_wrote_no_state_does_not_select(desk):
+    """An earlier [restate] of the coin-flip rows alone (2026-08-07 rewrote
+    them onto normalised units) is not the coin-flip restatement."""
+    desk.session(4, U1)
+    desk.session(5, U2)
+    (desk.repo / "data" / "baselines" / AGENT / "coinflip.json").write_text(
+        json.dumps(desk.rows, indent=1) + "\n"
+    )
+    _git(desk.repo, "commit", "-qam", "[restate] chore: units")
+    head = _git(desk.repo, "rev-parse", "HEAD")
+    assert audit.pre_restatement(desk.repo) == head
+
+
 def test_a_missing_blob_whose_name_holds_a_space_reads_as_absent(desk):
     """Regression: the first live run crashed on `AMBU B.CO`, whose cat-file
     "missing" header splits into more than two fields."""

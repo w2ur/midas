@@ -31,6 +31,16 @@ Method, per agent:
 5. **Seam.** A reproduced boundary where ``|published - one-path| >
    SEAM_ABS_TOL``. The gap is published minus one-path, in percentage points.
 
+**It audits the history before the coin flips were restated, by default**
+(round-4 review, 2026-10-06). The 2026-10-06 ``[restate]`` commit replaced
+every published coin flip with one continuous path, so the tree after it has
+almost no boundary left to measure and the audit would exit 2 forever on a
+correct tree. Without ``--at`` it measures the parent of the oldest
+``[restate]`` commit that wrote a coin-flip state
+(``data/baselines/<agent>/state/coinflip.json``): the published history the
+METHODOLOGY entries quote. A history with no such commit is measured at
+``HEAD``. ``--at <rev>`` measures any other commit (``--tip`` is an alias).
+
 Exit codes: 0 the audit ran (seams are a disclosure, not a failure); 2 unknown
 — no history, no boundary checked, a writer tree whose universe could not be
 resolved, or more than ``MAX_UNREPRODUCED_SHARE`` of boundaries unreproduced.
@@ -500,6 +510,24 @@ def _measure_writer(args: tuple) -> list[Measured]:
         blobs.close()
 
 
+#: The coin-flip states every restatement of the coin flips writes.
+_STATE_PATHSPEC = "data/baselines/*/state/coinflip.json"
+
+
+def pre_restatement(repo: Path, head: str = "HEAD") -> str:
+    """The commit the audit measures by default: the parent of the oldest
+    commit up to ``head`` whose subject declares ``[restate]`` and that wrote
+    a coin-flip state, or ``head`` itself when there is none. A full sha."""
+    log = _git(
+        repo, "log", "--reverse", "--format=%H%x00%s", head, "--", _STATE_PATHSPEC
+    )
+    for line in log.splitlines():
+        sha, _, subject = line.partition("\0")
+        if subject.startswith("[restate]"):
+            return _git(repo, "rev-parse", f"{sha}^").strip()
+    return _git(repo, "rev-parse", head).strip()
+
+
 def audit(
     repo: Path, tip: str, agents: list[str] | None = None, jobs: int = 1
 ) -> dict:
@@ -655,13 +683,21 @@ def render(report: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repo", type=Path, default=_PROJECT_ROOT)
-    parser.add_argument("--tip", default="HEAD")
+    parser.add_argument(
+        "--at",
+        "--tip",
+        dest="at",
+        help="the commit to audit (default: the last commit before the first "
+        "coin-flip [restatement], see the module docstring)",
+    )
     parser.add_argument("--agent", action="append", help="limit to these agents")
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1)
     parser.add_argument("--json", type=Path, help="also write the full report here")
     args = parser.parse_args(argv)
     try:
-        report = audit(args.repo.resolve(), args.tip, args.agent, args.jobs)
+        repo = args.repo.resolve()
+        at = args.at or pre_restatement(repo)
+        report = audit(repo, at, args.agent, args.jobs)
     except Exception as exc:  # noqa: BLE001 — any crash is an unknown, never a 1
         print(f"UNKNOWN: {exc.__class__.__name__}: {exc}", file=sys.stderr)
         return 2
