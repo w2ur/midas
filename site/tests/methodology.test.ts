@@ -37,6 +37,7 @@ describe("methodology document split", () => {
     expect(doc.changelogAnchors).toEqual([
       "controls-ahead-of-books-2026-10-07",
       "missing-session-2026-10-05",
+      "journal-value-2026-10-07",
       "coinflip-restated-2026-10-06",
       "fx-routes-2026-10-06",
       "provisional-bars-restate-2026-10-05",
@@ -87,7 +88,7 @@ describe("methodology document split", () => {
       expect(changelog.html).toContain(`id="${id}"`);
       expect(essay.htmlBefore + essay.htmlAfter).not.toContain(`id="${id}"`);
     }
-    expect(changelog.entryCount).toBe(37);
+    expect(changelog.entryCount).toBe(38);
   });
 
   it("does not print the changelog heading twice on the changelog page", () => {

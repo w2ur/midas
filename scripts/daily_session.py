@@ -1273,15 +1273,24 @@ def step_build_memory_update_prompts(
         day_number = get_day_number()
     print("\n=== Step 7a: Build memory-update prompts ===")
     prompts: dict[str, str] = {}
-    # Traders
+    # Traders. The journal's value line is the book's newest published
+    # snapshot row (#94), read here rather than added to the summary: the
+    # summary is published in the bundle, and a second copy of a row's value
+    # there would go stale under a valuation restatement.
+    portfolios_dir = get_config().portfolios_dir
     for agent_id, result in agent_results.items():
+        summary = dict(portfolio_summaries.get(agent_id, {}))
+        newest = _newest_snapshot_row(portfolios_dir / agent_id / "snapshots.json")
+        if newest is not None and newest.get("portfolio_value") is not None:
+            summary["portfolio_value"] = newest["portfolio_value"]
+            summary["valued_on"] = newest.get("date")
         prompts[agent_id] = build_memory_update_prompt(
             agent_id=agent_id,
             day_number=day_number,
             current_journal=load_journal(agent_id),
             trades_today=result.get("trades", []),
             posts_today=agent_posts.get(agent_id, []),
-            portfolio_summary=portfolio_summaries.get(agent_id, {}),
+            portfolio_summary=summary,
         )
     # A narrator holds no book, so the trader template's three fact slots are
     # all structurally empty for it and its posts are never in `agent_posts`
