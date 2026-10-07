@@ -1636,11 +1636,11 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
 
 
 @idempotent_step(skip_return=None)
-def step_build_baselines() -> None:
+def step_build_baselines(to_date: date | None = None) -> None:
     """Step 9a — Baselines.
 
     Recomputes the passive benchmarks and the global reference for Day 1 →
-    today, append-or-keep per date (engine.baselines.merge_baseline_series) —
+    today (or the caller's ``to_date``), append-or-keep per date (engine.baselines.merge_baseline_series) —
     the same mutability contract as PortfolioManager.add_snapshot on the
     agent curve it shares a chart with — and advances each coin flip from its
     persisted state over new dates only (engine.baselines.advance_coin_flip).
@@ -1653,18 +1653,30 @@ def step_build_baselines() -> None:
     concern`` line each. Runs AFTER portfolio mutations so the benchmark window matches the
     freshly-appended agent snapshots. Uses backfill_baselines constants as
     the single source of truth for universes + max_positions.
+
+    ``to_date`` caps the window at the market date of the snapshot the
+    caller published (#89). The valuation-only refresh passes it: run on a
+    weekday before the US close it used to write today-dated control rows at
+    the previous close, immutable, leaving the evening session's Step 9
+    nothing to append (the aborted 2026-10-05 session). The session calls this
+    with no argument and keeps the wall-clock day ON PURPOSE: on a weekday
+    whose market date did not advance (missed close runs, a US-only holiday)
+    its snapshot rows are refused, and today's control row is then the only
+    change under ``data/baselines/`` that keeps the prompt's Step 9 self-check
+    from aborting the whole session. Capping it too needs that self-check to
+    assert today's rows instead, which is a trigger-prompt change.
     """
     print("\n=== Step 9a: Build baselines ===")
-    from datetime import date as _date
-
     from engine.baselines import build_all_baselines
     from scripts.backfill_baselines import _max_positions_by_agent, _universes_by_agent
 
     cfg = get_config()
+    end = date.today() if to_date is None else min(date.today(), to_date)
+    print(f"  Window: {cfg.day_one} → {end}")
     build_all_baselines(
         universes_by_agent=_universes_by_agent(),
         from_date=cfg.day_one,
-        to_date=_date.today(),
+        to_date=end,
         max_positions_by_agent=_max_positions_by_agent(),
     )
 

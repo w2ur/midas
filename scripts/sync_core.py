@@ -90,6 +90,7 @@ LIVE_ONLY_TESTS = {
     "test_backfill_snapshots.py",
     "test_fetch_sentiment.py",
     "test_refresh_leaderboard.py",
+    "test_baselines_window.py",
     # Drives normalise_store_order.py / verify_store_canonical.py, live-store
     # tooling over the committed OHLCV store that core does not ship.
     "test_normalise_store_order.py",

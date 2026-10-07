@@ -162,7 +162,7 @@ def test_refresh_leaderboard_writes_current_json(midas_data_root, monkeypatch):
     monkeypatch.setattr(
         refresh_leaderboard,
         "_step_build_baselines",
-        lambda: calls.append(("baselines",)),
+        lambda to_date: calls.append(("baselines",)),
     )
     monkeypatch.setattr(
         refresh_leaderboard,
