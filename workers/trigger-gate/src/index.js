@@ -36,6 +36,22 @@ export const CLOSE_RUNS = {
   "20 21 * * MON-FRI": "us",
 };
 
+// The close run a fired cron names, matched on its minute and hour fields only.
+// Still the cron that fired, never the clock. But an exact-string lookup missed
+// on 2026-10-05 and 10-06: neither close run dispatched after the MON-FRI
+// redeploy. Nothing raised, and the event fell through to the gate (#93).
+// Cloudflare may report the day-of-week field in another spelling. Minute and
+// hour cannot be respelled, and no two jobs here share them.
+export function closeRunFor(cron) {
+  if (typeof cron !== "string") return undefined;
+  const key = (c) => c.trim().split(/\s+/).slice(0, 2).join(" ");
+  const want = key(cron);
+  for (const [c, bucket] of Object.entries(CLOSE_RUNS)) {
+    if (key(c) === want) return bucket;
+  }
+  return undefined;
+}
+
 // Both pending channels: the public one and the allocator's. Kept in step with
 // roster.yaml's allocator channels_prefix by tests/test_trigger_gate_parity.py
 // — a channel missing here is a silent under-dispatch, which looks exactly like
@@ -211,7 +227,8 @@ export default {
       // A close-run cron dispatches the fetch and consults no gate: the gate
       // is the hourly job, and the two share this handler only because a
       // Worker has one `scheduled` entry point.
-      const closeRun = CLOSE_RUNS[event && event.cron];
+      const closeRun = closeRunFor(event && event.cron);
+      console.log(`scheduled: cron=${JSON.stringify(event && event.cron)} closeRun=${closeRun || "none"}`);
       if (closeRun) {
         await dispatchCloseRun(env, closeRun);
         await closeFailureIssue(env).catch((e) =>

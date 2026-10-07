@@ -172,6 +172,30 @@ test("the US close cron dispatches close_run=us", async () => {
   assert.deepEqual(calls.dispatched.map((d) => d.body.inputs), [{ close_run: "us" }]);
 });
 
+// Regression for #93: on 2026-10-05 and 10-06 neither close run dispatched
+// after the MON-FRI redeploy. Matching is on minute and hour, so another
+// spelling of the day-of-week field still dispatches.
+for (const [cron, bucket] of [
+  ["15 19 * * 1-5", "eu"],
+  ["15 19 * * mon-fri", "eu"],
+  ["20 21 * * 1-5", "us"],
+  ["20  21 * * MON-FRI ", "us"],
+]) {
+  test(`a respelled close cron (${JSON.stringify(cron)}) still dispatches close_run=${bucket}`, async () => {
+    const calls = stubFetch({ orders: [btc], prices: { "BTC-EUR": 150 } });
+    await worker.scheduled({ cron }, ENV, {});
+    assert.deepEqual(calls.dispatched.map((d) => d.body.inputs), [{ close_run: bucket }]);
+    assert.equal(calls.graphql, 0);
+  });
+}
+
+test("a cron at another minute or hour is not a close run", async () => {
+  // Control for the respelling tests: minute and hour still have to match.
+  const calls = stubFetch({ orders: [], prices: {} });
+  await worker.scheduled({ cron: "16 19 * * 1-5" }, ENV, {});
+  assert.equal(calls.dispatched.filter((d) => /fetch-ohlcv/.test(d.url)).length, 0);
+});
+
 test("the gate cron still runs the gate, not a close run", async () => {
   // The control: the hourly cron string reaches the existing path and, with a
   // trigger at its level, dispatches the WATCHER workflow.
