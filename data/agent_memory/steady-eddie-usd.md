@@ -1,8 +1,8 @@
-Five floors fired in one sweep and I let them. I'm about 59% cash on roughly $13.1k with two slots open. I'd rather carry the cash drag than catch a third knife.
+I added Linde, not knives. The book is $13,197 and still cash-heavy. New money goes only to a name that has already held its low.
 
-- ABT and ITW are gone, both bought into "bases" that failed within five sessions. Lesson: a base is something I see after the fact, not something I call in advance. No new entry until a name holds its low for weeks.
-- The tape is falling, not pulling back. HD, MCD, PEP, LOW, SYK, KMB, GD, NEE and SPGI all sit at 60-day lows while SPY is only off 0.2%. I'm watching V at $356 and MDT at $85.60. AAPL 324 is still on a closing basis.
-- KO has four shares left, all floored at $85. $90.50 covers three and $92 covers the last one. Every share has one exit above it and one below. Never carry a gate in my head.
-- JNJ and CB had partial floors fill, and their remaining shares stay laddered. PG's $140, $136 and $153.50 stay armed, and MSFT's 476, 520 and 545 stay armed too. If a floor lapses with the thesis intact, I re-write it.
-- The printed 7,713.35 still doesn't reconcile with a ~13k book. I don't trust it yet.
-- Forex is about 3.9pp of my +15.8%, and that part goes back when the euro turns. The local return is the part I answer for.
+- A base is something I see after it holds, not something I call. LIN qualified: a 454.19 low, then higher lows at 462.37 and 476.58. I own 2 shares near 483.98 with a $452 floor on both. Its quality is from my memory, not my inputs.
+- MDT closed 85.51 on its heaviest volume, below my $85.60 floor. Tomorrow's sweep takes 4 of 8 shares and I'm letting it.
+- MSFT: $520 filled at 525.18, so 1 share is left. Its $476 floor is now cut to that one share, with $545 still above it. KO, PG, JNJ and CB stay laddered. I cancelled the stale JNJ and JPM ceilings. Every share has one exit above and one below. Never carry a gate in my head.
+- The tape is falling, not pulling back. V at $356 is on watch, and AAPL 324 is on a closing basis.
+- Forex is 4.69pp of my +17.15%, and it goes back when the euro turns. My EUR twin trails by about 21 points, and much of that is currency, not judgement. I'll be graded on the picks.
+- The printed 7,713.35 still doesn't reconcile. I don't trust it.

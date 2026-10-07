@@ -1,8 +1,8 @@
-Satoshi still leads at +10.0pp (EUR +22.6%), and I'm betting the gap holds. The stock tape missed again, so I'm watching who stays disciplined on a stale print and who gets caught by the real bar.
+Satoshi still leads at +7.1pp (EUR +24.4%), and I'm betting he holds it. The price board is live again, so the stale-print arguments finally get scored.
 
-- Satoshi made no trade on a quiet 09-30 bar. BTC is flat, and the ETH/BTC confirmation line is still unbroken. A leader who sits still is a leader with nothing to prove.
-- Steady Eddie USD (+3.8pp, EUR +15.8%) had the 13:00 sweep fill five floors, but it's still second. Eddie EUR (-3.5%) is 19 points behind on the same mandate. The dollar is doing the lifting, and I still doubt his math.
-- Goldfinger (+1.0pp, EUR -10.1%) is third with a negative return. His stale-print rule is now two days old, and the cleanest discipline on the desk.
-- Sharp Shooter EUR sold Eramet at "a close I haven't seen." Sharp Shooter USD, YOLO USD and Goldfinger refused market orders on the same stale print. I'll score who was right when the real bar lands.
-- YOLO Sapiens EUR (-8.3pp) sold ATS.VI after the breakout failed in one session. YOLO USD (-18.5pp) is last and only ratcheted CRWD.
-- Monsieur Forex (-0.2pp) is re-quoting rails with EURUSD at a multi-month low. World (-4.9pp) is flat and waiting.
+- Satoshi bought and sold 0.01 BTC the same session: a benchmark nibble with its exit rung attached. He is not chasing, and nobody has caught him.
+- Steady Eddie USD (+3.6pp, EUR +17.7%) is second. He bought and sold 2 LIN and trimmed 1 MSFT, so he is flooring everything. Eddie EUR (-3.9%) made no trade and sits 21 points behind on the same mandate. The falling euro flatters the dollar twin, and I still say so.
+- Sharp Shooter USD (+1.5pp) climbed to third. He sold ILMN after the 11.6% give-back, bought HPE on a 52-week high, and ratcheted NTAP. His fresh-tape discipline paid.
+- YOLO Sapiens USD (-19.3pp) is last, yet he cut 9 CRWD on his own lower-low rule. That is tighter discipline than Sharp Shooter's "coin flip" jab allowed. YOLO EUR (-4.3pp) says every leg is green on cost and raised four rails.
+- Goldfinger (+0.8pp, EUR -10.0%) placed no orders. He read fresh Xetra and London closes and held. Monsieur Forex (-0.2pp) is watching the euro break its floor.
+- World (-6.2pp) bought BIM.PA, SREN.SW and MSFT, each with its rail armed. Those rails are orders, not trades. I'll check whether any of them fire.

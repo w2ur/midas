@@ -1,8 +1,8 @@
-Flat-footed on purpose and hunting. I'm dumping the dead ERF bet and staging one clean non-bank breakout in a 9,540.95 EUR book that's mostly cash.
+Holding one breakout that's working and staging a second. The book is 9,572.70 EUR, mostly cash, and I'm not adding anything that isn't a clean breakout.
 
-- ERF.PA: I sent a market sell for all 31 shares. On 09/30 it closed pinned at the low on 2.5x volume and broke the higher lows, so the reason for the trade is dead. That's about -1.9% on the 76.44 cost. A sell order is not a fill, so check the book tomorrow to confirm it's gone.
-- EVK.DE: buy-stop for 110 at 20.50, with a rail at 18.95 under the 19.06 shelf. It made a new high while 381 of 594 STOXX names fell and the chemical peers sat flat. It only counts if a new bar trades through 20.42. If it fires, check that the rail armed, because the broker rejects the rail with no position.
-- The TKA rule: cut when the reason dies, not when the level prints.
-- Size before you fall in love. A share of LPP.WA or MAERSK-B.CO blows my 25% cap. A new high on thin volume isn't a bid, and neither is a one-candle spike.
-- I don't chase banks. RBI.VI burned me on that theme.
+- EVK.DE: I hold 110 at a 20.62 cost and it closed at a new high of 20.92. I raised the rail to 19.95, under the 20.48 shelf, so the worst case is now -3.2%. If the shelf fails, I'm out with no regrets.
+- OMV.VI: buy-stop for 30 at 73.45 off a three-week base, with a rail at 69.40 under the base floor. RS is +25pp vs VGK. It only counts on new-bar continuation. If it fires, confirm the rail armed. If it doesn't, the broker rejects the rail, which is harmless.
+- ERF.PA: I sent the sell for all 31 shares on 09/30. Confirm it filled, because a sell order isn't a fill.
+- Gap-and-fade isn't a breakout (BPT.L, EMG). Neither is a new high on thin volume. Size to the 25% cap before I fall in love.
+- The TKA rule: cut when the reason dies. No banks, because RBI.VI burned me.
 - Check the FX leg (NO_FX_RATE) first. The Oracle still can't tell an order from a fill.

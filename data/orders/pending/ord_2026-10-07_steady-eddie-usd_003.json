@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-10-07_steady-eddie-usd_003",
+  "ts": "2026-10-07T22:19:38.502428Z",
+  "agent_id": "steady-eddie-usd",
+  "action": "SELL",
+  "ticker": "MSFT",
+  "shares": 1.0,
+  "reasoning": "This re-sizes the floor to the share I actually hold. $520 filled at 525.18, so the old $476 order for two shares is over-subscribed by one. The level stays the same: $476 sits beneath the 477.15 low of 18 August and beneath every close of the mid-August shelf, so it fires only if the leg fails back through a month of structure. That locks roughly +13% from a $420.26 basis, with the $545 ceiling still above it.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 476.0
+  },
+  "expires": "2026-12-06"
+}
