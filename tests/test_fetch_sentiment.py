@@ -285,8 +285,8 @@ class TestGracefulDegradation:
 
         monkeypatch.setattr(fs, "_fetch_news", _patched_fetch)
 
-        # Should not raise
-        fs.run(run_date="2026-06-13")
+        # Should not raise; one written digest is a healthy run.
+        assert fs.run(run_date="2026-06-13") == 0
 
         # FAIL-ME should have no file
         assert not (news_dir / "FAIL-ME.jsonl").exists()
@@ -313,10 +313,48 @@ class TestGracefulDegradation:
         # Returns empty list (no news)
         monkeypatch.setattr(fs, "_fetch_news", lambda _sym: [])
 
-        fs.run(run_date="2026-06-13")
+        # Regression (#95): every ticker empty is the feed, not a quiet day,
+        # so the run is unknown (2), not green.
+        assert fs.run(run_date="2026-06-13") == 2
 
         # No file should be created for empty news
         assert not (news_dir / "AAPL.jsonl").exists()
+
+    def test_one_quiet_ticker_is_still_a_healthy_run(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Control: the guard keys on nothing written, not on any ticker empty."""
+        import scripts.fetch_sentiment as fs
+
+        get_config().orders_dir.joinpath("pending").mkdir(parents=True, exist_ok=True)
+        _write_portfolio(get_config().portfolios_dir, "agent-a", ["AAPL", "QUIET"])
+        monkeypatch.setattr(
+            fs, "_fetch_news", lambda sym: [] if sym == "QUIET" else _make_news_items(2, sym)
+        )
+        assert fs.run(run_date="2026-06-13") == 0
+
+    def test_every_ticker_failing_is_unknown(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import scripts.fetch_sentiment as fs
+
+        get_config().orders_dir.joinpath("pending").mkdir(parents=True, exist_ok=True)
+        _write_portfolio(get_config().portfolios_dir, "agent-a", ["AAPL"])
+
+        def _boom(_sym: str) -> list[dict]:
+            raise RuntimeError("vendor down")
+
+        monkeypatch.setattr(fs, "_fetch_news", _boom)
+        assert fs.run(run_date="2026-06-13") == 2
+
+    def test_no_active_ticker_is_unknown(
+        self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An empty catalogue is unknown, never "nothing to do"."""
+        import scripts.fetch_sentiment as fs
+
+        monkeypatch.setattr(fs, "_collect_active_tickers", set)
+        assert fs.run(run_date="2026-06-13") == 2
 
 
 # ---------------------------------------------------------------------------
@@ -418,7 +456,7 @@ class TestFullRunIntegration:
 
         monkeypatch.setattr(fs, "_fetch_news", lambda sym: _make_news_items(5, sym))
 
-        fs.run(run_date="2026-06-13")
+        assert fs.run(run_date="2026-06-13") == 0
 
         # All 4 active tickers should have a news file
         for ticker in ["BTC-EUR", "GLD", "SLV", "AAPL"]:
