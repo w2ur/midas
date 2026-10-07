@@ -55,7 +55,9 @@ def run(trigger: str, today: date | None = None) -> dict:
     today = today or date.today()
     payload = _step_fetch_market_data()
     _step_update_snapshots(payload)
-    _step_build_baselines()
+    # Controls end at the market date the snapshots were keyed on, never at
+    # the day the job runs (#89).
+    _step_build_baselines(date.fromisoformat(payload["date"]))
     _step_build_tax_shadow()
 
     summaries = _build_portfolio_summaries()
