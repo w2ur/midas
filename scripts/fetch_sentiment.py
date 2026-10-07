@@ -300,8 +300,17 @@ def _write_digest(
 # ---------------------------------------------------------------------------
 
 
-def run(run_date: str) -> None:
-    """Fetch and commit news digests for all active tickers."""
+def run(run_date: str) -> int:
+    """Fetch and commit news digests for all active tickers.
+
+    Returns the exit code. **A run that writes no digest at all is unknown
+    (2), never success** (#95): from 2026-10-02 the vendor answered every
+    ticker with an empty list rather than an error, and a run that counted
+    each one as "no news" and exited 0 was indistinguishable from a healthy
+    one, so the treatment arm read stale headlines with nothing going red.
+    One quiet ticker is ordinary; every ticker quiet is the feed. An empty
+    ticker list is unknown for the same reason.
+    """
     active = _collect_active_tickers()
     symbols = sorted(active)
 
@@ -331,6 +340,15 @@ def run(run_date: str) -> None:
         f"\nDone. Written: {written}, skipped (no news): {skipped_empty}, "
         f"failures: {failures}."
     )
+    if written == 0:
+        print(
+            f"[ERROR] No digest written for any of {len(symbols)} active "
+            "ticker(s): the news feed returned nothing, which is unknown, not "
+            "a quiet day.",
+            file=sys.stderr,
+        )
+        return 2
+    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -362,8 +380,7 @@ def main() -> int:
             print(f"  {t}")
         return 0
 
-    run(run_date=run_date)
-    return 0
+    return run(run_date=run_date)
 
 
 if __name__ == "__main__":

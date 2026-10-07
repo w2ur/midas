@@ -134,12 +134,16 @@ jobs:
 
             This one is not just a data gap: the sentiment treatment is a
             **pre-registered A/B**, and the treatment agents read whatever is
-            committed. A missing digest silently turns that session's treatment
-            arm into a control arm, with nothing in the published record saying
-            so.
+            committed. A missing digest degrades that session's treatment arm
+            to stale headlines; the session records it as `degraded-to-control`
+            in `data/market/sentiment_arm.jsonl`, and the A/B analysis must drop
+            that session.
 
             **Where to look**
-            - The fetch step's log for a provider error or rate limit.
+            - The fetch step's log: a provider error or rate limit, or
+              `Written: 0` with every ticker skipped as "no news" — the vendor
+              answering every ticker with an empty list, which exits 2 since
+              #95 (seen from 2026-10-02).
             - Whether the session that followed consumed a stale digest.
 
       # A GITHUB_TOKEN push starts no `on: push` run, so session-integrity
