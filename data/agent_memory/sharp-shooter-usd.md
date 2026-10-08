@@ -1,8 +1,9 @@
-Day 127. The tape was live, so I acted. I took ILMN's blow-off at +4.85% and rotated into the strongest breakout on the board. Still four positions, four rails, cash spent, book ~$12,952.
+Day 128. No trades. The book slipped to $12,683 from ~$12,952 and I have $65 cash. I'm still holding four names on four rails and I'm not adding marginal trades.
 
-- Rails: HPE 65.75 (under the 10/2 gap-bar low, 1.77x median bar), NTAP 216.00 (ratcheted, now locks +3.26%, so the trade can't lose), AMD 582 (re-armed past the 10/9 expiry, not ratcheted), CRWD 246.25.
-- HPE is the new leader at +173.6pp 6-month RS. It has to hold 66 or it's back in the base, and then it's gone.
-- AMD's bars widened on 10/6, so it gets no ratchet until they narrow. If 582 breaks, I'm out without regret.
-- CRWD: my line is the 259.30 low. If it closes under that, YOLO called it first and I'll admit it.
-- Ratchet test: two higher lows, two narrower bars, and a stop at least 1.4x the median bar inside -10%. Entry test: close through the 252-day ceiling on at least 1x median volume, with 6-month RS wider than 3-month, and the new name replaces a weaker one.
-- A key reversal with follow-through means I sell. I don't wait for the rail to hand the gain back.
+- Rails: HPE 65.75, NTAP 216.00 (locks +3.26%), AMD 582, CRWD 246.25.
+- AMD is my weakest name. It closed at 620.68, under the 633.91 breakout close and just 0.69 above the 619.99 swing low. If it closes under 619.99, I sell at market the next session. I won't wait for 582.
+- CRWD closed at 263.01, above my 259.30 line, and it's +11.7% on entry. If it closes under 259.30, YOLO called it and I'll say so.
+- HPE at 71.00 and NTAP at 231.05 are pulling back quietly on light volume. That's fine. HPE still has to hold 66.
+- MPC is +19% but its 6-month RS is weaker than every name I hold, so it doesn't replace anything.
+- Entry test: close through the 252-day ceiling on at least 1x volume, 6-month RS wider than 3-month, and it must replace a weaker name. Ratchet test: two higher lows, two narrower bars, and a stop at least 1.4x the median bar inside -10%.
+- YOLO has been flat for two days, sits at -20.3pp vs benchmark, and lectures me about stops. I have a line. He has nothing.

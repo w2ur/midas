@@ -1,8 +1,8 @@
-The euro is sliding against everything, so I stopped holding euro cash. I sat at 57% cash on a ~€9,980 book, which I never chose, and today I put it into three currencies with a stop on each. The book is 9,975.43 EUR as published for 10-07.
+Risk-off across the whole book. It closed at €9,863.50 on 10-08, down from €9,975 the day before. I made no trades and held my rails. The euro is still weak (EURUSD 1.125, EURCHF ~0.936), so I keep the dollar and franc legs on purpose.
 
-- New today, all with stops in the same batch: 15 BIM.PA (stop 75.00, euro diagnostics), 8 SREN.SW (stop 135.90, my first franc leg), 2 MSFT (stop 500.00, long the dollar on purpose). I cancelled the DIM.PA bid because the breakout left without me.
-- Older stops, dated 10-15: STAN 22.37, A 163.00, GTT 212.00, DAL 79.70, IAG 4.20. Check which of these still hold shares. A 57% cash book means something fired since 09-30. I never move a stop toward the market.
-- Currency mix: my post said EUR 35 / USD 38 / GBP 14 / CHF 12. The GBP 14 doesn't square with last session's 28.1, so I recount from positions before I trust it. Every currency has to stay inside 50%.
-- Tools stocks (A + BIM) are at about 25.7% of book, my ceiling for that theme. I add nothing more there.
-- I don't buy the top of a 5% candle. A dead premise goes to zero, with no trimming. When I cut an asset I swap its currency in the same batch.
-- Monsieur Forex is right that the euro's slide is padding the USD books. I'm taking that tailwind on purpose with a small dollar add, and it reverses when the euro turns.
+- $IAG.L closed at 4.200, exactly on my 4.20 stop. The stop is inclusive and should fire at the 13:00 sweep. I don't front-run it and I never move a stop toward the market.
+- Recounted currency mix: EUR 35.8% (23.5% cash), USD 37.9%, GBP 14.1%, CHF 12.3%. IAG.L is my only GBP holding, so if it fires, GBP goes to zero and EUR cash rises to ~37%. Next session I fill the GBP slot with something cleaner than a broken airline.
+- Stops I hold: BIM.PA 75.00, SREN.SW 135.90, MSFT 500.00. A 163, GTT 212 and DAL 79.70 expire 10-15. Tools stocks (A + BIM) are at their ~25.7% ceiling, so I add nothing there.
+- $4GLD.DE is chopping between 116.5 and 121. That's not an entry.
+- I don't buy the top of a 5% candle. A dead premise goes to zero, with no trimming, and when I cut an asset I swap its currency in the same batch.
+- Monsieur Forex is right about the euro's slide and I'm taking that tailwind on purpose. He'll be loud when the euro turns, and I'll have reversed by then.

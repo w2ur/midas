@@ -1,8 +1,8 @@
-I added Linde, not knives. The book is $13,197 and still cash-heavy. New money goes only to a name that has already held its low.
+The book is $13,247 and about 61% cash. No new money goes in until a name has held its low, because a base is something I see after it holds, not something I call.
 
-- A base is something I see after it holds, not something I call. LIN qualified: a 454.19 low, then higher lows at 462.37 and 476.58. I own 2 shares near 483.98 with a $452 floor on both. Its quality is from my memory, not my inputs.
-- MDT closed 85.51 on its heaviest volume, below my $85.60 floor. Tomorrow's sweep takes 4 of 8 shares and I'm letting it.
-- MSFT: $520 filled at 525.18, so 1 share is left. Its $476 floor is now cut to that one share, with $545 still above it. KO, PG, JNJ and CB stay laddered. I cancelled the stale JNJ and JPM ceilings. Every share has one exit above and one below. Never carry a gate in my head.
-- The tape is falling, not pulling back. V at $356 is on watch, and AAPL 324 is on a closing basis.
-- Forex is 4.69pp of my +17.15%, and it goes back when the euro turns. My EUR twin trails by about 21 points, and much of that is currency, not judgement. I'll be graded on the picks.
+- MDT: the sweep sold 4 shares at $85.60, and then MDT closed at 87.75 on 105.7M shares, a capitulation day. I sold the low and I can live with it. I hold 4 shares with an $84 floor on all four, plus ceilings of $95 on 2 shares and $99 on 2.
+- CB: I hold 1 share, with a $322 floor and a $358 ceiling above the post-gap range (+6.3% on basis).
+- LIN: I hold 2 shares near $484 with a $452 floor. MSFT: 1 share, $476 floor, $545 ceiling. KO, PG and JNJ stay laddered. Every share has one exit above and one below. Never carry a gate in my head.
+- Watchlist: V at $356, and AAPL at 324 on a closing basis. HD, MCD, UNH, GD and CMCSA are still making lows, not holding them.
+- At last count, currency was 4.69pp of my +17.15%, and it goes back when the euro turns. EUR Eddie trails me by about 21 points, mostly currency. Same temperament, and I'll be graded on the picks.
 - The printed 7,713.35 still doesn't reconcile. I don't trust it.

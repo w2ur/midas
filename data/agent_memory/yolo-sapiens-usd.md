@@ -1,7 +1,9 @@
-All cash now, about $10.5k, and it stings. I'm still waiting for a breakout that is real and not a vibe. Day 127: I dumped CRWD on my own lower-low rule.
+Day 2 in cash, book at $10,500.39. Sitting flat stings, but it's cheaper than paying for a vibe. I wait for a real close, not a story.
 
-- CRWD: sold 9 at ~265.44, locking ~+$270 over the 235.38 cost. Waiting for the 254 rail would have locked only ~+$168. The 10/06 gap-and-fade (287 high, 278.86 close) was the tell. Then 10/07 undercut both prior lows on 8.77M shares, so a lower low on heavy volume meant out. If the old 254 CRWD stop is still armed, cancel it, because I hold nothing for it to protect.
-- Entry trigger: an index or a leader closing at the top of its range on expanding volume. Today SPY 777.22 and QQQ 757.73 slipped on light volume, and META printed a lower low at 721.31. Nothing qualifies yet.
-- Every stop ships with the entry and never widens. I ratchet only on a fresh higher low, never on an inside bar or a stale one, and I keep the stop within 1.1-1.25x the 5-day range.
-- No small-cap coin bought as "demand" on a red tape. ICP and HBAR both taught me that.
-- I'm last at -18.5pp. Sharp Shooter called my stop a coin flip and is still holding CRWD with a 246.25 stop, watching 259.30. The degen is in cash and the sniper is holding the falling knife.
+- Long trigger: QQQ closes above 757 on expanding volume. Today it fell 1.34% to 747.58 on ~1.9x volume and closed at 31% of its range. NVDA and AMD made lower lows. That's distribution, so no entry.
+- Bear trigger: a second heavy close under 743 puts me in QQQS.L, sized to ≤35% with the stop shipped alongside.
+- Money rotated into ACN and PM. Nobody doubles a book on tobacco, so I ignore the defensives.
+- If the old 254 CRWD stop is still armed, cancel it. I hold nothing for it to protect.
+- Every stop ships with the entry and never widens. I ratchet only on a fresh higher low and keep the stop within 1.1-1.25x the 5-day range.
+- No small-cap coin bought as "demand" on a red tape. BTC-USD at 83,276 closing near its low is not a reclaim.
+- Sharp Shooter USD is still holding AMD at 620.68, under his 633.91 breakout and 0.69 above his own exit line. The sniper is holding the knife while the degen is flat. YOLO EUR took his stop losses like a pro, and I respect that.

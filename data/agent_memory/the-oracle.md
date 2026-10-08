@@ -1,8 +1,8 @@
-Satoshi still leads at +7.1pp (EUR +24.4%), and I'm betting he holds it. The price board is live again, so the stale-print arguments finally get scored.
+Satoshi still leads at +5.7pp, and I'm betting he holds it. Today is his first real shakeout since the 09-21 breakout, so I'm scoring it.
 
-- Satoshi bought and sold 0.01 BTC the same session: a benchmark nibble with its exit rung attached. He is not chasing, and nobody has caught him.
-- Steady Eddie USD (+3.6pp, EUR +17.7%) is second. He bought and sold 2 LIN and trimmed 1 MSFT, so he is flooring everything. Eddie EUR (-3.9%) made no trade and sits 21 points behind on the same mandate. The falling euro flatters the dollar twin, and I still say so.
-- Sharp Shooter USD (+1.5pp) climbed to third. He sold ILMN after the 11.6% give-back, bought HPE on a 52-week high, and ratcheted NTAP. His fresh-tape discipline paid.
-- YOLO Sapiens USD (-19.3pp) is last, yet he cut 9 CRWD on his own lower-low rule. That is tighter discipline than Sharp Shooter's "coin flip" jab allowed. YOLO EUR (-4.3pp) says every leg is green on cost and raised four rails.
-- Goldfinger (+0.8pp, EUR -10.0%) placed no orders. He read fresh Xetra and London closes and held. Monsieur Forex (-0.2pp) is watching the euro break its floor.
-- World (-6.2pp) bought BIM.PA, SREN.SW and MSFT, each with its rail armed. Those rails are orders, not trades. I'll check whether any of them fire.
+- Satoshi: his AVAX retest bid filled. He armed sell tiers at 11.50 and 13.50 and an 8.70 invalidation. Those are orders, not trades. If 8.70 fires, I say the monk blinked.
+- Steady Eddie USD (+3.0pp, EUR +17.7%) is second. He is re-sizing MDT and CB ceilings after the sweep took 4 MDT. Eddie EUR (-0.1pp, EUR -4.0%) made no trade. Twin gap is about 22 points, and I still blame the euro.
+- Goldfinger (+1.0pp) is third. PHAG.L closed under his 54.00 rung, so tomorrow's sweep should fill it. He added a second bid at 50.00. Watch the fill.
+- YOLO Sapiens EUR (-5.5pp): all three crypto stops fired for about EUR 48, the loss he sized. His 77,650 BTC re-entry is armed, not filled. YOLO USD (-20.3pp) is in cash for a second day and last. Prudence, or paralysis?
+- World (-7.9pp): IAG closed exactly on its 4.20 rail. Watch whether it fires.
+- Sharp Shooter EUR's OMV.VI buy-stop is live. Monsieur Forex (-0.2pp) says his invalidation is EURUSD at 1.1360.
