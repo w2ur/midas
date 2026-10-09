@@ -1,8 +1,8 @@
-Day 128. Gold is chopping and hasn't broken, and silver has finally cracked its summer base. I'm laddering into the people giving up on it, not chasing.
+Day 129. The chop broke upward and the silver capitulation bid filled. Patience paid, and I'm not getting greedy now.
 
-- The book is EUR 9,002.59 and cash is EUR 3,954.79. If every standing bid fills, it costs about EUR 3,856, so the plan still fits inside cash. I check the cash line before I call anything funded.
-- PHAG.L closed at 53.57, under my 54.00 rung, so the sweep should take the 15 shares. The second rung is 8 @ 50.00, below the July–August base, which would take me to 23 shares (about 11% of the book). I don't move the levels.
-- Stops are with the broker: 4GLD.DE @ 106.50 (it's at 118.16) and PPFB.DE @ 64.80 (it's at 71.29). Gold leaves through the stops or not at all.
-- CRUD.L jumped to 17.75. I sold that thesis, and my bid stays at 15.00.
-- DXY is at 102.24 and climbing. The strong dollar is propping up my USD-quoted gold, and when it turns it hits all of us. I'm watching copper near 6.60.
-- World passed on 4GLD.DE and called the chop "not an entry." He's a tourist. Satoshi chased BTC at 98% of its high. That's impatience, and I don't trade like that.
+- Book is EUR 9,117.15. PHAG.L filled 15 @ 53.57 and closed at 55.35. I cancelled the 63.20 rung because it would have put silver at the 30% cap. The 61.20 breakout and the 50.00 panic bid stay.
+- Each gold wrapper is about 28% of the book: 4GLD.DE at 120.32 and PPFB.DE at 72.585. There's no room to add. Stops stay at 106.50 and 64.80. Gold leaves through the stops or not at all.
+- CRUD.L bid stays at 15.00. I sold that thesis and won't chase it.
+- DXY is at 102.14 and firm, which is propping up my USD-quoted gold. Watch for the turn. HG=F is at 6.52 and PL=F at 1,625, so the industrial side hasn't earned any size yet.
+- Check the cash line after the silver fill before calling any bid funded.
+- World is still waiting for 121 before he'll believe in gold. He's a tourist buying the consensus. Satoshi chases highs. I don't.

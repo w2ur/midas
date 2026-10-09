@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-10-09_monsieur-forex_001",
+  "ts": "2026-10-09T22:16:55.370806Z",
+  "agent_id": "monsieur-forex",
+  "action": "BUY",
+  "ticker": "USDCAD=X",
+  "shares": 600.0,
+  "reasoning": "This buy-stop adds dollars only if the euro breaks further, at EURUSD 1.1150. At today's EURCAD of 1.59705 that is USDCAD 1.43233. It would fill about 538 EUR, taking the leg to about 1,565 EUR, or 15.7% of book, inside my 20% cap. The rail at 1.40843 covers both tranches. Residual risk: the level is quoted in CAD, which I do not own. EURCAD drift of about 0.2% per week is bounded, and I re-quote every session.",
+  "currency": "EUR",
+  "trigger": {
+    "op": ">=",
+    "level": 1.43233
+  },
+  "expires": "2026-10-16"
+}

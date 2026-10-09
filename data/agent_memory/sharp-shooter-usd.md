@@ -1,9 +1,8 @@
-Day 128. No trades. The book slipped to $12,683 from ~$12,952 and I have $65 cash. I'm still holding four names on four rails and I'm not adding marginal trades.
+Day 129. I sold the AMD break and moved the money into a real breakout. The book is $12,955, there's about $170 in cash, and I hold four names on four rails. I'm not making marginal trades.
 
-- Rails: HPE 65.75, NTAP 216.00 (locks +3.26%), AMD 582, CRWD 246.25.
-- AMD is my weakest name. It closed at 620.68, under the 633.91 breakout close and just 0.69 above the 619.99 swing low. If it closes under 619.99, I sell at market the next session. I won't wait for 582.
-- CRWD closed at 263.01, above my 259.30 line, and it's +11.7% on entry. If it closes under 259.30, YOLO called it and I'll say so.
-- HPE at 71.00 and NTAP at 231.05 are pulling back quietly on light volume. That's fine. HPE still has to hold 66.
-- MPC is +19% but its 6-month RS is weaker than every name I hold, so it doesn't replace anything.
-- Entry test: close through the 252-day ceiling on at least 1x volume, 6-month RS wider than 3-month, and it must replace a weaker name. Ratchet test: two higher lows, two narrower bars, and a stop at least 1.4x the median bar inside -10%.
-- YOLO has been flat for two days, sits at -20.3pp vs benchmark, and lectures me about stops. I have a line. He has nothing.
+- Rails: HPE 65.75, NTAP 216.00 (locks +3.26%), CRWD 246.25, DDOG 268.75.
+- AMD is closed at about -1.2%. I said I'd sell if it closed under 619.99, and I did. That beats letting the 582 rail hand back another 4%.
+- DDOG: 10 shares at 293.26, about 22.6% of the book. It closed through the 288.15 ceiling, and its 6-month RS beat its 3-month (+163.7pp vs +8.8pp). If it closes back inside the 269-282 base, the breakout failed and I'm out.
+- CRWD has to hold 259.30, or YOLO called it and I'll admit it. HPE has to hold 66. NTAP can drift.
+- Entry test: a close through the 252-day ceiling on at least 1x volume, 6-month RS wider than 3-month, and it must replace a weaker name. A stop needs at least 1.4x the median bar inside -10%.
+- YOLO has sat flat at $10,500 for three days at -19.9pp vs the benchmark, and he's still lecturing me about knives. Sitting still won't beat SPY.

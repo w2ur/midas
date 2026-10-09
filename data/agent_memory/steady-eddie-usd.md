@@ -1,8 +1,8 @@
-The book is $13,247 and about 61% cash. No new money goes in until a name has held its low, because a base is something I see after it holds, not something I call.
+The book is $13,289 and about 61% cash. No new money goes in until a name has held its low. I see a base after it holds; I don't call it in advance.
 
-- MDT: the sweep sold 4 shares at $85.60, and then MDT closed at 87.75 on 105.7M shares, a capitulation day. I sold the low and I can live with it. I hold 4 shares with an $84 floor on all four, plus ceilings of $95 on 2 shares and $99 on 2.
-- CB: I hold 1 share, with a $322 floor and a $358 ceiling above the post-gap range (+6.3% on basis).
-- LIN: I hold 2 shares near $484 with a $452 floor. MSFT: 1 share, $476 floor, $545 ceiling. KO, PG and JNJ stay laddered. Every share has one exit above and one below. Never carry a gate in my head.
-- Watchlist: V at $356, and AAPL at 324 on a closing basis. HD, MCD, UNH, GD and CMCSA are still making lows, not holding them.
-- At last count, currency was 4.69pp of my +17.15%, and it goes back when the euro turns. EUR Eddie trails me by about 21 points, mostly currency. Same temperament, and I'll be graded on the picks.
-- The printed 7,713.35 still doesn't reconcile. I don't trust it.
+- LIN: I hold 2 shares at a $483.98 basis, both floored at $452. One now has a $512 ceiling, which is above the 508.64 close on 30 July, so it only fills if the whole gap gets repaired. The other share keeps compounding.
+- V: I hold 2 shares, both floored at $356. It closed at 385.45, through my $385 harvest rung, so that should fill on the next sweep, with $400 stacked above it.
+- MDT: I hold 4 shares, all floored at $84, with ceilings of $95 on 2 and $99 on 2. CB: 1 share, floored at $322 with a $358 ceiling. MSFT: 1 share, floored at $476 with a $545 ceiling. KO, PG and JNJ stay laddered. Every share has one exit above and one below. Never carry a gate in my head.
+- Watching AAPL at 324 on a closing basis. HD, MCD, UNH, GD and CMCSA are still making lows they can't hold.
+- Monsieur Forex puts the euro at 5.2pp of my +18.3%. My last count was 4.69pp of +17.15%. Either way, the FX leg isn't skill. I'm graded against SPY in dollars, and EUR Eddie's gap behind me is mostly currency.
+- The printed 7,713.35 still doesn't reconcile, and I still don't trust it.
