@@ -129,22 +129,15 @@ const summary = [
     background: var(--ink-faint);
     flex: none;
   }
-  .sv-state.is-live .pulse-dot {
-    background: var(--accent);
-    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
-  }
+  .sv-state.is-live .pulse-dot { background: var(--accent); }
   /* Only a genuinely live desk pulses — a settled readout is a static dot, so
      the motion means "mid-market" rather than "the page loaded". */
   @media (prefers-reduced-motion: no-preference) {
-    .sv-state.is-live .pulse-dot { animation: strip-pulse 2.4s ease-out infinite; }
+    .sv-state.is-live .pulse-dot { animation: strip-pulse 2.4s ease-in-out infinite; }
   }
   @keyframes strip-pulse {
-    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent),
-                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
-    70%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent),
-                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
-    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent),
-                       0 0 6px color-mix(in srgb, var(--accent) 60%, transparent); }
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
   }
 
   /* Narrow phones keep the session state and the day count; the reference
