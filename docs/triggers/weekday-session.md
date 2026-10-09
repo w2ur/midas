@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: 73f1f1823a17adf19e661dd7b9c1d624b2a1cae60abe09d05c171ca59dd64da6
+PROMPT_SHA256: 99516988909512fb091f6737c824156dbbf3619fde18d47ab7a184cd2376cdfe
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -255,31 +255,15 @@ python scripts/fetch_market_data.py
 # immutable, so a snapshot written at three-week-old closes is permanent.
 # Do NOT work around it by fetching prices yourself.
 
-# Step 1a — Sentiment A/B arm check (report-only, never fatal)
-    from scripts.daily_session import step_check_sentiment_freshness
-    step_check_sentiment_freshness(today)
-# Records which arm of the pre-registered sentiment A/B this session
-# actually ran, to data/market/sentiment_arm.jsonl (committed). If the
-# collector's digests for today are not on main, the two treatment agents
-# read yesterday's headlines and the arm is confounded — which is what was
-# happening at every session until 2026-08-07. Keep running: a missing news
-# feed is not a reason to lose a session. Mention a `degraded-to-control`
-# result in your final report.
-
 # Step 2 — Trading round (DISPATCH IN PARALLEL — one Task call per agent)
-    from scripts.daily_session import (
-        CONDITIONAL_ORDER_INSTRUCTIONS,
-        render_active_triggers_for_agent,
-    )
+    from scripts.daily_session import render_trading_prompt
 For each agent_id in ROSTER:
     wrapped, model = wrap_persona_prompt(
-        agent_id,
-        TRADING_PROMPT.format(
-            agent_id=agent_id, today=today, yesterday=yesterday,
-            conditional_instructions=CONDITIONAL_ORDER_INSTRUCTIONS,
-            active_triggers=render_active_triggers_for_agent(agent_id),
-        ),
+        agent_id, render_trading_prompt(agent_id, today)
     )
+# The task body lives in scripts/daily_session.py (TRADING_PROMPT) and the
+# helper fills it. Do NOT rebuild it by hand or call str.format on it: its
+# JSON schema is literal braces.
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
 they run in parallel. Collect agent_results = {agent_id: {"commentary":
@@ -289,60 +273,6 @@ particular `research_note` is load-bearing: it is the ONLY input to the
 analysts+Manager pipeline (Step 4a/4b) and the public bundle. Dropping it
 does NOT crash anything — the Manager silently runs on zero signal and
 writes empty HOLD reviews while looking healthy. Keep every key the agent emits.
-
-TRADING_PROMPT (the task body — wrap_persona_prompt prepends the persona):
-"""
-It is session day {today}. You are trading independently — you do NOT
-see what other agents are doing today. React to the market and your own
-prior history.
-
-Read your context from disk:
-- data/portfolios/{agent_id}/portfolio.json    (cash + positions, in your base currency)
-- data/portfolios/{agent_id}/trades.json       (your trade history; tail the last 50 lines)
-- data/agent_memory/{agent_id}.md              (your prior-self journal — your beliefs, lessons, biases)
-- data/market/today.json                       (today's market snapshot + benchmarks)
-- data/blog/{yesterday}.md                     (yesterday's overall session, narrated by The Oracle — read for continuity, optional if missing)
-- data/market/ohlcv/{TICKER}.jsonl             (daily closes, if you want price history beyond today's snapshot)
-
-Prices in the OHLCV store are in each ticker's own ISO currency — the same
-units your portfolio records cost basis in, and the same units the broker
-fills and prices trigger levels in. A London line reads in POUNDS, not pence
-(`LLOY.L` at 1.16, not 116). Size positions and set trigger levels in those
-units directly; do not scale anything.
-
-Stay in your persona, mandate, universe, and base currency. Long-only;
-use bearish ETFs to express short views. Respect your position limits
-and safety rails — the broker will reject violations anyway.
-
-{conditional_instructions}
-
-{active_triggers}
-
-Output JSON only, no other text:
-{
-  "commentary": "your day's reasoning, in your voice (3-8 sentences)",
-  "trades": [
-    {"action": "buy"|"sell", "ticker": "TICKER", "shares": int, "reasoning": "...",
-     "trigger": {"op": ">="|"<=", "level": <number>}, "expires": "YYYY-MM-DD"}
-    // trigger + expires are OPTIONAL; omit for an immediate market order.
-  ],
-  "cancels": [
-    {"target_order_id": "ord_...", "reasoning": "..."}
-    // OPTIONAL; only include if you want to remove a pending conditional from a prior session.
-  ],
-  "research_note": {
-    "thesis": "1-2 sentence actionable view (<=280 chars)",
-    "conviction": 0,            // integer 0-10
-    "tickers": ["TICKER", ...], // instruments the thesis is about
-    "action_bias": "strong_buy"|"buy"|"hold"|"reduce"|"exit",
-    "horizon": "days"|"weeks"|"months",
-    "catalysts": "what would confirm/break the thesis (<=200 chars)",
-    "currency": "EUR"|"USD"     // the instruments' denomination
-  }
-  // research_note carries your VIEW (not sizing) for the Manager desk.
-  // ALWAYS include it. See your persona file for details.
-}
-"""
 
 After all 10 results arrive:
     from scripts.daily_session import step_author_all
@@ -519,9 +449,12 @@ If any are unchanged, that agent's dispatch was skipped — abort.
 
 # Step 9 — Baselines refresh (ALWAYS, no conditional)
     from scripts.daily_session import step_build_baselines
-    step_build_baselines()
-data/baselines/* must be modified by this call. If git diff shows no
-change in data/baselines/, this step was skipped — abort.
+    step_build_baselines(date.fromisoformat(market_payload["date"]))
+Then check that every series is level with its book's newest snapshot:
+    python scripts/check_session_freshness.py
+If it exits non-zero, this step was skipped — abort. Do NOT require a
+change under data/baselines/: on a day whose market date did not advance,
+the rows already exist and correctly nothing is appended (2026-10-05).
 
 # Step 9a — After-tax shadow ledger (ALWAYS, after baselines)
     from scripts.daily_session import step_build_tax_shadow
@@ -575,13 +508,13 @@ prints which path it took — read its output before claiming success.
 # Self-check before reporting success
 git show HEAD --stat must include:
   - data/output/{today}.json
-  - data/baselines/**
+  - data/baselines/** (or, on a day check_session_freshness.py passed
+    with nothing to append, no baselines change at all)
   - data/agent_memory/*.md (all 11 — 10 traders + the-oracle)
   - data/portfolios/*/snapshots.json (all 10)
   - data/posts/{today}.json
   - data/blog/{today}.md
   - data/leaderboard/current.json
-  - data/market/sentiment_arm.jsonl
 Also confirm the leaderboard in data/output/{today}.json was produced
 by step_build_leaderboard, not by hand. Spot-check one EUR agent and
 one USD agent against (portfolio_mtm_eur / 10_000 - 1) * 100 — values
