@@ -67,12 +67,12 @@ const summary = [
     )}
 
     <span class="sv-sep" aria-hidden="true">·</span>
-    <span class="sv-item">Day <span class="sv-num sv-amber">{day}</span></span>
+    <span class="sv-item">Day <span class="sv-num">{day}</span></span>
 
     {msciLabel && (
       <>
         <span class="sv-sep sv-fold" aria-hidden="true">·</span>
-        <span class="sv-item sv-fold">MSCI <span class="sv-num sv-amber">{msciLabel}</span></span>
+        <span class="sv-item sv-fold">MSCI <span class="sv-num">{msciLabel}</span></span>
       </>
     )}
 
@@ -108,7 +108,6 @@ const summary = [
 
   .sv-item { flex: none; }
   .sv-num { color: var(--ink); }
-  .sv-amber { color: var(--accent); }
   .sv-sep { color: var(--rule-strong); flex: none; }
 
   .sv-state {
