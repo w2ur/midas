@@ -120,6 +120,16 @@ class TestSnapshots:
         result = _gate(repo)
         assert result.returncode == 0, result.stdout
 
+    def test_a_session_rewriting_a_refresh_row_fails(self, repo):
+        """#89: same session_date, different writer — not a self-correction."""
+        refresh_row = dict(ROW_A, writer="refresh")
+        _write_snapshots(repo, [refresh_row])
+        _commit(repo, "seed")
+        _write_snapshots(repo, [dict(ROW_A, cash=9_999.0)])
+        _commit(repo, "chore: weekday session (stalled market date)")
+
+        assert _gate(repo).returncode == 1
+
     def test_a_legacy_row_without_session_date_fails_closed(self, repo):
         """Same choice add_snapshot makes: an unknown writer is not the same writer."""
         legacy = {"date": "2026-04-17", "portfolio_value": 10_000.0, "cash": 10_000.0}

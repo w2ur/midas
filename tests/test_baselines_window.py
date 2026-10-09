@@ -56,7 +56,7 @@ def test_monday_refresh_before_us_close_writes_no_monday_controls(
         "_step_fetch_market_data",
         lambda: {"date": "2026-10-04", "benchmarks": {}},
     )
-    monkeypatch.setattr(refresh_leaderboard, "_step_update_snapshots", lambda p: [])
+    monkeypatch.setattr(refresh_leaderboard, "_step_update_snapshots", lambda p, writer=None: [])
     monkeypatch.setattr(refresh_leaderboard, "_step_build_tax_shadow", lambda: None)
     monkeypatch.setattr(refresh_leaderboard, "_build_portfolio_summaries", dict)
     monkeypatch.setattr(

@@ -54,7 +54,9 @@ def _step_build_tax_shadow() -> None:
 def run(trigger: str, today: date | None = None) -> dict:
     today = today or date.today()
     payload = _step_fetch_market_data()
-    _step_update_snapshots(payload)
+    # Its rows say they are the refresh's, so a stalled session sharing their
+    # session date cannot rewrite them (#89).
+    _step_update_snapshots(payload, writer="refresh")
     # Controls end at the market date the snapshots were keyed on, never at
     # the day the job runs (#89).
     _step_build_baselines(date.fromisoformat(payload["date"]))
