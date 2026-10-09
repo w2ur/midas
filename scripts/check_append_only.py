@@ -153,6 +153,8 @@ def _same_session_correction(path: str, old: dict, new: dict) -> bool:
     Mirrors `PortfolioManager.add_snapshot`. A row with no `session_date` is
     legacy and fails closed — the same choice `add_snapshot` makes, and for
     the same reason: an unknown writer cannot be shown to be the same writer.
+    The row's `writer` must match too: a refresh row and a session row can
+    carry the same `session_date` (#89).
 
     Baseline series get no exemption at all. They are derived from the price
     series, so there is no "same writer" — a moved baseline point is a revised
@@ -165,7 +167,11 @@ def _same_session_correction(path: str, old: dict, new: dict) -> bool:
         return False
     old_session = old.get("session_date")
     new_session = new.get("session_date")
-    return bool(old_session) and old_session == new_session
+    return (
+        bool(old_session)
+        and old_session == new_session
+        and old.get("writer") == new.get("writer")
+    )
 
 
 def find_violations(base: str, head: str) -> list[Violation]:

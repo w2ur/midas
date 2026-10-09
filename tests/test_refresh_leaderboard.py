@@ -157,7 +157,7 @@ def test_refresh_leaderboard_writes_current_json(midas_data_root, monkeypatch):
     monkeypatch.setattr(
         refresh_leaderboard,
         "_step_update_snapshots",
-        lambda payload: calls.append(("snapshots", payload["date"])) or ["satoshi"],
+        lambda payload, writer=None: calls.append(("snapshots", payload["date"], writer)) or ["satoshi"],
     )
     monkeypatch.setattr(
         refresh_leaderboard,
@@ -192,7 +192,7 @@ def test_refresh_leaderboard_writes_current_json(midas_data_root, monkeypatch):
         trigger="scheduled-weekend-refresh", today=date(2026, 5, 23)
     )
 
-    assert ("snapshots", "2026-05-23") in calls
+    assert ("snapshots", "2026-05-23", "refresh") in calls
     assert ("baselines",) in calls
     leaderboard_path = get_config().leaderboard_dir / "current.json"
     payload = json.loads(leaderboard_path.read_text())

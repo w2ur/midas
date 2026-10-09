@@ -367,6 +367,32 @@ class TestSnapshots:
         assert snapshots[0]["date"] == "2024-06-01"
         assert snapshots[0]["session_date"] == "2024-06-03"
 
+    def test_session_refuses_a_refresh_row_with_the_same_session_date(
+        self, initialized_manager: PortfolioManager
+    ) -> None:
+        """Regression (#89): a Monday refresh writes its Sunday row stamped with
+        Monday's session date; a Monday session whose market date stayed at
+        Sunday carries the same date and used to rewrite that published row."""
+        kwargs = dict(
+            snapshot_date=date(2026, 10, 11),
+            cash=3_000.0,
+            positions_value=7_500.0,
+            benchmarks={},
+            session_date=date(2026, 10, 12),
+        )
+        assert initialized_manager.add_snapshot(
+            "test-strategy", portfolio_value=10_500.0, writer="refresh", **kwargs
+        )
+        assert initialized_manager.add_snapshot(
+            "test-strategy", portfolio_value=10_400.0, writer="refresh", **kwargs
+        ), "the refresh may still correct its own row"
+        assert not initialized_manager.add_snapshot(
+            "test-strategy", portfolio_value=99_999.0, **kwargs
+        )
+        (row,) = initialized_manager.load_snapshots("test-strategy")
+        assert row["portfolio_value"] == pytest.approx(10_400.0)
+        assert row["writer"] == "refresh"
+
     def test_later_session_refuses_to_rewrite_earlier_row(
         self, initialized_manager: PortfolioManager
     ) -> None:

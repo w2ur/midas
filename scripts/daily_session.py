@@ -1631,7 +1631,7 @@ def _mark_positions(
 
 
 @idempotent_step(skip_return=[])
-def step_update_snapshots(market_payload: dict) -> list[str]:
+def step_update_snapshots(market_payload: dict, writer: str | None = None) -> list[str]:
     """Step 4 — Append daily snapshots for all active portfolios.
 
     A portfolio is "active" if it has a portfolio.json on disk.
@@ -1652,6 +1652,10 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
     market_payload:
         The dict returned by fetch_market_data, containing "date" and
         "benchmarks".
+    writer:
+        ``None`` for the session; the valuation-only refresh passes
+        ``"refresh"`` so its rows cannot be rewritten by a session that
+        shares their session date (``PortfolioManager.add_snapshot``, #89).
 
     Returns
     -------
@@ -1723,13 +1727,14 @@ def step_update_snapshots(market_payload: dict) -> list[str]:
             benchmarks=benchmarks,
             session_date=session_date,
             stale_marks=stale,
+            writer=writer,
         )
 
         if not written:
             refused.append(strategy_id)
             print(
                 f"  [WARN] {strategy_id}: {snapshot_date} already snapshotted by an "
-                f"earlier session — not overwriting. This valuation lands on the "
+                f"earlier session or another writer — not overwriting. This valuation lands on the "
                 f"next market date."
             )
             continue
