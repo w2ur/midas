@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: 73f1f1823a17adf19e661dd7b9c1d624b2a1cae60abe09d05c171ca59dd64da6
+PROMPT_SHA256: b2de3bd47d37c9c650a0042d6c960f0c8cb96b0793ee4a28f4b203fcf6ef99e3
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -267,19 +267,14 @@ python scripts/fetch_market_data.py
 # result in your final report.
 
 # Step 2 — Trading round (DISPATCH IN PARALLEL — one Task call per agent)
-    from scripts.daily_session import (
-        CONDITIONAL_ORDER_INSTRUCTIONS,
-        render_active_triggers_for_agent,
-    )
+    from scripts.daily_session import render_trading_prompt
 For each agent_id in ROSTER:
     wrapped, model = wrap_persona_prompt(
-        agent_id,
-        TRADING_PROMPT.format(
-            agent_id=agent_id, today=today, yesterday=yesterday,
-            conditional_instructions=CONDITIONAL_ORDER_INSTRUCTIONS,
-            active_triggers=render_active_triggers_for_agent(agent_id),
-        ),
+        agent_id, render_trading_prompt(agent_id, today)
     )
+# The task body lives in scripts/daily_session.py (TRADING_PROMPT) and the
+# helper fills it. Do NOT rebuild it by hand or call str.format on it: its
+# JSON schema is literal braces.
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
 they run in parallel. Collect agent_results = {agent_id: {"commentary":
@@ -289,60 +284,6 @@ particular `research_note` is load-bearing: it is the ONLY input to the
 analysts+Manager pipeline (Step 4a/4b) and the public bundle. Dropping it
 does NOT crash anything — the Manager silently runs on zero signal and
 writes empty HOLD reviews while looking healthy. Keep every key the agent emits.
-
-TRADING_PROMPT (the task body — wrap_persona_prompt prepends the persona):
-"""
-It is session day {today}. You are trading independently — you do NOT
-see what other agents are doing today. React to the market and your own
-prior history.
-
-Read your context from disk:
-- data/portfolios/{agent_id}/portfolio.json    (cash + positions, in your base currency)
-- data/portfolios/{agent_id}/trades.json       (your trade history; tail the last 50 lines)
-- data/agent_memory/{agent_id}.md              (your prior-self journal — your beliefs, lessons, biases)
-- data/market/today.json                       (today's market snapshot + benchmarks)
-- data/blog/{yesterday}.md                     (yesterday's overall session, narrated by The Oracle — read for continuity, optional if missing)
-- data/market/ohlcv/{TICKER}.jsonl             (daily closes, if you want price history beyond today's snapshot)
-
-Prices in the OHLCV store are in each ticker's own ISO currency — the same
-units your portfolio records cost basis in, and the same units the broker
-fills and prices trigger levels in. A London line reads in POUNDS, not pence
-(`LLOY.L` at 1.16, not 116). Size positions and set trigger levels in those
-units directly; do not scale anything.
-
-Stay in your persona, mandate, universe, and base currency. Long-only;
-use bearish ETFs to express short views. Respect your position limits
-and safety rails — the broker will reject violations anyway.
-
-{conditional_instructions}
-
-{active_triggers}
-
-Output JSON only, no other text:
-{
-  "commentary": "your day's reasoning, in your voice (3-8 sentences)",
-  "trades": [
-    {"action": "buy"|"sell", "ticker": "TICKER", "shares": int, "reasoning": "...",
-     "trigger": {"op": ">="|"<=", "level": <number>}, "expires": "YYYY-MM-DD"}
-    // trigger + expires are OPTIONAL; omit for an immediate market order.
-  ],
-  "cancels": [
-    {"target_order_id": "ord_...", "reasoning": "..."}
-    // OPTIONAL; only include if you want to remove a pending conditional from a prior session.
-  ],
-  "research_note": {
-    "thesis": "1-2 sentence actionable view (<=280 chars)",
-    "conviction": 0,            // integer 0-10
-    "tickers": ["TICKER", ...], // instruments the thesis is about
-    "action_bias": "strong_buy"|"buy"|"hold"|"reduce"|"exit",
-    "horizon": "days"|"weeks"|"months",
-    "catalysts": "what would confirm/break the thesis (<=200 chars)",
-    "currency": "EUR"|"USD"     // the instruments' denomination
-  }
-  // research_note carries your VIEW (not sizing) for the Manager desk.
-  // ALWAYS include it. See your persona file for details.
-}
-"""
 
 After all 10 results arrive:
     from scripts.daily_session import step_author_all
@@ -519,9 +460,12 @@ If any are unchanged, that agent's dispatch was skipped — abort.
 
 # Step 9 — Baselines refresh (ALWAYS, no conditional)
     from scripts.daily_session import step_build_baselines
-    step_build_baselines()
-data/baselines/* must be modified by this call. If git diff shows no
-change in data/baselines/, this step was skipped — abort.
+    step_build_baselines(date.fromisoformat(market_payload["date"]))
+Then check that every series is level with its book's newest snapshot:
+    python scripts/check_session_freshness.py
+If it exits non-zero, this step was skipped — abort. Do NOT require a
+change under data/baselines/: on a day whose market date did not advance,
+the rows already exist and correctly nothing is appended (2026-10-05).
 
 # Step 9a — After-tax shadow ledger (ALWAYS, after baselines)
     from scripts.daily_session import step_build_tax_shadow
@@ -575,7 +519,8 @@ prints which path it took — read its output before claiming success.
 # Self-check before reporting success
 git show HEAD --stat must include:
   - data/output/{today}.json
-  - data/baselines/**
+  - data/baselines/** (or, on a day check_session_freshness.py passed
+    with nothing to append, no baselines change at all)
   - data/agent_memory/*.md (all 11 — 10 traders + the-oracle)
   - data/portfolios/*/snapshots.json (all 10)
   - data/posts/{today}.json
@@ -623,7 +568,7 @@ explicitly forbids them:
 - "Now I'll rewrite the journals in each agent's voice" inline → MUST dispatch each journal-rewrite to its agent
 - "Now I'll write Oracle's blog + posts as the Oracle persona" → MUST dispatch with wrap_persona_prompt("the-oracle", ...)
 - "subagent_type='satoshi' returned 'Agent type not found' so I'll write the trades myself" → MUST switch to subagent_type="general-purpose" with wrap_persona_prompt; never inline
-- "Baselines already current — last snapshot dated …" → MUST call `step_build_baselines()`
+- "Baselines already current — last snapshot dated …" → MUST run Step 9 as written (`step_build_baselines(market date)`, then `check_session_freshness.py`)
 - "Building the leaderboard from snapshots.json in-place — I'll just diff first/last portfolio_value" → MUST call `step_build_leaderboard(portfolio_summaries, on=today)`. The first persisted snapshot is NOT inception for agents seeded with non-cash positions (Monsieur Forex, World). The helper anchors to €10k inception via `portfolio_mtm_eur`, matching `daily_log.py` and `baselines.py`. Hand-rolling here understated Monsieur Forex / World returns on 2026-05-15.
 - "Network blocked. Let me update today.json with today's BTC close" → MUST call `python scripts/fetch_market_data.py` (already store-only)
 - "Now I'll `git push` the session commit" → MUST call `step_git_commit_push(dry_run=False)`. A bare `git push` publishes the sandbox's throwaway branch (`claude/<slug>`) instead of advancing main — Apr 30 incident. The helper does the right thing: `HEAD:main` first, fallback to `HEAD` (sandbox branch) if the harness 403s the main push (2026-05-08 incident); the auto-merge-session workflow takes the fallback the rest of the way. Don't second-guess the helper.
