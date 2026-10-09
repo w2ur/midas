@@ -151,8 +151,8 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   {recentTrades.length > 0 && (
     <section class="page recently-traded">
       <header class="sec-head">
-        <p class="kicker">Reconciled fills · every one of them refusable by the broker</p>
         <h2>The tape</h2>
+        <p class="sec-note">Reconciled fills, every one of them refusable by the broker.</p>
       </header>
       <ul class="tape">
         {recentTrades.map((o) => (
@@ -188,8 +188,8 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
       <div class="mc-head">
         <AgentCrest id={MANAGER.id} size={30} />
         <div>
-          <p class="kicker">Unranked by design</p>
           <h3>{MANAGER.display_name}</h3>
+          <p class="sec-note">Unranked by design.</p>
         </div>
       </div>
       <p class="mc-pitch">
@@ -223,24 +223,13 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     justify-content: space-between;
     gap: var(--sp-2) var(--sp-4);
   }
-  .kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-family: var(--font-mono);
-    font-size: var(--fs-xs);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+  /* The line that qualifies a section sits under its heading, in sentence
+     case — not as a tracked-out capital kicker above it. */
+  .sec-note {
+    margin: var(--sp-1) 0 0;
+    font-size: var(--fs-sm);
+    line-height: 1.45;
     color: var(--ink-muted);
-    margin: 0;
-  }
-  .kicker::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: 1.5px;
-    background: var(--accent);
-    flex: none;
   }
   .cta {
     display: inline-block;
@@ -296,9 +285,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     margin: 0;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    font-size: var(--fs-xs);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: var(--fs-sm);
     color: var(--ink-muted);
   }
   .board-fact b { color: var(--ink); font-weight: 500; }
