@@ -71,7 +71,7 @@ const summary = [
 
     {msciLabel && (
       <>
-        <span class="sv-sep" aria-hidden="true">·</span>
+        <span class="sv-sep sv-fold" aria-hidden="true">·</span>
         <span class="sv-item sv-fold">MSCI <span class="sv-num sv-amber">{msciLabel}</span></span>
       </>
     )}
@@ -148,7 +148,9 @@ const summary = [
   }
 
   /* Narrow phones keep the session state and the day count; the reference
-     figure and the roster size fold away rather than truncating mid-word. */
+     figure and the roster size fold away rather than truncating mid-word.
+     Each separator carries .sv-fold with the item it introduces, so the
+     strip never ends on a dangling "·". */
   @media (max-width: 26rem) {
     .sv-fold { display: none; }
   }
