@@ -1746,8 +1746,9 @@ def step_update_snapshots(market_payload: dict, writer: str | None = None) -> li
 
     if refused:
         print(
-            f"  [WARN] {len(refused)} portfolio(s) refused: the OHLCV store has not "
-            f"advanced past {snapshot_date} since it was last snapshotted."
+            f"  [WARN] {len(refused)} portfolio(s) refused: {snapshot_date} was already "
+            f"snapshotted by an earlier session or another writer (usually the OHLCV "
+            f"store has not advanced past it)."
         )
     if fx_gaps:
         print(

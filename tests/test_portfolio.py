@@ -393,6 +393,27 @@ class TestSnapshots:
         assert row["portfolio_value"] == pytest.approx(10_400.0)
         assert row["writer"] == "refresh"
 
+    def test_a_refresh_row_written_before_the_writer_key_is_a_session_row(
+        self, initialized_manager: PortfolioManager
+    ) -> None:
+        """Pinned on purpose: a row with no ``writer`` reads as the session's,
+        so the refresh cannot touch it and only a session sharing its
+        session_date could correct it. Refresh rows published before #89 carry
+        no key; their session dates are all in the past, so no session can
+        share one."""
+        kwargs = dict(
+            snapshot_date=date(2026, 10, 4),
+            cash=3_000.0,
+            positions_value=7_500.0,
+            benchmarks={},
+            session_date=date(2026, 10, 5),
+        )
+        assert initialized_manager.add_snapshot("test-strategy", portfolio_value=10_500.0, **kwargs)
+        assert not initialized_manager.add_snapshot(
+            "test-strategy", portfolio_value=1.0, writer="refresh", **kwargs
+        )
+        assert initialized_manager.add_snapshot("test-strategy", portfolio_value=10_400.0, **kwargs)
+
     def test_later_session_refuses_to_rewrite_earlier_row(
         self, initialized_manager: PortfolioManager
     ) -> None:
