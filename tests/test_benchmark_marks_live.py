@@ -114,11 +114,17 @@ def test_every_sidecar_reproduces_its_series() -> None:
 
 
 def test_a_moved_value_is_caught(tmp_path) -> None:
-    """The control: the check above goes red on one perturbed row."""
+    """The control: the check above goes red on one perturbed row.
+
+    The perturbed row is the newest one the sidecar covers, not the newest
+    row: since 2026-10-06 new rows record their own marks and are not in the
+    sidecar, so perturbing ``rows[-1]`` moved a row the check never reads.
+    """
     source = BASELINES / "global"
     for name in ("msci_world.json", "msci_world_marks.json"):
         (tmp_path / name).write_text((source / name).read_text())
     rows = json.loads((tmp_path / "msci_world.json").read_text())
-    rows[-1]["portfolio_value"] += 0.01
+    covered = json.loads((tmp_path / "msci_world_marks.json").read_text())[-1]["date"]
+    next(r for r in rows if r["date"] == covered)["portfolio_value"] += 0.01
     (tmp_path / "msci_world.json").write_text(json.dumps(rows))
     assert inconsistencies(tmp_path / "msci_world_marks.json", 10_000.0)
