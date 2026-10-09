@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: 99516988909512fb091f6737c824156dbbf3619fde18d47ab7a184cd2376cdfe
+PROMPT_SHA256: b2de3bd47d37c9c650a0042d6c960f0c8cb96b0793ee4a28f4b203fcf6ef99e3
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -254,6 +254,17 @@ python scripts/fetch_market_data.py
 # fetch-ohlcv cron has been failing. That is a hard abort — snapshots are
 # immutable, so a snapshot written at three-week-old closes is permanent.
 # Do NOT work around it by fetching prices yourself.
+
+# Step 1a — Sentiment A/B arm check (report-only, never fatal)
+    from scripts.daily_session import step_check_sentiment_freshness
+    step_check_sentiment_freshness(today)
+# Records which arm of the pre-registered sentiment A/B this session
+# actually ran, to data/market/sentiment_arm.jsonl (committed). If the
+# collector's digests for today are not on main, the two treatment agents
+# read yesterday's headlines and the arm is confounded — which is what was
+# happening at every session until 2026-08-07. Keep running: a missing news
+# feed is not a reason to lose a session. Mention a `degraded-to-control`
+# result in your final report.
 
 # Step 2 — Trading round (DISPATCH IN PARALLEL — one Task call per agent)
     from scripts.daily_session import render_trading_prompt
@@ -515,6 +526,7 @@ git show HEAD --stat must include:
   - data/posts/{today}.json
   - data/blog/{today}.md
   - data/leaderboard/current.json
+  - data/market/sentiment_arm.jsonl
 Also confirm the leaderboard in data/output/{today}.json was produced
 by step_build_leaderboard, not by hand. Spot-check one EUR agent and
 one USD agent against (portfolio_mtm_eur / 10_000 - 1) * 100 — values
@@ -556,7 +568,7 @@ explicitly forbids them:
 - "Now I'll rewrite the journals in each agent's voice" inline → MUST dispatch each journal-rewrite to its agent
 - "Now I'll write Oracle's blog + posts as the Oracle persona" → MUST dispatch with wrap_persona_prompt("the-oracle", ...)
 - "subagent_type='satoshi' returned 'Agent type not found' so I'll write the trades myself" → MUST switch to subagent_type="general-purpose" with wrap_persona_prompt; never inline
-- "Baselines already current — last snapshot dated …" → MUST call `step_build_baselines()`
+- "Baselines already current — last snapshot dated …" → MUST run Step 9 as written (`step_build_baselines(market date)`, then `check_session_freshness.py`)
 - "Building the leaderboard from snapshots.json in-place — I'll just diff first/last portfolio_value" → MUST call `step_build_leaderboard(portfolio_summaries, on=today)`. The first persisted snapshot is NOT inception for agents seeded with non-cash positions (Monsieur Forex, World). The helper anchors to €10k inception via `portfolio_mtm_eur`, matching `daily_log.py` and `baselines.py`. Hand-rolling here understated Monsieur Forex / World returns on 2026-05-15.
 - "Network blocked. Let me update today.json with today's BTC close" → MUST call `python scripts/fetch_market_data.py` (already store-only)
 - "Now I'll `git push` the session commit" → MUST call `step_git_commit_push(dry_run=False)`. A bare `git push` publishes the sandbox's throwaway branch (`claude/<slug>`) instead of advancing main — Apr 30 incident. The helper does the right thing: `HEAD:main` first, fallback to `HEAD` (sandbox branch) if the harness 403s the main push (2026-05-08 incident); the auto-merge-session workflow takes the fallback the rest of the way. Don't second-guess the helper.
