@@ -454,6 +454,12 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  /* Below ~30rem three columns cannot hold "Since open" and "Days live" on
+     one line; two columns keep every label whole and the rows even. */
+  @media (max-width: 30rem) {
+    .mc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   .mc-stats dd {
     margin: var(--sp-1) 0 0;
