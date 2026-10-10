@@ -36,7 +36,7 @@ export function experimentFacts(): Fact[] {
       key: "money",
       label: "Money at risk",
       value: "None",
-      note: "Paper simulation throughout. No broker, no capital.",
+      note: "Paper simulation throughout. No real broker, no capital.",
     },
     {
       key: "desk",

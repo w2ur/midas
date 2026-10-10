@@ -58,8 +58,9 @@ const allOrders = loadAllOrders();
 // The hero exhibit: the newest fill by a trader, in its own words.
 const leadFill = latestFill(allOrders, isTradingAgent);
 
-// Six rows: the tape shares a row with the Oracle's column on wide screens,
-// and three left half of that row empty.
+// Six rows: on wide screens the tape shares a row with the Oracle's column,
+// and six two-line rows about match the column's height (three left half the
+// row empty).
 const TAPE_ROWS = 6;
 // Ordered by confirmation time, the same key as the hero's fill, so the fill
 // the hero leads with is the tape's first row rather than buried under rows
@@ -156,7 +157,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     <section class="recently-traded">
       <header class="sec-head">
         <h2>The tape</h2>
-        <p class="sec-note">Reconciled fills, every one of them refusable by the broker.</p>
+        <p class="sec-note">Reconciled fills, every one of them refusable by the paper broker.</p>
       </header>
       <ul class="tape">
         {recentTrades.map((o) => (
@@ -164,12 +165,13 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
             <span class="when">{o.ts_filled ? o.ts_filled.slice(0, 10) : o.date}</span>
             {isCrestId(o.agent_id) && <AgentCrest id={o.agent_id} size={18} />}
             <a class="who" href={`/arena/${o.agent_id}`}>{agentName(o.agent_id)}</a>
-            <span class="brk" aria-hidden="true"></span>
-            <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
-            <span class="tick">{o.ticker}</span>
-            <span class="shares">{formatShares(o.shares)} sh</span>
-            <span class="at" aria-hidden="true">@</span>
-            <span class="px">{formatPrice(o.fill_price, o.fill_currency)}</span>
+            <span class="what">
+              <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
+              <span class="tick">{o.ticker}</span>
+              <span class="shares">{formatShares(o.shares)} sh</span>
+              <span class="at" aria-hidden="true">@</span>
+              <span class="px">{formatPrice(o.fill_price, o.fill_currency)}</span>
+            </span>
           </li>
         ))}
       </ul>
@@ -365,19 +367,26 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   }
 
   /* ── 3. THE TAPE ── */
+  .tape {
+    /* The date column's width and the row's gap: the wide layout's second
+       line indents by both plus the crest, so all three are named once. */
+    --tape-when-w: 5.5rem;
+    --tape-gap: 0.7rem;
+    --tape-crest: 18px;
+  }
   .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-strong); }
   .tape-row {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0.4rem 0.7rem;
+    gap: 0.4rem var(--tape-gap);
     padding: 0.65rem 0.25rem;
     border-bottom: 1px solid var(--rule);
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-size: var(--fs-sm);
   }
-  .tape-row .when { color: var(--ink-muted); font-size: var(--fs-xs); letter-spacing: 0.04em; min-width: 5.5rem; }
+  .tape-row .when { color: var(--ink-muted); font-size: var(--fs-xs); letter-spacing: 0.04em; min-width: var(--tape-when-w); }
   .tape-row .agent-crest { align-self: center; }
   .tape-row .who { color: var(--ink); text-decoration: none; font-family: var(--font-display); font-weight: 600; }
   .tape-row .who:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -394,13 +403,22 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   .tape-row .tick { color: var(--ink); }
   .tape-row .shares, .tape-row .px, .tape-row .at { color: var(--ink-muted); }
   .tape-row .px { white-space: nowrap; }
+  /* What was traded: one wrapping group, so anything that wraps stays inside
+     it rather than falling back under the date column. */
+  .tape-row .what {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem var(--tape-gap);
+  }
   /* In the half-width column a crypto row ran out of room and dropped its
-     price alone onto a second line. Wide screens break every row after the
-     agent instead, so each row is two even lines: who, then what. */
-  .tape-row .brk { display: none; }
+     price alone onto a second line. Wide screens give every row two even
+     lines instead, who then what, with "what" under the agent's name. */
   @media (min-width: 64rem) {
-    .tape-row .brk { display: block; flex-basis: 100%; height: 0; }
-    .tape-row .side { margin-left: calc(5.5rem + 0.7rem); }
+    .tape-row .what {
+      flex-basis: 100%;
+      padding-left: calc(var(--tape-when-w) + 2 * var(--tape-gap) + var(--tape-crest));
+    }
   }
 
   /* ── 4. THE ORACLE ── */
