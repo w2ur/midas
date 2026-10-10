@@ -1,4 +1,4 @@
-"""The data/ fence around a persona dispatch round."""
+"""The checkout fence around a persona dispatch round."""
 
 from __future__ import annotations
 
@@ -26,7 +26,9 @@ def repo(tmp_path: Path) -> Path:
     _git(tmp_path, "config", "user.name", "t")
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "tracked.json").write_text("{}\n")
-    (tmp_path / ".gitignore").write_text("data/cache/\n")
+    (tmp_path / "engine").mkdir()
+    (tmp_path / "engine" / "x.py").write_text("X = 1\n")
+    (tmp_path / ".gitignore").write_text("data/cache/\ndata/session_state/\n")
     _git(tmp_path, "add", "-A")
     _git(tmp_path, "commit", "-q", "-m", "init")
     return tmp_path
@@ -76,6 +78,40 @@ def test_gitignored_paths_are_outside_the_fence(repo) -> None:
     (repo / "data" / "cache").mkdir()
     (repo / "data" / "cache" / "x").write_text("ignored")
     assert_data_tree_unchanged("r", repo)
+
+
+def test_a_write_to_ignored_session_state_is_named(repo) -> None:
+    state = repo / "data" / "session_state"
+    (state / "prompts").mkdir(parents=True)
+    (state / "prompts" / "sibling.txt").write_text("honest prompt")
+    snapshot_data_tree("r", repo)
+    (state / "prompts" / "sibling.txt").write_text("injected prompt")
+    (state / "step2.done").write_text("marker")
+    with pytest.raises(DispatchWroteDataError) as err:
+        assert_data_tree_unchanged("r", repo)
+    assert "data/session_state/prompts/sibling.txt" in str(err.value)
+    assert "data/session_state/step2.done" in str(err.value)
+
+
+def test_an_edit_of_a_tracked_file_outside_data_is_named(repo) -> None:
+    snapshot_data_tree("r", repo)
+    (repo / "engine" / "x.py").write_text("X = 2\n")
+    with pytest.raises(DispatchWroteDataError, match=r"engine/x\.py"):
+        assert_data_tree_unchanged("r", repo)
+
+
+def test_a_new_untracked_file_outside_data_is_named(repo) -> None:
+    snapshot_data_tree("r", repo)
+    (repo / "roster.yaml").write_text("agents: []\n")
+    with pytest.raises(DispatchWroteDataError, match=r"roster\.yaml"):
+        assert_data_tree_unchanged("r", repo)
+
+
+def test_a_success_deletes_the_snapshot_so_a_second_end_raises(repo) -> None:
+    snapshot_data_tree("r", repo)
+    assert_data_tree_unchanged("r", repo)
+    with pytest.raises(DispatchWroteDataError, match="did not run"):
+        assert_data_tree_unchanged("r", repo)
 
 
 def test_a_missing_snapshot_raises(repo) -> None:
