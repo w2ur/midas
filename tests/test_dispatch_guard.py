@@ -107,6 +107,51 @@ def test_end_called_twice_passes_both_times(repo) -> None:
     assert_data_tree_unchanged("r", repo)
 
 
+def test_end_after_a_pass_ignores_the_sessions_own_later_writes(repo, capsys) -> None:
+    """step_author_all writes the outbox after the round; a re-run end must pass."""
+    snapshot_data_tree("r", repo)
+    assert_data_tree_unchanged("r", repo)
+    (repo / "data" / "outbox.jsonl").write_text("{}\n")
+    (repo / "data" / "tracked.json").write_text('{"later": 1}\n')
+    capsys.readouterr()
+    assert_data_tree_unchanged("r", repo)
+    assert "[r]: already verified this session" in capsys.readouterr().out
+
+
+def test_a_failed_end_leaves_no_marker_so_it_keeps_failing(repo) -> None:
+    snapshot_data_tree("r", repo)
+    (repo / "data" / "planted.json").write_text("evil")
+    for _ in range(2):
+        with pytest.raises(DispatchWroteDataError, match=r"data/planted\.json"):
+            assert_data_tree_unchanged("r", repo)
+
+
+def test_a_second_begin_keeps_the_first_baseline(repo, capsys) -> None:
+    snapshot_data_tree("r", repo)
+    (repo / "data" / "planted.json").write_text("evil")  # a subagent writes
+    capsys.readouterr()
+    snapshot_data_tree("r", repo)
+    assert "[r]: keeping this round's first baseline" in capsys.readouterr().out
+    with pytest.raises(DispatchWroteDataError, match=r"data/planted\.json"):
+        assert_data_tree_unchanged("r", repo)
+
+
+def test_two_begins_with_no_change_between_pass(repo) -> None:
+    snapshot_data_tree("r", repo)
+    snapshot_data_tree("r", repo)
+    assert_data_tree_unchanged("r", repo)
+
+
+def test_a_begin_after_a_pass_keeps_it_verified(repo, capsys) -> None:
+    snapshot_data_tree("r", repo)
+    assert_data_tree_unchanged("r", repo)
+    (repo / "data" / "later.json").write_text("{}")
+    capsys.readouterr()
+    snapshot_data_tree("r", repo)
+    assert "[r]: already verified this session" in capsys.readouterr().out
+    assert_data_tree_unchanged("r", repo)
+
+
 def test_the_snapshot_lives_outside_data(repo) -> None:
     snapshot_data_tree("r", repo)
     assert not any(p.name == "r.json" for p in (repo / "data").rglob("*"))
@@ -270,23 +315,33 @@ def test_an_abort_records_no_concern(repo) -> None:
 # --- what is reported ------------------------------------------------------
 
 
-def test_a_result_kept_under_session_state_passes_and_is_reported(
-    repo, capsys
-) -> None:
+def test_a_result_kept_under_session_state_results_is_not_reported(repo) -> None:
+    """The trigger prompt tells the orchestrator to keep results there."""
     snapshot_data_tree("r", repo)
     results = repo / "data" / "session_state" / "results"
     results.mkdir(parents=True)
     (results / "x.json").write_text("{}")
     assert_data_tree_unchanged("r", repo)
+    assert _concerns(repo) == []
+
+
+def test_another_file_under_session_state_passes_and_is_reported(
+    repo, capsys
+) -> None:
+    snapshot_data_tree("r", repo)
+    state = repo / "data" / "session_state"
+    state.mkdir(parents=True)
+    (state / "state.json").write_text("{}")
+    assert_data_tree_unchanged("r", repo)
     assert _concerns(repo) == [
         {
             "anchor": None,
             "round": "r",
-            "path": "data/session_state/results/x.json",
+            "path": "data/session_state/state.json",
             "kind": "appeared",
         }
     ]
-    assert "reported data/session_state/results/x.json" in capsys.readouterr().out
+    assert "reported data/session_state/state.json" in capsys.readouterr().out
 
 
 def test_orchestrator_writes_under_session_state_are_not_reported(repo) -> None:
