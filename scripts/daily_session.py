@@ -647,7 +647,6 @@ def step_author_all(
     if _is_done("step_author_all"):
         print("\n[SKIP] step_author_all already completed this session.")
         _filter_narration_trades(agent_results, trade_date)
-        _record_trader_research(agent_results, trade_date)
         return {}
 
     print("\n=== Step 3: Author orders + cancels (all agents) ===")
@@ -669,13 +668,15 @@ def step_author_all(
         )
         summary[agent_id] = {"orders": len(authored), "cancels": n_cancels}
     _record_trader_research(agent_results, trade_date)
+    # Research is recorded on the authoring path only: on a resume the committed
+    # orders are the first dispatch's, so a re-dispatch's sources would mix
+    # provenance.
     _mark_done("step_author_all")
     return summary
 
 
 def _record_trader_research(agent_results: dict[str, dict], trade_date: date) -> None:
-    """Persist each trader's self-reported searches (overwrite is idempotent,
-    so the skip path re-running it on a resume is harmless)."""
+    """Persist each trader's self-reported searches, once per session."""
     for agent_id, result in agent_results.items():
         if isinstance(result, dict):
             record_research(

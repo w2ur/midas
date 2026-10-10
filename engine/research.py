@@ -50,7 +50,9 @@ def render_research_instructions(
             "anything published after the price your order would fill at (an "
             "after-hours earnings release, an evening headline, a crypto move "
             f"during {today.isoformat()}): it is look-ahead the fill price "
-            "does not reflect."
+            "does not reflect. A conditional (trigger) order fills later, at "
+            "the price when its condition fires, so current news relevant to "
+            "the trigger is fair to use."
         )
     else:
         timing = (
