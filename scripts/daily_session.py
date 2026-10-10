@@ -676,12 +676,17 @@ def step_author_all(
 
 
 def _record_trader_research(agent_results: dict[str, dict], trade_date: date) -> None:
-    """Persist each trader's self-reported searches, once per session."""
+    """Persist each trader's self-reported searches, once per session.
+
+    Every agent is recorded with ``replace``: a reused sandbox VM keeps the
+    untracked file of an earlier failed fire, which an agent reporting nothing
+    this time must not inherit.
+    """
     for agent_id, result in agent_results.items():
-        if isinstance(result, dict):
-            record_research(
-                agent_id, result.get("sources"), trade_date, TRADER_MAX_SEARCHES
-            )
+        sources = result.get("sources") if isinstance(result, dict) else None
+        record_research(
+            agent_id, sources, trade_date, TRADER_MAX_SEARCHES, replace=True
+        )
 
 
 def _filter_narration_trades(agent_results: dict[str, dict], trade_date: date) -> None:
@@ -1410,18 +1415,28 @@ def step_record_oracle_research(response_text: str, session_date: date) -> None:
     """Step 5b-bis — persist the Oracle's self-reported searches.
 
     Reads the ``sources`` key from the raw narrator response (never raises on a
-    loose response) and records it under the roster's narrator id. A file
-    already recorded for the day is kept: on a resume the published blog is the
-    first dispatch's, so a re-dispatch's sources would mix provenance.
+    loose response) and records it under the roster's narrator id. Once
+    ``step_save_content`` is done the published blog is fixed, so an existing
+    file is kept: a re-dispatch's sources would mix provenance. Before that the
+    blog is not fixed yet, so the file mirrors this response: it is overwritten,
+    or deleted when the response reports nothing (a stale file from an earlier
+    failed fire on a reused sandbox VM).
     """
     config = get_config()
     narrator_id = config.narrators[0] if config.narrators else "the-oracle"
     existing = config.research_dir / session_date.isoformat() / f"{narrator_id}.json"
-    if existing.is_file():
-        print(f"  Oracle research: kept {existing} (first dispatch's)")
+    if _is_done("step_save_content"):
+        if existing.is_file():
+            print(f"  Oracle research: kept {existing} (published blog is fixed)")
+        else:
+            print("  Oracle research: kept (published blog is fixed), no file")
         return
     path = record_research(
-        narrator_id, oracle_sources(response_text), session_date, ORACLE_MAX_SEARCHES
+        narrator_id,
+        oracle_sources(response_text),
+        session_date,
+        ORACLE_MAX_SEARCHES,
+        replace=True,
     )
     print(f"  Oracle research: {path if path else 'no searches reported'}")
 

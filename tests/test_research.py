@@ -49,9 +49,12 @@ def test_block_states_cap_fetch_rule_date_and_security() -> None:
     assert "look-ahead" in text
     # A trigger can fire on the same close at the watcher's next run, so the
     # cut-off applies to it too; the old "fair to use" sentence was false.
-    assert "The same applies to a conditional (trigger) order" in text
-    assert "it can fire on the very close or bar named above" in text
-    assert "do not set a trigger on news published after it" in text
+    assert (
+        "The same applies to a conditional (trigger) order on a listed share "
+        "or ETF: it can fire on the very close named above, so do not set one "
+        "on news published after that close."
+    ) in text
+    assert "or bar named above" not in text
     assert "fair to use" not in text
     assert "fills later" not in text
     assert UNTRUSTED in text
@@ -258,6 +261,42 @@ def test_record_never_raises_on_bad_input_and_writes_nothing(tmp_path, raw) -> N
     assert list(tmp_path.iterdir()) == []
 
 
+def _stale(tmp_path):
+    path = record_research("satoshi", [_src(0)], TODAY, 3, research_dir=tmp_path)
+    assert path is not None
+    return path
+
+
+@pytest.mark.parametrize("raw", [None, [], "a string", {"query": "q"}, [{"query": 1}], ["x"]])
+def test_record_with_replace_deletes_a_stale_file_when_nothing_is_valid(
+    tmp_path, raw, capsys
+) -> None:
+    path = _stale(tmp_path)
+    capsys.readouterr()
+    assert record_research("satoshi", raw, TODAY, 3, research_dir=tmp_path, replace=True) is None
+    assert not path.exists()
+    assert "removed" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("raw", [None, [], "a string", [{"query": 1}]])
+def test_record_without_replace_leaves_an_existing_file(tmp_path, raw) -> None:
+    path = _stale(tmp_path)
+    before = path.read_text()
+    assert record_research("satoshi", raw, TODAY, 3, research_dir=tmp_path) is None
+    assert path.read_text() == before
+
+
+def test_record_with_replace_overwrites_with_a_valid_report(tmp_path) -> None:
+    path = _stale(tmp_path)
+    record_research("satoshi", [_src(1)], TODAY, 3, research_dir=tmp_path, replace=True)
+    assert json.loads(path.read_text())["sources"] == [_src(1)]
+
+
+def test_record_with_replace_and_no_file_is_a_noop(tmp_path) -> None:
+    assert record_research("satoshi", None, TODAY, 3, research_dir=tmp_path, replace=True) is None
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_record_defaults_to_the_config_dir(midas_data_root) -> None:
     from engine.config import get_config
 
@@ -284,6 +323,48 @@ def test_step_author_all_records_traders_that_reported_sources(tmp_path, midas_d
     day = get_config().research_dir / "2026-10-12"
     assert (day / "satoshi.json").exists()
     assert not (day / "quiet.json").exists()
+
+
+def test_step_author_all_deletes_a_stale_file_of_an_agent_reporting_nothing(
+    tmp_path, midas_data_root
+) -> None:
+    from engine.config import get_config
+    from engine.portfolio import PortfolioManager
+    from scripts.daily_session import step_author_all
+
+    pm = PortfolioManager(tmp_path / "portfolios")
+    for agent in ("satoshi", "quiet", "junk"):
+        pm.initialize(agent, initial_capital=10_000.0, currency="EUR")
+    day = get_config().research_dir / "2026-10-12"
+    day.mkdir(parents=True)
+    for agent in ("satoshi", "quiet", "junk"):
+        (day / f"{agent}.json").write_text("{}\n")  # an earlier failed fire's file
+    results = {
+        "satoshi": {"trades": [], "sources": [_src(0)]},
+        "quiet": {"trades": []},
+        "junk": {"trades": [], "sources": "garbage"},
+    }
+    step_author_all(results, TODAY, portfolio_manager=pm)
+    assert json.loads((day / "satoshi.json").read_text())["sources"] == [_src(0)]
+    assert not (day / "quiet.json").exists()
+    assert not (day / "junk.json").exists()
+
+
+def test_step_author_all_skip_path_does_not_touch_stale_files(
+    tmp_path, midas_data_root
+) -> None:
+    from engine.config import get_config
+    from engine.portfolio import PortfolioManager
+    from scripts.daily_session import step_author_all
+
+    pm = PortfolioManager(tmp_path / "portfolios")
+    pm.initialize("quiet", initial_capital=10_000.0, currency="EUR")
+    step_author_all({"quiet": {"trades": []}}, TODAY, portfolio_manager=pm)
+    path = get_config().research_dir / "2026-10-12" / "quiet.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{}\n")
+    step_author_all({"quiet": {"trades": []}}, TODAY, portfolio_manager=pm)
+    assert path.exists()
 
 
 def test_step_author_all_skip_path_does_not_overwrite_research(
@@ -365,22 +446,43 @@ def test_step_record_oracle_research_uses_narrator_id(midas_data_root) -> None:
     assert data["extra_searches_reported"] == 1
 
 
-def test_step_record_oracle_research_keeps_the_first_dispatchs_file(
+def _oracle_path(day=TODAY):
+    from engine.config import get_config
+
+    narrator = get_config().narrators[0]
+    return get_config().research_dir / day.isoformat() / f"{narrator}.json"
+
+
+def test_step_record_oracle_research_keeps_the_file_once_the_blog_is_saved(
     midas_data_root, capsys
 ) -> None:
-    from engine.config import get_config
     from scripts.daily_session import step_record_oracle_research
+    from scripts.session_state import mark_done
 
-    first = json.dumps({**_ORACLE, "sources": [_src(0)]})
-    step_record_oracle_research(first, TODAY)
-    narrator = get_config().narrators[0]
-    path = get_config().research_dir / "2026-10-12" / f"{narrator}.json"
+    step_record_oracle_research(json.dumps({**_ORACLE, "sources": [_src(0)]}), TODAY)
+    path = _oracle_path()
     before = path.read_text()
+    mark_done("step_save_content")
     capsys.readouterr()
-    # Resumed fire: the published blog is the first dispatch's.
+    # Resumed fire after the blog was published: it is the first dispatch's.
     step_record_oracle_research(json.dumps({**_ORACLE, "sources": [_src(1)]}), TODAY)
+    step_record_oracle_research(json.dumps(_ORACLE), TODAY)
     assert path.read_text() == before
     assert "kept" in capsys.readouterr().out
+
+
+def test_step_record_oracle_research_replaces_the_file_before_the_blog_is_saved(
+    midas_data_root,
+) -> None:
+    from scripts.daily_session import step_record_oracle_research
+
+    path = _oracle_path()
+    path.parent.mkdir(parents=True)
+    path.write_text("{}\n")  # an earlier failed fire's file
+    step_record_oracle_research(json.dumps({**_ORACLE, "sources": [_src(1)]}), TODAY)
+    assert json.loads(path.read_text())["sources"] == [_src(1)]
+    step_record_oracle_research(json.dumps(_ORACLE), TODAY)
+    assert not path.exists()
 
 
 # Fixtures and helpers shared with the manager session tests.

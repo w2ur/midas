@@ -51,8 +51,9 @@ def render_research_instructions(
             "after-hours earnings release, an evening headline, a crypto move "
             f"during {today.isoformat()}): it is look-ahead the fill price "
             "does not reflect. The same applies to a conditional (trigger) "
-            "order: it can fire on the very close or bar named above, so do "
-            "not set a trigger on news published after it."
+            "order on a listed share or ETF: it can fire on the very close "
+            "named above, so do not set one on news published after that "
+            "close."
         )
     else:
         timing = (
@@ -132,21 +133,32 @@ def record_research(
     session_date: date,
     cap: int,
     research_dir: Path | None = None,
+    *,
+    replace: bool = False,
 ) -> Path | None:
     """Persist an agent's self-reported searches to ``data/research/<date>/<id>.json``.
 
-    Writes nothing and returns ``None`` when the agent reported nothing, reported
-    a non-list, or reported only malformed entries. Overwrites on re-run, so
-    calling it again on a resumed session is idempotent. Bad agent input never
-    raises; an ``OSError`` on the write itself propagates.
+    Returns ``None`` when the agent reported nothing, reported a non-list, or
+    reported only malformed entries. By default that writes nothing and leaves
+    any existing file alone; a valid report overwrites the file, so calling it
+    again on a resumed session is idempotent. With ``replace=True`` the file
+    mirrors this report: when there is nothing valid to record, an existing
+    file for the agent and date is deleted, because a reused sandbox VM keeps
+    the untracked file an earlier failed fire wrote and it would otherwise be
+    committed as this dispatch's. Bad agent input never raises; an ``OSError``
+    on the write or the delete itself propagates.
     """
-    if raw_sources is None or raw_sources == []:
-        return None
-    entries, extra = normalize_sources(raw_sources, cap)
-    if not entries:
-        return None
+    entries: list[dict] = []
+    extra = 0
+    if raw_sources is not None and raw_sources != []:
+        entries, extra = normalize_sources(raw_sources, cap)
     base = research_dir if research_dir is not None else get_config().research_dir
     path = base / session_date.isoformat() / f"{agent_id}.json"
+    if not entries:
+        if replace and path.is_file():
+            path.unlink()
+            print(f"  research: removed stale {path} (nothing reported)")
+        return None
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "agent_id": agent_id,
