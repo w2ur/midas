@@ -4,8 +4,9 @@ description: >
   scheduled writer got there first.
 
 # Why this exists: four scheduled workflows pushed to main with a bare
-# `git push` and no retry — fetch-ohlcv, fetch-sentiment, refresh-universes and
-# resweep-held-tickers. GitHub's scheduler is never on time: measured across
+# `git push` and no retry — fetch-ohlcv, fetch-sentiment (removed 2026-10-09,
+# when the sentiment A/B ended), refresh-universes and resweep-held-tickers.
+# GitHub's scheduler is never on time: measured across
 # this repo's run history it typically lands 40 min to 2 h 45 late, with a tail
 # past 5 h (the worst observed was a fetch-sentiment run ~5 h 43 late on
 # 2026-08-07). So their nominal

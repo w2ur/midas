@@ -511,7 +511,6 @@ FAILURE_ISSUE_ACTION = (
 ALERTING_WORKFLOWS = [
     "core-drift-guard.yml",
     "fetch-ohlcv.yml",
-    "fetch-sentiment.yml",
     "refresh-universes.yml",
     "resweep-held-tickers.yml",
     # Not scheduled, but the same "a red X is not a consumer" problem: it runs
@@ -1349,9 +1348,8 @@ def test_every_push_with_retry_caller_path_resolves_in_the_repo():
     control test, `test_the_optional_path_really_is_absent`) are retired with
     it rather than left as a set with nothing in it — an exemption mechanism
     that iterates zero live entries is a dark guard, not a stricter one. None
-    of the other three `push-with-retry` callers (`fetch-sentiment`,
-    `refresh-universes`, `resweep-held-tickers`) stage a path with the same
-    shape. If one ever does, reintroduce a named exemption set here for it —
+    of the other `push-with-retry` callers (`refresh-universes`,
+    `resweep-held-tickers`) stage a path with the same shape. If one ever does, reintroduce a named exemption set here for it —
     don't resurrect an empty one preemptively.
     """
     workflows = (REPO_ROOT / ".github" / "workflows").glob("*.yml")
