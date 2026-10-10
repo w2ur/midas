@@ -170,6 +170,12 @@ describe("/oracle-latest.json", () => {
     expect(JSON.parse(await res.text())).toBeNull();
   });
 
+  it("answers JSON null when astro.config has no site to link from", async () => {
+    vi.doMock("@/lib/blog", () => ({ loadBlogLatest: () => okPost, excerpt: (s: string) => s }));
+    const mod = await import("@/pages/oracle-latest.json.ts");
+    expect(JSON.parse(await (await mod.GET({} as never)).text())).toBeNull();
+  });
+
   it("permalink points at the canonical host, not a relative path", async () => {
     vi.doMock("@/lib/blog", () => ({
       loadBlogLatest: () => okPost,

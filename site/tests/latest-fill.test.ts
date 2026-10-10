@@ -102,6 +102,12 @@ describe("formatShares", () => {
     expect(formatShares(150.5)).toBe("150.5");
     expect(formatShares(0.00004)).toBe("0.00004");
     expect(formatShares(1234.5)).toBe("1234.5");
+    expect(formatShares(1e-9)).toBe("0.000000001");
+  });
+  it("drops float noise from computed quantities, and prints no negative zero", () => {
+    expect(formatShares(2.60575008)).toBe("2.60575");
+    expect(formatShares(0.30000000000000004)).toBe("0.3");
+    expect(formatShares(-0)).toBe("0");
   });
 });
 
@@ -112,6 +118,10 @@ describe("formatPrice", () => {
   it("keeps four decimals under 10 and two above", () => {
     expect(formatPrice(1.08321, "USD")).toBe("USD 1.0832");
     expect(formatPrice(385.45001220703125, "USD")).toBe("USD 385.45");
+  });
+  it("never prints a sub-cent price as zero, nor 9.99996 as 10.0000", () => {
+    expect(formatPrice(0.0000123, "EUR")).toBe("EUR 0.00001230");
+    expect(formatPrice(9.99996, "USD")).toBe("USD 10.00");
   });
   it("prints a dash for a missing price and omits a missing code", () => {
     expect(formatPrice(null, "EUR")).toBe("—");
