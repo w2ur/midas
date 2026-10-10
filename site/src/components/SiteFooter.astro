@@ -13,7 +13,7 @@ const year = new Date().getFullYear();
   </nav>
   <div class="inner">
     <p class="credit">Made with care by <a href="https://william.revah.paris">William</a> &middot; &copy; {year} &middot; <a href="/open-source">The engine is open source</a></p>
-    <p class="tagline">Nothing is real money — yet. Paper simulation, not financial advice.</p>
+    <p class="tagline">Nothing is real money, yet. Paper simulation, not financial advice.</p>
   </div>
 </footer>
 <style>
@@ -71,9 +71,7 @@ const year = new Date().getFullYear();
   }
   .site-footer a:hover { color: var(--ink); }
 
-  /* The honest tagline sits to the right on wide viewports. */
-  .tagline { display: none; }
-  @media (min-width: 48rem) {
-    .tagline { display: block; }
-  }
+  /* The honest tagline shows at every width: most visitors arrive on a phone,
+     and the front page leads with a real-looking fill. It sits to the right
+     on wide viewports and under the credit line on narrow ones. */
 </style>

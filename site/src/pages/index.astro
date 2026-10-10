@@ -164,6 +164,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
             <span class="when">{o.ts_filled ? o.ts_filled.slice(0, 10) : o.date}</span>
             {isCrestId(o.agent_id) && <AgentCrest id={o.agent_id} size={18} />}
             <a class="who" href={`/arena/${o.agent_id}`}>{agentName(o.agent_id)}</a>
+            <span class="brk" aria-hidden="true"></span>
             <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
             <span class="tick">{o.ticker}</span>
             <span class="shares">{formatShares(o.shares)} sh</span>
@@ -392,6 +393,15 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   .tape-row .side.sell { background: var(--neg); }
   .tape-row .tick { color: var(--ink); }
   .tape-row .shares, .tape-row .px, .tape-row .at { color: var(--ink-muted); }
+  .tape-row .px { white-space: nowrap; }
+  /* In the half-width column a crypto row ran out of room and dropped its
+     price alone onto a second line. Wide screens break every row after the
+     agent instead, so each row is two even lines: who, then what. */
+  .tape-row .brk { display: none; }
+  @media (min-width: 64rem) {
+    .tape-row .brk { display: block; flex-basis: 100%; height: 0; }
+    .tape-row .side { margin-left: calc(5.5rem + 0.7rem); }
+  }
 
   /* ── 4. THE ORACLE ── */
   .parchment {

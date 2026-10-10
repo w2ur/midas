@@ -60,7 +60,7 @@ function pyFloat(n: number): string {
     <span class="lf-qty">{formatShares(o.shares)} sh @ {formatPrice(o.fill_price, o.fill_currency)}</span>
   </p>
   <p class="lf-status">
-    Filled by the broker{firedLater && <> · order written {longDate(o.date)}</>}
+    Filled by the paper broker{firedLater && <> · order written {longDate(o.date)}</>}
   </p>
 
   <p class="lf-why">{o.reasoning}</p>
