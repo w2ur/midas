@@ -122,8 +122,8 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     </p>
     <MethodologyFacts only={["money", "sessions", "fills", "skill"]} compact />
     <p class="hero-links">
-      <a class="cta" href="/methodology">How this is scored →</a>
-      <a class="cta ghost" href="/arena">The full board →</a>
+      <a class="cta" href="/methodology">How this is scored</a>
+      <a class="cta ghost" href="/arena">The full board</a>
     </p>
   </section>
 
@@ -143,7 +143,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
       compact
     />
     <p class="more-row">
-      <a href="/arena">All {rosterWord} agents, side by side →</a>
+      <a href="/arena">All {rosterWord} agents, side by side</a>
     </p>
   </section>
 
@@ -151,8 +151,8 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   {recentTrades.length > 0 && (
     <section class="page recently-traded">
       <header class="sec-head">
-        <p class="kicker">Reconciled fills · every one of them refusable by the broker</p>
         <h2>The tape</h2>
+        <p class="sec-note">Reconciled fills, every one of them refusable by the broker.</p>
       </header>
       <ul class="tape">
         {recentTrades.map((o) => (
@@ -178,7 +178,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
       <p class="parch-kicker">The Oracle · {latestBlog.date}</p>
       <h3 class="parch-h"><a href={`/journal/${latestBlog.date}`}>{latestBlog.title}</a></h3>
       <p class="parch-body dropcap">{blogExcerpt}</p>
-      <a class="parch-read" href={`/journal/${latestBlog.date}`}>Read today&rsquo;s column →</a>
+      <a class="parch-read" href={`/journal/${latestBlog.date}`}>Read today&rsquo;s column</a>
     </article>
   </section>
 
@@ -188,8 +188,8 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
       <div class="mc-head">
         <AgentCrest id={MANAGER.id} size={30} />
         <div>
-          <p class="kicker">Unranked by design</p>
           <h3>{MANAGER.display_name}</h3>
+          <p class="sec-note">Unranked by design.</p>
         </div>
       </div>
       <p class="mc-pitch">
@@ -202,13 +202,13 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
         <div><dt>Since open</dt><dd class={retCls}>{fmtPct(managerRet)}</dd></div>
         <div><dt>Days live</dt><dd>{managerDays}</dd></div>
       </dl>
-      <span class="mc-read">Read the decision log →</span>
+      <span class="mc-read">Read the decision log</span>
     </a>
   </section>
 
   <!-- ═══ 6. OPEN SOURCE, one line ═══ -->
   <p class="page oss-line">
-    The engine behind this desk is MIT and public. <a href="/open-source">How it works →</a>
+    The engine behind this desk is MIT and public. <a href="/open-source">How it works</a>
   </p>
 </BaseLayout>
 
@@ -223,24 +223,13 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     justify-content: space-between;
     gap: var(--sp-2) var(--sp-4);
   }
-  .kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-family: var(--font-mono);
-    font-size: var(--fs-xs);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+  /* The line that qualifies a section sits under its heading, in sentence
+     case — not as a tracked-out capital kicker above it. */
+  .sec-note {
+    margin: var(--sp-1) 0 0;
+    font-size: var(--fs-sm);
+    line-height: 1.45;
     color: var(--ink-muted);
-    margin: 0;
-  }
-  .kicker::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: 1.5px;
-    background: var(--accent);
-    flex: none;
   }
   .cta {
     display: inline-block;
@@ -255,8 +244,10 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     color: var(--accent-ink);
   }
   .cta:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
-  .cta.ghost { background: none; color: var(--accent); }
-  .cta.ghost:hover { color: var(--accent-strong); border-color: var(--accent-strong); background: none; }
+  /* Secondary action: ink outline. Amber is kept for the one primary action,
+     the live state and the leader, so it keeps one meaning. */
+  .cta.ghost { background: none; color: var(--ink); border-color: var(--ink-muted); }
+  .cta.ghost:hover { color: var(--ink); border-color: var(--ink); background: none; }
 
   /* ── 1. THE PROMISE ── */
   .hero {
@@ -294,15 +285,22 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     margin: 0;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    font-size: var(--fs-xs);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: var(--fs-sm);
     color: var(--ink-muted);
   }
   .board-fact b { color: var(--ink); font-weight: 500; }
   .more-row { margin: var(--sp-3) 0 0; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-sm); }
-  .more-row a { color: var(--accent); text-decoration: none; }
-  .more-row a:hover { color: var(--accent-strong); }
+  /* Text links on this page: ink with an underline, never the accent. */
+  .more-row a, .parch-read, .oss-line a, .mc-read {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .more-row a:hover, .parch-read:hover, .oss-line a:hover, .manager-card:hover .mc-read {
+    color: var(--ink);
+    text-decoration-thickness: 2px;
+  }
 
   /* ── 3. THE TAPE ── */
   .recently-traded { padding-top: var(--sp-6); padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule); }
@@ -321,7 +319,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   .tape-row .when { color: var(--ink-muted); font-size: var(--fs-xs); letter-spacing: 0.04em; min-width: 5.5rem; }
   .tape-row .agent-crest { align-self: center; }
   .tape-row .who { color: var(--ink); text-decoration: none; font-family: var(--font-display); font-weight: 600; }
-  .tape-row .who:hover { color: var(--accent); }
+  .tape-row .who:hover { text-decoration: underline; text-underline-offset: 3px; }
   .tape-row .side {
     font-weight: 500;
     letter-spacing: 0.08em;
@@ -347,24 +345,13 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     max-width: var(--measure-wide);
     overflow: hidden;
   }
-  .parchment::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--accent);
-    opacity: 0.85;
-    border-radius: var(--r-md) 0 0 var(--r-md);
-  }
   .parch-kicker {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-size: var(--fs-xs);
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--ink-muted);
     margin: 0 0 var(--sp-3);
     padding-bottom: var(--sp-3);
     border-bottom: 1px solid var(--rule);
@@ -380,7 +367,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     max-width: 18ch;
   }
   .parch-h a { color: inherit; text-decoration: none; }
-  .parch-h a:hover { color: var(--accent); }
+  .parch-h a:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
   .parch-body {
     font-family: var(--font-serif);
     font-weight: 400;
@@ -397,7 +384,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     font-size: 3.4em;
     line-height: 0.78;
     padding: 0.05em 0.12em 0 0;
-    color: var(--accent);
+    color: var(--oracle-ink);
   }
   .parch-read {
     display: inline-block;
@@ -406,10 +393,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     font-weight: 700;
     font-size: var(--fs-sm);
     letter-spacing: 0.02em;
-    color: var(--accent);
-    text-decoration: none;
   }
-  .parch-read:hover { color: var(--accent-strong); }
   .parch-byline { display: none; }
   @media (min-width: 40rem) {
     .parchment { padding-left: calc(var(--sp-8) + var(--sp-5)); }
@@ -444,12 +428,12 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     color: inherit;
     text-decoration: none;
   }
-  .manager-card:hover { border-color: var(--accent); }
+  .manager-card:hover { border-color: var(--ink-muted); }
   .mc-head { display: flex; align-items: center; gap: var(--sp-3); }
   .mc-head h3 { margin: 0.15rem 0 0; font-size: var(--fs-lg); }
   .mc-pitch {
-    font-family: var(--font-serif);
-    font-size: var(--fs-md);
+    font-family: var(--font-display);
+    font-size: var(--fs-base);
     line-height: var(--lh-body);
     color: var(--ink-muted);
     max-width: var(--measure);
@@ -470,6 +454,12 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  /* Below ~30rem three columns cannot hold "Since open" and "Days live" on
+     one line; two columns keep every label whole and the rows even. */
+  @media (max-width: 30rem) {
+    .mc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   .mc-stats dd {
     margin: var(--sp-1) 0 0;
@@ -487,18 +477,18 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     font-family: var(--font-display);
     font-weight: 700;
     font-size: var(--fs-sm);
-    color: var(--accent);
   }
 
   /* ── 6. OPEN SOURCE ── */
   .oss-line {
     padding-top: var(--sp-6);
     padding-bottom: var(--sp-8);
-    margin: 0;
-    font-family: var(--font-serif);
-    font-size: var(--fs-md);
+    /* margin-block only: a bare `margin: 0` cancelled .page's auto centring
+       and pushed this line out to the gutter, left of every section above. */
+    margin-block: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-base);
     color: var(--ink-muted);
   }
-  .oss-line a { color: var(--accent); text-decoration: none; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-sm); }
-  .oss-line a:hover { color: var(--accent-strong); }
+  .oss-line a { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-sm); }
 </style>

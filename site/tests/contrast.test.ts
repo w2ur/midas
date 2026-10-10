@@ -75,14 +75,46 @@ describe("WCAG AA contrast — body/important text >= 4.5:1, both themes", () =>
   });
 });
 
-describe("WCAG — caption tokens >= 3:1 (large/incidental only)", () => {
+// --ink-faint was declared "caption/decorative only (>= 3:1)", but the
+// components set it as the `color` of real text (units, currencies, the
+// footer's not-financial-advice line, disabled date-nav, placeholders). A token
+// check alone passed while the token was misused, so this block finds every
+// place the token colours text and holds it to AA on each surface that text
+// can sit on.
+const SRC = path.join(__dirname, "../src");
+function sourceFiles(dir: string): string[] {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) return sourceFiles(p);
+    return /\.(astro|css)$/.test(e.name) ? [p] : [];
+  });
+}
+/** `color: var(--ink-faint…)` — the text colour property only, not border/background/stroke. */
+const FAINT_AS_TEXT = /(?:^|[\s;{])color:\s*var\(--ink-faint\b/;
+const faintTextUses = sourceFiles(SRC).flatMap((file) =>
+  fs
+    .readFileSync(file, "utf-8")
+    .split("\n")
+    .map((line, i) => ({ file: path.relative(SRC, file), line: i + 1, text: line }))
+    .filter((l) => FAINT_AS_TEXT.test(l.text)),
+);
+
+describe("WCAG AA — --ink-faint wherever it colours text", () => {
+  it("the usage scan finds the known text uses (control: an empty scan proves nothing)", () => {
+    expect(faintTextUses.length).toBeGreaterThan(0);
+    expect(faintTextUses.some((u) => u.file === "styles/global.css")).toBe(true);
+  });
+
   const f = token("ink-faint");
-  it("--ink-faint on --bg (dark) >= 3", () => {
-    expect(ratio(f.dark, bg.dark)).toBeGreaterThanOrEqual(3);
-  });
-  it("--ink-faint on --bg (light) >= 3", () => {
-    expect(ratio(f.light, bg.light)).toBeGreaterThanOrEqual(3);
-  });
+  for (const surface of ["bg", "bg-elev", "bg-elev2"]) {
+    const s = token(surface);
+    it(`--ink-faint on --${surface} (dark) >= 4.5 — used as text in ${faintTextUses.length} places`, () => {
+      expect(ratio(f.dark, s.dark)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`--ink-faint on --${surface} (light) >= 4.5 — used as text in ${faintTextUses.length} places`, () => {
+      expect(ratio(f.light, s.light)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
 });
 
 describe("WCAG — per-agent kit colours >= 4.5:1 as text, both themes", () => {
