@@ -400,19 +400,37 @@ provenance for a human, not an audit trail and not a decision input.
 
 Fences the repository checkout around a persona dispatch round whose agents hold
 web tools, or whose prompts carry text those tools returned. The dispatch rounds
-guarded are trading, the Manager, the Oracle, the posts and the journals.
-`step_guard_dispatch_begin(round_name)` fingerprints every path git lists as
-modified, added or untracked, plus every file under the gitignored
-`data/session_state/` (step markers and prompt files), and stores it under the git
-dir; `step_guard_dispatch_end(round_name)` recomputes it and raises
-`DispatchWroteDataError` naming every path that appeared, disappeared or changed.
-Other ignored paths (virtualenv, caches) are outside the fence. **Writes:** only the
-snapshot, which a successful end deletes. **On failure: fatal** — a dispatch that
-wrote files is not a session to continue, and a missing snapshot raises too (so
-does an end call with no fresh begin), because an unevaluated guard is not a
-passed guard.
+guarded are trading, the Manager, the Oracle, the posts and the journals. It is a
+tripwire, not containment: the broker's rails, not the guard, bound every order.
+
+`step_guard_dispatch_begin(round_name)` records a snapshot under the git dir,
+keyed by the round and the session anchor; `step_guard_dispatch_end(round_name)`
+compares against it. Each may run in its own process. Two classes of signal:
+
+- **Abort** — what the session never produces while a round runs: `HEAD`, refs
+  under `refs/heads/` and `refs/tags/` (not `refs/remotes/`: a fetch is
+  harmless), every non-ignored path git lists as modified, added or untracked
+  (content and status code), skip-worktree/assume-unchanged index flags, and the
+  repository's hooks, config, `info/exclude` and `info/attributes`. Any change
+  raises `DispatchWroteDataError` naming it.
+- **Report** — gitignored inputs read after a round: the files under
+  `data/session_state/` other than the dispatch ledger and the prompt files,
+  `data/market/today.json`, and the interpreter's site-packages startup files
+  (compared only when begin and end ran under the same `sys.prefix`). A change is
+  printed and appended to `data/session_state/dispatch_guard_concerns.jsonl`;
+  `step_commit_session` turns this session's lines into one `Concerns:` trailer
+  per round.
+
+A dispatch result the orchestrator must keep across processes goes under
+`data/session_state/` (e.g. `data/session_state/results/`), never elsewhere in
+the checkout. **Writes:** the snapshot, which begin overwrites and end keeps, so a
+repeated end evaluates again; the concerns file. **On failure: fatal** — a
+dispatch that wrote the checkout is not a session to continue, and an end with no
+snapshot for its round and session raises too, as does an end that cannot
+evaluate, because an unevaluated guard is not a passed guard.
 **Ordering:** begin before the dispatch, end immediately after it and before any
-step that persists its result.
+step that persists its result. A re-dispatch inside a round stays inside the same
+begin/end pair.
 
 ### Post prompts — `step_build_post_prompts`
 

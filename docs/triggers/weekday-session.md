@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: ed96a211dcdc5e9b80d70ec310c99e0509881fdfdcbc9a985810865b480e8b8c
+PROMPT_SHA256: 4c397eecd9780de9d36bbc6d69bc98c0562ae804de370d27c456b725ee41cfc9
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -226,14 +226,18 @@ Steps 2, 4b and 5 may search the web, and web text is untrusted. The post
 and journal rounds (Steps 6, 8) do not search, but their prompts carry
 text those searches produced second-hand (commentary, theses, the
 Oracle's blog), so they are fenced the same way. Each round is bracketed
-by step_guard_dispatch_begin / step_guard_dispatch_end. Begin returns a
-token and prints it (`dispatch guard token: <hex>`); keep it as `guard`
-— from the printed line if end runs in a new Python process — and pass
-that same value to end. Never write it to a file. A
-DispatchWroteDataError from the end call means a subagent changed
-something in the repository checkout, or the check could not run:
-ABORT the session. Do not author, do not commit,
-do not clean up the named paths; report the error text verbatim.
+by step_guard_dispatch_begin("<round>") and step_guard_dispatch_end("<round>"),
+each callable from its own Python process. Between the two, keep any
+dispatch result you need across processes ONLY under data/session_state/
+(e.g. data/session_state/results/), never anywhere else in the checkout:
+a file written elsewhere is what the guard aborts on. If a Task call in
+a round must be re-dispatched, re-dispatch it inside the same bracket.
+A DispatchWroteDataError from the end call means a subagent changed the
+checkout or git state, or the check could not run: ABORT the session.
+Do not author, do not commit, do not clean up the named paths; report
+the error text verbatim. Changes the end call only reports (lines
+starting `dispatch guard [<round>]: reported`) need no action from you:
+the session commit carries them as trailers.
 
 NEVER reconcile state by hand. Portfolios, orders, baselines and the
 leaderboard are written by helpers only. If they disagree with each
@@ -281,7 +285,7 @@ For each agent_id in ROSTER:
 # helper fills it. Do NOT rebuild it by hand or call str.format on it: its
 # JSON schema is literal braces.
 Write all 10 prompt files first, THEN, immediately before dispatching:
-    guard = step_guard_dispatch_begin("step2-trading")
+    step_guard_dispatch_begin("step2-trading")
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
 they run in parallel. Collect agent_results = {agent_id: {"commentary":
@@ -295,7 +299,7 @@ emits — `sources` too: step_author_all records each agent's self-reported
 web searches to data/research/.
 
 After all 10 results arrive, BEFORE anything else:
-    step_guard_dispatch_end("step2-trading", guard)   # raises → ABORT (see rules)
+    step_guard_dispatch_end("step2-trading")   # raises → ABORT (see rules)
     from scripts.daily_session import step_author_all
     step_author_all(agent_results, today)
     # ^ MUST be the helper. Do NOT loop in prose calling step_author_orders
@@ -357,11 +361,11 @@ After all 10 results arrive, BEFORE anything else:
     # ^ model resolves to "opus" (the-manager.md frontmatter) — the only
     #   real-money-bound author; stakes justify the tier. Pass it through.
 Write the prompt file, then immediately before dispatching:
-    guard = step_guard_dispatch_begin("step4b-manager")
+    step_guard_dispatch_begin("step4b-manager")
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=manager_prompt. Capture the dispatch result into `response_text`. The
 response is a single JSON object (ManagerDecision). As soon as it returns:
-    step_guard_dispatch_end("step4b-manager", guard)   # raises → ABORT (see rules)
+    step_guard_dispatch_end("step4b-manager")   # raises → ABORT (see rules)
     # 4b-apply — Parse (conviction gate enforced in code), write the
     #            manager-review audit artifact (EVERY day, even a HOLD),
     #            author non-HOLD orders to the manager channel, fill the
@@ -415,10 +419,10 @@ response is a single JSON object (ManagerDecision). As soon as it returns:
     # idle timeout (Apr 29). Do NOT manually override to "opus" — see
     # CLAUDE.md "Persona dispatch substrate" section.
 Write the prompt file, then immediately before dispatching:
-    guard = step_guard_dispatch_begin("step5-oracle")
+    step_guard_dispatch_begin("step5-oracle")
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. Capture the dispatch result into `response_text`, then:
-    step_guard_dispatch_end("step5-oracle", guard)   # raises → ABORT (see rules)
+    step_guard_dispatch_end("step5-oracle")   # raises → ABORT (see rules)
     from engine.blog import parse_oracle_response
     from scripts.daily_session import step_record_oracle_research
     blog_draft, oracle_posts = parse_oracle_response(response_text)
@@ -433,11 +437,11 @@ prompt=wrapped. Capture the dispatch result into `response_text`, then:
 For each agent_id in post_prompts (10 agents):
     wrapped, model = wrap_persona_prompt(agent_id, post_prompts[agent_id])
 Write all 10 prompt files first, THEN, immediately before dispatching:
-    guard = step_guard_dispatch_begin("step6-posts")
+    step_guard_dispatch_begin("step6-posts")
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
 they run in parallel. As soon as all 10 have returned, BEFORE parsing:
-    step_guard_dispatch_end("step6-posts", guard)   # raises → ABORT (see rules)
+    step_guard_dispatch_end("step6-posts")   # raises → ABORT (see rules)
 Then parse each response with parse_post_response.
 Collect agent_posts = {agent_id: [PostPayload, ...]}.
 
@@ -474,13 +478,13 @@ If fewer than 10, the bundle is malformed — abort.
 For each agent_id in memory_prompts (10 traders + the-oracle):
     wrapped, model = wrap_persona_prompt(agent_id, memory_prompts[agent_id])
 Write all 11 prompt files first, THEN, immediately before dispatching:
-    guard = step_guard_dispatch_begin("step8-journals")
+    step_guard_dispatch_begin("step8-journals")
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 11 dispatches MUST be issued in the SAME message so
 they run in parallel. Each subagent rewrites its own first-person journal
 in full and returns the new content as plain markdown. As soon as all 11
 have returned, BEFORE step_save_memories:
-    step_guard_dispatch_end("step8-journals", guard)   # raises → ABORT (see rules)
+    step_guard_dispatch_end("step8-journals")   # raises → ABORT (see rules)
     new_journals = {agent_id: response_text for ...}
     step_save_memories(new_journals)
 After this, every data/agent_memory/*.md (11 files) must show fresh mtimes.

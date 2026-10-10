@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import functools
+import hashlib
 import json
 import math
 import subprocess
@@ -80,7 +81,11 @@ from engine.orders import (
     append_order,
     make_order_id,
 )
-from engine.dispatch_guard import assert_data_tree_unchanged, snapshot_data_tree
+from engine.dispatch_guard import (
+    assert_data_tree_unchanged,
+    guard_concerns,
+    snapshot_data_tree,
+)
 from engine.research import (
     MANAGER_MAX_SEARCHES,
     ORACLE_MAX_SEARCHES,
@@ -1364,24 +1369,33 @@ def step_build_oracle_prompt(
     return prompt
 
 
-def step_guard_dispatch_begin(round_name: str) -> str:
-    """Snapshot before a persona dispatch round; return the token end requires.
+def _dispatch_guard_anchor() -> str | None:
+    """This session's key for the dispatch guard, or None with no anchor.
 
-    See engine.dispatch_guard. Keep the returned token in the orchestrator and
-    pass it to ``step_guard_dispatch_end``: a subagent cannot reach it there.
+    Date plus a digest of the whole anchor, so a snapshot an earlier fire left
+    behind (same date, perhaps the same base) is never this session's.
     """
-    token = snapshot_data_tree(round_name)
-    # Printed for the orchestrator, which may call end from a new process.
-    print(f"  dispatch guard token: {token}")
-    return token
+    anchor = load_anchor()
+    if anchor is None:
+        return None
+    digest = hashlib.sha256(
+        json.dumps(anchor.to_dict(), sort_keys=True).encode("utf-8")
+    ).hexdigest()
+    return f"{anchor.session_date.isoformat()}-{digest[:12]}"
 
 
-def step_guard_dispatch_end(round_name: str, token: str | None = None) -> None:
-    """Refuse the session if the round changed anything the guard watches.
+def step_guard_dispatch_begin(round_name: str) -> None:
+    """Snapshot before a persona dispatch round. See engine.dispatch_guard."""
+    snapshot_data_tree(round_name, anchor=_dispatch_guard_anchor())
 
-    A missing or wrong token raises ``DispatchWroteDataError`` like a write does.
+
+def step_guard_dispatch_end(round_name: str) -> None:
+    """Refuse the session if the round changed an abort signal.
+
+    Changes to the ignored inputs are recorded instead, and the session commit
+    carries them as ``Concerns:`` trailers.
     """
-    assert_data_tree_unchanged(round_name, token)
+    assert_data_tree_unchanged(round_name, anchor=_dispatch_guard_anchor())
 
 
 def step_record_oracle_research(response_text: str, session_date: date) -> None:
@@ -1942,6 +1956,15 @@ def step_commit_session(
             "and the data/orders/*pending/ orders against "
             "data/market/instrument_status.json and the price store by hand."
         ]
+    # What the dispatch guard reported (never aborted on) is added the same
+    # way, one concern per round, and must never cost the commit either.
+    try:
+        derived = [*derived, *guard_concerns(_dispatch_guard_anchor(), _PROJECT_ROOT)]
+    except Exception as exc:  # noqa: BLE001 — the commit outranks the concern
+        derived.append(
+            f"dispatch guard reports could not be read ({exc!r}); read "
+            "data/session_state/dispatch_guard_concerns.jsonl by hand."
+        )
     concerns = list(concerns or []) + [c for c in derived if c not in (concerns or [])]
     subprocess.run(["git", "add", "data/"], cwd=_PROJECT_ROOT, check=True)
     args = ["git", "commit", "-m", f"chore: weekday session {session_date.isoformat()}"]
