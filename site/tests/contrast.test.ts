@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { SRC, sourceFiles } from "./helpers/source-files";
+import { TRADING_AGENTS } from "@/lib/roster";
 
 // Guards the "After Hours" palette against WCAG AA regressions in BOTH themes.
 // Parses global.css directly, so any future token edit that breaks contrast
@@ -124,5 +125,18 @@ describe("WCAG — per-agent kit colours >= 4.5:1 as text, both themes", () => {
         expect(ratio(c.light, ground.light)).toBeGreaterThanOrEqual(4.5);
       });
     }
+  }
+});
+
+// Kit colours live in two files — roster.ts (signatureColor, read by charts and
+// crests in TypeScript) and global.css ([data-agent], read by CSS). The checks
+// above read only the CSS, so the two could drift apart unnoticed.
+describe("kit colours agree between roster.ts and global.css", () => {
+  for (const a of TRADING_AGENTS) {
+    it(`${a.id}`, () => {
+      const css = agentColor(a.id);
+      expect(a.signatureColor.light.toLowerCase()).toBe(css.light.toLowerCase());
+      expect(a.signatureColor.dark.toLowerCase()).toBe(css.dark.toLowerCase());
+    });
   }
 });

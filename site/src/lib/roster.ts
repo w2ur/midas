@@ -79,7 +79,7 @@ export const TRADING_AGENTS: Agent[] = [
     archetype: "On-chain crypto specialist",
     base_currency: "EUR",
     universe_summary: "Kraken top-cap crypto-EUR pairs",
-    signatureColor: { light: "#a85a12", dark: "#f2742e" },
+    signatureColor: { light: "#693f45", dark: "#e8b5bb" },
   },
   {
     id: "monsieur-forex",
