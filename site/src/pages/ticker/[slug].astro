@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { formatPrice, formatShares } from "@/lib/format";
 import AgentCrest from "@/components/AgentCrest.astro";
 import { buildTickerIndex, tickerSlug, loadAllOrders, type Order } from "@/lib/orders";
 import { isTradingAgent, getAgent } from "@/lib/roster";
@@ -46,17 +47,7 @@ function displayName(id: string): string {
   return isTradingAgent(id) ? getAgent(id).display_name : id;
 }
 
-function fmtShares(n: number): string {
-  if (Math.abs(n) >= 100) return n.toFixed(0);
-  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
-  return n.toFixed(4).replace(/\.?0+$/, "");
-}
 
-function fmtPrice(n: number | null, ccy: string | null): string {
-  if (n === null) return "—";
-  const digits = Math.abs(n) < 10 ? 4 : 2;
-  return `${ccy ?? ""} ${n.toFixed(digits)}`.trim();
-}
 ---
 <BaseLayout title={ticker} current="arena" description={`Trade history across agents for ${ticker}.`}>
   <article class="page ticker-page">
@@ -100,8 +91,8 @@ function fmtPrice(n: number | null, ccy: string | null): string {
                 <a href={`/arena/${o.agent_id}`}>{displayName(o.agent_id)}</a>
               </td>
               <td><span class={`pill ${o.action.toLowerCase()}`}>{o.action}</span></td>
-              <td class="num">{fmtShares(o.shares)}</td>
-              <td class="num">{fmtPrice(o.fill_price, o.fill_currency)}</td>
+              <td class="num">{formatShares(o.shares)}</td>
+              <td class="num">{formatPrice(o.fill_price, o.fill_currency)}</td>
               <td>
                 {o.status === "filled" && <span class="pill filled">filled</span>}
                 {o.status === "rejected" && <span class="pill rejected" title={o.reject_reason ?? ""}>rejected</span>}

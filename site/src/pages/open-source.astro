@@ -262,8 +262,8 @@ function fmtInt(n: number): string {
   }
   .btn-primary { background: var(--accent); color: var(--accent-ink); }
   .btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
-  .btn-ghost { color: var(--accent); background: none; }
-  .btn-ghost:hover { color: var(--accent-strong); border-color: var(--accent-strong); }
+  .btn-ghost { color: var(--ink); background: none; border-color: var(--ink-muted); }
+  .btn-ghost:hover { color: var(--ink); border-color: var(--ink); }
 
   .os-counters {
     display: grid;
@@ -303,7 +303,7 @@ function fmtInt(n: number): string {
     margin: 0 0 var(--sp-4);
   }
   .os-body:last-child { margin-bottom: 0; }
-  .os-body a { color: var(--accent); }
+  .os-body a { color: var(--ink); }
   .os-body em { color: var(--ink); font-style: italic; }
   .os-body code,
   .os-note code {

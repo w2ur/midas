@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { formatPrice, formatShares } from "@/lib/format";
 import LeaderboardTable from "@/components/LeaderboardTable.astro";
 import PostItem from "@/components/PostItem.astro";
 import { listDates as listOutputDates, loadByDate } from "@/lib/output";
@@ -56,17 +57,7 @@ function agentName(id: string): string {
   return isTradingAgent(id) ? getAgent(id).display_name : id;
 }
 
-function fmtShares(n: number): string {
-  if (Math.abs(n) >= 100) return n.toFixed(0);
-  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
-  return n.toFixed(4).replace(/\.?0+$/, "");
-}
 
-function fmtPrice(n: number | null, ccy: string | null): string {
-  if (n === null) return "—";
-  const digits = Math.abs(n) < 10 ? 4 : 2;
-  return `${ccy ?? ""} ${n.toFixed(digits)}`.trim();
-}
 
 const title = blog?.title ?? `Session · ${date}`;
 ---
@@ -126,9 +117,9 @@ const title = blog?.title ?? `Session · ${date}`;
             <a class="who" href={`/arena/${o.agent_id}`}>{agentName(o.agent_id)}</a>
             <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
             <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`}>{o.ticker}</a>
-            <span class="shares">{fmtShares(o.shares)} sh</span>
+            <span class="shares">{formatShares(o.shares)} sh</span>
             <span class="at">@</span>
-            <span class="px">{fmtPrice(o.fill_price, o.fill_currency)}</span>
+            <span class="px">{formatPrice(o.fill_price, o.fill_currency)}</span>
           </li>
         ))}
       </ul>
@@ -183,7 +174,7 @@ const title = blog?.title ?? `Session · ${date}`;
     text-decoration: none;
     color: var(--ink-muted);
   }
-  .date-nav .step:hover { color: var(--accent); }
+  .date-nav .step:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
   .date-nav .all { color: var(--ink); }
   .date-nav .arr { color: var(--accent); font-weight: 500; }
   .date-nav .disabled { color: var(--ink-faint); }
@@ -196,7 +187,7 @@ const title = blog?.title ?? `Session · ${date}`;
   .section-head { margin: var(--sp-7) 0 var(--sp-4); }
   .section-head h2 { margin: 0; }
   .section-head a { text-decoration: none; }
-  .section-head a:hover { color: var(--accent); }
+  .section-head a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
   /* ── Oracle teaser — grotesk teaser on the narrator's parchment ── */
   .oracle-teaser {
@@ -219,10 +210,9 @@ const title = blog?.title ?? `Session · ${date}`;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-weight: 500;
-    text-decoration: none;
-    color: var(--accent);
+    color: var(--ink);
   }
-  .more:hover { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+  .more:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
   /* ── Filled-order tape — mono ledger rows ── */
   .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
@@ -239,7 +229,7 @@ const title = blog?.title ?? `Session · ${date}`;
   }
   .tape-row .when { color: var(--ink-muted); min-width: 6.5rem; }
   .tape-row .who { color: var(--ink); text-decoration: none; min-width: 9rem; font-family: var(--font-display); font-weight: 700; }
-  .tape-row .who:hover { color: var(--accent); }
+  .tape-row .who:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
   .tape-row .side {
     font-weight: 500;
     letter-spacing: 0.06em;
@@ -251,7 +241,7 @@ const title = blog?.title ?? `Session · ${date}`;
   .tape-row .side.buy { background: var(--pos); }
   .tape-row .side.sell { background: var(--neg); }
   .tape-row .tick { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule-strong); }
-  .tape-row .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .tape-row .tick:hover { color: var(--ink); border-bottom-color: var(--ink); }
   .tape-row .shares, .tape-row .px { color: var(--ink); }
   .tape-row .at { color: var(--ink-faint); }
 </style>

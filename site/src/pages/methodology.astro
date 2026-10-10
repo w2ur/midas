@@ -135,14 +135,14 @@ const toc = methodologyToc();
     color: var(--ink-muted);
     text-decoration: none;
   }
-  .methodology-toc a:hover { color: var(--accent); }
+  .methodology-toc a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
   .methodology-toc .toc-away {
     margin-top: var(--sp-3);
     padding-top: var(--sp-3);
     border-top: 1px solid var(--rule);
   }
   .methodology-toc .toc-away::before { content: "→"; }
-  .methodology-toc .toc-away a { color: var(--accent); }
+  .methodology-toc .toc-away a { color: var(--ink); }
 
   @media (min-width: 68rem) {
     .methodology-layout {
@@ -207,7 +207,7 @@ const toc = methodologyToc();
   .methodology-body :global(hr) { border: none; border-top: 1px solid var(--rule); margin: var(--sp-6, 2rem) 0; }
   .methodology-body :global(ul), .methodology-body :global(ol) { padding-left: var(--sp-5, 1.5rem); }
   .methodology-body :global(li) { margin-bottom: var(--sp-1, 0.4rem); }
-  .methodology-body :global(a) { color: var(--accent); }
+  .methodology-body :global(a) { color: var(--ink); }
 
   /* ── Hand-off card to the changelog ── */
   .changelog-card {
@@ -236,8 +236,7 @@ const toc = methodologyToc();
     font-family: var(--font-display);
     font-weight: 700;
     font-size: var(--fs-sm);
-    color: var(--accent);
-    text-decoration: none;
+    color: var(--ink);
   }
-  .cc-link:hover { color: var(--accent-strong); }
+  .cc-link:hover { color: var(--ink); text-decoration-thickness: 2px; }
 </style>

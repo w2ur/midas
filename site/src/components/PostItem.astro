@@ -1,5 +1,6 @@
 ---
 import type { Post } from "@/lib/posts";
+import { formatPrice, formatShares } from "@/lib/format";
 import type { Order } from "@/lib/orders";
 import { renderBodyHtml } from "@/lib/posts";
 import { isTradingAgent, getAgent, type AgentId } from "@/lib/roster";
@@ -20,21 +21,11 @@ const bodyHtml = renderBodyHtml(post);
 const showKind = post.kind === "roast" || post.kind === "trade";
 const isTradePost = post.kind === "trade" && trades.length > 0;
 
-function fmtShares(n: number): string {
-  if (Math.abs(n) >= 100) return n.toFixed(0);
-  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
-  return n.toFixed(4).replace(/\.?0+$/, "");
-}
-function fmtPrice(n: number | null, ccy: string | null): string {
-  if (n === null) return "—";
-  const digits = Math.abs(n) < 10 ? 4 : 2;
-  return `${ccy ?? ""} ${n.toFixed(digits)}`.trim();
-}
 
 // One trade-summary line per fill on this post's day.
 const tradeLines = trades.map((o) => ({
   href: `/journal/${o.date}#trade-${o.order_id}`,
-  text: `${o.action} ${o.ticker} · ${fmtShares(o.shares)} sh · ${fmtPrice(o.fill_price, o.fill_currency)}${o.status === "rejected" ? " · rejected" : o.status === "pending" ? " · pending" : ""}`,
+  text: `${o.action} ${o.ticker} · ${formatShares(o.shares)} sh · ${formatPrice(o.fill_price, o.fill_currency)}${o.status === "rejected" ? " · rejected" : o.status === "pending" ? " · pending" : ""}`,
 }));
 ---
 <article class="feed-card feed-post" data-agent={post.agent_id} aria-label={`Post by ${displayName}`}>

@@ -117,14 +117,19 @@ describe("WCAG AA — --ink-faint wherever it colours text", () => {
   }
 });
 
+// --bg-elev is the front page's latest-fill card, which names its agent in kit
+// colour; the other surfaces print kit colours on --bg.
 describe("WCAG — per-agent kit colours >= 4.5:1 as text, both themes", () => {
-  for (const id of AGENTS) {
-    const c = agentColor(id);
-    it(`${id} kit on --bg (dark) >= 4.5`, () => {
-      expect(ratio(c.dark, bg.dark)).toBeGreaterThanOrEqual(4.5);
-    });
-    it(`${id} kit on --bg (light) >= 4.5`, () => {
-      expect(ratio(c.light, bg.light)).toBeGreaterThanOrEqual(4.5);
-    });
+  for (const surface of ["bg", "bg-elev"]) {
+    const ground = token(surface);
+    for (const id of AGENTS) {
+      const c = agentColor(id);
+      it(`${id} kit on --${surface} (dark) >= 4.5`, () => {
+        expect(ratio(c.dark, ground.dark)).toBeGreaterThanOrEqual(4.5);
+      });
+      it(`${id} kit on --${surface} (light) >= 4.5`, () => {
+        expect(ratio(c.light, ground.light)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
   }
 });

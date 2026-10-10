@@ -148,7 +148,7 @@ const jsonLdSafe = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
   }
-  .oracle-column .prose :global(a:hover) { color: var(--accent); }
+  .oracle-column .prose :global(a:hover) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
   .oracle-column .prose :global(blockquote) {
     border-left: 2px solid var(--accent);
     margin: 1.5rem 0;
@@ -225,6 +225,6 @@ const jsonLdSafe = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
     color: var(--ink-muted);
     text-decoration: none;
   }
-  .prevnext a:hover { color: var(--accent); }
+  .prevnext a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
   .prevnext a.next { margin-left: auto; text-align: right; }
 </style>

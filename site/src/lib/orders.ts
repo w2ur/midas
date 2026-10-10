@@ -22,6 +22,10 @@ export type Order = {
   fill_currency: string | null;
   fees: number | null;
   reject_reason: string | null;
+  /** When the broker confirmed the order (inbox `ts_filled`); trader channel only. */
+  ts_filled?: string | null;
+  /** 1-based physical line of the order in its outbox file — the raw record's address. */
+  line?: number;
 };
 
 type OutboxRow = {
@@ -54,6 +58,17 @@ function readJsonl<T>(file: string): T[] {
     .map((l) => l.trim())
     .filter(Boolean)
     .map((l) => JSON.parse(l) as T);
+}
+
+/** Like readJsonl, keeping each row's 1-based physical line in the file. */
+function readJsonlWithLines<T>(file: string): { row: T; line: number }[] {
+  if (!fs.existsSync(file)) return [];
+  return fs
+    .readFileSync(file, "utf-8")
+    .split("\n")
+    .map((l, i) => ({ text: l.trim(), line: i + 1 }))
+    .filter((l) => l.text)
+    .map((l) => ({ row: JSON.parse(l.text) as T, line: l.line }));
 }
 
 function datesInDir(dir: string): string[] {
@@ -105,8 +120,8 @@ function loadInboxIndex(): Map<string, InboxRow> {
  * after it had genuinely filled. See tests/orders.test.ts.
  */
 function ordersForDate(date: string, inboxIndex: Map<string, InboxRow>): Order[] {
-  const outbox = readJsonl<OutboxRow>(path.join(OUTBOX_DIR, `${date}.jsonl`));
-  return outbox.map((o) => {
+  const outbox = readJsonlWithLines<OutboxRow>(path.join(OUTBOX_DIR, `${date}.jsonl`));
+  return outbox.map(({ row: o, line }) => {
     const fill = inboxIndex.get(o.order_id);
     return {
       order_id: o.order_id,
@@ -122,6 +137,8 @@ function ordersForDate(date: string, inboxIndex: Map<string, InboxRow>): Order[]
       fill_currency: fill?.fill_currency ?? null,
       fees: fill?.fees ?? null,
       reject_reason: fill?.reason ?? null,
+      ts_filled: fill?.ts_filled ?? null,
+      line,
     };
   });
 }

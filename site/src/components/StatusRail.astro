@@ -71,13 +71,13 @@ const summary = [
 
     {msciLabel && (
       <>
-        <span class="sv-sep sv-fold" aria-hidden="true">·</span>
-        <span class="sv-item sv-fold">MSCI <span class="sv-num">{msciLabel}</span></span>
+        <span class="sv-sep" aria-hidden="true">·</span>
+        <span class="sv-item">MSCI <span class="sv-num">{msciLabel}</span></span>
       </>
     )}
 
-    <span class="sv-sep sv-fold" aria-hidden="true">·</span>
-    <span class="sv-item sv-fold"><span class="sv-num">{agentCount}</span> agents</span>
+    <span class="sv-sep" aria-hidden="true">·</span>
+    <span class="sv-item"><span class="sv-num">{agentCount}</span> agents</span>
   </div>
 </div>
 
@@ -139,12 +139,13 @@ const summary = [
     50%      { opacity: 0.35; }
   }
 
-  /* Narrow phones keep the session state and the day count; the reference
-     figure and the roster size fold away rather than truncating mid-word.
-     Each separator carries .sv-fold with the item it introduces, so the
-     strip never ends on a dangling "·". */
+  /* Narrow phones wrap the strip to a second line instead of dropping the
+     reference figure and the roster size without a sign. The separators go,
+     and spacing alone divides the items, so no line starts or ends on a
+     dangling "·". */
   @media (max-width: 26rem) {
-    .sv-fold { display: none; }
+    .strip-inner { flex-wrap: wrap; column-gap: 1.6ch; row-gap: 0.1rem; }
+    .sv-sep { display: none; }
   }
 
   /* Chrome — never print the status furniture. */

@@ -54,10 +54,9 @@ const { html, entryCount } = renderChangelog();
     font-size: var(--fs-xs);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--accent);
-    text-decoration: none;
+    color: var(--ink);
   }
-  .cl-back a:hover { color: var(--accent-strong); }
+  .cl-back a:hover { color: var(--ink); text-decoration-thickness: 2px; }
 
   .changelog-body { padding-bottom: var(--sp-8); }
   /* Each entry is a top-level <li> carrying an <a id> — give it the weight of
@@ -102,6 +101,6 @@ const { html, entryCount } = renderChangelog();
        horizontal scroll. Pre-existing on the unsplit page. */
     overflow-wrap: anywhere;
   }
-  .changelog-body :global(a) { color: var(--accent); }
+  .changelog-body :global(a) { color: var(--ink); }
   .changelog-body :global(del) { color: var(--ink-faint); }
 </style>

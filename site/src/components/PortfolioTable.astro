@@ -1,5 +1,6 @@
 ---
 import type { AgentPortfolio } from "@/lib/output";
+import { formatShares } from "@/lib/format";
 import { loadPositionQuote } from "@/lib/ohlcv";
 import { tickerSlug } from "@/lib/orders";
 import { tickerName } from "@/lib/tickers";
@@ -52,11 +53,6 @@ function fmtPrice(n: number): string {
   return n.toFixed(digits);
 }
 
-function fmtShares(n: number): string {
-  if (Math.abs(n) >= 100) return n.toFixed(0);
-  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
-  return n.toFixed(4).replace(/\.?0+$/, "");
-}
 ---
 <section class="portfolio">
   <dl class="pf-summary">
@@ -87,7 +83,7 @@ function fmtShares(n: number): string {
             return (
               <tr>
                 <td><a class="tick" href={`/ticker/${tickerSlug(r.ticker)}`} title={tickerName(r.ticker) ?? undefined}>{r.ticker}</a></td>
-                <td class="num">{fmtShares(r.shares)}</td>
+                <td class="num">{formatShares(r.shares)}</td>
                 <td class="num">
                   {r.close !== null ? (
                     <><span class="ccy">{r.currency ?? ""}</span> {fmtPrice(r.close)}</>
@@ -198,7 +194,7 @@ function fmtShares(n: number): string {
     text-decoration: none;
     border-bottom: 1px dotted var(--rule-strong);
   }
-  .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .tick:hover { color: var(--ink); border-bottom-color: var(--ink); }
   .ccy { color: var(--ink-faint); }
   .dash { color: var(--ink-faint); }
 

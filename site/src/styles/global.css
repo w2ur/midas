@@ -47,7 +47,7 @@
   --ink-faint: light-dark(#646a78, #7f8797); /* quietest text tier — AA (≥4.5:1) on every ground; tests/contrast.test.ts finds each text use */
   --rule: light-dark(#dde0dc, #242c3a);
   --rule-strong: light-dark(#14161b, #3a4456);
-  --accent: light-dark(#9a5b00, #f5a623); /* amber signal: links, live, leader */
+  --accent: light-dark(#9a5b00, #f5a623); /* amber signal: primary action, live, leader, focus */
   --accent-strong: light-dark(#7a4700, #ffb84d); /* hover/emphasis */
   --accent-ink: light-dark(#ffffff, #0b0e14); /* text on amber fills */
   --pos: light-dark(#1c7a45, #46c08a);
@@ -116,13 +116,16 @@ h3 { font-size: var(--fs-xl); margin-top: var(--sp-5); }
 h4 { font-size: var(--fs-lg); margin-top: var(--sp-4); }
 
 p { margin: 0 0 1em; }
+/* Links are ink with an underline on every page; amber is kept for the
+   primary action, the live state, the leader and the focus ring, so it
+   keeps one meaning site-wide. */
 a {
-  color: var(--accent);
+  color: var(--ink);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
-a:hover { color: var(--accent-strong); }
+a:hover { color: var(--ink); text-decoration-thickness: 2px; }
 
 /* Visible, robust focus ring (offset so it never sits amber-on-amber). */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
@@ -303,7 +306,7 @@ th {
 .trade-card .side.buy { background: var(--pos); color: var(--accent-ink); }
 .trade-card .side.sell { background: var(--neg); color: var(--accent-ink); }
 .trade-card .tick { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule-strong); }
-.trade-card .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.trade-card .tick:hover { color: var(--ink); border-bottom-color: var(--ink); }
 .trade-card .shares, .trade-card .px { color: var(--ink); }
 .trade-card .at { color: var(--ink-faint); }
 .trade-card .why {
@@ -382,7 +385,7 @@ th {
   color: var(--ink);
   text-decoration: none;
 }
-.feed-card .meta .name:hover { color: var(--accent); }
+.feed-card .meta .name:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .feed-card .meta .handle { font-family: var(--font-mono); color: var(--ink-muted); }
 .feed-card .meta .when { font-family: var(--font-mono); color: var(--ink-muted); margin-left: auto; }
 .feed-card .meta .kind {
@@ -424,7 +427,7 @@ th {
   border-bottom: 1px dotted var(--rule-strong);
   white-space: nowrap;
 }
-.feed-card .body a.feed-ticker:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.feed-card .body a.feed-ticker:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; border-bottom-color: var(--ink); }
 .feed-card .body a.feed-mention {
   color: var(--agent-color, var(--ink));
   text-decoration: none;

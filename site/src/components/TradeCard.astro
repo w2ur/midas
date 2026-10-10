@@ -1,22 +1,13 @@
 ---
 import type { Order, OrderStatus } from "@/lib/orders";
+import { formatPrice, formatShares } from "@/lib/format";
 import { tickerSlug } from "@/lib/orders";
 import { tickerName } from "@/lib/tickers";
 
 interface Props { orders: Order[] }
 const { orders } = Astro.props;
 
-function fmtShares(n: number): string {
-  if (Math.abs(n) >= 100) return n.toFixed(0);
-  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
-  return n.toFixed(4).replace(/\.?0+$/, "");
-}
 
-function fmtPrice(n: number | null, ccy: string | null): string {
-  if (n === null) return "—";
-  const digits = Math.abs(n) < 10 ? 4 : 2;
-  return `${ccy ?? ""} ${n.toFixed(digits)}`.trim();
-}
 
 const STATUS_META: Record<OrderStatus, { label: string; cls: string }> = {
   filled: { label: "Filled", cls: "fil" },
@@ -33,7 +24,7 @@ const STATUS_META: Record<OrderStatus, { label: string; cls: string }> = {
         <div class="head">
           <span class={`pill ${side}`}>{o.action}</span>
           <a class="tick" href={`/ticker/${tickerSlug(o.ticker)}`} title={tickerName(o.ticker) ?? undefined}>{o.ticker}</a>
-          <span class="qty">{fmtShares(o.shares)} sh @ {fmtPrice(o.fill_price, o.fill_currency)}</span>
+          <span class="qty">{formatShares(o.shares)} sh @ {formatPrice(o.fill_price, o.fill_currency)}</span>
           <span class={`status ${status.cls}`} title={o.status === "rejected" ? (o.reject_reason ?? "") : undefined}>{status.label}</span>
         </div>
         {o.status === "rejected" && o.reject_reason && (
@@ -91,7 +82,7 @@ const STATUS_META: Record<OrderStatus, { label: string; cls: string }> = {
     text-decoration: none;
     border-bottom: 1px dotted var(--rule-strong);
   }
-  .tick:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .tick:hover { color: var(--ink); border-bottom-color: var(--ink); }
 
   .qty {
     font-family: var(--font-mono);

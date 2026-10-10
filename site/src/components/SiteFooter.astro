@@ -41,7 +41,12 @@ const year = new Date().getFullYear();
     color: var(--ink-muted);
     text-decoration: none;
   }
-  .secondary a:hover { color: var(--accent); }
+  .secondary a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  /* Phone: each secondary link is a 44px target, not a 12px line of type. */
+  @media (max-width: 48rem) {
+    .secondary ul { row-gap: 0; margin-bottom: var(--sp-2); }
+    .secondary a { display: inline-flex; align-items: center; min-height: 44px; }
+  }
   .inner {
     display: flex;
     gap: var(--sp-3) var(--sp-5);
@@ -64,7 +69,7 @@ const year = new Date().getFullYear();
     text-decoration: underline;
     text-underline-offset: 3px;
   }
-  .site-footer a:hover { color: var(--accent); }
+  .site-footer a:hover { color: var(--ink); }
 
   /* The honest tagline sits to the right on wide viewports. */
   .tagline { display: none; }

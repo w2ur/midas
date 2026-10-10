@@ -1,0 +1,222 @@
+---
+// The front page's exhibit: one real fill, in the agent's own words, beside
+// the promise it proves. Picked by lib/latest-fill (newest broker confirmation
+// by a trading agent; never hidden on a quiet day). The rationale is the
+// agent's verbatim text, clamped to three lines with the rest one click away
+// — a machine voice, so Archivo, never the Oracle's serif. No amber: the card
+// is coloured by the agent's kit, and amber keeps its one meaning.
+import AgentCrest from "@/components/AgentCrest.astro";
+import type { Order } from "@/lib/orders";
+import { tickerSlug } from "@/lib/orders";
+import { rawRecordUrl } from "@/lib/latest-fill";
+import { formatPrice, formatShares, longDate } from "@/lib/format";
+import { getAgent, type AgentId } from "@/lib/roster";
+import { isCrestId } from "@/lib/crests";
+
+interface Props { order: Order }
+const { order: o } = Astro.props;
+
+// lib/latest-fill only ever returns a trading agent's fill.
+const name = getAgent(o.agent_id as AgentId).display_name;
+const filledDate = o.ts_filled ? o.ts_filled.slice(0, 10) : o.date;
+// A conditional order is written on one day and fires on another; say both.
+const firedLater = filledDate !== o.date;
+
+function stamp(iso: string | null | undefined, date: string): string {
+  if (!iso) return longDate(date);
+  return `${longDate(iso.slice(0, 10))}, ${new Date(iso).toISOString().slice(11, 16)} UTC`;
+}
+
+// Three lines hold ~115 characters on the narrowest phone, so anything longer
+// may be clamped there and gets the toggle. On a wide card a 120-character
+// rationale fits unclamped and opening the toggle shows the same text: a
+// harmless no-op, where the opposite error would hide the end of a rationale.
+const clamps = o.reasoning.length > 110;
+// The record's own leading fields, in the file's key order and its
+// `json.dumps` spacing — an excerpt of the outbox line the link opens, not a
+// summary built for the card. Fill data lives in the inbox, not here.
+const raw = `{"order_id": ${JSON.stringify(o.order_id)}, "agent_id": ${JSON.stringify(o.agent_id)}, ` +
+  `"action": ${JSON.stringify(o.action)}, "ticker": ${JSON.stringify(o.ticker)}, "shares": ${pyFloat(o.shares)}, …}`;
+
+// The outbox is written by Python, which prints a float share count as `1.0`.
+function pyFloat(n: number): string {
+  return Number.isInteger(n) ? `${n}.0` : String(n);
+}
+---
+<aside class="latest-fill" data-agent={o.agent_id} aria-labelledby="lf-label">
+  <header class="lf-head">
+    <h2 id="lf-label" class="lf-label">Latest fill</h2>
+    <time class="lf-when" datetime={o.ts_filled ?? o.date}>{stamp(o.ts_filled, o.date)}</time>
+  </header>
+
+  <p class="lf-who">
+    {isCrestId(o.agent_id) && <AgentCrest id={o.agent_id} size={24} />}
+    <a class="lf-name" href={`/arena/${o.agent_id}`}>{name}</a>
+  </p>
+
+  <p class="lf-trade">
+    <span class={`lf-side ${o.action.toLowerCase()}`}>{o.action}</span>
+    <a class="lf-tick" href={`/ticker/${tickerSlug(o.ticker)}`}>{o.ticker}</a>
+    <span class="lf-qty">{formatShares(o.shares)} sh @ {formatPrice(o.fill_price, o.fill_currency)}</span>
+  </p>
+  <p class="lf-status">
+    Filled by the broker{firedLater && <> · order written {longDate(o.date)}</>}
+  </p>
+
+  <p class="lf-why">{o.reasoning}</p>
+  {clamps && (
+    <details class="lf-more">
+      <summary>Full rationale</summary>
+      <p class="lf-full">{o.reasoning}</p>
+    </details>
+  )}
+
+  <a class="lf-raw" href={rawRecordUrl(o)}>
+    <span class="lf-raw-label">Raw order record</span>
+    <code>{raw}</code>
+  </a>
+</aside>
+
+<style>
+  .latest-fill {
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    box-shadow: inset 3px 0 0 var(--agent-color), var(--shadow-1);
+    padding: var(--sp-5) var(--sp-5) var(--sp-4) calc(var(--sp-5) + 3px);
+    min-width: 0;
+  }
+  .lf-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-1) var(--sp-3);
+    margin-bottom: var(--sp-4);
+  }
+  .lf-label {
+    margin: 0;
+    font-size: var(--fs-base);
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+  .lf-when {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+  }
+  .lf-who {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin: 0 0 var(--sp-2);
+  }
+  .lf-name {
+    color: var(--agent-color);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-lg);
+    text-decoration: none;
+  }
+  .lf-name:hover { color: var(--agent-color); text-decoration: underline; text-underline-offset: 4px; }
+  .lf-trade {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--sp-1) var(--sp-2);
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-base);
+    color: var(--ink);
+  }
+  .lf-side {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 0.05rem 0.45rem;
+    border-radius: var(--r-sm);
+    color: var(--accent-ink);
+  }
+  .lf-side.buy { background: var(--pos); }
+  .lf-side.sell { background: var(--neg); }
+  .lf-tick { color: var(--ink); font-weight: 500; }
+  .lf-tick:hover { color: var(--ink); text-decoration-thickness: 2px; }
+  .lf-qty { color: var(--ink-muted); }
+  .lf-status {
+    margin: var(--sp-1) 0 var(--sp-4);
+    font-size: var(--fs-sm);
+    color: var(--ink-muted);
+  }
+  .lf-why {
+    margin: 0;
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--rule);
+    font-family: var(--font-display);
+    font-size: var(--fs-base);
+    line-height: 1.5;
+    color: var(--ink);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+  }
+  /* The full text lives inside <details>, so the toggle works on its own; the
+     clamped copy is hidden while it is open. A browser without :has() shows
+     both, which still reads in full. */
+  .latest-fill:has(.lf-more[open]) .lf-why { display: none; }
+  .lf-more { margin: var(--sp-2) 0 0; }
+  .lf-more[open] { margin-top: 0; }
+  .lf-full {
+    margin: 0;
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--rule);
+    font-family: var(--font-display);
+    font-size: var(--fs-base);
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .lf-more[open] { display: flex; flex-direction: column-reverse; }
+  .lf-more summary {
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .lf-more summary::-webkit-details-marker { display: none; }
+  .lf-more[open] summary { text-decoration-thickness: 2px; }
+  .lf-raw {
+    display: block;
+    margin-top: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg-elev2);
+    border-radius: var(--r-sm);
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    line-height: 1.5;
+  }
+  .lf-raw:hover { color: var(--ink); }
+  .lf-raw-label {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    margin-bottom: var(--sp-1);
+  }
+  .lf-raw code { overflow-wrap: anywhere; font: inherit; }
+</style>

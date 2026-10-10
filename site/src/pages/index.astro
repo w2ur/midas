@@ -18,13 +18,16 @@
 // board. No FX arithmetic here: every figure is read off the engine's
 // artifacts or off lib/cadence.
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { formatPrice, formatShares, longDate } from "@/lib/format";
 import AgentCrest from "@/components/AgentCrest.astro";
 import LeaderboardTable from "@/components/LeaderboardTable.astro";
 import MethodologyFacts from "@/components/MethodologyFacts.astro";
+import LatestFill from "@/components/LatestFill.astro";
 import { loadLatest } from "@/lib/output";
 import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 import { loadBlogLatest, excerpt } from "@/lib/blog";
 import { loadAllOrders } from "@/lib/orders";
+import { latestFill, byFillTimeDesc } from "@/lib/latest-fill";
 import { isTradingAgent, getAgent, TRADING_AGENTS } from "@/lib/roster";
 import { loadGlobalReference, returnPct } from "@/lib/baselines";
 import { countWord } from "@/lib/facts";
@@ -51,10 +54,19 @@ const previewRows = [...leaderboardRows].sort((a, b) => a.rank - b.rank).slice(0
 const measured = leaderboardRows.filter((r) => r.vs_benchmark_pp != null);
 const beating = measured.length > 0 ? measured.filter((r) => (r.vs_benchmark_pp as number) > 0).length : null;
 
-const TAPE_ROWS = 3;
-const recentTrades = loadAllOrders()
+const allOrders = loadAllOrders();
+// The hero exhibit: the newest fill by a trader, in its own words.
+const leadFill = latestFill(allOrders, isTradingAgent);
+
+// Six rows: the tape shares a row with the Oracle's column on wide screens,
+// and three left half of that row empty.
+const TAPE_ROWS = 6;
+// Ordered by confirmation time, the same key as the hero's fill, so the fill
+// the hero leads with is the tape's first row rather than buried under rows
+// authored later but filled earlier.
+const recentTrades = allOrders
   .filter((o) => o.status === "filled")
-  .sort((a, b) => (a.date === b.date ? b.order_id.localeCompare(a.order_id) : b.date.localeCompare(a.date)))
+  .sort(byFillTimeDesc)
   .slice(0, TAPE_ROWS);
 
 // The Manager card — the allocator book, unranked by design, the one book
@@ -81,28 +93,13 @@ function agentName(id: string): string {
   return isTradingAgent(id) ? getAgent(id).display_name : id;
 }
 
-function fmtShares(n: number): string {
-  if (Math.abs(n) >= 100) return n.toFixed(0);
-  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
-  return n.toFixed(4).replace(/\.?0+$/, "");
-}
 
-function fmtPrice(n: number | null, ccy: string | null): string {
-  if (n === null) return "—";
-  const digits = Math.abs(n) < 10 ? 4 : 2;
-  return `${ccy ?? ""} ${n.toFixed(digits)}`.trim();
-}
 
 function fmtPct(n: number | null): string {
   if (n === null) return "—";
   return `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
 
-function humanDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
-    day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
-  });
-}
 
 const eur = (n: number) =>
   new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 }).format(n);
@@ -115,12 +112,15 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
 >
   <!-- ═══ 1. THE PROMISE ═══ -->
   <section class="page hero">
-    <h1>{RosterWord} AI agents trade a paper book. Every decision is public.</h1>
+    <h1>{RosterWord} AI agents trade a paper book. <span class="h1-line">Every decision is public.</span></h1>
     <p class="promise">
-      Every order they place — and every one they refuse — is published the same day.
+      Every order they place is published the same day. So is every one the broker refuses.
       Every book runs against a passive benchmark and a coin flip.
     </p>
-    <MethodologyFacts only={["money", "sessions", "fills", "skill"]} compact />
+    {leadFill && <div class="hero-exhibit"><LatestFill order={leadFill} /></div>}
+    <div class="hero-facts">
+      <MethodologyFacts only={["money", "sessions", "fills", "skill"]} compact />
+    </div>
     <p class="hero-links">
       <a class="cta" href="/methodology">How this is scored</a>
       <a class="cta ghost" href="/arena">The full board</a>
@@ -130,7 +130,10 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   <!-- ═══ 2. THE BOARD, previewed ═══ -->
   <section class="page board-section">
     <header class="sec-head row">
-      <h2 class="board-h">The leaderboard</h2>
+      <div>
+        <h2>The leaderboard</h2>
+        <p class="sec-note">Top three by return against each book&rsquo;s own benchmark.</p>
+      </div>
       {beating !== null && (
         <p class="board-fact">Ahead of their own benchmark: <b>{beating} of {measured.length}</b></p>
       )}
@@ -147,9 +150,10 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     </p>
   </section>
 
-  <!-- ═══ 3. THE TAPE ═══ -->
+  <!-- ═══ 3–4. THE TAPE | THE ORACLE ═══ -->
+  <div class="page duo">
   {recentTrades.length > 0 && (
-    <section class="page recently-traded">
+    <section class="recently-traded">
       <header class="sec-head">
         <h2>The tape</h2>
         <p class="sec-note">Reconciled fills, every one of them refusable by the broker.</p>
@@ -157,45 +161,49 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
       <ul class="tape">
         {recentTrades.map((o) => (
           <li class="tape-row">
-            <span class="when">{o.date}</span>
+            <span class="when">{o.ts_filled ? o.ts_filled.slice(0, 10) : o.date}</span>
             {isCrestId(o.agent_id) && <AgentCrest id={o.agent_id} size={18} />}
             <a class="who" href={`/arena/${o.agent_id}`}>{agentName(o.agent_id)}</a>
             <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
             <span class="tick">{o.ticker}</span>
-            <span class="shares">{fmtShares(o.shares)} sh</span>
+            <span class="shares">{formatShares(o.shares)} sh</span>
             <span class="at" aria-hidden="true">@</span>
-            <span class="px">{fmtPrice(o.fill_price, o.fill_currency)}</span>
+            <span class="px">{formatPrice(o.fill_price, o.fill_currency)}</span>
           </li>
         ))}
       </ul>
     </section>
   )}
 
-  <!-- ═══ 4. THE ORACLE ═══ -->
-  <section class="page oracle-section">
+  <section class="oracle-section">
+    <header class="sec-head">
+      <h2>The Oracle</h2>
+      <p class="sec-note">The narrator&rsquo;s column of {longDate(latestBlog.date)}.</p>
+    </header>
     <article class="parchment">
       <p class="parch-byline" aria-hidden="true">By<br />The Oracle</p>
-      <p class="parch-kicker">The Oracle · {latestBlog.date}</p>
       <h3 class="parch-h"><a href={`/journal/${latestBlog.date}`}>{latestBlog.title}</a></h3>
       <p class="parch-body dropcap">{blogExcerpt}</p>
       <a class="parch-read" href={`/journal/${latestBlog.date}`}>Read today&rsquo;s column</a>
     </article>
   </section>
+  </div>
 
-  <!-- ═══ 5. THE MANAGER ═══ -->
-  <section class="page manager-section">
-    <a class="manager-card" href="/arena/the-manager">
-      <div class="mc-head">
-        <AgentCrest id={MANAGER.id} size={30} />
-        <div>
-          <h3>{MANAGER.display_name}</h3>
-          <p class="sec-note">Unranked by design.</p>
-        </div>
+  <!-- ═══ 5–6. THE MANAGER | OPEN SOURCE ═══ -->
+  <div class="page duo duo-last">
+  <section class="manager-section">
+    <header class="sec-head mc-head">
+      <AgentCrest id={MANAGER.id} size={30} />
+      <div>
+        <h2>{MANAGER.display_name}</h2>
+        <p class="sec-note">Unranked by design.</p>
       </div>
+    </header>
+    <a class="manager-card" href="/arena/the-manager">
       <p class="mc-pitch">
         The allocator: it reads the {rosterWord} traders&rsquo; convictions and commits a separate
         €{eur(MANAGER.initial_capital)} book. It is the one book with a pre-registered real-money
-        gate{gateC ? <>, scored on <b>{humanDate(gateC)}</b></> : null}.
+        gate{gateC ? <>, scored on <b>{longDate(gateC)}</b></> : null}.
       </p>
       <dl class="mc-stats">
         <div><dt>Book</dt><dd>{managerLatest ? `€${eur(managerLatest.portfolio_value)}` : "—"}</dd></div>
@@ -206,16 +214,26 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     </a>
   </section>
 
-  <!-- ═══ 6. OPEN SOURCE, one line ═══ -->
-  <p class="page oss-line">
-    The engine behind this desk is MIT and public. <a href="/open-source">How it works</a>
-  </p>
+  <section class="oss-section">
+    <header class="sec-head">
+      <h2>Open source</h2>
+      <p class="sec-note">MIT licensed, mirrored from this desk.</p>
+    </header>
+    <p class="oss-line">
+      The framework behind this desk is public: the broker and its rails, the roster config,
+      the backtest and baseline machinery, and a runnable demo desk.
+      <a href="/open-source">How it works</a>
+    </p>
+  </section>
+  </div>
 </BaseLayout>
 
 <style>
   /* ── Shared furniture ── */
   .sec-head { margin: 0 0 var(--sp-4); }
-  .sec-head h2 { margin: 0.25rem 0 0; }
+  /* One heading step for every section on the page: the board, the tape, the
+     Oracle and the Manager were a 13px mono label, a 45px h2 and a 24px h3. */
+  .sec-head h2 { margin: 0.25rem 0 0; font-size: var(--fs-xl); }
   .sec-head.row {
     display: flex;
     flex-wrap: wrap;
@@ -248,16 +266,58 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
      the live state and the leader, so it keeps one meaning. */
   .cta.ghost { background: none; color: var(--ink); border-color: var(--ink-muted); }
   .cta.ghost:hover { color: var(--ink); border-color: var(--ink); background: none; }
+  /* Phone: one full-width primary action at a 48px target; the secondary
+     drops to a text link instead of competing at the same size. */
+  @media (max-width: 40rem) {
+    .hero-links { flex-direction: column; align-items: stretch; }
+    .cta { display: flex; align-items: center; justify-content: center; min-height: 48px; }
+    .cta.ghost {
+      border: 0;
+      padding: 0;
+      min-height: 44px;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+  }
 
   /* ── 1. THE PROMISE ── */
   .hero {
     padding: var(--sp-7) var(--gutter) var(--sp-6);
     border-bottom: 1px solid var(--rule);
   }
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "title" "promise" "exhibit" "facts" "links";
+  }
   .hero h1 {
+    grid-area: title;
     font-size: var(--fs-3xl);
-    max-width: 22ch;
     margin: 0 0 var(--sp-4);
+  }
+  /* The second sentence never splits, so at full width the title is two
+     lines that break where the sentences do. */
+  .hero .promise { grid-area: promise; }
+  .hero-exhibit { grid-area: exhibit; margin: 0 0 var(--sp-5); min-width: 0; }
+  .hero-facts { grid-area: facts; min-width: 0; }
+  .hero .hero-links { grid-area: links; }
+  /* Wide: the title spans; the promise, facts and actions sit left of the
+     exhibit, which fills what was an empty ~40% of the first screen. */
+  @media (min-width: 64rem) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto auto auto 1fr;
+      grid-template-areas:
+        "title   title"
+        "promise exhibit"
+        "facts   exhibit"
+        "links   exhibit";
+      column-gap: var(--sp-7);
+    }
+    .hero-exhibit { margin: 0; align-self: start; }
+    .h1-line { display: inline-block; }
+    .hero .hero-links { align-self: start; align-items: flex-start; }
   }
   /* the one narrative sentence on the masthead → serif */
   .promise {
@@ -272,15 +332,6 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
 
   /* ── 2. THE BOARD ── */
   .board-section { padding-top: var(--sp-6); padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule); }
-  .board-h {
-    font-family: var(--font-mono);
-    font-size: var(--fs-xs);
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    margin: 0;
-  }
   .board-fact {
     margin: 0;
     font-family: var(--font-mono);
@@ -302,8 +353,17 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     text-decoration-thickness: 2px;
   }
 
+  /* ── 3–6. Two exhibits a row on wide screens, stacked below 64rem ── */
+  .duo { display: grid; grid-template-columns: minmax(0, 1fr); border-bottom: 1px solid var(--rule); }
+  .duo > * { padding-top: var(--sp-6); padding-bottom: var(--sp-6); min-width: 0; }
+  .duo > * + * { border-top: 1px solid var(--rule); }
+  .duo-last { border-bottom: 0; }
+  @media (min-width: 64rem) {
+    .duo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--sp-7); }
+    .duo > * + * { border-top: 0; }
+  }
+
   /* ── 3. THE TAPE ── */
-  .recently-traded { padding-top: var(--sp-6); padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule); }
   .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-strong); }
   .tape-row {
     display: flex;
@@ -334,7 +394,6 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   .tape-row .shares, .tape-row .px, .tape-row .at { color: var(--ink-muted); }
 
   /* ── 4. THE ORACLE ── */
-  .oracle-section { padding-top: var(--sp-6); padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule); }
   .parchment {
     position: relative;
     background: var(--oracle-surface);
@@ -344,17 +403,6 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     padding: var(--sp-5) var(--sp-5) var(--sp-6);
     max-width: var(--measure-wide);
     overflow: hidden;
-  }
-  .parch-kicker {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    font-size: var(--fs-xs);
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    margin: 0 0 var(--sp-3);
-    padding-bottom: var(--sp-3);
-    border-bottom: 1px solid var(--rule);
   }
   .parch-h {
     font-family: var(--font-serif);
@@ -401,7 +449,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
       display: block;
       position: absolute;
       left: 0;
-      top: calc(var(--sp-5) + 2.4rem);
+      top: calc(var(--sp-5) + 0.4rem);
       width: var(--sp-8);
       padding-right: var(--sp-3);
       margin: 0;
@@ -412,12 +460,10 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
       font-size: var(--fs-xs);
       line-height: 1.25;
       color: var(--oracle-ink);
-      opacity: 0.65;
     }
   }
 
   /* ── 5. THE MANAGER ── */
-  .manager-section { padding-top: var(--sp-6); padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule); }
   .manager-card {
     display: block;
     max-width: var(--measure-wide);
@@ -430,14 +476,13 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   }
   .manager-card:hover { border-color: var(--ink-muted); }
   .mc-head { display: flex; align-items: center; gap: var(--sp-3); }
-  .mc-head h3 { margin: 0.15rem 0 0; font-size: var(--fs-lg); }
   .mc-pitch {
     font-family: var(--font-display);
     font-size: var(--fs-base);
     line-height: var(--lh-body);
     color: var(--ink-muted);
     max-width: var(--measure);
-    margin: var(--sp-4) 0 0;
+    margin: 0;
   }
   .mc-pitch b { color: var(--ink); font-weight: 600; }
   .mc-stats {
@@ -481,11 +526,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
 
   /* ── 6. OPEN SOURCE ── */
   .oss-line {
-    padding-top: var(--sp-6);
-    padding-bottom: var(--sp-8);
-    /* margin-block only: a bare `margin: 0` cancelled .page's auto centring
-       and pushed this line out to the gutter, left of every section above. */
-    margin-block: 0;
+    margin: 0;
     font-family: var(--font-display);
     font-size: var(--fs-base);
     color: var(--ink-muted);
