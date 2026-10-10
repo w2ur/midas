@@ -115,7 +115,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   <section class="page hero">
     <h1>{RosterWord} AI agents trade a paper book. <span class="h1-line">Every decision is public.</span></h1>
     <p class="promise">
-      Every order they place is published the same day. So is every one the broker refuses.
+      Every order they place is published the same day. So is every one the paper broker refuses.
       Every book runs against a passive benchmark and a coin flip.
     </p>
     {leadFill && <div class="hero-exhibit"><LatestFill order={leadFill} /></div>}
@@ -163,14 +163,16 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
         {recentTrades.map((o) => (
           <li class="tape-row">
             <span class="when">{o.ts_filled ? o.ts_filled.slice(0, 10) : o.date}</span>
-            {isCrestId(o.agent_id) && <AgentCrest id={o.agent_id} size={18} />}
+            {isCrestId(o.agent_id) ? <AgentCrest id={o.agent_id} size={18} /> : <span aria-hidden="true"></span>}
             <a class="who" href={`/arena/${o.agent_id}`}>{agentName(o.agent_id)}</a>
             <span class="what">
               <span class={`side ${o.action.toLowerCase()}`}>{o.action}</span>
               <span class="tick">{o.ticker}</span>
-              <span class="shares">{formatShares(o.shares)} sh</span>
-              <span class="at" aria-hidden="true">@</span>
-              <span class="px">{formatPrice(o.fill_price, o.fill_currency)}</span>
+              <span class="qty">
+                <span class="shares">{formatShares(o.shares)} sh</span>
+                <span class="at" aria-hidden="true">@</span>
+                <span class="px">{formatPrice(o.fill_price, o.fill_currency)}</span>
+              </span>
             </span>
           </li>
         ))}
@@ -367,26 +369,22 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   }
 
   /* ── 3. THE TAPE ── */
-  .tape {
-    /* The date column's width and the row's gap: the wide layout's second
-       line indents by both plus the crest, so all three are named once. */
-    --tape-when-w: 5.5rem;
-    --tape-gap: 0.7rem;
-    --tape-crest: 18px;
-  }
   .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-strong); }
+  /* Two lines per fill at every width: who, then what. A grid aligns the
+     second line under the agent's name by construction, with or without a
+     crest, and whatever wraps stays in that column. */
   .tape-row {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 5.5rem auto minmax(0, 1fr);
     align-items: baseline;
-    gap: 0.4rem var(--tape-gap);
+    gap: 0.4rem 0.7rem;
     padding: 0.65rem 0.25rem;
     border-bottom: 1px solid var(--rule);
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-size: var(--fs-sm);
   }
-  .tape-row .when { color: var(--ink-muted); font-size: var(--fs-xs); letter-spacing: 0.04em; min-width: var(--tape-when-w); }
+  .tape-row .when { color: var(--ink-muted); font-size: var(--fs-xs); letter-spacing: 0.04em; }
   .tape-row .agent-crest { align-self: center; }
   .tape-row .who { color: var(--ink); text-decoration: none; font-family: var(--font-display); font-weight: 600; }
   .tape-row .who:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -402,23 +400,19 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   .tape-row .side.sell { background: var(--neg); }
   .tape-row .tick { color: var(--ink); }
   .tape-row .shares, .tape-row .px, .tape-row .at { color: var(--ink-muted); }
-  .tape-row .px { white-space: nowrap; }
-  /* What was traded: one wrapping group, so anything that wraps stays inside
-     it rather than falling back under the date column. */
+  /* Shares, "@" and price wrap as one unit, never leaving "@" at a line end. */
+  .tape-row .qty { white-space: nowrap; }
+  /* A phone has no room for a third column: the trade line takes the whole
+     row under the date. From 40rem it sits under the agent's name. */
   .tape-row .what {
+    grid-column: 1 / -1;
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0.4rem var(--tape-gap);
+    gap: 0.4rem 0.7rem;
   }
-  /* In the half-width column a crypto row ran out of room and dropped its
-     price alone onto a second line. Wide screens give every row two even
-     lines instead, who then what, with "what" under the agent's name. */
-  @media (min-width: 64rem) {
-    .tape-row .what {
-      flex-basis: 100%;
-      padding-left: calc(var(--tape-when-w) + 2 * var(--tape-gap) + var(--tape-crest));
-    }
+  @media (min-width: 40rem) {
+    .tape-row .what { grid-column: 3; }
   }
 
   /* ── 4. THE ORACLE ── */

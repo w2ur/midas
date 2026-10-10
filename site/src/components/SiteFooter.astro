@@ -47,6 +47,9 @@ const year = new Date().getFullYear();
     .secondary ul { row-gap: 0; margin-bottom: var(--sp-2); }
     .secondary a { display: inline-flex; align-items: center; min-height: 44px; }
   }
+  /* The honest tagline shows at every width: most visitors arrive on a phone,
+     and the front page leads with a real-looking fill. This wrap puts it to
+     the right of the credit on wide viewports and under it on narrow ones. */
   .inner {
     display: flex;
     gap: var(--sp-3) var(--sp-5);
@@ -70,8 +73,4 @@ const year = new Date().getFullYear();
     text-underline-offset: 3px;
   }
   .site-footer a:hover { color: var(--ink); }
-
-  /* The honest tagline shows at every width: most visitors arrive on a phone,
-     and the front page leads with a real-looking fill. It sits to the right
-     on wide viewports and under the credit line on narrow ones. */
 </style>
