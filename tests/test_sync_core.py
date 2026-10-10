@@ -393,6 +393,7 @@ def test_cast_tests_reclaimed_into_manifest():
         "test_normalise_store_order.py",
         "test_fetch_market_data.py",
         "test_manager_session.py",
+        "test_research_manager.py",
         "test_sync_core.py",
         "test_bootstrap_venv.py",
         # Holds METHODOLOGY.md prose to the live store at a pinned commit.

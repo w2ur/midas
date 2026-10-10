@@ -110,16 +110,6 @@ def test_trading_schema_separates_research_note_and_sources_with_a_comma(
     assert code[i - 1].strip() == "},"
 
 
-def test_manager_prompt_carries_block(manager_env) -> None:
-    from scripts.daily_session import step_build_manager_prompt
-
-    _seed_ohlcv(manager_env["ohlcv"], "AAPL", "2026-06-01", 200.0)
-    prompt = step_build_manager_prompt({"steady-eddie-eur": _agent_result(["AAPL"])}, TRADE_DATE)
-    assert "at most 3 calls" in prompt
-    assert UNTRUSTED in prompt
-    assert f"its {TRADE_DATE.isoformat()} close" in prompt
-
-
 def test_oracle_prompt_carries_block_with_cap_one() -> None:
     prompt = build_oracle_prompt(
         day_number=1, market_data={}, agent_results={}, session_date=TODAY
@@ -395,38 +385,6 @@ def test_step_author_all_skip_path_does_not_overwrite_research(
 # --- wiring: manager -----------------------------------------------------
 
 
-def test_apply_manager_decision_records_sources(manager_env) -> None:
-    from engine.config import get_config
-    from scripts.daily_session import step_apply_manager_decision
-
-    raw = {"positions": [], "conviction": 3, "hold_reasoning": "x", "sources": [_src(0)]}
-    step_apply_manager_decision(raw, TRADE_DATE)
-    path = get_config().research_dir / TRADE_DATE.isoformat() / "the-manager.json"
-    assert json.loads(path.read_text())["sources"] == [_src(0)]
-
-
-@pytest.mark.parametrize(
-    "raw",
-    [
-        {"positions": [], "conviction": 3, "hold_reasoning": "x"},
-        {"positions": [], "conviction": 3, "hold_reasoning": "x", "sources": "junk"},
-        None,
-        "not a dict",
-    ],
-    ids=["no-sources", "junk-sources", "none", "string"],
-)
-def test_apply_manager_decision_removes_a_stale_research_file(manager_env, raw) -> None:
-    """A reused VM keeps an earlier failed fire's file; nothing reported removes it."""
-    from engine.config import get_config
-    from scripts.daily_session import step_apply_manager_decision
-
-    path = get_config().research_dir / TRADE_DATE.isoformat() / "the-manager.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("{}\n")
-    step_apply_manager_decision(raw, TRADE_DATE)
-    assert not path.exists()
-
-
 def test_parse_manager_decision_ignores_sources_key() -> None:
     base = {"positions": [], "conviction": 5, "hold_reasoning": "wait"}
     without = parse_manager_decision(base, min_conviction=3)
@@ -508,12 +466,3 @@ def test_step_record_oracle_research_replaces_the_file_before_the_blog_is_saved(
     assert json.loads(path.read_text())["sources"] == [_src(1)]
     step_record_oracle_research(json.dumps(_ORACLE), TODAY)
     assert not path.exists()
-
-
-# Fixtures and helpers shared with the manager session tests.
-from tests.test_manager_session import (  # noqa: E402
-    TRADE_DATE,
-    _agent_result,
-    _seed_ohlcv,
-    manager_env,  # noqa: F401  (pytest fixture)
-)

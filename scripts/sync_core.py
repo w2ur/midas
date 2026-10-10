@@ -99,6 +99,8 @@ LIVE_ONLY_TESTS = {
     # Read the committed OHLCV store (data/market/ohlcv), not shipped to core.
     "test_fetch_market_data.py",
     "test_manager_session.py",
+    # Imports test_manager_session's fixtures (above), so it cannot ship either.
+    "test_research_manager.py",
     # Drives scripts/audit_universe_reliability.py, a read-only live-store
     # audit (git history of data/market/ohlcv) that core does not ship.
     "test_audit_universe_reliability.py",
