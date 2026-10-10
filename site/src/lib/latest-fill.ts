@@ -49,3 +49,45 @@ export function rawRecordUrl(o: Order): string {
   const base = `https://github.com/w2ur/midas/blob/main/data/orders/outbox/${o.date}.jsonl`;
   return o.line ? `${base}#L${o.line}` : base;
 }
+
+/** The latest fill as william.revah.paris receives it at its build time. */
+export type HubFill = {
+  agent_id: string;
+  agent: string;
+  action: "BUY" | "SELL";
+  ticker: string;
+  shares: number;
+  price: number | null;
+  currency: string | null;
+  /** ISO timestamp of the broker's confirmation, or null if unrecorded. */
+  filled_at: string | null;
+  /** The date the agent wrote the order; differs from filled_at for a conditional order. */
+  written_on: string;
+  /** The agent's rationale, verbatim. The consumer decides how much to show. */
+  reasoning: string;
+  dossier_url: string;
+  record_url: string;
+};
+
+const SITE = "https://midas.revah.paris";
+
+/**
+ * Projects a fill onto the hub's contract. Raw numbers, not formatted strings:
+ * the hub renders in French and English and formats for its own locale.
+ */
+export function toHubFill(o: Order, agentName: string): HubFill {
+  return {
+    agent_id: o.agent_id,
+    agent: agentName,
+    action: o.action,
+    ticker: o.ticker,
+    shares: o.shares,
+    price: o.fill_price,
+    currency: o.fill_currency,
+    filled_at: o.ts_filled ?? null,
+    written_on: o.date,
+    reasoning: o.reasoning,
+    dossier_url: `${SITE}/arena/${o.agent_id}`,
+    record_url: rawRecordUrl(o),
+  };
+}

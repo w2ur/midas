@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
- * The two prerendered JSON endpoints exist for william.revah.paris, not for
+ * The prerendered JSON endpoints exist for william.revah.paris, not for
  * this site, and nothing here links them — so they are easy to break without
  * noticing. `/latest.json` was in fact missing for as long as the hub had been
  * asking for it: the hub's build-prefetch fetched it, the endpoint had never
@@ -192,5 +192,52 @@ describe("the control", () => {
     }));
     const { loadBlogLatest } = await import("@/lib/blog");
     expect(() => loadBlogLatest()).toThrow("boom");
+  });
+});
+
+async function getLatestFill() {
+  const mod = await import("@/pages/latest-fill.json.ts");
+  return mod.GET({} as never);
+}
+
+describe("/latest-fill.json", () => {
+  afterEach(() => vi.doUnmock("@/lib/orders"));
+
+  it("is prerendered — a non-prerendered route emits no file in a static build", async () => {
+    const mod = await import("@/pages/latest-fill.json.ts");
+    expect(mod.prerender).toBe(true);
+  });
+
+  it("serves the newest trader fill with raw numbers and absolute links", async () => {
+    const res = await getLatestFill();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    const body = await res.json();
+    expect(body.generated_at).toEqual(expect.any(String));
+    const f = body.fill;
+    expect(f).not.toBeNull();
+    expect(["BUY", "SELL"]).toContain(f.action);
+    expect(typeof f.shares).toBe("number");
+    expect(f.reasoning.length).toBeGreaterThan(0);
+    expect(f.dossier_url).toBe(`https://midas.revah.paris/arena/${f.agent_id}`);
+    expect(f.record_url).toMatch(/^https:\/\/github\.com\/w2ur\/midas\/blob\/main\/data\/orders\/outbox\/\d{4}-\d{2}-\d{2}\.jsonl#L\d+$/);
+  });
+
+  it("answers an empty payload, not a 500, when the ledger cannot be read", async () => {
+    vi.doMock("@/lib/orders", () => ({
+      loadAllOrders: () => {
+        throw new Error("corrupt inbox line");
+      },
+    }));
+    const res = await getLatestFill();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ generated_at: null, fill: null });
+  });
+
+  it("answers fill: null on a ledger with no fills", async () => {
+    vi.doMock("@/lib/orders", () => ({ loadAllOrders: () => [] }));
+    const body = await (await getLatestFill()).json();
+    expect(body.fill).toBeNull();
+    expect(body.generated_at).toEqual(expect.any(String));
   });
 });
