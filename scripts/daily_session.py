@@ -1410,10 +1410,16 @@ def step_record_oracle_research(response_text: str, session_date: date) -> None:
     """Step 5b-bis — persist the Oracle's self-reported searches.
 
     Reads the ``sources`` key from the raw narrator response (never raises on a
-    loose response) and records it under the roster's narrator id.
+    loose response) and records it under the roster's narrator id. A file
+    already recorded for the day is kept: on a resume the published blog is the
+    first dispatch's, so a re-dispatch's sources would mix provenance.
     """
-    narrators = get_config().narrators
-    narrator_id = narrators[0] if narrators else "the-oracle"
+    config = get_config()
+    narrator_id = config.narrators[0] if config.narrators else "the-oracle"
+    existing = config.research_dir / session_date.isoformat() / f"{narrator_id}.json"
+    if existing.is_file():
+        print(f"  Oracle research: kept {existing} (first dispatch's)")
+        return
     path = record_research(
         narrator_id, oracle_sources(response_text), session_date, ORACLE_MAX_SEARCHES
     )
