@@ -150,19 +150,11 @@ yourself — the session has no outbound HTTP by design.
 **Ordering:** first step after the session is anchored; everything that values a
 position depends on it.
 
-### Sentiment arm — `step_check_sentiment_freshness`
+### Retired — `step_check_sentiment_freshness`
 
-Records which arm of a pre-registered sentiment experiment this session actually
-ran. **Reads:** the committed news-digest directory, and the roster's
-`sentiment_arm` declarations. **Writes:** one row per session date to the
-committed sentiment-arm log. **On failure: never fatal.** A missing news feed is
-not a reason to lose a trading session, and a desk whose roster declares no
-treatment arm records `not-running` and moves on.
-**Ordering:** immediately after market data, before any agent reads anything.
-The point is that the *record* answers the question rather than the schedule: if
-the collector has not landed today's digests by the time the session realigns,
-the treatment agents read yesterday's headlines and the arm is confounded — a
-condition with no symptom at all unless something writes it down.
+Not part of the sequence any more: the sentiment A/B it recorded has ended and
+nothing calls it. The helper remains only because the previous live prompt still
+calls it, and it goes with the sentiment cleanup after the owner re-pastes.
 
 ## Phase 2 — The trading round
 
@@ -406,13 +398,19 @@ provenance for a human, not an audit trail and not a decision input.
 
 ### Guard a dispatch round — `step_guard_dispatch_begin` / `step_guard_dispatch_end`
 
-Fences `data/` around a persona dispatch round whose agents hold web tools.
-`step_guard_dispatch_begin(round_name)` snapshots everything under `data/` that git
-does not ignore (outside `data/`, under the git dir); `step_guard_dispatch_end(round_name)`
-recomputes it and raises `DispatchWroteDataError` naming every path that appeared,
-disappeared or changed. **Writes:** only the snapshot. **On failure: fatal** — a
-dispatch that wrote files is not a session to continue, and a missing snapshot
-raises too, because an unevaluated guard is not a passed guard.
+Fences the repository checkout around a persona dispatch round whose agents hold
+web tools, or whose prompts carry text those tools returned. The dispatch rounds
+guarded are trading, the Manager, the Oracle, the posts and the journals.
+`step_guard_dispatch_begin(round_name)` fingerprints every path git lists as
+modified, added or untracked, plus every file under the gitignored
+`data/session_state/` (step markers and prompt files), and stores it under the git
+dir; `step_guard_dispatch_end(round_name)` recomputes it and raises
+`DispatchWroteDataError` naming every path that appeared, disappeared or changed.
+Other ignored paths (virtualenv, caches) are outside the fence. **Writes:** only the
+snapshot, which a successful end deletes. **On failure: fatal** — a dispatch that
+wrote files is not a session to continue, and a missing snapshot raises too (so
+does an end call with no fresh begin), because an unevaluated guard is not a
+passed guard.
 **Ordering:** begin before the dispatch, end immediately after it and before any
 step that persists its result.
 
