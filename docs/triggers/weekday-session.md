@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: 4c397eecd9780de9d36bbc6d69bc98c0562ae804de370d27c456b725ee41cfc9
+PROMPT_SHA256: 3403a8191d978d69612597c6e4952a5766b0d44a0d6bfc2becdcc78c0cb230e7
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -232,6 +232,8 @@ dispatch result you need across processes ONLY under data/session_state/
 (e.g. data/session_state/results/), never anywhere else in the checkout:
 a file written elsewhere is what the guard aborts on. If a Task call in
 a round must be re-dispatched, re-dispatch it inside the same bracket.
+Call each round's begin once per session: a repeated begin keeps the
+first baseline, and an end after a pass returns "already verified".
 A DispatchWroteDataError from the end call means a subagent changed the
 checkout or git state, or the check could not run: ABORT the session.
 Do not author, do not commit, do not clean up the named paths; report

@@ -414,7 +414,8 @@ compares against it. Each may run in its own process. Two classes of signal:
   repository's hooks, config, `info/exclude` and `info/attributes`. Any change
   raises `DispatchWroteDataError` naming it.
 - **Report** — gitignored inputs read after a round: the files under
-  `data/session_state/` other than the dispatch ledger and the prompt files,
+  `data/session_state/` other than the dispatch ledger, the concerns file and the
+  `prompts/` and `results/` directories (orchestrator-written),
   `data/market/today.json`, and the interpreter's site-packages startup files
   (compared only when begin and end ran under the same `sys.prefix`). A change is
   printed and appended to `data/session_state/dispatch_guard_concerns.jsonl`;
@@ -423,8 +424,14 @@ compares against it. Each may run in its own process. Two classes of signal:
 
 A dispatch result the orchestrator must keep across processes goes under
 `data/session_state/` (e.g. `data/session_state/results/`), never elsewhere in
-the checkout. **Writes:** the snapshot, which begin overwrites and end keeps, so a
-repeated end evaluates again; the concerns file. **On failure: fatal** — a
+the checkout. **Writes:** the snapshot and, once an end passes, a `.passed` marker
+beside it; the concerns file. A round is begun once per session: a begin that
+finds this round's snapshot keeps it ("keeping this round's first baseline", or
+"already verified this session" after a pass) rather than re-baselining over a
+subagent's write. An end that fails leaves no marker, so a repeated end evaluates
+again; an end after a pass prints "already verified this session" and returns
+without comparing, because the session's own later writes (outbox, research
+files, manager book) would otherwise trip it. **On failure: fatal** — a
 dispatch that wrote the checkout is not a session to continue, and an end with no
 snapshot for its round and session raises too, as does an end that cannot
 evaluate, because an unevaluated guard is not a passed guard.
