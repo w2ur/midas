@@ -27,7 +27,7 @@ function order(p: Partial<Order>): Order {
   };
 }
 
-const traders = (id: string) => id !== "the-manager";
+const traders = (id: string): id is string => id !== "the-manager";
 
 describe("latestFill", () => {
   it("leads with the newest confirmation, not the newest authored date", () => {

@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { jsonResponse } from "@/lib/json-response";
 import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 
 export const prerender = true;
@@ -10,18 +11,12 @@ export const prerender = true;
 export const GET: APIRoute = () => {
   try {
     const board = loadCurrentLeaderboard();
-    return json({
+    return jsonResponse({
       generated_at: new Date().toISOString(),
       updated_at: board?.updated_at ?? null,
       rows: board?.rows ?? [],
     });
   } catch {
-    return json({ generated_at: null, updated_at: null, rows: [] });
+    return jsonResponse({ generated_at: null, updated_at: null, rows: [] });
   }
 };
-
-function json(payload: unknown): Response {
-  return new Response(JSON.stringify(payload, null, 2), {
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
-}

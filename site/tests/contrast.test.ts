@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { SRC, sourceFiles } from "./helpers/source-files";
 import { TRADING_AGENTS } from "@/lib/roster";
+import { MANAGER } from "@/lib/manager";
 
 // Guards the "After Hours" palette against WCAG AA regressions in BOTH themes.
 // Parses global.css directly, so any future token edit that breaks contrast
@@ -42,13 +43,10 @@ function token(name: string): { light: string; dark: string } {
 }
 
 const bg = token("bg");
-const AGENTS = [
-  "steady-eddie-eur", "steady-eddie-usd", "sharp-shooter-eur", "sharp-shooter-usd",
-  "yolo-sapiens-eur", "yolo-sapiens-usd", "satoshi", "monsieur-forex", "goldfinger", "world",
-  // The Manager (allocator) is off the ranked roster but its kit colour is still
-  // contrast-guarded like any agent's — see lib/manager.ts.
-  "the-manager",
-];
+// Derived from the roster, so a new trader is contrast-checked with no edit
+// here. The Manager (allocator) is off the ranked roster but its kit colour is
+// still contrast-guarded like any agent's — see lib/manager.ts.
+const AGENTS = [...TRADING_AGENTS.map((a) => a.id), MANAGER.id];
 function agentColor(id: string): { light: string; dark: string } {
   const re = new RegExp(
     `\\[data-agent="${id}"\\][^{]*\\{[^}]*--agent-color:\\s*light-dark\\(\\s*(#[0-9a-fA-F]{6})\\s*,\\s*(#[0-9a-fA-F]{6})\\s*\\)`,
@@ -128,11 +126,11 @@ describe("WCAG — per-agent kit colours >= 4.5:1 as text, both themes", () => {
   }
 });
 
-// Kit colours live in two files — roster.ts (signatureColor, read by charts and
+// Kit colours live in two files — roster.ts / manager.ts (signatureColor, read by charts and
 // crests in TypeScript) and global.css ([data-agent], read by CSS). The checks
 // above read only the CSS, so the two could drift apart unnoticed.
 describe("kit colours agree between roster.ts and global.css", () => {
-  for (const a of TRADING_AGENTS) {
+  for (const a of [...TRADING_AGENTS, MANAGER]) {
     it(`${a.id}`, () => {
       const css = agentColor(a.id);
       expect(a.signatureColor.light.toLowerCase()).toBe(css.light.toLowerCase());

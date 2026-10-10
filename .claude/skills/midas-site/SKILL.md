@@ -1,6 +1,6 @@
 ---
 name: midas-site
-description: The Astro static site at midas.revah.paris (Ring 3a) — why summaries render above archives, METHODOLOGY.md rendering across two URLs without being split on disk, the marked-14 heading-id workaround, the Manager decision log, the client-side feed window, /arena and /archive, and the two prerendered JSON endpoints that exist for william.revah.paris rather than for this site. Load before touching anything under site/.
+description: The Astro static site at midas.revah.paris (Ring 3a) — why summaries render above archives, METHODOLOGY.md rendering across two URLs without being split on disk, the marked-14 heading-id workaround, the Manager decision log, the client-side feed window, /arena and /archive, and the prerendered JSON endpoints that exist for william.revah.paris rather than for this site. Load before touching anything under site/.
 ---
 
 # The site (Ring 3a)
@@ -26,6 +26,7 @@ Pages: `/`, `/arena`, `/arena/:id`, `/arena/the-manager` (bespoke static route �
 
 **The prerendered JSON endpoints exist for `william.revah.paris`, not for this site** (`ls site/src/pages/*.json.ts` is the list), and nothing here links them — so they are easy to break without noticing:
 - `/oracle-latest.json` — the newest Oracle journal post (`src/pages/oracle-latest.json.ts`).
+- `/leaderboard.json` — the ranked board of the most recent session, for the hub's « Chez Midas, aujourd'hui » column (`src/pages/leaderboard.json.ts`).
 - `/latest-fill.json` — the front page's exhibit for the hub's Midas story page: the newest trader fill from `latestFill`, projected by `toHubFill` with **raw numbers, not formatted strings**, because the hub renders it in French and English. `{generated_at, fill: null}` when there is no fill or the ledger cannot be read.
 - `/latest.json` — the most recent session's agent posts, newest first, projected onto the four fields the hub's `LiveOutputStrip` renders (`author`, `time`, `tag`, `body`). The projection is `src/lib/hub-feed.ts` (`toHubItems`), unit-tested in `tests/hub-feed.test.ts`; the endpoint is `src/pages/latest.json.ts`. Every endpoint answers with an empty payload rather than a 500 when the underlying data is missing, because the consumer fetches them at *its* build time — a throw here would degrade a page in another repo. **This one was missing for as long as the hub had been asking for it**: the hub's `scripts/build-prefetch.mjs` had fetched `/latest.json` since the strip was written, the endpoint had never existed, and the strip therefore rendered nothing in production while failing silently on both sides.
 

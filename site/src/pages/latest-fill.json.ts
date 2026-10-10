@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { jsonResponse } from "@/lib/json-response";
 import { loadAllOrders } from "@/lib/orders";
 import { latestFill, toHubFill } from "@/lib/latest-fill";
 import { getAgent, isTradingAgent } from "@/lib/roster";
@@ -10,18 +11,14 @@ export const prerender = true;
 // Like /latest.json and /oracle-latest.json, a loader failure answers with an
 // empty payload rather than a 500, so a bad ledger read hides the hub's card
 // instead of breaking a page in another repo.
-export const GET: APIRoute = () => {
+export const GET: APIRoute = ({ site }) => {
   try {
+    // astro.config sets `site`; without it there is no canonical host to link.
+    if (!site) throw new Error("astro.config has no `site`");
     const o = latestFill(loadAllOrders(), isTradingAgent);
-    const fill = o && isTradingAgent(o.agent_id) ? toHubFill(o, getAgent(o.agent_id).display_name) : null;
-    return json({ generated_at: new Date().toISOString(), fill });
+    const fill = o ? toHubFill(o, getAgent(o.agent_id).display_name, site) : null;
+    return jsonResponse({ generated_at: new Date().toISOString(), fill });
   } catch {
-    return json({ generated_at: null, fill: null });
+    return jsonResponse({ generated_at: null, fill: null });
   }
 };
-
-function json(payload: unknown): Response {
-  return new Response(JSON.stringify(payload, null, 2), {
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
-}

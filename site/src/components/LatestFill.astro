@@ -13,11 +13,10 @@ import { formatPrice, formatShares, longDate } from "@/lib/format";
 import { getAgent, type AgentId } from "@/lib/roster";
 import { isCrestId } from "@/lib/crests";
 
-interface Props { order: Order }
+interface Props { order: Order & { agent_id: AgentId } }
 const { order: o } = Astro.props;
 
-// lib/latest-fill only ever returns a trading agent's fill.
-const name = getAgent(o.agent_id as AgentId).display_name;
+const name = getAgent(o.agent_id).display_name;
 const filledDate = o.ts_filled ? o.ts_filled.slice(0, 10) : o.date;
 // A conditional order is written on one day and fires on another; say both.
 const firedLater = filledDate !== o.date;

@@ -76,9 +76,13 @@ const toc = methodologyToc();
 </BaseLayout>
 <style>
   /* Editorial essay: --font-serif body via the shared .article class, an
-     Archivo title, and a mono amber kicker. Head is measure-width and centred
-     so its left edge aligns with the centred .article column. */
+     Archivo title, and a muted sentence-case kicker. Head is measure-width and
+     centred so its left edge aligns with the centred .article column. */
   .methodology-head { max-width: var(--measure); margin: 0 auto; }
+  /* The facts strip shares that column's left edge at every width: centred at
+     --measure below 68rem, left-aligned with the grid from 68rem. Centred at
+     its own wider measure it floated off both the kicker and the essay. */
+  .page > :global(.facts) { max-width: var(--measure); margin-left: auto; margin-right: auto; }
   .methodology-status { max-width: var(--measure); margin: 0 auto; }
   .kicker {
     font-family: var(--font-display);
@@ -161,6 +165,7 @@ const toc = methodologyToc();
     .methodology-status,
     .methodology-main :global(.article) { margin-left: 0; margin-right: 0; }
     .methodology-head { max-width: none; }
+    .page > :global(.facts) { max-width: var(--measure-wide); margin-left: 0; }
   }
 
   .methodology-body { padding-bottom: var(--sp-6, 2rem); }

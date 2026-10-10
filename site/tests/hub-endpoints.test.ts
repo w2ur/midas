@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
  *
  * The contract these tests pin is the one that protects the *other* repo: the
  * consumer fetches at ITS build time, so a throw here degrades a page in a
- * different project. Both endpoints must answer with a well-formed empty
+ * different project. Every endpoint must answer with a well-formed empty
  * payload instead of propagating a loader failure.
  *
  * Each endpoint is imported fresh per test (`vi.resetModules`) because the
@@ -197,7 +197,7 @@ describe("the control", () => {
 
 async function getLatestFill() {
   const mod = await import("@/pages/latest-fill.json.ts");
-  return mod.GET({} as never);
+  return mod.GET({ site: new URL("https://midas.revah.paris") } as never);
 }
 
 describe("/latest-fill.json", () => {
@@ -231,6 +231,12 @@ describe("/latest-fill.json", () => {
     }));
     const res = await getLatestFill();
     expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ generated_at: null, fill: null });
+  });
+
+  it("answers an empty payload when astro.config has no site to link from", async () => {
+    const mod = await import("@/pages/latest-fill.json.ts");
+    const res = await mod.GET({} as never);
     expect(await res.json()).toEqual({ generated_at: null, fill: null });
   });
 

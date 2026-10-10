@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { jsonResponse } from "@/lib/json-response";
 import { flattenChronological, latestPostsDate, loadPostsLatest } from "@/lib/posts";
 import { toHubItems } from "@/lib/hub-feed";
 
@@ -17,14 +18,8 @@ export const GET: APIRoute = () => {
       date,
       items: toHubItems(flattenChronological(loadPostsLatest())),
     };
-    return json(payload);
+    return jsonResponse(payload);
   } catch {
-    return json({ generated_at: null, date: null, items: [] });
+    return jsonResponse({ generated_at: null, date: null, items: [] });
   }
 };
-
-function json(payload: unknown): Response {
-  return new Response(JSON.stringify(payload, null, 2), {
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
-}

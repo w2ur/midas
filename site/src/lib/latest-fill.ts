@@ -12,11 +12,15 @@ import type { Order } from "./orders";
  * The Manager is excluded by the caller's predicate — its channel is isolated
  * and unranked, and it does not lead the front page.
  */
-export function latestFill(orders: Order[], isTrader: (id: string) => boolean): Order | null {
-  let best: Order | null = null;
+export function latestFill<Id extends string>(
+  orders: Order[],
+  isTrader: (id: string) => id is Id,
+): (Order & { agent_id: Id }) | null {
+  let best: (Order & { agent_id: Id }) | null = null;
   for (const o of orders) {
     if (o.status !== "filled" || !isTrader(o.agent_id)) continue;
-    if (best === null || newer(o, best)) best = o;
+    const fill = o as Order & { agent_id: Id };
+    if (best === null || newer(fill, best)) best = fill;
   }
   return best;
 }
@@ -69,13 +73,13 @@ export type HubFill = {
   record_url: string;
 };
 
-const SITE = "https://midas.revah.paris";
-
 /**
  * Projects a fill onto the hub's contract. Raw numbers, not formatted strings:
  * the hub renders in French and English and formats for its own locale.
+ * `site` is astro.config's `site` (the endpoint's `context.site`), so the
+ * dossier link follows the canonical host rather than a copy of it.
  */
-export function toHubFill(o: Order, agentName: string): HubFill {
+export function toHubFill(o: Order, agentName: string, site: URL): HubFill {
   return {
     agent_id: o.agent_id,
     agent: agentName,
@@ -87,7 +91,7 @@ export function toHubFill(o: Order, agentName: string): HubFill {
     filled_at: o.ts_filled ?? null,
     written_on: o.date,
     reasoning: o.reasoning,
-    dossier_url: `${SITE}/arena/${o.agent_id}`,
+    dossier_url: new URL(`/arena/${o.agent_id}`, site).href,
     record_url: rawRecordUrl(o),
   };
 }
