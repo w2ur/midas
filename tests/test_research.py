@@ -51,8 +51,9 @@ def test_block_states_cap_fetch_rule_date_and_security() -> None:
     # cut-off applies to it too; the old "fair to use" sentence was false.
     assert (
         "The same applies to a conditional (trigger) order on a listed share, "
-        "ETF or future: it can fire on the very close named above, so do not "
-        "set one on news published after that close."
+        "ETF or future: it can fire on a price already set before you run (a "
+        "share's or ETF's close named above, a future's settlement today), so "
+        "do not set one on news published after it."
     ) in text
     assert "or bar named above" not in text
     assert "fair to use" not in text
