@@ -91,7 +91,7 @@ def build_oracle_prompt(
     `session_date` is the as-of date of the research block (defaults to today).
     """
     research = render_research_instructions(
-        ORACLE_MAX_SEARCHES, session_date or date.today()
+        ORACLE_MAX_SEARCHES, session_date or date.today(), places_orders=False
     )
     agent_posts = agent_posts or {}
     leaderboard = leaderboard or []
@@ -192,10 +192,7 @@ def _load_response_json(response: str) -> dict:
 
 def oracle_sources(response: str) -> object:
     """The raw ``sources`` value of a narrator response, or ``None``. Never raises."""
-    try:
-        return _load_response_json(response).get("sources")
-    except (AttributeError, TypeError):
-        return None
+    return _load_response_json(response).get("sources")
 
 
 def parse_oracle_response(

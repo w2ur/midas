@@ -506,7 +506,7 @@ Output JSON only, no other text:
     "horizon": "days"|"weeks"|"months",
     "catalysts": "what would confirm/break the thesis (<=200 chars)",
     "currency": "EUR"|"USD"     // the instruments' denomination
-  }
+  },
   // research_note carries your VIEW (not sizing) for the Manager desk.
   // ALWAYS include it. See your persona file for details.
   "sources": [{"query": "...", "url": "...", "used_for": "..."}]
@@ -1365,12 +1365,12 @@ def step_build_oracle_prompt(
 
 
 def step_guard_dispatch_begin(round_name: str) -> None:
-    """Snapshot ``data/`` before a persona dispatch round (see engine.dispatch_guard)."""
+    """Snapshot the checkout before a persona dispatch round (see engine.dispatch_guard)."""
     snapshot_data_tree(round_name)
 
 
 def step_guard_dispatch_end(round_name: str) -> None:
-    """Refuse the session if the round changed anything under ``data/``."""
+    """Refuse the session if the round changed anything in the checkout."""
     assert_data_tree_unchanged(round_name)
 
 
