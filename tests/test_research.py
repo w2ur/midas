@@ -47,14 +47,16 @@ def test_block_states_cap_fetch_rule_date_and_security() -> None:
     assert "crypto, FX and futures at the previous day's completed UTC bar" in text
     assert "published after the price your order would fill at" in text
     assert "look-ahead" in text
-    # A trigger can fire on the same close at the watcher's next run, so the
-    # cut-off applies to it too; the old "fair to use" sentence was false.
+    # A share or ETF trigger can fire on the same close at the watcher's next
+    # run, so the cut-off applies to it too. A future's day bar completes at
+    # 00:00 UTC, after the session, so its trigger fires on a bar that already
+    # holds the evening's news: futures are deliberately not named.
     assert (
-        "The same applies to a conditional (trigger) order on a listed share, "
-        "ETF or future: it can fire on a price already set before you run (a "
-        "share's or ETF's close named above, a future's settlement today), so "
-        "do not set one on news published after it."
+        "The same applies to a conditional (trigger) order on a listed share "
+        "or ETF: it can fire on the very close named above, so do not set one "
+        "on news published after that close."
     ) in text
+    assert "future's settlement" not in text
     assert "or bar named above" not in text
     assert "fair to use" not in text
     assert "fills later" not in text
