@@ -50,9 +50,9 @@ def test_block_states_cap_fetch_rule_date_and_security() -> None:
     # A trigger can fire on the same close at the watcher's next run, so the
     # cut-off applies to it too; the old "fair to use" sentence was false.
     assert (
-        "The same applies to a conditional (trigger) order on a listed share "
-        "or ETF: it can fire on the very close named above, so do not set one "
-        "on news published after that close."
+        "The same applies to a conditional (trigger) order on a listed share, "
+        "ETF or future: it can fire on the very close named above, so do not "
+        "set one on news published after that close."
     ) in text
     assert "or bar named above" not in text
     assert "fair to use" not in text
