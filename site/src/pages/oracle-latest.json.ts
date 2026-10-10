@@ -1,25 +1,25 @@
 import type { APIRoute } from "astro";
+import { jsonResponse } from "@/lib/json-response";
 import { loadBlogLatest, excerpt } from "@/lib/blog";
 
 export const prerender = true;
 
-export const GET: APIRoute = () => {
+export const GET: APIRoute = ({ site }) => {
   try {
+    // astro.config sets `site`; without it there is no canonical host to link.
+    if (!site) throw new Error("astro.config has no `site`");
     const post = loadBlogLatest();
     const payload = {
       date: post.date,
       title: post.title,
       slug: post.slug,
       excerpt: excerpt(post.body, 320),
-      permalink: `https://midas.revah.paris/journal/${post.date}`,
+      permalink: new URL(`/journal/${post.date}`, site).href,
       generated_at: new Date().toISOString(),
     };
-    return new Response(JSON.stringify(payload, null, 2), {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
+    return jsonResponse(payload);
   } catch {
-    return new Response("null", {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
+    // Literal JSON null: what the consumer's own fallback expects.
+    return jsonResponse(null);
   }
 };

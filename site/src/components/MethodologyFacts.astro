@@ -12,14 +12,16 @@ interface Props {
   only?: FactKey[];
   /** Tighter cells for the homepage's first screen. */
   compact?: boolean;
+  /** Align with a centred --measure column, left-aligned from 68rem (/methodology). */
+  column?: boolean;
   /** Accessible name for the strip. */
   label?: string;
 }
-const { only, compact = false, label } = Astro.props;
+const { only, compact = false, column = false, label } = Astro.props;
 const facts = only ? pickFacts(only) : experimentFacts();
 const ariaLabel = label ?? `The experiment in ${countWord(facts.length)} facts`;
 ---
-<section class={`facts ${compact ? "compact" : ""}`.trim()} aria-label={ariaLabel}>
+<section class:list={["facts", { compact, column }]} aria-label={ariaLabel}>
   <dl>
     {facts.map((f) => (
       <div class="fact">
@@ -78,6 +80,12 @@ const ariaLabel = label ?? `The experiment in ${countWord(facts.length)} facts`;
   /* Homepage variant: full width of the hero, two-up on a phone so the whole
      strip fits one screen, notes one line shorter in weight. */
   .facts.compact { max-width: none; margin: 0; }
+  /* /methodology: share the essay column's left edge at every width. Centred
+     at its own wider measure the strip floated off the kicker and the essay. */
+  .facts.column { max-width: var(--measure); }
+  @media (min-width: 68rem) {
+    .facts.column { max-width: var(--measure-wide); margin-left: 0; }
+  }
   .facts.compact dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   @media (min-width: 48rem) {
     .facts.compact dl { grid-template-columns: repeat(4, minmax(0, 1fr)); }

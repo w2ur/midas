@@ -27,7 +27,8 @@ function order(p: Partial<Order>): Order {
   };
 }
 
-const traders = (id: string): id is string => id !== "the-manager";
+// The production predicate, so the tests exercise the same narrowing.
+const traders = isTradingAgent;
 
 describe("latestFill", () => {
   it("leads with the newest confirmation, not the newest authored date", () => {
@@ -90,10 +91,17 @@ describe("raw record address", () => {
 });
 
 describe("formatShares", () => {
-  it("drops trailing zeros at each precision band", () => {
+  it("drops trailing zeros", () => {
     expect(formatShares(185)).toBe("185");
     expect(formatShares(1.5)).toBe("1.5");
     expect(formatShares(0.015)).toBe("0.015");
+  });
+  // Regression: 8139472a2 — the banded formatShares centralised there printed
+  // 150.5 as "151" and 0.00004 BTC as "0".
+  it("never rounds a traded quantity to fewer digits than it has", () => {
+    expect(formatShares(150.5)).toBe("150.5");
+    expect(formatShares(0.00004)).toBe("0.00004");
+    expect(formatShares(1234.5)).toBe("1234.5");
   });
 });
 

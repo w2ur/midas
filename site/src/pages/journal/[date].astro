@@ -87,13 +87,14 @@ const jsonLdSafe = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
     margin: 0;
   }
 
-  /* mono kicker */
+  /* kicker: sentence case, in the column's own warm meta tone */
   .oc-kicker {
     margin: 0 0 0.85rem;
     padding-bottom: 0.75rem;
     font-family: var(--font-display);
+    font-weight: 600;
     font-size: var(--fs-sm);
-    color: var(--ink-muted);
+    color: color-mix(in srgb, var(--oracle-ink) 70%, var(--oracle-surface));
     border-bottom: 1px solid color-mix(in srgb, var(--oracle-ink) 18%, transparent);
   }
 

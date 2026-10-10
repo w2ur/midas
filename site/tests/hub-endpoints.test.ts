@@ -30,7 +30,7 @@ async function getLatest() {
 
 async function getOracleLatest() {
   const mod = await import("@/pages/oracle-latest.json.ts");
-  return mod.GET({} as never);
+  return mod.GET({ site: new URL("https://midas.revah.paris") } as never);
 }
 
 async function getLeaderboard() {

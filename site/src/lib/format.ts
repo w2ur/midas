@@ -15,11 +15,13 @@ export function formatPrice(n: number | null, ccy: string | null): string {
   return ccy ? `${ccy} ${num}` : num;
 }
 
-/** A share count without trailing zeros: whole above 100, 2 dp above 1, 4 dp below. */
+/**
+ * A share count as traded: up to 8 decimals (a crypto fill can be 0.00004),
+ * trailing zeros dropped, never rounded to fewer digits than it has. The old
+ * banding printed 150.5 as "151" and 0.00004 BTC as "0".
+ */
 export function formatShares(n: number): string {
-  if (Math.abs(n) >= 100) return n.toFixed(0);
-  if (Math.abs(n) >= 1) return n.toFixed(2).replace(/\.?0+$/, "");
-  return n.toFixed(4).replace(/\.?0+$/, "");
+  return n.toLocaleString("en-GB", { maximumFractionDigits: 8, useGrouping: false });
 }
 
 /** `2026-10-10` → `10 October 2026`, read in UTC so the day never shifts. */

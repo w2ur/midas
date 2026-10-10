@@ -23,7 +23,7 @@ const toc = methodologyToc();
       <p class="kicker">The Midas experiment</p>
     </header>
 
-    <MethodologyFacts />
+    <MethodologyFacts column />
 
     <div class="methodology-layout">
       <nav class="methodology-toc" aria-labelledby="toc-heading">
@@ -79,10 +79,6 @@ const toc = methodologyToc();
      Archivo title, and a muted sentence-case kicker. Head is measure-width and
      centred so its left edge aligns with the centred .article column. */
   .methodology-head { max-width: var(--measure); margin: 0 auto; }
-  /* The facts strip shares that column's left edge at every width: centred at
-     --measure below 68rem, left-aligned with the grid from 68rem. Centred at
-     its own wider measure it floated off both the kicker and the essay. */
-  .page > :global(.facts) { max-width: var(--measure); margin-left: auto; margin-right: auto; }
   .methodology-status { max-width: var(--measure); margin: 0 auto; }
   .kicker {
     font-family: var(--font-display);
@@ -108,6 +104,7 @@ const toc = methodologyToc();
   }
   .toc-heading {
     font-family: var(--font-display);
+    font-weight: 600;
     font-size: var(--fs-sm);
     color: var(--ink-muted);
     margin: 0 0 var(--sp-3);
@@ -132,6 +129,8 @@ const toc = methodologyToc();
     padding-top: var(--sp-3);
     border-top: 1px solid var(--rule);
   }
+  /* The one entry that leaves the page says so. */
+  .methodology-toc .toc-away::before { content: "→"; }
   .methodology-toc .toc-away a { color: var(--ink); }
 
   @media (min-width: 68rem) {
@@ -165,7 +164,6 @@ const toc = methodologyToc();
     .methodology-status,
     .methodology-main :global(.article) { margin-left: 0; margin-right: 0; }
     .methodology-head { max-width: none; }
-    .page > :global(.facts) { max-width: var(--measure-wide); margin-left: 0; }
   }
 
   .methodology-body { padding-bottom: var(--sp-6, 2rem); }
@@ -211,6 +209,7 @@ const toc = methodologyToc();
   }
   .cc-eyebrow {
     font-family: var(--font-display);
+    font-weight: 600;
     font-size: var(--fs-sm);
     color: var(--ink-muted);
     margin: 0 0 var(--sp-2);

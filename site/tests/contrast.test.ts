@@ -67,6 +67,17 @@ describe("WCAG AA contrast — body/important text >= 4.5:1, both themes", () =>
     });
   }
 
+  // Section labels sit in --ink-muted on the raised surfaces too (the
+  // methodology contents, the changelog card, the archive banner).
+  for (const surface of ["bg-elev", "bg-elev2"]) {
+    it(`--ink-muted on --${surface} >= 4.5, both themes`, () => {
+      const t = token("ink-muted");
+      const g = token(surface);
+      expect(ratio(t.dark, g.dark)).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(t.light, g.light)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
   it("--accent-ink on the amber fill (--accent) >= 4.5, both themes", () => {
     const a = token("accent");
     const ink = token("accent-ink");
