@@ -140,6 +140,7 @@ is not listed is ordinary code; read it rather than a description of it.
 - `scripts/audit_universe_reliability.py` — read-only: per symbol since a date, store gaps, quarantines, corporate actions and late rows against median traded value, with the incident count of a top-N cut that always keeps held, ever-ordered and benchmark symbols. Writes nothing; exit 2 is unknown, never clean.
 - `scripts/bootstrap_venv.sh` — builds the Python 3.12 venv at image-build time, or verifies it (`--check`) in Step 0
 - `data/portfolios/`, `data/orders/`, `data/agent_memory/`, `data/baselines/`, `data/universes/` — **all committed**, because the remote agent runs sandboxed and cannot fetch
+- `data/research/<date>/<agent>.json` — an agent's self-reported web searches (`engine/research.py`), written only when it reported one; provenance for a human, not a harness capture
 - `data/orders/dropped/` — Brain-side audit ledger for agent trades that were not valid orders
 - `data/orders/{manager-pending,manager-cancels,manager-inbox}/` — the Manager channel, isolated from the trader channel
 - `data/agent_config/` — `live_switch.json` only; per-agent rails moved to `roster.yaml`
@@ -229,10 +230,10 @@ Schedules, the revision window, corporate actions and split detection, the unit-
 - **Snapshots are keyed on the market date and are immutable across sessions.** Since 2026-09-28 the session runs at 22:00 UTC behind the close runs and prices the day it runs on; crypto, FX and futures inside the row mark at the previous completed UTC bar.
 - **Cross-currency positions must be converted before summing, on EVERY pricing path.** A book holding more than one currency is silently wrong otherwise.
 - **The session refuses to price against a store that stopped advancing** (`assert_session_fresh`). A stale store is unknown, never healthy.
-- **The trading session has no outbound HTTP dependency.** Prices and benchmarks come from the committed store. Anything that adds a network call to the session path breaks the sandbox contract.
+- **The session's code makes no network call; prices and benchmarks come only from the committed store.** Anything that adds a network call to the session path breaks the sandbox contract. **Agents' WebSearch/WebFetch are not that**: they run on Anthropic's side as model tools, are not reproducible, and are recorded *self-reported* under `data/research/` (METHODOLOGY `#web-research-2026-10-09`) — the agent's own account, never an audit trail and never an input to a decision.
 - **Bundle is cadence-invariant** — `assemble_output_bundle` always emits every roster agent, whatever ran.
 
-Which cadence runs when, the watchdog, the sentiment A/B, persona dispatch, model assignment and the push path are in the **`midas-session-cadence`** skill.
+Which cadence runs when, the watchdog, the web-research contract and its start date, persona dispatch, model assignment and the push path are in the **`midas-session-cadence`** skill.
 
 ## Site (Ring 3a)
 
