@@ -1355,6 +1355,13 @@ def step_build_oracle_prompt(
     journal is digested into the prompt so The Oracle can quote specific entries.
     """
     print("\n=== Step 5b: Build Oracle prompt ===")
+    if session_date is None:
+        anchor = load_anchor()
+        session_date = (
+            anchor.session_date
+            if anchor is not None
+            else datetime.now(timezone.utc).date()
+        )
     day_number = get_day_number()
     prompt = build_oracle_prompt(
         day_number=day_number,

@@ -6,7 +6,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from engine.agent_memory import format_oracle_digest, truncate as _truncate
@@ -88,10 +88,10 @@ def build_oracle_prompt(
     (current pipeline ordering), pass `None` or an empty dict and the
     "AGENT POSTS TODAY" section is suppressed.
 
-    `session_date` is the as-of date of the research block (defaults to today).
+    `session_date` is the as-of date of the research block (defaults to today in UTC).
     """
     research = render_research_instructions(
-        ORACLE_MAX_SEARCHES, session_date or date.today(), places_orders=False
+        ORACLE_MAX_SEARCHES, session_date or datetime.now(timezone.utc).date(), places_orders=False
     )
     agent_posts = agent_posts or {}
     leaderboard = leaderboard or []

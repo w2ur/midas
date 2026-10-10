@@ -117,6 +117,59 @@ def test_oracle_prompt_carries_block_with_cap_one() -> None:
     assert '"sources"' in prompt
 
 
+
+def test_oracle_prompt_defaults_to_the_utc_date_not_the_local_one(monkeypatch) -> None:
+    """At 23:30 UTC on 10-12 a host east of UTC is already on 10-13."""
+    from datetime import datetime, timezone
+
+    import engine.blog as blog
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            utc = datetime(2026, 10, 12, 23, 30, tzinfo=timezone.utc)
+            return utc if tz is not None else datetime(2026, 10, 13, 1, 30)
+
+    class LocalDate(date):
+        @classmethod
+        def today(cls):
+            return date(2026, 10, 13)
+
+    monkeypatch.setattr(blog, "datetime", Clock)
+    monkeypatch.setattr(blog, "date", LocalDate)
+    prompt = build_oracle_prompt(day_number=1, market_data={}, agent_results={})
+    assert "only as context for 2026-10-12's session" in prompt
+
+
+def test_session_oracle_prompt_defaults_to_the_anchor_date(monkeypatch) -> None:
+    import json as _json
+    from datetime import datetime, timezone
+
+    import scripts.daily_session as ds
+    from scripts.session_guard import SessionAnchor, _anchor_path
+
+    path = _anchor_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    anchor = SessionAnchor(TODAY, "a" * 40, datetime(2026, 10, 12, 22, tzinfo=timezone.utc))
+    path.write_text(_json.dumps(anchor.to_dict()))
+    seen = {}
+    monkeypatch.setattr(ds, "get_day_number", lambda: 1)
+    monkeypatch.setattr(ds, "build_oracle_prompt", lambda **kw: seen.update(kw) or "p")
+    ds.step_build_oracle_prompt(market_data={}, agent_results={})
+    assert seen["session_date"] == TODAY
+
+
+def test_session_oracle_prompt_without_an_anchor_uses_utc_today(monkeypatch) -> None:
+    from datetime import datetime, timezone
+
+    import scripts.daily_session as ds
+
+    seen = {}
+    monkeypatch.setattr(ds, "get_day_number", lambda: 1)
+    monkeypatch.setattr(ds, "build_oracle_prompt", lambda **kw: seen.update(kw) or "p")
+    ds.step_build_oracle_prompt(market_data={}, agent_results={})
+    assert seen["session_date"] == datetime.now(timezone.utc).date()
+
 # --- normalize_sources ---------------------------------------------------
 
 
