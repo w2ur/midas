@@ -35,7 +35,6 @@ from __future__ import annotations
 
 import argparse
 import functools
-import hashlib
 import json
 import math
 import subprocess
@@ -1389,16 +1388,17 @@ def step_build_oracle_prompt(
 def _dispatch_guard_anchor() -> str | None:
     """This session's key for the dispatch guard, or None with no anchor.
 
-    Date plus a digest of the whole anchor, so a snapshot an earlier fire left
-    behind (same date, perhaps the same base) is never this session's.
+    The session date and the base sha only, never ``started_at``: Step 0c
+    re-anchors on every run from the top, so a deliberate resume re-runs on the
+    same base with a new start time and must find the snapshot its interrupted
+    round left (that is how begin compares first). The step markers are scoped
+    the same way. A snapshot from another date or another base is still not
+    this session's.
     """
     anchor = load_anchor()
     if anchor is None:
         return None
-    digest = hashlib.sha256(
-        json.dumps(anchor.to_dict(), sort_keys=True).encode("utf-8")
-    ).hexdigest()
-    return f"{anchor.session_date.isoformat()}-{digest[:12]}"
+    return f"{anchor.session_date.isoformat()}-{anchor.base_sha[:12]}"
 
 
 def step_guard_dispatch_begin(round_name: str) -> None:

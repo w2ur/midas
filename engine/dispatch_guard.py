@@ -48,20 +48,26 @@ behind is never read as this session's. Begin takes a fresh baseline, written
 atomically over any snapshot under the key, which also clears its pass state:
 begin exactly once per dispatch, immediately before it. One exception guards a
 resumed round: when an anchored snapshot exists that has not passed (a round
-interrupted mid-dispatch), begin first runs the comparison end would run, and
-raises ``DispatchWroteDataError`` if an abort signal changed, so a write made
-by the interrupted dispatch is never absorbed into the new baseline. A missing,
-passed or unreadable snapshot, and any anchorless begin, re-baselines without
-comparing.
+interrupted mid-dispatch), begin first compares it with one capture of the
+tree, the same capture its new baseline is built from. A changed abort signal
+raises ``DispatchWroteDataError`` and keeps the old snapshot; a changed report
+signal is recorded as a concern, as end would, before the re-baseline, so
+neither class is absorbed silently. A missing, passed or unreadable snapshot
+(one whose ``abort`` or ``report`` is not a mapping included), and any
+anchorless begin, re-baselines without comparing.
 
 End keeps the snapshot, so an end re-run after a downstream error evaluates
-again, until an end passes: it then sets ``"passed": true`` inside the snapshot
-(anchored or not), and a later end for the same round and anchor returns
+again, until an end passes. With an anchor it then sets ``"passed": true``
+inside the snapshot, and a later end for the same round and anchor returns
 without comparing, because the session's own post-round writes (outbox,
-research files, manager book) would otherwise trip it. End refuses when there
-is no snapshot for its round and anchor, and turns any error it meets (an
-unreadable snapshot included) into ``DispatchWroteDataError``: an end call that
-cannot evaluate is not a pass.
+research files, manager book) would otherwise trip it. Without an anchor a
+passing end deletes the snapshot instead: an anchorless snapshot is keyed by
+round name alone, so one left behind would persist across ad-hoc runs and
+answer "already verified" to a later end that had no begin. Anchorless runs are
+local or manual, so an end re-run after a pass raising "did not run" is
+deliberate. End refuses when there is no snapshot for its round and anchor, and
+turns any error it meets (an unreadable snapshot included) into
+``DispatchWroteDataError``: an end call that cannot evaluate is not a pass.
 
 **Remaining limit.** A re-dispatch after a passing end MUST be preceded by a
 new begin. An end after a pass returns "already verified" without comparing, so
@@ -264,42 +270,47 @@ def snapshot_data_tree(
     round. An existing snapshot under the same key is replaced, atomically, and
     its pass state with it, except that an anchored snapshot that has not
     passed (a round interrupted mid-dispatch) is compared first: a changed
-    abort signal raises ``DispatchWroteDataError`` and the snapshot is kept.
+    abort signal raises ``DispatchWroteDataError`` and the snapshot is kept; a
+    changed report signal is recorded as a concern before the re-baseline.
     """
     root = repo_root or _REPO_ROOT
     path = _snapshot_path(round_name, anchor, root)
-    if anchor is not None:
-        _refuse_unfinished_round_writes(round_name, path, root)
     doc = {
         "anchor": anchor,
         "prefix": sys.prefix,
         "abort": _capture_abort(root),
         "report": _capture_report(root),
     }
+    if anchor is not None:
+        _compare_unfinished_round(round_name, anchor, path, doc, root)
     _write_snapshot(path, doc)
     count = len(doc["abort"]) + len(doc["report"])
     print(f"  dispatch guard [{round_name}]: snapshot taken ({count} entries)")
 
 
-def _refuse_unfinished_round_writes(
-    round_name: str, path: Path, root: Path
+def _compare_unfinished_round(
+    round_name: str, anchor: str, path: Path, now: dict, root: Path
 ) -> None:
-    """Raise if a round interrupted before its end changed an abort signal."""
+    """Compare a round interrupted before its end with the capture ``now``.
+
+    The whole comparison, ``_diff`` included, sits inside the error handling: a
+    snapshot that is missing or unreadable, or whose ``abort`` or ``report`` is
+    not a mapping, has nothing to compare and is re-baselined. Recording and
+    raising happen outside it, so their own failures are not mistaken for an
+    unreadable snapshot.
+    """
     try:
         before = json.loads(path.read_text(encoding="ascii"))
-        previous = before["abort"]
-        passed = before.get("passed") is True
+        if before.get("passed") is True:
+            return
+        aborts = _diff(before["abort"], now["abort"])
+        reported = _report_diff(round_name, before, now["report"])
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
-        return  # missing or unreadable: nothing to compare, re-baseline
-    if passed:
         return
-    aborts = _diff(previous, _capture_abort(root))
-    if aborts:
-        raise DispatchWroteDataError(
-            f"dispatch round {round_name!r} wrote in the checkout "
-            "(found at begin, on a round that had not finished): "
-            + "; ".join(f"{_show(p)} ({kind})" for p, kind in aborts)
-        )
+    _raise_on_aborts(
+        round_name, aborts, " (found at begin, on a round that had not finished)"
+    )
+    _note_reported(round_name, anchor, reported, root)
 
 
 def _diff(before: dict[str, str], after: dict[str, str]) -> list[tuple[str, str]]:
@@ -315,6 +326,43 @@ def _diff(before: dict[str, str], after: dict[str, str]) -> list[tuple[str, str]
 
 def _without_site_packages(snap: dict[str, str]) -> dict[str, str]:
     return {k: v for k, v in snap.items() if not k.startswith(_SITE_PREFIX)}
+
+
+def _raise_on_aborts(
+    round_name: str, aborts: list[tuple[str, str]], where: str = ""
+) -> None:
+    if aborts:
+        raise DispatchWroteDataError(
+            f"dispatch round {round_name!r} wrote in the checkout{where}: "
+            + "; ".join(f"{_show(p)} ({kind})" for p, kind in aborts)
+        )
+
+
+def _report_diff(
+    round_name: str, before: dict, report_after: dict[str, str]
+) -> list[tuple[str, str]]:
+    """Changes to the report class, site-packages left out across prefixes."""
+    report_before = before["report"]
+    if before["prefix"] != sys.prefix:
+        print(
+            f"  dispatch guard [{round_name}]: begin ran under {before['prefix']}, "
+            f"end under {sys.prefix}; site-packages not compared"
+        )
+        report_before = _without_site_packages(report_before)
+        report_after = _without_site_packages(report_after)
+    return _diff(report_before, report_after)
+
+
+def _note_reported(
+    round_name: str,
+    anchor: str | None,
+    reported: list[tuple[str, str]],
+    root: Path,
+) -> None:
+    if reported:
+        _record(round_name, anchor, reported, root)
+        for rel, kind in reported:
+            print(f"  dispatch guard [{round_name}]: reported {_show(rel)} ({kind})")
 
 
 def _record(
@@ -342,28 +390,14 @@ def _check(round_name: str, anchor: str | None, root: Path) -> None:
         print(f"  dispatch guard [{round_name}]: already verified this session")
         return
 
-    aborts = _diff(before["abort"], _capture_abort(root))
-    if aborts:
-        raise DispatchWroteDataError(
-            f"dispatch round {round_name!r} wrote in the checkout: "
-            + "; ".join(f"{_show(p)} ({kind})" for p, kind in aborts)
-        )
-
-    report_before, report_after = before["report"], _capture_report(root)
-    if before["prefix"] != sys.prefix:
-        print(
-            f"  dispatch guard [{round_name}]: begin ran under {before['prefix']}, "
-            f"end under {sys.prefix}; site-packages not compared"
-        )
-        report_before = _without_site_packages(report_before)
-        report_after = _without_site_packages(report_after)
-    reported = _diff(report_before, report_after)
-    if reported:
-        _record(round_name, anchor, reported, root)
-        for rel, kind in reported:
-            print(f"  dispatch guard [{round_name}]: reported {_show(rel)} ({kind})")
+    _raise_on_aborts(round_name, _diff(before["abort"], _capture_abort(root)))
+    reported = _report_diff(round_name, before, _capture_report(root))
+    _note_reported(round_name, anchor, reported, root)
     print(f"  dispatch guard [{round_name}]: no abort signal changed")
-    _write_snapshot(path, {**before, "passed": True})
+    if anchor is None:
+        path.unlink()
+    else:
+        _write_snapshot(path, {**before, "passed": True})
 
 
 def assert_data_tree_unchanged(
@@ -374,7 +408,8 @@ def assert_data_tree_unchanged(
     Changes to a report signal are printed and recorded instead. Any other
     error met while checking is raised as ``DispatchWroteDataError`` too, with
     its cause. A failed end leaves the snapshot unmarked, so a repeated end
-    evaluates again; after a pass, a repeated end returns without comparing.
+    evaluates again; after a pass, a repeated end returns without comparing
+    (an anchorless run deletes the snapshot on a pass instead).
     """
     root = repo_root or _REPO_ROOT
     try:

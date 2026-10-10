@@ -12,7 +12,7 @@ import importlib
 import re
 from pathlib import Path
 
-from engine.config import get_config
+from engine.config import get_config, reset_config_cache
 
 # A write verb that governs a data/ path later in the same sentence. Reading a
 # path and then writing prose ("read data/x before writing the blog") is fine.
@@ -45,7 +45,7 @@ def test_no_persona_tells_its_agent_to_write_under_data() -> None:
 
 
 def test_importing_this_module_does_not_load_the_config() -> None:
-    get_config.cache_clear()
+    reset_config_cache()
     importlib.reload(importlib.import_module(__name__))
     assert get_config.cache_info().currsize == 0
 

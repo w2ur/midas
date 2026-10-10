@@ -61,10 +61,10 @@ def _concerns(repo: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines()]
 
 
-def _write_anchor(started: datetime) -> None:
+def _write_anchor(started: datetime, base_sha: str = "a" * 40) -> None:
     path = _anchor_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    anchor = SessionAnchor(date(2026, 10, 9), "a" * 40, started)
+    anchor = SessionAnchor(date(2026, 10, 9), base_sha, started)
     path.write_text(json.dumps(anchor.to_dict()))
 
 
@@ -158,16 +158,18 @@ def test_a_redispatch_after_a_pass_is_a_new_bracket(repo) -> None:
         assert_data_tree_unchanged("r", repo, anchor="s")
 
 
-def test_an_anchorless_end_twice_passes_both_times(repo, capsys) -> None:
-    """Without an anchor the pass is recorded too, so a re-run end passes."""
+def test_an_anchorless_pass_leaves_nothing_behind(repo) -> None:
+    """Fail closed: an anchorless snapshot is keyed by round name alone.
+
+    Left behind it would persist across ad-hoc runs and answer "already
+    verified" to a later end that had no begin. Anchorless runs are local or
+    manual, so an end re-run after a pass raising "did not run" is deliberate.
+    """
     snapshot_data_tree("r", repo)
     assert_data_tree_unchanged("r", repo)
-    snap = repo / ".git" / "midas-dispatch-guard" / "r.json"
-    assert json.loads(snap.read_text())["passed"] is True
-    (repo / "data" / "outbox.jsonl").write_text("{}\n")  # the session's own write
-    capsys.readouterr()
-    assert_data_tree_unchanged("r", repo)
-    assert "already verified this session" in capsys.readouterr().out
+    assert list((repo / ".git" / "midas-dispatch-guard").iterdir()) == []
+    with pytest.raises(DispatchWroteDataError, match="did not run"):
+        assert_data_tree_unchanged("r", repo)
 
 
 def test_begin_on_an_interrupted_round_that_wrote_raises(repo) -> None:
@@ -180,6 +182,43 @@ def test_begin_on_an_interrupted_round_that_wrote_raises(repo) -> None:
     # The old baseline is kept, so end still names the write.
     with pytest.raises(DispatchWroteDataError, match=r"data/tracked\.json"):
         assert_data_tree_unchanged("r", repo, anchor="s")
+
+
+def test_begin_on_an_interrupted_round_records_report_changes(repo) -> None:
+    """A report-class write by the interrupted dispatch is a concern, not baseline."""
+    snapshot_data_tree("r", repo, anchor="s")
+    state = repo / "data" / "session_state"
+    state.mkdir(parents=True, exist_ok=True)
+    (state / "stray.json").write_text("{}\n")
+    snapshot_data_tree("r", repo, anchor="s")
+    assert [(c["round"], c["anchor"], c["path"], c["kind"]) for c in _concerns(repo)] == [
+        ("r", "s", "data/session_state/stray.json", "appeared")
+    ]
+    # The new baseline includes it: end does not report it a second time.
+    assert_data_tree_unchanged("r", repo, anchor="s")
+    assert len(_concerns(repo)) == 1
+
+
+def test_begin_does_not_record_report_changes_after_a_pass(repo) -> None:
+    snapshot_data_tree("r", repo, anchor="s")
+    assert_data_tree_unchanged("r", repo, anchor="s")
+    state = repo / "data" / "session_state"
+    state.mkdir(parents=True, exist_ok=True)
+    (state / "results.json").write_text("{}\n")
+    snapshot_data_tree("r", repo, anchor="s")
+    assert _concerns(repo) == []
+
+
+@pytest.mark.parametrize("field", ["abort", "report"])
+def test_a_snapshot_whose_field_is_not_a_mapping_is_rebaselined(repo, field) -> None:
+    """Unreadable at begin means a fresh baseline, never an AttributeError."""
+    snapshot_data_tree("r", repo, anchor="s")
+    snap = repo / ".git" / "midas-dispatch-guard" / "r@s.json"
+    doc = json.loads(snap.read_text())
+    doc[field] = ["not", "a", "mapping"]
+    snap.write_text(json.dumps(doc))
+    snapshot_data_tree("r", repo, anchor="s")
+    assert_data_tree_unchanged("r", repo, anchor="s")
 
 
 def test_begin_on_a_clean_interrupted_round_then_end_passes(repo) -> None:
@@ -547,9 +586,32 @@ def test_session_wrappers_key_the_snapshot_by_anchor(repo, monkeypatch) -> None:
     _write_anchor(datetime(2026, 10, 9, 22, 0, tzinfo=timezone.utc))
     ds.step_guard_dispatch_begin("step6-posts")
     ds.step_guard_dispatch_end("step6-posts")
-    _write_anchor(datetime(2026, 10, 9, 23, 0, tzinfo=timezone.utc))
+    _write_anchor(datetime(2026, 10, 9, 22, 0, tzinfo=timezone.utc), "b" * 40)
     with pytest.raises(DispatchWroteDataError, match="did not run"):
         ds.step_guard_dispatch_end("step6-posts")
+
+
+def test_the_guard_key_survives_a_resume_but_not_a_new_base(repo) -> None:
+    """Step 0c re-anchors on every run: only date and base identify the session."""
+    _write_anchor(datetime(2026, 10, 9, 22, 0, tzinfo=timezone.utc))
+    first = ds._dispatch_guard_anchor()
+    _write_anchor(datetime(2026, 10, 9, 23, 30, tzinfo=timezone.utc))
+    assert ds._dispatch_guard_anchor() == first == f"2026-10-09-{'a' * 12}"
+    _write_anchor(datetime(2026, 10, 9, 22, 0, tzinfo=timezone.utc), "b" * 40)
+    assert ds._dispatch_guard_anchor() != first
+
+
+def test_a_resumed_session_compares_the_interrupted_round_at_begin(
+    repo, monkeypatch
+) -> None:
+    """The reason for the key: a re-anchor must not hide the interrupted snapshot."""
+    monkeypatch.setattr("engine.dispatch_guard._REPO_ROOT", repo)
+    _write_anchor(datetime(2026, 10, 9, 22, 0, tzinfo=timezone.utc))
+    ds.step_guard_dispatch_begin("step6-posts")
+    (repo / "data" / "planted.json").write_text("evil")
+    _write_anchor(datetime(2026, 10, 9, 22, 40, tzinfo=timezone.utc))
+    with pytest.raises(DispatchWroteDataError, match="found at begin"):
+        ds.step_guard_dispatch_begin("step6-posts")
 
 
 # --- file names git cannot decode as UTF-8 ----------------------------------
