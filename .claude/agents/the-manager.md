@@ -81,7 +81,8 @@ The JSON object must match this schema exactly:
     }
   ],
   "conviction": 8,
-  "hold_reasoning": "If no positions: explain why you are holding."
+  "hold_reasoning": "If no positions: explain why you are holding.",
+  "sources": [{"query": "...", "url": "...", "used_for": "..."}]
 }
 ```
 
@@ -97,3 +98,4 @@ Field rules:
 - `positions[].expires` *(required when trigger is set)*: ISO date string `"YYYY-MM-DD"`. The watcher cancels the pending order as `TRIGGER_EXPIRED` on or after this date. Must be ≤ 10 trading days out. **A trigger without `expires` is invalid and the position will be dropped by the parser.**
 - `conviction`: integer 0-10. Your overall confidence in this session's decision set. If below 6, you must emit `positions: []`.
 - `hold_reasoning`: explanation for holding when positions is empty. Required when no positions are emitted; may be empty string otherwise.
+- `sources` *(optional)*: every web search you ran this session, as the task prompt's web-research block specifies. Omit it if you did not search.
