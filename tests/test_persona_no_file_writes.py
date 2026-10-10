@@ -8,16 +8,12 @@ rewritten by the session from the text the agent returns. A persona that says
 
 from __future__ import annotations
 
+import importlib
 import re
 from pathlib import Path
 
-import pytest
-
 from engine.config import get_config
 
-# Resolved as engine.persona_dispatch resolves it, so a desk configured with
-# its own personas (midas-core's examples/demo-desk) is read from there.
-_AGENTS = get_config().agents_dir
 # A write verb that governs a data/ path later in the same sentence. Reading a
 # path and then writing prose ("read data/x before writing the blog") is fine.
 _WRITE_TO_DATA = re.compile(
@@ -28,17 +24,30 @@ _WRITE_TO_DATA = re.compile(
 
 
 def _personas() -> list[Path]:
-    return sorted(_AGENTS.glob("*.md"))
+    # Resolved as engine.persona_dispatch resolves it, so a desk configured
+    # with its own personas (midas-core's examples/demo-desk) is read from
+    # there. Resolved inside the test, never at import: collection must not
+    # populate the config cache (tests/conftest.py documents that guarantee).
+    return sorted(get_config().agents_dir.glob("*.md"))
 
 
 def test_the_persona_directory_is_read() -> None:
     assert len(_personas()) > 1
 
 
-@pytest.mark.parametrize("path", _personas(), ids=lambda p: p.stem)
-def test_no_persona_tells_its_agent_to_write_under_data(path: Path) -> None:
-    hits = [m.group(0) for m in _WRITE_TO_DATA.finditer(path.read_text())]
-    assert hits == [], f"{path.name} tells its agent to write a file: {hits}"
+def test_no_persona_tells_its_agent_to_write_under_data() -> None:
+    offenders = {
+        path.name: hits
+        for path in _personas()
+        if (hits := [m.group(0) for m in _WRITE_TO_DATA.finditer(path.read_text())])
+    }
+    assert offenders == {}, f"personas that tell their agent to write a file: {offenders}"
+
+
+def test_importing_this_module_does_not_load_the_config() -> None:
+    get_config.cache_clear()
+    importlib.reload(importlib.import_module(__name__))
+    assert get_config.cache_info().currsize == 0
 
 
 def test_the_pattern_catches_the_line_it_was_written_for() -> None:
