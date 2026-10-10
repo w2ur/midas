@@ -59,3 +59,10 @@ def test_the_trigger_prompt_calls_the_helper() -> None:
     assert "render_trading_prompt(agent_id, today)" in doc
     assert "TRADING_PROMPT.format(" not in doc
     assert '"commentary": "your day' not in doc
+
+
+def test_step_0_does_not_clean_untracked_files() -> None:
+    """A `git clean` here deleted an interrupted session's untracked outbox while the step markers survived."""
+    doc = (ds.Path(__file__).resolve().parents[1] / "docs/triggers/weekday-session.md").read_text()
+    assert "git reset --hard origin/main" in doc
+    assert "git clean" not in doc

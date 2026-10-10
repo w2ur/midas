@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: b2de3bd47d37c9c650a0042d6c960f0c8cb96b0793ee4a28f4b203fcf6ef99e3
+PROMPT_SHA256: 3ec9cc48e5f8e7ccb2c4354480e4d10055e867646785d2f82a1fdba7ce1e2f2b
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -221,6 +221,32 @@ it mid-session. Your final report reaches no one; the trailer is filed
 as a GitHub issue. The abort conditions named in the steps below
 are the exception, and they mean STOP, not FIX.
 
+FIVE DISPATCH ROUNDS ARE GUARDED (Steps 2, 4b, 5, 6, 8): the subagents of
+Steps 2, 4b and 5 may search the web, and web text is untrusted. The post
+and journal rounds (Steps 6, 8) do not search, but their prompts carry
+text those searches produced second-hand (commentary, theses, the
+Oracle's blog), so they are fenced the same way. Each round is bracketed
+by step_guard_dispatch_begin("<round>") and step_guard_dispatch_end("<round>"),
+each callable from its own Python process. Call begin exactly once per
+dispatch, immediately before it: begin always takes a fresh baseline. When
+the round's Task calls return, call step_guard_dispatch_end FIRST, before
+writing any result to disk; only then persist results under
+data/session_state/results/ (never anywhere else in the checkout: a file
+written elsewhere is what the guard aborts on). If one failed Task call must
+be re-dispatched after the end, that is a new bracket: begin, dispatch, end,
+and the new begin is MANDATORY: an end after a pass returns "already verified"
+without comparing anything, so a re-dispatch with no new begin is unfenced.
+If a round was interrupted before its end and you re-begin it in the SAME
+run, begin first checks the checkout against that round's baseline and
+raises DispatchWroteDataError if the interrupted dispatch wrote anything:
+ABORT. A new run (from Step 0c) never compares against an earlier run.
+A DispatchWroteDataError from the end call means a subagent changed the
+checkout or git state, or the check could not run: ABORT the session.
+Do not author, do not commit, do not clean up the named paths; report
+the error text verbatim. Changes the end call only reports (lines
+starting `dispatch guard [<round>]: reported`) need no action from you:
+the session commit carries them as trailers.
+
 NEVER reconcile state by hand. Portfolios, orders, baselines and the
 leaderboard are written by helpers only. If they disagree with each
 other, that is a finding to report, not a file to edit.
@@ -255,19 +281,10 @@ python scripts/fetch_market_data.py
 # immutable, so a snapshot written at three-week-old closes is permanent.
 # Do NOT work around it by fetching prices yourself.
 
-# Step 1a — Sentiment A/B arm check (report-only, never fatal)
-    from scripts.daily_session import step_check_sentiment_freshness
-    step_check_sentiment_freshness(today)
-# Records which arm of the pre-registered sentiment A/B this session
-# actually ran, to data/market/sentiment_arm.jsonl (committed). If the
-# collector's digests for today are not on main, the two treatment agents
-# read yesterday's headlines and the arm is confounded — which is what was
-# happening at every session until 2026-08-07. Keep running: a missing news
-# feed is not a reason to lose a session. Mention a `degraded-to-control`
-# result in your final report.
-
 # Step 2 — Trading round (DISPATCH IN PARALLEL — one Task call per agent)
-    from scripts.daily_session import render_trading_prompt
+    from scripts.daily_session import (
+        render_trading_prompt, step_guard_dispatch_begin, step_guard_dispatch_end,
+    )
 For each agent_id in ROSTER:
     wrapped, model = wrap_persona_prompt(
         agent_id, render_trading_prompt(agent_id, today)
@@ -275,6 +292,8 @@ For each agent_id in ROSTER:
 # The task body lives in scripts/daily_session.py (TRADING_PROMPT) and the
 # helper fills it. Do NOT rebuild it by hand or call str.format on it: its
 # JSON schema is literal braces.
+Write all 10 prompt files first, THEN, immediately before dispatching:
+    step_guard_dispatch_begin("step2-trading")
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
 they run in parallel. Collect agent_results = {agent_id: {"commentary":
@@ -283,9 +302,12 @@ they run in parallel. Collect agent_results = {agent_id: {"commentary":
 particular `research_note` is load-bearing: it is the ONLY input to the
 analysts+Manager pipeline (Step 4a/4b) and the public bundle. Dropping it
 does NOT crash anything — the Manager silently runs on zero signal and
-writes empty HOLD reviews while looking healthy. Keep every key the agent emits.
+writes empty HOLD reviews while looking healthy. Keep every key the agent
+emits — `sources` too: step_author_all records each agent's self-reported
+web searches to data/research/.
 
-After all 10 results arrive:
+After all 10 results arrive, BEFORE anything else:
+    step_guard_dispatch_end("step2-trading")   # raises → ABORT (see rules)
     from scripts.daily_session import step_author_all
     step_author_all(agent_results, today)
     # ^ MUST be the helper. Do NOT loop in prose calling step_author_orders
@@ -346,9 +368,12 @@ After all 10 results arrive:
     _, model = load_persona("the-manager")
     # ^ model resolves to "opus" (the-manager.md frontmatter) — the only
     #   real-money-bound author; stakes justify the tier. Pass it through.
+Write the prompt file, then immediately before dispatching:
+    step_guard_dispatch_begin("step4b-manager")
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=manager_prompt. Capture the dispatch result into `response_text`. The
-response is a single JSON object (ManagerDecision).
+response is a single JSON object (ManagerDecision). As soon as it returns:
+    step_guard_dispatch_end("step4b-manager")   # raises → ABORT (see rules)
     # 4b-apply — Parse (conviction gate enforced in code), write the
     #            manager-review audit artifact (EVERY day, even a HOLD),
     #            author non-HOLD orders to the manager channel, fill the
@@ -393,6 +418,7 @@ response is a single JSON object (ManagerDecision).
         agent_posts=None,        # posts haven't happened yet — Oracle runs first
         leaderboard=leaderboard,
         agent_memories=memories,
+        session_date=today,
     )
     wrapped, model = wrap_persona_prompt("the-oracle", oracle_prompt)
     # NOTE: model resolves to "sonnet" by design — the-oracle.md's
@@ -400,9 +426,15 @@ response is a single JSON object (ManagerDecision).
     # the narrative+10-agent prompt repeatedly tripped the cloud streaming
     # idle timeout (Apr 29). Do NOT manually override to "opus" — see
     # CLAUDE.md "Persona dispatch substrate" section.
+Write the prompt file, then immediately before dispatching:
+    step_guard_dispatch_begin("step5-oracle")
 Dispatch via Task with subagent_type="general-purpose", model=model,
-prompt=wrapped. Parse the response with parse_oracle_response →
-blog_draft, oracle_posts.
+prompt=wrapped. Capture the dispatch result into `response_text`, then:
+    step_guard_dispatch_end("step5-oracle")   # raises → ABORT (see rules)
+    from engine.blog import parse_oracle_response
+    from scripts.daily_session import step_record_oracle_research
+    blog_draft, oracle_posts = parse_oracle_response(response_text)
+    step_record_oracle_research(response_text, today)
 
 # Step 6 — Post round (DISPATCH IN PARALLEL — one Task call per agent)
     from scripts.daily_session import step_build_post_prompts
@@ -412,9 +444,13 @@ blog_draft, oracle_posts.
     )
 For each agent_id in post_prompts (10 agents):
     wrapped, model = wrap_persona_prompt(agent_id, post_prompts[agent_id])
+Write all 10 prompt files first, THEN, immediately before dispatching:
+    step_guard_dispatch_begin("step6-posts")
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 10 dispatches MUST be issued in the SAME message so
-they run in parallel. Parse each response with parse_post_response.
+they run in parallel. As soon as all 10 have returned, BEFORE parsing:
+    step_guard_dispatch_end("step6-posts")   # raises → ABORT (see rules)
+Then parse each response with parse_post_response.
 Collect agent_posts = {agent_id: [PostPayload, ...]}.
 
 # Step 7 — Save content (the bundle MUST contain all 10 agents)
@@ -449,10 +485,14 @@ If fewer than 10, the bundle is malformed — abort.
     # writes about an empty desk — it did exactly that from Day 79 to Day 85.
 For each agent_id in memory_prompts (10 traders + the-oracle):
     wrapped, model = wrap_persona_prompt(agent_id, memory_prompts[agent_id])
+Write all 11 prompt files first, THEN, immediately before dispatching:
+    step_guard_dispatch_begin("step8-journals")
 Dispatch via Task with subagent_type="general-purpose", model=model,
 prompt=wrapped. All 11 dispatches MUST be issued in the SAME message so
 they run in parallel. Each subagent rewrites its own first-person journal
-in full and returns the new content as plain markdown.
+in full and returns the new content as plain markdown. As soon as all 11
+have returned, BEFORE step_save_memories:
+    step_guard_dispatch_end("step8-journals")   # raises → ABORT (see rules)
     new_journals = {agent_id: response_text for ...}
     step_save_memories(new_journals)
 After this, every data/agent_memory/*.md (11 files) must show fresh mtimes.
@@ -526,7 +566,6 @@ git show HEAD --stat must include:
   - data/posts/{today}.json
   - data/blog/{today}.md
   - data/leaderboard/current.json
-  - data/market/sentiment_arm.jsonl
 Also confirm the leaderboard in data/output/{today}.json was produced
 by step_build_leaderboard, not by hand. Spot-check one EUR agent and
 one USD agent against (portfolio_mtm_eur / 10_000 - 1) * 100 — values
