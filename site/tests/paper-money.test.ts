@@ -1,25 +1,41 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { SRC, sourceFiles, stylesheetText } from "./helpers/source-files";
+import { SRC, stylesheetText } from "./helpers/source-files";
 
 const read = (p: string) => fs.readFileSync(path.join(SRC, p), "utf-8");
 
-// Rules whose selector names the tagline or the footer's paragraphs and that
-// hide what they match. A source scan cannot prove what a browser draws — a
-// selector that reaches the line some other way escapes it — so the rendered
-// check is the design-critique capture at 390. This guards the shapes the
-// line has been, or could plausibly be, hidden by.
-const FOOTER_TEXT_SELECTOR = /tagline|site-footer[^,{]*\bp\b|\.inner[^,{]*\bp\b|footer[^,{]*\bp\b/;
+// The rendered check is the design-critique capture at 390; this source scan
+// guards the two stylesheets that can reach the footer.
+// - SiteFooter.astro's own styles: nothing in the footer is legitimately
+//   hidden, so any hiding declaration there — on the tagline or any ancestor —
+//   fails.
+// - global.css: any rule whose selector names the footer or its tagline.
+// Comments are stripped first, so prose that mentions the tagline is never
+// read as a selector. Other pages' `.tagline` classes are scoped to those
+// pages and cannot reach the footer, so they are not scanned.
 const HIDES =
-  /display:\s*none|visibility:\s*hidden|clip(-path)?:|opacity:\s*0[;\s}]|font-size:\s*0[;\s}]|(?:max-)?height:\s*0[;\s}]/;
+  /display:\s*none|visibility:\s*hidden|(?<![-\w])clip(-path)?:|(?<![-\w])opacity:\s*0[;\s}]|(?<![-\w])font-size:\s*0[;\s}]|(?<![-\w])(?:max-)?height:\s*0[;\s}]/;
+const FOOTER_SELECTOR = /site-footer|footer|tagline/;
 
-function hidingRules(): { file: string; rule: string }[] {
-  return sourceFiles().flatMap((file) =>
-    [...stylesheetText(file).matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-      .filter((m) => FOOTER_TEXT_SELECTOR.test(m[1]) && HIDES.test(m[2]))
-      .map((m) => ({ file: path.relative(SRC, file), rule: m[0].trim() })),
-  );
+function rules(css: string): { selector: string; body: string; text: string }[] {
+  // Print styles legitimately drop the chrome from paper; they never reach a screen.
+  const bare = css
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/@media\s+print\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, "");
+  return [...bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+    selector: m[1].trim(),
+    body: m[2],
+    text: m[0].trim(),
+  }));
+}
+
+function hidingRules(): string[] {
+  const own = rules(stylesheetText(path.join(SRC, "components/SiteFooter.astro")))
+    .filter((r) => HIDES.test(r.body));
+  const global = rules(stylesheetText(path.join(SRC, "styles/global.css")))
+    .filter((r) => FOOTER_SELECTOR.test(r.selector) && HIDES.test(r.body));
+  return [...own, ...global].map((r) => r.text);
 }
 
 // The front page leads with a real-looking fill, and most visitors arrive on a
@@ -27,7 +43,7 @@ function hidingRules(): { file: string; rule: string }[] {
 // every width.
 describe("the front page states paper money", () => {
   // Regression: b5cdb47d1 — the footer hid its paper-money tagline below 48rem.
-  it("no stylesheet rule hides the footer tagline or the footer's paragraphs", () => {
+  it("neither the footer's styles nor a global footer rule hide anything", () => {
     const footer = read("components/SiteFooter.astro");
     expect(footer).toMatch(/<p class="tagline">/);
     expect(footer).not.toMatch(/<p class="tagline"[^>]*\bhidden\b/);

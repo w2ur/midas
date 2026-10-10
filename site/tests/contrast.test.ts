@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
-import { SRC, sourceFiles } from "./helpers/source-files";
 import * as path from "node:path";
+import { SRC, sourceFiles } from "./helpers/source-files";
 
 // Guards the "After Hours" palette against WCAG AA regressions in BOTH themes.
 // Parses global.css directly, so any future token edit that breaks contrast
