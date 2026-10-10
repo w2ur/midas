@@ -148,6 +148,8 @@ LIVE_ONLY_TESTS = {
     # live-desk quota infrastructure keyed to this repo's own workflow file and
     # allocator channels; core ships neither.
     "test_trigger_gate_parity.py",
+    # Reads .claude/agents/, this desk's personas; core has no such directory.
+    "test_persona_no_file_writes.py",
     # NOTE: the 21 formerly-live-only cast-coupled tests were reclaimed into
     # core in SP5. They ship to core byte-identical; the ones that assert on the
     # live cast carry @pytest.mark.live_cast and skip on the demo desk (see

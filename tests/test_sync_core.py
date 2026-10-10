@@ -437,6 +437,8 @@ def test_cast_tests_reclaimed_into_manifest():
         # Imports scripts.compare_settlement_shadow, the live-only tool that
         # reads the nightly shadow artifact; core ships neither.
         "test_settlement_shadow.py",
+        # Reads .claude/agents/, this desk's personas; core has no such directory.
+        "test_persona_no_file_writes.py",
     }
     # All reclaimed tests now ship in the code manifest.
     manifest_names = {p.name for p in sync_core.code_manifest()}
