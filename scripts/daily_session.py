@@ -1364,14 +1364,24 @@ def step_build_oracle_prompt(
     return prompt
 
 
-def step_guard_dispatch_begin(round_name: str) -> None:
-    """Snapshot the checkout before a persona dispatch round (see engine.dispatch_guard)."""
-    snapshot_data_tree(round_name)
+def step_guard_dispatch_begin(round_name: str) -> str:
+    """Snapshot before a persona dispatch round; return the token end requires.
+
+    See engine.dispatch_guard. Keep the returned token in the orchestrator and
+    pass it to ``step_guard_dispatch_end``: a subagent cannot reach it there.
+    """
+    token = snapshot_data_tree(round_name)
+    # Printed for the orchestrator, which may call end from a new process.
+    print(f"  dispatch guard token: {token}")
+    return token
 
 
-def step_guard_dispatch_end(round_name: str) -> None:
-    """Refuse the session if the round changed anything in the checkout."""
-    assert_data_tree_unchanged(round_name)
+def step_guard_dispatch_end(round_name: str, token: str | None = None) -> None:
+    """Refuse the session if the round changed anything the guard watches.
+
+    A missing or wrong token raises ``DispatchWroteDataError`` like a write does.
+    """
+    assert_data_tree_unchanged(round_name, token)
 
 
 def step_record_oracle_research(response_text: str, session_date: date) -> None:
