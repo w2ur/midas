@@ -49,7 +49,10 @@ that starts from a stale tip reads yesterday's portfolios, and its agents author
 sells of positions that have already been sold and buys of cash that has already
 been spent. Nothing downstream can detect this, because every artifact the
 session produces is internally consistent — it is consistent with a world that
-no longer exists.
+no longer exists. The reset keeps untracked files, so a reused workspace also
+removes the untracked, non-ignored leftovers under `data/` that an earlier failed
+run wrote (`git clean -fd -- data/`, without `-x`, so ignored session state
+survives): the session commit stages `data/` and would otherwise publish them.
 
 **Anchor the date and the ledger base once, at the start.** `scripts/session_guard.py`
 pins the session date, the base commit and the wall-clock start;

@@ -1181,10 +1181,14 @@ def step_apply_manager_decision(
             f"  Initialized {aid} book ({spec.home_currency} {spec.initial_capital:.0f})"
         )
 
-    if isinstance(raw_decision, dict):
-        record_research(
-            aid, raw_decision.get("sources"), trade_date, MANAGER_MAX_SEARCHES
-        )
+    # replace: a reused sandbox VM keeps an earlier failed fire's untracked file.
+    record_research(
+        aid,
+        raw_decision.get("sources") if isinstance(raw_decision, dict) else None,
+        trade_date,
+        MANAGER_MAX_SEARCHES,
+        replace=True,
+    )
 
     decision = parse_manager_decision(
         raw_decision, min_conviction=alloc.risk_budget.min_conviction

@@ -402,6 +402,28 @@ def test_apply_manager_decision_records_sources(manager_env) -> None:
     assert json.loads(path.read_text())["sources"] == [_src(0)]
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        {"positions": [], "conviction": 3, "hold_reasoning": "x"},
+        {"positions": [], "conviction": 3, "hold_reasoning": "x", "sources": "junk"},
+        None,
+        "not a dict",
+    ],
+    ids=["no-sources", "junk-sources", "none", "string"],
+)
+def test_apply_manager_decision_removes_a_stale_research_file(manager_env, raw) -> None:
+    """A reused VM keeps an earlier failed fire's file; nothing reported removes it."""
+    from engine.config import get_config
+    from scripts.daily_session import step_apply_manager_decision
+
+    path = get_config().research_dir / TRADE_DATE.isoformat() / "the-manager.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{}\n")
+    step_apply_manager_decision(raw, TRADE_DATE)
+    assert not path.exists()
+
+
 def test_parse_manager_decision_ignores_sources_key() -> None:
     base = {"positions": [], "conviction": 5, "hold_reasoning": "wait"}
     without = parse_manager_decision(base, min_conviction=3)
