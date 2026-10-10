@@ -10,9 +10,9 @@ export function formatPrice(n: number | null, ccy: string | null): string {
   const abs = Math.abs(n);
   // Two decimals from 10, four from 1, four significant digits below 1 so a
   // sub-cent token never prints as a price of zero. Decided on the rounded
-  // value, so 9.99996 prints 10.00, not 10.0000.
+  // value, so 9.99996 prints 10.00 and 0.99996 prints 1.0000.
   const opts: Intl.NumberFormatOptions =
-    abs > 0 && abs < 1
+    abs > 0 && Number(abs.toPrecision(4)) < 1
       ? { maximumSignificantDigits: 4, minimumSignificantDigits: 4 }
       : Number(abs.toFixed(4)) < 10
         ? { minimumFractionDigits: 4, maximumFractionDigits: 4 }
@@ -30,7 +30,12 @@ export function formatPrice(n: number | null, ccy: string | null): string {
  */
 export function formatShares(n: number): string {
   if (n === 0) return "0";
-  return n.toLocaleString("en-GB", { maximumSignificantDigits: 6, useGrouping: false });
+  // Never fewer significant digits than the integer part has: 1234567 stays whole.
+  const intDigits = Math.abs(n) >= 1 ? Math.floor(Math.log10(Math.abs(n))) + 1 : 0;
+  return n.toLocaleString("en-GB", {
+    maximumSignificantDigits: Math.min(21, Math.max(6, intDigits)),
+    useGrouping: false,
+  });
 }
 
 /** `2026-10-10` → `10 October 2026`, read in UTC so the day never shifts. */

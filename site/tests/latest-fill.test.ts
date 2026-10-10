@@ -109,6 +109,10 @@ describe("formatShares", () => {
     expect(formatShares(0.30000000000000004)).toBe("0.3");
     expect(formatShares(-0)).toBe("0");
   });
+  it("never rounds an integer part longer than six digits", () => {
+    expect(formatShares(1234567)).toBe("1234567");
+    expect(formatShares(12345678.4)).toBe("12345678");
+  });
 });
 
 describe("formatPrice", () => {
@@ -122,6 +126,7 @@ describe("formatPrice", () => {
   it("never prints a sub-cent price as zero, nor 9.99996 as 10.0000", () => {
     expect(formatPrice(0.0000123, "EUR")).toBe("EUR 0.00001230");
     expect(formatPrice(9.99996, "USD")).toBe("USD 10.00");
+    expect(formatPrice(0.99996, "USD")).toBe("USD 1.0000");
   });
   it("prints a dash for a missing price and omits a missing code", () => {
     expect(formatPrice(null, "EUR")).toBe("—");
