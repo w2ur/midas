@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
+import { SRC, sourceFiles } from "./helpers/source-files";
 import * as path from "node:path";
 
 // Guards the "After Hours" palette against WCAG AA regressions in BOTH themes.
@@ -81,14 +82,6 @@ describe("WCAG AA contrast — body/important text >= 4.5:1, both themes", () =>
 // check alone passed while the token was misused, so this block finds every
 // place the token colours text and holds it to AA on each surface that text
 // can sit on.
-const SRC = path.join(__dirname, "../src");
-function sourceFiles(dir: string): string[] {
-  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) return sourceFiles(p);
-    return /\.(astro|css)$/.test(e.name) ? [p] : [];
-  });
-}
 /** `color: var(--ink-faint…)` — the text colour property only, not border/background/stroke. */
 const FAINT_AS_TEXT = /(?:^|[\s;{])color:\s*var\(--ink-faint\b/;
 const faintTextUses = sourceFiles(SRC).flatMap((file) =>

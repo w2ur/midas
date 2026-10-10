@@ -372,10 +372,11 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   .tape { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-strong); }
   /* Two lines per fill at every width: who, then what. A grid aligns the
      second line under the agent's name by construction, with or without a
-     crest, and whatever wraps stays in that column. */
+     crest (the 18px column is the size passed to AgentCrest below), and
+     whatever wraps stays in that column. */
   .tape-row {
     display: grid;
-    grid-template-columns: 5.5rem auto minmax(0, 1fr);
+    grid-template-columns: 5.5rem 18px minmax(0, 1fr);
     align-items: baseline;
     gap: 0.4rem 0.7rem;
     padding: 0.65rem 0.25rem;
@@ -385,7 +386,8 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
     font-size: var(--fs-sm);
   }
   .tape-row .when { color: var(--ink-muted); font-size: var(--fs-xs); letter-spacing: 0.04em; }
-  .tape-row .agent-crest { align-self: center; }
+  /* The crest is AgentCrest's own element, outside this page's style scope. */
+  .tape-row :global(.agent-crest) { align-self: center; }
   .tape-row .who { color: var(--ink); text-decoration: none; font-family: var(--font-display); font-weight: 600; }
   .tape-row .who:hover { text-decoration: underline; text-underline-offset: 3px; }
   .tape-row .side {
