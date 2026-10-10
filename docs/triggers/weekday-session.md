@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: 95c990acc892b8ed523337140602e08f253697d0c19456768aac9f3d0deb281d
+PROMPT_SHA256: 3e2cc7e5cea1a57a0c858939c5c7b1891c66ad085fedcdf31a20a7297bcd7fc9
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -109,11 +109,6 @@ git reset --hard origin/main
 test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
     echo "FATAL: HEAD not at origin/main after reset" >&2; exit 1
 }
-# reset --hard keeps untracked files: a reused VM still holds what an earlier
-# failed fire wrote under data/, and `git add data/` would commit it as this
-# session's. Removes untracked, non-ignored leftovers only; the ignored
-# data/session_state/ and data/cache/ survive (no -x).
-git clean -fd -- data/
 # RemoteTrigger sandbox VMs are reused across fires; the named workspace
 # branch (claude/<slug>) carries stale local state from previous fires.
 # 2026-05-05 incident: the weekday session started from May 3 weekend's

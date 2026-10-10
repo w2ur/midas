@@ -61,16 +61,8 @@ def test_the_trigger_prompt_calls_the_helper() -> None:
     assert '"commentary": "your day' not in doc
 
 
-def test_step_0_removes_an_earlier_fires_untracked_data_after_the_reset() -> None:
-    """`reset --hard` keeps untracked files, and the session commit stages data/.
-
-    A reused sandbox VM would otherwise publish a failed fire's leftovers. No
-    ``-x``: the ignored session state and caches must survive the clean.
-    """
+def test_step_0_does_not_clean_untracked_files() -> None:
+    """A `git clean` here deleted an interrupted session's untracked outbox while the step markers survived."""
     doc = (ds.Path(__file__).resolve().parents[1] / "docs/triggers/weekday-session.md").read_text()
-    lines = doc.splitlines()
-    reset = lines.index("git reset --hard origin/main")
-    clean = [i for i, line in enumerate(lines) if line.startswith("git clean")]
-    assert [lines[i] for i in clean] == ["git clean -fd -- data/"]
-    assert clean[0] > reset
-    assert clean[0] < next(i for i, line in enumerate(lines) if line.startswith("# Step 0c"))
+    assert "git reset --hard origin/main" in doc
+    assert "git clean" not in doc
