@@ -100,56 +100,97 @@ def test_a_fetch_moving_a_remote_ref_passes(repo) -> None:
 
 def test_end_called_twice_passes_both_times(repo) -> None:
     """A re-run end after a downstream error must evaluate, not refuse."""
-    snapshot_data_tree("r", repo)
-    snap = repo / ".git" / "midas-dispatch-guard" / "r.json"
-    assert_data_tree_unchanged("r", repo)
+    snapshot_data_tree("r", repo, anchor="s")
+    snap = repo / ".git" / "midas-dispatch-guard" / "r@s.json"
+    assert_data_tree_unchanged("r", repo, anchor="s")
     assert snap.is_file()
-    assert_data_tree_unchanged("r", repo)
+    assert_data_tree_unchanged("r", repo, anchor="s")
 
 
 def test_end_after_a_pass_ignores_the_sessions_own_later_writes(repo, capsys) -> None:
     """step_author_all writes the outbox after the round; a re-run end must pass."""
-    snapshot_data_tree("r", repo)
-    assert_data_tree_unchanged("r", repo)
+    snapshot_data_tree("r", repo, anchor="s")
+    assert_data_tree_unchanged("r", repo, anchor="s")
     (repo / "data" / "outbox.jsonl").write_text("{}\n")
     (repo / "data" / "tracked.json").write_text('{"later": 1}\n')
     capsys.readouterr()
-    assert_data_tree_unchanged("r", repo)
+    assert_data_tree_unchanged("r", repo, anchor="s")
     assert "[r]: already verified this session" in capsys.readouterr().out
+    assert_data_tree_unchanged("r", repo, anchor="s")
+
+
+def test_the_pass_state_is_a_field_of_the_snapshot_not_a_sibling_file(repo) -> None:
+    snapshot_data_tree("r", repo, anchor="s")
+    guard_dir = repo / ".git" / "midas-dispatch-guard"
+    snap = guard_dir / "r@s.json"
+    assert "passed" not in json.loads(snap.read_text())
+    assert_data_tree_unchanged("r", repo, anchor="s")
+    assert json.loads(snap.read_text())["passed"] is True
+    assert [p.name for p in guard_dir.iterdir()] == ["r@s.json"]
 
 
 def test_a_failed_end_leaves_no_marker_so_it_keeps_failing(repo) -> None:
-    snapshot_data_tree("r", repo)
+    snapshot_data_tree("r", repo, anchor="s")
     (repo / "data" / "planted.json").write_text("evil")
     for _ in range(2):
         with pytest.raises(DispatchWroteDataError, match=r"data/planted\.json"):
-            assert_data_tree_unchanged("r", repo)
+            assert_data_tree_unchanged("r", repo, anchor="s")
+    snap = repo / ".git" / "midas-dispatch-guard" / "r@s.json"
+    assert "passed" not in json.loads(snap.read_text())
 
 
-def test_a_second_begin_keeps_the_first_baseline(repo, capsys) -> None:
+def test_a_second_begin_takes_a_fresh_baseline(repo) -> None:
+    """Begin is once per dispatch: what is on disk at begin is the baseline."""
+    snapshot_data_tree("r", repo, anchor="s")
+    (repo / "data" / "planted.json").write_text("evil")
+    snapshot_data_tree("r", repo, anchor="s")
+    assert_data_tree_unchanged("r", repo, anchor="s")
+
+
+def test_a_redispatch_after_a_pass_is_a_new_bracket(repo) -> None:
+    """The begin clears the pass state, so a write in the re-dispatch is caught."""
+    snapshot_data_tree("r", repo, anchor="s")
+    assert_data_tree_unchanged("r", repo, anchor="s")
+    snapshot_data_tree("r", repo, anchor="s")
+    (repo / "data" / "tracked.json").write_text('{"subagent": 1}\n')
+    with pytest.raises(DispatchWroteDataError, match=r"data/tracked\.json"):
+        assert_data_tree_unchanged("r", repo, anchor="s")
+
+
+def test_an_anchorless_pass_leaves_nothing_behind(repo) -> None:
     snapshot_data_tree("r", repo)
-    (repo / "data" / "planted.json").write_text("evil")  # a subagent writes
-    capsys.readouterr()
-    snapshot_data_tree("r", repo)
-    assert "[r]: keeping this round's first baseline" in capsys.readouterr().out
-    with pytest.raises(DispatchWroteDataError, match=r"data/planted\.json"):
+    assert_data_tree_unchanged("r", repo)
+    assert list((repo / ".git" / "midas-dispatch-guard").iterdir()) == []
+    with pytest.raises(DispatchWroteDataError, match="did not run"):
         assert_data_tree_unchanged("r", repo)
 
 
-def test_two_begins_with_no_change_between_pass(repo) -> None:
-    snapshot_data_tree("r", repo)
-    snapshot_data_tree("r", repo)
-    assert_data_tree_unchanged("r", repo)
+def test_a_truncated_snapshot_fails_end_and_begin_overwrites_it(repo) -> None:
+    snapshot_data_tree("r", repo, anchor="s")
+    snap = repo / ".git" / "midas-dispatch-guard" / "r@s.json"
+    snap.write_text('{"anchor": "s", "abo')
+    with pytest.raises(DispatchWroteDataError, match="could not be evaluated"):
+        assert_data_tree_unchanged("r", repo, anchor="s")
+    snapshot_data_tree("r", repo, anchor="s")
+    assert_data_tree_unchanged("r", repo, anchor="s")
 
 
-def test_a_begin_after_a_pass_keeps_it_verified(repo, capsys) -> None:
-    snapshot_data_tree("r", repo)
-    assert_data_tree_unchanged("r", repo)
-    (repo / "data" / "later.json").write_text("{}")
-    capsys.readouterr()
-    snapshot_data_tree("r", repo)
-    assert "[r]: already verified this session" in capsys.readouterr().out
-    assert_data_tree_unchanged("r", repo)
+def test_begin_writes_atomically_and_leaves_no_temp_file(repo, monkeypatch) -> None:
+    snapshot_data_tree("r", repo, anchor="s")
+    snapshot_data_tree("r", repo, anchor="s")
+    guard_dir = repo / ".git" / "midas-dispatch-guard"
+    assert [p.name for p in guard_dir.iterdir()] == ["r@s.json"]
+
+    def refuse(src, dst):
+        raise OSError("replace refused")
+
+    monkeypatch.setattr("engine.dispatch_guard.os.replace", refuse)
+    snap = guard_dir / "r@s.json"
+    before = snap.read_text()
+    with pytest.raises(OSError):
+        snapshot_data_tree("r", repo, anchor="s")
+    assert snap.read_text() == before  # the old snapshot is intact, not half-written
+    assert [p.name for p in guard_dir.iterdir()] == ["r@s.json"]
 
 
 def test_the_snapshot_lives_outside_data(repo) -> None:
@@ -315,14 +356,16 @@ def test_an_abort_records_no_concern(repo) -> None:
 # --- what is reported ------------------------------------------------------
 
 
-def test_a_result_kept_under_session_state_results_is_not_reported(repo) -> None:
-    """The trigger prompt tells the orchestrator to keep results there."""
+def test_a_result_under_session_state_results_is_reported_not_exempt(repo) -> None:
+    """Results are persisted after the round's end, so inside a round they report."""
     snapshot_data_tree("r", repo)
     results = repo / "data" / "session_state" / "results"
     results.mkdir(parents=True)
     (results / "x.json").write_text("{}")
     assert_data_tree_unchanged("r", repo)
-    assert _concerns(repo) == []
+    assert [c["path"] for c in _concerns(repo)] == [
+        "data/session_state/results/x.json"
+    ]
 
 
 def test_another_file_under_session_state_passes_and_is_reported(

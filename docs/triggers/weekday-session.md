@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: 3403a8191d978d69612597c6e4952a5766b0d44a0d6bfc2becdcc78c0cb230e7
+PROMPT_SHA256: b5d56b7102c534800391a4305e733e748c8bde2152be0434b394f05652938305
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -227,13 +227,14 @@ and journal rounds (Steps 6, 8) do not search, but their prompts carry
 text those searches produced second-hand (commentary, theses, the
 Oracle's blog), so they are fenced the same way. Each round is bracketed
 by step_guard_dispatch_begin("<round>") and step_guard_dispatch_end("<round>"),
-each callable from its own Python process. Between the two, keep any
-dispatch result you need across processes ONLY under data/session_state/
-(e.g. data/session_state/results/), never anywhere else in the checkout:
-a file written elsewhere is what the guard aborts on. If a Task call in
-a round must be re-dispatched, re-dispatch it inside the same bracket.
-Call each round's begin once per session: a repeated begin keeps the
-first baseline, and an end after a pass returns "already verified".
+each callable from its own Python process. Call begin exactly once per
+dispatch, immediately before it: begin always takes a fresh baseline. When
+the round's Task calls return, call step_guard_dispatch_end FIRST, before
+writing any result to disk; only then persist results under
+data/session_state/results/ (never anywhere else in the checkout: a file
+written elsewhere is what the guard aborts on). If one failed Task call must
+be re-dispatched after the end, that is a new bracket: begin, dispatch, end.
+An end re-run after a pass returns "already verified".
 A DispatchWroteDataError from the end call means a subagent changed the
 checkout or git state, or the check could not run: ABORT the session.
 Do not author, do not commit, do not clean up the named paths; report

@@ -33,8 +33,9 @@ change, to ``data/session_state/dispatch_guard_concerns.jsonl``; the session
 commit turns that file into ``Concerns:`` trailers:
 
 - everything under ``data/session_state/`` except what the orchestrator writes
-  there itself (the dispatch ledger, the ``prompts/`` and ``results/``
-  directories) and the concerns file;
+  there itself (the dispatch ledger and the ``prompts/`` directory) and the
+  concerns file. ``results/`` is in this class: the session persists a round's
+  results there only after that round's end has run;
 - ``data/market/today.json`` (the prices Step 4 writes immutable snapshots
   from);
 - the ``.pth`` and ``sitecustomize``/``usercustomize`` files in the running
@@ -43,16 +44,18 @@ commit turns that file into ``Concerns:`` trailers:
 
 The snapshot lives under the git dir, outside the checkout, keyed by round and
 by the session anchor when one is given, so a snapshot an earlier fire left
-behind is never read as this session's. A round is begun once per session: a
-begin that finds this round's snapshot keeps it (re-baselining mid-round would
-absorb what a subagent wrote). End keeps the snapshot, so an end re-run after a
-downstream error evaluates again, until an end passes: it then leaves a
-``.passed`` marker beside the snapshot, and a later end for the same round and
-anchor returns without comparing, because the session's own post-round writes
-(outbox, research files, manager book) would otherwise trip it. End refuses
-when there is no snapshot for its round and anchor, and turns any error it
-meets into ``DispatchWroteDataError``: an end call that cannot evaluate is not
-a pass.
+behind is never read as this session's. Begin always takes a fresh baseline,
+written atomically over any snapshot under the key, which also clears its pass
+state: begin exactly once per dispatch, immediately before it, and a
+re-dispatch after an end is a new begin/end bracket. End keeps the snapshot, so
+an end re-run after a downstream error evaluates again, until an end passes: it
+then sets ``"passed": true`` inside the snapshot, and a later end for the same
+round and anchor returns without comparing, because the session's own
+post-round writes (outbox, research files, manager book) would otherwise trip
+it. With no anchor nothing may persist across runs, so a passing end deletes the
+snapshot instead. End refuses when there is no snapshot for its round and
+anchor, and turns any error it meets (an unreadable snapshot included) into
+``DispatchWroteDataError``: an end call that cannot evaluate is not a pass.
 """
 
 from __future__ import annotations
@@ -75,7 +78,6 @@ _ORCHESTRATOR_WRITTEN = (
 )
 _ORCHESTRATOR_WRITTEN_DIRS = (
     f"{_SESSION_STATE}/prompts/",
-    f"{_SESSION_STATE}/results/",
 )
 _IGNORED_INPUTS = ("data/market/today.json",)
 _WATCHED_REFS = ("refs/heads/", "refs/tags/")
@@ -113,10 +115,6 @@ def _snapshot_path(round_name: str, anchor: str | None, root: Path) -> Path:
     git_dir = Path(_git_str(root, "rev-parse", "--absolute-git-dir"))
     name = f"{round_name}@{anchor}" if anchor else round_name
     return git_dir / _GUARD_DIRNAME / f"{name}.json"
-
-
-def _passed_marker(snapshot: Path) -> Path:
-    return snapshot.with_name(snapshot.name + ".passed")
 
 
 def _git_path(root: Path, name: str) -> Path:
@@ -233,30 +231,38 @@ def _capture_report(root: Path) -> dict[str, str]:
     return snap
 
 
+def _write_snapshot(path: Path, doc: dict) -> None:
+    """Write ``doc`` to ``path`` through a temp file in the same directory."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        tmp.write_text(
+            json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="ascii"
+        )
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
 def snapshot_data_tree(
     round_name: str, repo_root: Path | None = None, anchor: str | None = None
 ) -> None:
     """Record what the guard watches before a dispatch round.
 
     ``anchor`` identifies the session; the snapshot is keyed by it and by the
-    round. An existing snapshot under the same key is kept, not overwritten.
+    round. An existing snapshot under the same key is replaced, atomically, and
+    its pass state with it.
     """
     root = repo_root or _REPO_ROOT
     path = _snapshot_path(round_name, anchor, root)
-    if path.is_file():
-        if _passed_marker(path).is_file():
-            print(f"  dispatch guard [{round_name}]: already verified this session")
-        else:
-            print(f"  dispatch guard [{round_name}]: keeping this round's first baseline")
-        return
     doc = {
         "anchor": anchor,
         "prefix": sys.prefix,
         "abort": _capture_abort(root),
         "report": _capture_report(root),
     }
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="ascii")
+    _write_snapshot(path, doc)
     count = len(doc["abort"]) + len(doc["report"])
     print(f"  dispatch guard [{round_name}]: snapshot taken ({count} entries)")
 
@@ -287,8 +293,8 @@ def _record(
             fh.write(json.dumps(line, sort_keys=True) + "\n")
 
 
-def _check(round_name: str, anchor: str | None, root: Path) -> bool:
-    """True when a comparison ran, False when the round was already verified."""
+def _check(round_name: str, anchor: str | None, root: Path) -> None:
+    """Compare the round against its snapshot, or return if already verified."""
     path = _snapshot_path(round_name, anchor, root)
     if not path.is_file():
         raise DispatchWroteDataError(
@@ -296,10 +302,10 @@ def _check(round_name: str, anchor: str | None, root: Path) -> bool:
             f"at {path}: the guard did not run, which is not the same as the "
             "round being clean"
         )
-    if _passed_marker(path).is_file():
-        print(f"  dispatch guard [{round_name}]: already verified this session")
-        return False
     before = json.loads(path.read_text(encoding="ascii"))
+    if before.get("passed") is True:
+        print(f"  dispatch guard [{round_name}]: already verified this session")
+        return
 
     aborts = _diff(before["abort"], _capture_abort(root))
     if aborts:
@@ -321,8 +327,11 @@ def _check(round_name: str, anchor: str | None, root: Path) -> bool:
         _record(round_name, anchor, reported, root)
         for rel, kind in reported:
             print(f"  dispatch guard [{round_name}]: reported {_show(rel)} ({kind})")
-    _passed_marker(path).write_text("passed\n", encoding="ascii")
-    return True
+    print(f"  dispatch guard [{round_name}]: no abort signal changed")
+    if anchor is None:
+        path.unlink()
+    else:
+        _write_snapshot(path, {**before, "passed": True})
 
 
 def assert_data_tree_unchanged(
@@ -332,12 +341,13 @@ def assert_data_tree_unchanged(
 
     Changes to a report signal are printed and recorded instead. Any other
     error met while checking is raised as ``DispatchWroteDataError`` too, with
-    its cause. A failed end leaves no marker, so a repeated end evaluates
-    again; after a pass, a repeated end returns without comparing.
+    its cause. A failed end leaves the snapshot unmarked, so a repeated end
+    evaluates again; after a pass, a repeated end returns without comparing
+    (an anchorless run deletes the snapshot on a pass instead).
     """
     root = repo_root or _REPO_ROOT
     try:
-        compared = _check(round_name, anchor, root)
+        _check(round_name, anchor, root)
     except DispatchWroteDataError:
         raise
     except Exception as exc:
@@ -345,8 +355,6 @@ def assert_data_tree_unchanged(
             f"dispatch guard for round {round_name!r} could not be evaluated, "
             f"which is not a pass: {type(exc).__name__}: {exc}"
         ) from exc
-    if compared:
-        print(f"  dispatch guard [{round_name}]: no abort signal changed")
 
 
 def guard_concerns(anchor: str | None, repo_root: Path | None = None) -> list[str]:

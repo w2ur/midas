@@ -415,7 +415,7 @@ compares against it. Each may run in its own process. Two classes of signal:
   raises `DispatchWroteDataError` naming it.
 - **Report** — gitignored inputs read after a round: the files under
   `data/session_state/` other than the dispatch ledger, the concerns file and the
-  `prompts/` and `results/` directories (orchestrator-written),
+  `prompts/` directory (orchestrator-written),
   `data/market/today.json`, and the interpreter's site-packages startup files
   (compared only when begin and end ran under the same `sys.prefix`). A change is
   printed and appended to `data/session_state/dispatch_guard_concerns.jsonl`;
@@ -423,21 +423,24 @@ compares against it. Each may run in its own process. Two classes of signal:
   per round.
 
 A dispatch result the orchestrator must keep across processes goes under
-`data/session_state/` (e.g. `data/session_state/results/`), never elsewhere in
-the checkout. **Writes:** the snapshot and, once an end passes, a `.passed` marker
-beside it; the concerns file. A round is begun once per session: a begin that
-finds this round's snapshot keeps it ("keeping this round's first baseline", or
-"already verified this session" after a pass) rather than re-baselining over a
-subagent's write. An end that fails leaves no marker, so a repeated end evaluates
-again; an end after a pass prints "already verified this session" and returns
-without comparing, because the session's own later writes (outbox, research
-files, manager book) would otherwise trip it. **On failure: fatal** — a
+`data/session_state/results/`, never elsewhere in the checkout, and only after
+the round's end has run: `results/` is in the report class, not exempt.
+**Writes:** the snapshot (atomically, temp file then replace; once an end passes,
+it carries `"passed": true`) and the concerns file. Begin always takes a fresh
+baseline over any snapshot under its key, which also clears its pass state: begin
+exactly once per dispatch, immediately before it. An end that fails leaves the
+snapshot unmarked, so a repeated end evaluates again; an end after a pass prints
+"already verified this session" and returns without comparing, because the
+session's own later writes (outbox, research files, manager book) would
+otherwise trip it. With no session anchor nothing persists across runs: a
+passing end deletes the snapshot. **On failure: fatal** — a
 dispatch that wrote the checkout is not a session to continue, and an end with no
 snapshot for its round and session raises too, as does an end that cannot
 evaluate, because an unevaluated guard is not a passed guard.
-**Ordering:** begin before the dispatch, end immediately after it and before any
-step that persists its result. A re-dispatch inside a round stays inside the same
-begin/end pair.
+**Ordering:** begin immediately before the dispatch; when the round's Task calls
+return, end FIRST, before writing any result to disk, and only then persist
+results under `data/session_state/results/`. Re-dispatching one failed Task after
+the end is a new begin/dispatch/end bracket.
 
 ### Post prompts — `step_build_post_prompts`
 
