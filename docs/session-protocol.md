@@ -203,6 +203,10 @@ filter runs on **both** paths, including the skip path, so the trades handed
 onward are always trimmed to the authorable ones. Folding the filter into the
 guarded body would lose it on a resume and let a dropped trade resurface as a
 phantom fill.
+Trader research files (`data/research/<date>/<agent>.json`) are recorded on the
+authoring path only, for every agent in the results: one that reports no valid
+search has any file already present for the day deleted, since a reused sandbox
+VM keeps the untracked file of an earlier failed fire. The skip path touches none.
 **Ordering:** after every agent result is in hand, before fills.
 
 ### Fill — `step_fill_orders`
@@ -390,10 +394,14 @@ posts here; they have not happened yet.
 ### Record narrator research — `step_record_oracle_research`
 
 Persists the searches the narrator says it ran, from the `sources` key of its raw
-response. **Reads:** the response text. **Writes:** `data/research/<date>/<narrator>.json`,
-only when the narrator reported a search. **On failure: degrades** — a loose or
-absent `sources` writes nothing and never raises. The file is self-reported
-provenance for a human, not an audit trail and not a decision input.
+response. **Reads:** the response text. **Writes:** `data/research/<date>/<narrator>.json`
+when the narrator reported a search. **On failure: degrades** — a loose or
+absent `sources` never raises. The file is self-reported provenance for a human,
+not an audit trail and not a decision input. **Re-runs:** once `step_save_content`
+is done the published blog is fixed, so an existing file is kept (a re-dispatch's
+sources would mix provenance). Before that, the file mirrors the response: it is
+overwritten, and deleted when the response reports nothing, because a reused
+sandbox VM keeps the untracked file of an earlier failed fire.
 **Ordering:** after the narrator responds; safe to repeat.
 
 ### Guard a dispatch round — `step_guard_dispatch_begin` / `step_guard_dispatch_end`
@@ -426,14 +434,20 @@ A dispatch result the orchestrator must keep across processes goes under
 `data/session_state/results/`, never elsewhere in the checkout, and only after
 the round's end has run: `results/` is in the report class, not exempt.
 **Writes:** the snapshot (atomically, temp file then replace; once an end passes,
-it carries `"passed": true`) and the concerns file. Begin always takes a fresh
-baseline over any snapshot under its key, which also clears its pass state: begin
-exactly once per dispatch, immediately before it. An end that fails leaves the
-snapshot unmarked, so a repeated end evaluates again; an end after a pass prints
-"already verified this session" and returns without comparing, because the
-session's own later writes (outbox, research files, manager book) would
-otherwise trip it. With no session anchor nothing persists across runs: a
-passing end deletes the snapshot. **On failure: fatal** — a
+it carries `"passed": true`, anchored or not) and the concerns file. Begin takes a
+fresh baseline over any snapshot under its key, which also clears its pass state:
+begin exactly once per dispatch, immediately before it. The one exception is a
+resumed round: when an anchored snapshot exists that has not passed (a round
+interrupted mid-dispatch), begin first runs the comparison end would run and
+raises `DispatchWroteDataError` if an abort signal changed, so the interrupted
+dispatch's write is not absorbed into the new baseline; a missing, passed or
+unreadable snapshot, and any anchorless begin, re-baselines without comparing.
+An end that fails leaves the snapshot unmarked, so a repeated end evaluates
+again; an end after a pass prints "already verified this session" and returns
+without comparing, because the session's own later writes (outbox, research
+files, manager book) would otherwise trip it. **Remaining limit:** a re-dispatch
+after a passing end MUST be preceded by a new begin; a forgotten begin leaves
+that re-dispatch unfenced, and nothing can detect it. **On failure: fatal** — a
 dispatch that wrote the checkout is not a session to continue, and an end with no
 snapshot for its round and session raises too, as does an end that cannot
 evaluate, because an unevaluated guard is not a passed guard.

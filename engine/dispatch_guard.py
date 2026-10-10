@@ -44,18 +44,28 @@ commit turns that file into ``Concerns:`` trailers:
 
 The snapshot lives under the git dir, outside the checkout, keyed by round and
 by the session anchor when one is given, so a snapshot an earlier fire left
-behind is never read as this session's. Begin always takes a fresh baseline,
-written atomically over any snapshot under the key, which also clears its pass
-state: begin exactly once per dispatch, immediately before it, and a
-re-dispatch after an end is a new begin/end bracket. End keeps the snapshot, so
-an end re-run after a downstream error evaluates again, until an end passes: it
-then sets ``"passed": true`` inside the snapshot, and a later end for the same
-round and anchor returns without comparing, because the session's own
-post-round writes (outbox, research files, manager book) would otherwise trip
-it. With no anchor nothing may persist across runs, so a passing end deletes the
-snapshot instead. End refuses when there is no snapshot for its round and
-anchor, and turns any error it meets (an unreadable snapshot included) into
-``DispatchWroteDataError``: an end call that cannot evaluate is not a pass.
+behind is never read as this session's. Begin takes a fresh baseline, written
+atomically over any snapshot under the key, which also clears its pass state:
+begin exactly once per dispatch, immediately before it. One exception guards a
+resumed round: when an anchored snapshot exists that has not passed (a round
+interrupted mid-dispatch), begin first runs the comparison end would run, and
+raises ``DispatchWroteDataError`` if an abort signal changed, so a write made
+by the interrupted dispatch is never absorbed into the new baseline. A missing,
+passed or unreadable snapshot, and any anchorless begin, re-baselines without
+comparing.
+
+End keeps the snapshot, so an end re-run after a downstream error evaluates
+again, until an end passes: it then sets ``"passed": true`` inside the snapshot
+(anchored or not), and a later end for the same round and anchor returns
+without comparing, because the session's own post-round writes (outbox,
+research files, manager book) would otherwise trip it. End refuses when there
+is no snapshot for its round and anchor, and turns any error it meets (an
+unreadable snapshot included) into ``DispatchWroteDataError``: an end call that
+cannot evaluate is not a pass.
+
+**Remaining limit.** A re-dispatch after a passing end MUST be preceded by a
+new begin. An end after a pass returns "already verified" without comparing, so
+a re-dispatch whose begin was forgotten is unfenced; nothing here can tell.
 """
 
 from __future__ import annotations
@@ -252,10 +262,14 @@ def snapshot_data_tree(
 
     ``anchor`` identifies the session; the snapshot is keyed by it and by the
     round. An existing snapshot under the same key is replaced, atomically, and
-    its pass state with it.
+    its pass state with it, except that an anchored snapshot that has not
+    passed (a round interrupted mid-dispatch) is compared first: a changed
+    abort signal raises ``DispatchWroteDataError`` and the snapshot is kept.
     """
     root = repo_root or _REPO_ROOT
     path = _snapshot_path(round_name, anchor, root)
+    if anchor is not None:
+        _refuse_unfinished_round_writes(round_name, path, root)
     doc = {
         "anchor": anchor,
         "prefix": sys.prefix,
@@ -265,6 +279,27 @@ def snapshot_data_tree(
     _write_snapshot(path, doc)
     count = len(doc["abort"]) + len(doc["report"])
     print(f"  dispatch guard [{round_name}]: snapshot taken ({count} entries)")
+
+
+def _refuse_unfinished_round_writes(
+    round_name: str, path: Path, root: Path
+) -> None:
+    """Raise if a round interrupted before its end changed an abort signal."""
+    try:
+        before = json.loads(path.read_text(encoding="ascii"))
+        previous = before["abort"]
+        passed = before.get("passed") is True
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return  # missing or unreadable: nothing to compare, re-baseline
+    if passed:
+        return
+    aborts = _diff(previous, _capture_abort(root))
+    if aborts:
+        raise DispatchWroteDataError(
+            f"dispatch round {round_name!r} wrote in the checkout "
+            "(found at begin, on a round that had not finished): "
+            + "; ".join(f"{_show(p)} ({kind})" for p, kind in aborts)
+        )
 
 
 def _diff(before: dict[str, str], after: dict[str, str]) -> list[tuple[str, str]]:
@@ -328,10 +363,7 @@ def _check(round_name: str, anchor: str | None, root: Path) -> None:
         for rel, kind in reported:
             print(f"  dispatch guard [{round_name}]: reported {_show(rel)} ({kind})")
     print(f"  dispatch guard [{round_name}]: no abort signal changed")
-    if anchor is None:
-        path.unlink()
-    else:
-        _write_snapshot(path, {**before, "passed": True})
+    _write_snapshot(path, {**before, "passed": True})
 
 
 def assert_data_tree_unchanged(
@@ -342,8 +374,7 @@ def assert_data_tree_unchanged(
     Changes to a report signal are printed and recorded instead. Any other
     error met while checking is raised as ``DispatchWroteDataError`` too, with
     its cause. A failed end leaves the snapshot unmarked, so a repeated end
-    evaluates again; after a pass, a repeated end returns without comparing
-    (an anchorless run deletes the snapshot on a pass instead).
+    evaluates again; after a pass, a repeated end returns without comparing.
     """
     root = repo_root or _REPO_ROOT
     try:

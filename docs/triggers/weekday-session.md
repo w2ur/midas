@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: b5d56b7102c534800391a4305e733e748c8bde2152be0434b394f05652938305
+PROMPT_SHA256: 3e2cc7e5cea1a57a0c858939c5c7b1891c66ad085fedcdf31a20a7297bcd7fc9
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -233,8 +233,12 @@ the round's Task calls return, call step_guard_dispatch_end FIRST, before
 writing any result to disk; only then persist results under
 data/session_state/results/ (never anywhere else in the checkout: a file
 written elsewhere is what the guard aborts on). If one failed Task call must
-be re-dispatched after the end, that is a new bracket: begin, dispatch, end.
-An end re-run after a pass returns "already verified".
+be re-dispatched after the end, that is a new bracket: begin, dispatch, end,
+and the new begin is MANDATORY: an end after a pass returns "already verified"
+without comparing anything, so a re-dispatch with no new begin is unfenced.
+If a round was interrupted before its end and you resume it, begin first
+checks the checkout against the interrupted round's baseline and raises
+DispatchWroteDataError if the interrupted dispatch wrote anything: ABORT.
 A DispatchWroteDataError from the end call means a subagent changed the
 checkout or git state, or the check could not run: ABORT the session.
 Do not author, do not commit, do not clean up the named paths; report

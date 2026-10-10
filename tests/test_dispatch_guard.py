@@ -142,9 +142,10 @@ def test_a_failed_end_leaves_no_marker_so_it_keeps_failing(repo) -> None:
 def test_a_second_begin_takes_a_fresh_baseline(repo) -> None:
     """Begin is once per dispatch: what is on disk at begin is the baseline."""
     snapshot_data_tree("r", repo, anchor="s")
-    (repo / "data" / "planted.json").write_text("evil")
     snapshot_data_tree("r", repo, anchor="s")
-    assert_data_tree_unchanged("r", repo, anchor="s")
+    (repo / "data" / "planted.json").write_text("evil")
+    with pytest.raises(DispatchWroteDataError, match=r"data/planted\.json"):
+        assert_data_tree_unchanged("r", repo, anchor="s")
 
 
 def test_a_redispatch_after_a_pass_is_a_new_bracket(repo) -> None:
@@ -157,12 +158,50 @@ def test_a_redispatch_after_a_pass_is_a_new_bracket(repo) -> None:
         assert_data_tree_unchanged("r", repo, anchor="s")
 
 
-def test_an_anchorless_pass_leaves_nothing_behind(repo) -> None:
+def test_an_anchorless_end_twice_passes_both_times(repo, capsys) -> None:
+    """Without an anchor the pass is recorded too, so a re-run end passes."""
     snapshot_data_tree("r", repo)
     assert_data_tree_unchanged("r", repo)
-    assert list((repo / ".git" / "midas-dispatch-guard").iterdir()) == []
-    with pytest.raises(DispatchWroteDataError, match="did not run"):
-        assert_data_tree_unchanged("r", repo)
+    snap = repo / ".git" / "midas-dispatch-guard" / "r.json"
+    assert json.loads(snap.read_text())["passed"] is True
+    (repo / "data" / "outbox.jsonl").write_text("{}\n")  # the session's own write
+    capsys.readouterr()
+    assert_data_tree_unchanged("r", repo)
+    assert "already verified this session" in capsys.readouterr().out
+
+
+def test_begin_on_an_interrupted_round_that_wrote_raises(repo) -> None:
+    """A round interrupted mid-dispatch, then resumed: its write is not baseline."""
+    snapshot_data_tree("r", repo, anchor="s")
+    (repo / "data" / "tracked.json").write_text('{"subagent": 1}\n')
+    with pytest.raises(DispatchWroteDataError, match=r"data/tracked\.json") as exc:
+        snapshot_data_tree("r", repo, anchor="s")
+    assert "found at begin" in str(exc.value)
+    # The old baseline is kept, so end still names the write.
+    with pytest.raises(DispatchWroteDataError, match=r"data/tracked\.json"):
+        assert_data_tree_unchanged("r", repo, anchor="s")
+
+
+def test_begin_on_a_clean_interrupted_round_then_end_passes(repo) -> None:
+    snapshot_data_tree("r", repo, anchor="s")
+    snapshot_data_tree("r", repo, anchor="s")
+    assert_data_tree_unchanged("r", repo, anchor="s")
+
+
+def test_begin_after_a_pass_does_not_compare(repo) -> None:
+    """A passed snapshot is a finished round: the session's own writes are fine."""
+    snapshot_data_tree("r", repo, anchor="s")
+    assert_data_tree_unchanged("r", repo, anchor="s")
+    (repo / "data" / "outbox.jsonl").write_text("{}\n")
+    snapshot_data_tree("r", repo, anchor="s")
+    assert_data_tree_unchanged("r", repo, anchor="s")
+
+
+def test_an_anchorless_begin_never_compares(repo) -> None:
+    snapshot_data_tree("r", repo)
+    (repo / "data" / "tracked.json").write_text('{"subagent": 1}\n')
+    snapshot_data_tree("r", repo)
+    assert_data_tree_unchanged("r", repo)
 
 
 def test_a_truncated_snapshot_fails_end_and_begin_overwrites_it(repo) -> None:
