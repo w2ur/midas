@@ -68,7 +68,7 @@ from engine.baseline_manager import (
     is_rebalance_day,
     rebalance,
 )
-from engine.blog import build_oracle_prompt, save_daily_blog_draft
+from engine.blog import build_oracle_prompt, oracle_sources, save_daily_blog_draft
 from engine.fx import convert as fx_convert
 from engine.quotes import latest_price, ticker_currency
 from engine.stale_marks import find_stale_marks
@@ -79,6 +79,14 @@ from engine.orders import (
     append_dropped,
     append_order,
     make_order_id,
+)
+from engine.dispatch_guard import assert_data_tree_unchanged, snapshot_data_tree
+from engine.research import (
+    MANAGER_MAX_SEARCHES,
+    ORACLE_MAX_SEARCHES,
+    TRADER_MAX_SEARCHES,
+    record_research,
+    render_research_instructions,
 )
 from engine.research_note import parse_research_note
 from engine.triggers import (
@@ -476,6 +484,8 @@ and safety rails — the broker will reject violations anyway.
 
 {active_triggers}
 
+{research_instructions}
+
 Output JSON only, no other text:
 {
   "commentary": "your day's reasoning, in your voice (3-8 sentences)",
@@ -499,6 +509,8 @@ Output JSON only, no other text:
   }
   // research_note carries your VIEW (not sizing) for the Manager desk.
   // ALWAYS include it. See your persona file for details.
+  "sources": [{"query": "...", "url": "...", "used_for": "..."}]
+  // OPTIONAL; one entry per WebSearch you ran, even an unused one. Omit if you did not search.
 }
 """
 
@@ -508,6 +520,7 @@ _TRADING_PROMPT_FIELDS = (
     "yesterday",
     "conditional_instructions",
     "active_triggers",
+    "research_instructions",
 )
 
 
@@ -547,6 +560,9 @@ def render_trading_prompt(
         "yesterday": yesterday.isoformat(),
         "conditional_instructions": CONDITIONAL_ORDER_INSTRUCTIONS,
         "active_triggers": render_active_triggers_for_agent(agent_id),
+        "research_instructions": render_research_instructions(
+            TRADER_MAX_SEARCHES, today
+        ),
     }
     text = TRADING_PROMPT
     for field in _TRADING_PROMPT_FIELDS:
@@ -626,6 +642,7 @@ def step_author_all(
     if _is_done("step_author_all"):
         print("\n[SKIP] step_author_all already completed this session.")
         _filter_narration_trades(agent_results, trade_date)
+        _record_trader_research(agent_results, trade_date)
         return {}
 
     print("\n=== Step 3: Author orders + cancels (all agents) ===")
@@ -646,8 +663,19 @@ def step_author_all(
             trade_date,
         )
         summary[agent_id] = {"orders": len(authored), "cancels": n_cancels}
+    _record_trader_research(agent_results, trade_date)
     _mark_done("step_author_all")
     return summary
+
+
+def _record_trader_research(agent_results: dict[str, dict], trade_date: date) -> None:
+    """Persist each trader's self-reported searches (overwrite is idempotent,
+    so the skip path re-running it on a resume is harmless)."""
+    for agent_id, result in agent_results.items():
+        if isinstance(result, dict):
+            record_research(
+                agent_id, result.get("sources"), trade_date, TRADER_MAX_SEARCHES
+            )
 
 
 def _filter_narration_trades(agent_results: dict[str, dict], trade_date: date) -> None:
@@ -1079,7 +1107,11 @@ def step_build_manager_prompt(
         },
         active_triggers=active_triggers,
     )
-    rendered = render_manager_context(ctx)
+    rendered = (
+        render_manager_context(ctx)
+        + "\n\n"
+        + render_research_instructions(MANAGER_MAX_SEARCHES, trade_date)
+    )
     wrapped, _model = wrap_persona_prompt(aid, rendered)
     print(
         f"  Built Manager prompt ({len(notes)} notes, {len(price_lookup)} priced,"
@@ -1136,6 +1168,11 @@ def step_apply_manager_decision(
         )
         print(
             f"  Initialized {aid} book ({spec.home_currency} {spec.initial_capital:.0f})"
+        )
+
+    if isinstance(raw_decision, dict):
+        record_research(
+            aid, raw_decision.get("sources"), trade_date, MANAGER_MAX_SEARCHES
         )
 
     decision = parse_manager_decision(
@@ -1299,6 +1336,7 @@ def step_build_oracle_prompt(
     agent_posts: dict[str, list[dict]] | None = None,
     leaderboard: list[dict] | None = None,
     agent_memories: dict[str, str] | None = None,
+    session_date: date | None = None,
 ) -> str:
     """Step 5b — build The Oracle's daily narration prompt.
 
@@ -1320,9 +1358,34 @@ def step_build_oracle_prompt(
         agent_posts=agent_posts,
         leaderboard=leaderboard,
         agent_memories=agent_memories,
+        session_date=session_date,
     )
     print(f"  Built Oracle prompt (day {day_number})")
     return prompt
+
+
+def step_guard_dispatch_begin(round_name: str) -> None:
+    """Snapshot ``data/`` before a persona dispatch round (see engine.dispatch_guard)."""
+    snapshot_data_tree(round_name)
+
+
+def step_guard_dispatch_end(round_name: str) -> None:
+    """Refuse the session if the round changed anything under ``data/``."""
+    assert_data_tree_unchanged(round_name)
+
+
+def step_record_oracle_research(response_text: str, session_date: date) -> None:
+    """Step 5b-bis — persist the Oracle's self-reported searches.
+
+    Reads the ``sources`` key from the raw narrator response (never raises on a
+    loose response) and records it under the roster's narrator id.
+    """
+    narrators = get_config().narrators
+    narrator_id = narrators[0] if narrators else "the-oracle"
+    path = record_research(
+        narrator_id, oracle_sources(response_text), session_date, ORACLE_MAX_SEARCHES
+    )
+    print(f"  Oracle research: {path if path else 'no searches reported'}")
 
 
 def step_load_memories(agent_ids: list[str]) -> dict[str, str]:

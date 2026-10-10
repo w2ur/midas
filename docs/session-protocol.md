@@ -395,6 +395,27 @@ the other builders.
 first so it frames the day, and the agents then react to that framing. Pass no
 posts here; they have not happened yet.
 
+### Record narrator research — `step_record_oracle_research`
+
+Persists the searches the narrator says it ran, from the `sources` key of its raw
+response. **Reads:** the response text. **Writes:** `data/research/<date>/<narrator>.json`,
+only when the narrator reported a search. **On failure: degrades** — a loose or
+absent `sources` writes nothing and never raises. The file is self-reported
+provenance for a human, not an audit trail and not a decision input.
+**Ordering:** after the narrator responds; safe to repeat.
+
+### Guard a dispatch round — `step_guard_dispatch_begin` / `step_guard_dispatch_end`
+
+Fences `data/` around a persona dispatch round whose agents hold web tools.
+`step_guard_dispatch_begin(round_name)` snapshots everything under `data/` that git
+does not ignore (outside `data/`, under the git dir); `step_guard_dispatch_end(round_name)`
+recomputes it and raises `DispatchWroteDataError` naming every path that appeared,
+disappeared or changed. **Writes:** only the snapshot. **On failure: fatal** — a
+dispatch that wrote files is not a session to continue, and a missing snapshot
+raises too, because an unevaluated guard is not a passed guard.
+**Ordering:** begin before the dispatch, end immediately after it and before any
+step that persists its result.
+
 ### Post prompts — `step_build_post_prompts`
 
 Builds one post prompt per **trading** agent, optionally carrying the narrator's
