@@ -269,7 +269,7 @@ def snapshot_data_tree(
 ) -> None:
     """Record what the guard watches before a dispatch round.
 
-    ``anchor`` identifies the session; the snapshot is keyed by it and by the
+    ``anchor`` identifies one run (it includes the start time); the snapshot is keyed by it and by the
     round. An existing snapshot under the same key is replaced, atomically, and
     its pass state with it, except that an anchored snapshot that has not
     passed (a round interrupted mid-dispatch) is compared first: a changed
@@ -314,7 +314,9 @@ def _compare_unfinished_round(
     try:
         reported = _report_diff(round_name, before, now["report"])
     except (KeyError, TypeError, AttributeError):
-        reported = []
+        # Never lets a malformed report section skip the abort check above,
+        # but the re-baseline must not absorb it without a trace either.
+        reported = [("<report class>", "could not be evaluated")]
     _raise_on_aborts(
         round_name, aborts, " (found at begin, on a round that had not finished)"
     )

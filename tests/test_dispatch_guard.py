@@ -238,6 +238,20 @@ def test_a_malformed_report_never_skips_the_abort_comparison(repo, damage) -> No
         snapshot_data_tree("r", repo, anchor="s")
 
 
+def test_a_malformed_report_at_begin_is_recorded_not_absorbed(repo) -> None:
+    """Regression (review round 9): a report section begin cannot diff was
+    re-baselined away with no trace; it must leave a concern behind."""
+    snapshot_data_tree("r", repo, anchor="s")
+    snap = repo / ".git" / "midas-dispatch-guard" / "r@s.json"
+    doc = json.loads(snap.read_text())
+    doc["report"] = []
+    snap.write_text(json.dumps(doc))
+    snapshot_data_tree("r", repo, anchor="s")
+    assert [(c["path"], c["kind"]) for c in _concerns(repo)] == [
+        ("<report class>", "could not be evaluated")
+    ]
+
+
 def test_begin_on_a_clean_interrupted_round_then_end_passes(repo) -> None:
     snapshot_data_tree("r", repo, anchor="s")
     snapshot_data_tree("r", repo, anchor="s")
