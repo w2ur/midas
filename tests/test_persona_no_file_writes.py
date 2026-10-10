@@ -13,7 +13,11 @@ from pathlib import Path
 
 import pytest
 
-_AGENTS = Path(__file__).resolve().parents[1] / ".claude" / "agents"
+from engine.config import get_config
+
+# Resolved as engine.persona_dispatch resolves it, so a desk configured with
+# its own personas (midas-core's examples/demo-desk) is read from there.
+_AGENTS = get_config().agents_dir
 # A write verb that governs a data/ path later in the same sentence. Reading a
 # path and then writing prose ("read data/x before writing the blog") is fine.
 _WRITE_TO_DATA = re.compile(
