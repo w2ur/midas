@@ -221,6 +221,23 @@ def test_a_snapshot_whose_field_is_not_a_mapping_is_rebaselined(repo, field) -> 
     assert_data_tree_unchanged("r", repo, anchor="s")
 
 
+@pytest.mark.parametrize(
+    "damage", [{"report": []}, {"report": "x"}, {"prefix": None}, {"prefix": "/elsewhere", "report": []}]
+)
+def test_a_malformed_report_never_skips_the_abort_comparison(repo, damage) -> None:
+    """The abort check reads `abort` alone; the report diff is its own step."""
+    snapshot_data_tree("r", repo, anchor="s")
+    snap = repo / ".git" / "midas-dispatch-guard" / "r@s.json"
+    doc = json.loads(snap.read_text())
+    doc.update(damage)
+    if damage.get("prefix", 1) is None:
+        del doc["prefix"]
+    snap.write_text(json.dumps(doc))
+    (repo / "data" / "planted.json").write_text("evil")
+    with pytest.raises(DispatchWroteDataError, match="found at begin"):
+        snapshot_data_tree("r", repo, anchor="s")
+
+
 def test_begin_on_a_clean_interrupted_round_then_end_passes(repo) -> None:
     snapshot_data_tree("r", repo, anchor="s")
     snapshot_data_tree("r", repo, anchor="s")
@@ -508,7 +525,9 @@ def test_another_sys_prefix_at_end_skips_site_packages(
     (site_packages / "zz-evil.pth").write_text("x\n")
     assert_data_tree_unchanged("r", repo)
     assert _concerns(repo) == []
-    assert "site-packages not compared" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "snapshot taken under" in out and "now under /elsewhere" in out
+    assert "site-packages not compared" in out
 
 
 def test_concerns_summarise_one_line_per_round_for_this_anchor(repo) -> None:
@@ -591,27 +610,38 @@ def test_session_wrappers_key_the_snapshot_by_anchor(repo, monkeypatch) -> None:
         ds.step_guard_dispatch_end("step6-posts")
 
 
-def test_the_guard_key_survives_a_resume_but_not_a_new_base(repo) -> None:
-    """Step 0c re-anchors on every run: only date and base identify the session."""
+def test_every_run_is_a_new_guard_key(repo) -> None:
+    """Step 0c anchors each run: a new start time is a new key, so an earlier
+    run's snapshot (its writes reverted by Step 0's reset) is never compared."""
     _write_anchor(datetime(2026, 10, 9, 22, 0, tzinfo=timezone.utc))
     first = ds._dispatch_guard_anchor()
+    assert first == ds._dispatch_guard_anchor()
+    assert first.startswith("2026-10-09-") and len(first) == len("2026-10-09-") + 12
     _write_anchor(datetime(2026, 10, 9, 23, 30, tzinfo=timezone.utc))
-    assert ds._dispatch_guard_anchor() == first == f"2026-10-09-{'a' * 12}"
+    assert ds._dispatch_guard_anchor() != first
     _write_anchor(datetime(2026, 10, 9, 22, 0, tzinfo=timezone.utc), "b" * 40)
     assert ds._dispatch_guard_anchor() != first
 
 
-def test_a_resumed_session_compares_the_interrupted_round_at_begin(
+def test_a_round_rebegun_in_the_same_run_compares_at_begin(repo, monkeypatch) -> None:
+    monkeypatch.setattr("engine.dispatch_guard._REPO_ROOT", repo)
+    _write_anchor(datetime(2026, 10, 9, 22, 0, tzinfo=timezone.utc))
+    ds.step_guard_dispatch_begin("step6-posts")
+    (repo / "data" / "planted.json").write_text("evil")
+    with pytest.raises(DispatchWroteDataError, match="found at begin"):
+        ds.step_guard_dispatch_begin("step6-posts")
+
+
+def test_a_new_run_never_compares_against_an_earlier_runs_snapshot(
     repo, monkeypatch
 ) -> None:
-    """The reason for the key: a re-anchor must not hide the interrupted snapshot."""
+    """Step 0 reverted the earlier run's writes: comparing would false-abort."""
     monkeypatch.setattr("engine.dispatch_guard._REPO_ROOT", repo)
     _write_anchor(datetime(2026, 10, 9, 22, 0, tzinfo=timezone.utc))
     ds.step_guard_dispatch_begin("step6-posts")
     (repo / "data" / "planted.json").write_text("evil")
     _write_anchor(datetime(2026, 10, 9, 22, 40, tzinfo=timezone.utc))
-    with pytest.raises(DispatchWroteDataError, match="found at begin"):
-        ds.step_guard_dispatch_begin("step6-posts")
+    ds.step_guard_dispatch_begin("step6-posts")
 
 
 # --- file names git cannot decode as UTF-8 ----------------------------------

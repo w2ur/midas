@@ -43,18 +43,21 @@ commit turns that file into ``Concerns:`` trailers:
   same ``sys.prefix``.
 
 The snapshot lives under the git dir, outside the checkout, keyed by round and
-by the session anchor when one is given, so a snapshot an earlier fire left
-behind is never read as this session's. Begin takes a fresh baseline, written
+by the run's anchor when one is given. Each run from Step 0c is a new key, so
+a snapshot an earlier run left behind is never read as this run's (its writes
+were reverted by Step 0's reset, and comparing against it would false-abort). Begin takes a fresh baseline, written
 atomically over any snapshot under the key, which also clears its pass state:
 begin exactly once per dispatch, immediately before it. One exception guards a
-resumed round: when an anchored snapshot exists that has not passed (a round
+round re-begun within the same run: when an anchored snapshot exists that has not passed (a round
 interrupted mid-dispatch), begin first compares it with one capture of the
 tree, the same capture its new baseline is built from. A changed abort signal
 raises ``DispatchWroteDataError`` and keeps the old snapshot; a changed report
 signal is recorded as a concern, as end would, before the re-baseline, so
-neither class is absorbed silently. A missing, passed or unreadable snapshot
-(one whose ``abort`` or ``report`` is not a mapping included), and any
-anchorless begin, re-baselines without comparing.
+neither class is absorbed silently. The two are independent: the abort
+comparison reads ``abort`` alone, and a malformed ``report`` or missing
+``prefix`` only skips the report diff. A missing, passed or unreadable
+snapshot (one whose ``abort`` is not a mapping included), and any anchorless
+begin, re-baselines without comparing.
 
 End keeps the snapshot, so an end re-run after a downstream error evaluates
 again, until an end passes. With an anchor it then sets ``"passed": true``
@@ -293,20 +296,25 @@ def _compare_unfinished_round(
 ) -> None:
     """Compare a round interrupted before its end with the capture ``now``.
 
-    The whole comparison, ``_diff`` included, sits inside the error handling: a
-    snapshot that is missing or unreadable, or whose ``abort`` or ``report`` is
-    not a mapping, has nothing to compare and is re-baselined. Recording and
-    raising happen outside it, so their own failures are not mistaken for an
-    unreadable snapshot.
+    Two independent steps. The abort comparison reads ``abort`` alone: a
+    snapshot that is missing or unreadable, or whose ``abort`` is not a
+    mapping, has nothing to compare and is re-baselined. The report diff is a
+    separate step whose own failure (a malformed ``report``, a missing
+    ``prefix``) only skips recording and never prevents the abort check.
+    Raising and recording sit outside the error handling, so their own
+    failures are not mistaken for an unreadable snapshot.
     """
     try:
         before = json.loads(path.read_text(encoding="ascii"))
         if before.get("passed") is True:
             return
         aborts = _diff(before["abort"], now["abort"])
-        reported = _report_diff(round_name, before, now["report"])
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return
+    try:
+        reported = _report_diff(round_name, before, now["report"])
+    except (KeyError, TypeError, AttributeError):
+        reported = []
     _raise_on_aborts(
         round_name, aborts, " (found at begin, on a round that had not finished)"
     )
@@ -345,8 +353,8 @@ def _report_diff(
     report_before = before["report"]
     if before["prefix"] != sys.prefix:
         print(
-            f"  dispatch guard [{round_name}]: begin ran under {before['prefix']}, "
-            f"end under {sys.prefix}; site-packages not compared"
+            f"  dispatch guard [{round_name}]: snapshot taken under "
+            f"{before['prefix']}, now under {sys.prefix}; site-packages not compared"
         )
         report_before = _without_site_packages(report_before)
         report_after = _without_site_packages(report_after)

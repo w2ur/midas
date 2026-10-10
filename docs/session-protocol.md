@@ -49,10 +49,7 @@ that starts from a stale tip reads yesterday's portfolios, and its agents author
 sells of positions that have already been sold and buys of cash that has already
 been spent. Nothing downstream can detect this, because every artifact the
 session produces is internally consistent — it is consistent with a world that
-no longer exists. The reset keeps untracked files, so a reused workspace also
-removes the untracked, non-ignored leftovers under `data/` that an earlier failed
-run wrote (`git clean -fd -- data/`, without `-x`, so ignored session state
-survives): the session commit stages `data/` and would otherwise publish them.
+no longer exists.
 
 **Anchor the date and the ledger base once, at the start.** `scripts/session_guard.py`
 pins the session date, the base commit and the wall-clock start;
@@ -415,7 +412,8 @@ guarded are trading, the Manager, the Oracle, the posts and the journals. It is 
 tripwire, not containment: the broker's rails, not the guard, bound every order.
 
 `step_guard_dispatch_begin(round_name)` records a snapshot under the git dir,
-keyed by the round and the session anchor; `step_guard_dispatch_end(round_name)`
+keyed by the round and the run's anchor (each run from Step 0c is a new key, so
+an earlier run's snapshot is never compared against); `step_guard_dispatch_end(round_name)`
 compares against it. Each may run in its own process. Two classes of signal:
 
 - **Abort** — what the session never produces while a round runs: `HEAD`, refs
@@ -437,14 +435,18 @@ A dispatch result the orchestrator must keep across processes goes under
 `data/session_state/results/`, never elsewhere in the checkout, and only after
 the round's end has run: `results/` is in the report class, not exempt.
 **Writes:** the snapshot (atomically, temp file then replace; once an end passes,
-it carries `"passed": true`, anchored or not) and the concerns file. Begin takes a
+it carries `"passed": true` when anchored; an anchorless pass deletes it) and the concerns file. Begin takes a
 fresh baseline over any snapshot under its key, which also clears its pass state:
 begin exactly once per dispatch, immediately before it. The one exception is a
-resumed round: when an anchored snapshot exists that has not passed (a round
+round re-begun within the same run: when an anchored snapshot exists that has not passed (a round
 interrupted mid-dispatch), begin first runs the comparison end would run and
 raises `DispatchWroteDataError` if an abort signal changed, so the interrupted
-dispatch's write is not absorbed into the new baseline; a missing, passed or
-unreadable snapshot, and any anchorless begin, re-baselines without comparing.
+dispatch's write is not absorbed into the new baseline (the abort comparison
+reads the snapshot's `abort` alone; a malformed `report` only skips the report
+diff); a missing, passed or unreadable snapshot, and any anchorless begin,
+re-baselines without comparing. A deliberate resume must not re-run Step 0:
+`reset --hard` reverts tracked writes while the ignored step markers survive
+(pre-existing, not fixed here).
 An end that fails leaves the snapshot unmarked, so a repeated end evaluates
 again; an end after a pass prints "already verified this session" and returns
 without comparing, because the session's own later writes (outbox, research
