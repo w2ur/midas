@@ -1,0 +1,54 @@
+---
+import ToolLayout from '../../../layouts/ToolLayout.astro';
+import { backtesterStrings } from '../../../i18n/tool-strings';
+import { loadCatalog } from '../../../lib/backtesterCatalog';
+
+const s = backtesterStrings.en;
+const altLang = '/tools/backtester';
+
+// Snapshotted at build (scripts/build-prefetch.mjs), so the form paints
+// complete instead of waiting on the service's cold start. The island
+// revalidates it against /api/backtest/catalog once it boots.
+const catalog = loadCatalog();
+const bounds = catalog.date_bounds;
+const defaultUniverse = catalog.presets[0]?.default_universe;
+---
+<ToolLayout
+  lang="en"
+  title={s.pageTitle}
+  tagline={s.pageTagline}
+  metaDescription={s.metaDescription}
+  altLang={altLang}
+>
+  <!-- Rendered disabled: the tool cannot run until the island has confirmed the
+       service answers. The status line below says so from the first paint. -->
+  <form id="bt-form" class="bt-form" aria-busy="false">
+    <fieldset id="bt-fields" class="bt-fields" disabled>
+      <label>{s.island.strategyLabel} <select id="bt-preset" required>
+        {catalog.presets.map((p, i) => <option value={p.id} selected={i === 0}>{p.label}</option>)}
+      </select></label>
+      <label>{s.island.universeLabel} <select id="bt-universe" required>
+        {catalog.universes.map((u) => <option value={u.id} selected={u.id === defaultUniverse}>{u.label}</option>)}
+      </select></label>
+      <label>{s.island.startLabel} <input id="bt-start" type="date" min={bounds.min} max={bounds.max} value={bounds.min} required></label>
+      <label>{s.island.endLabel} <input id="bt-end" type="date" min={bounds.min} max={bounds.max} value={bounds.max} required></label>
+      <label>{s.island.capitalLabel} <input id="bt-capital" type="number" min="1" step="any" value="10000" required></label>
+      <label>{s.island.currencyLabel} <select id="bt-currency"><option>EUR</option><option>USD</option></select></label>
+      <button id="bt-run" type="submit">{s.island.runButton}</button>
+    </fieldset>
+  </form>
+
+  <p id="bt-status" class="bt-status" role="status">{s.island.warmingUp}</p>
+  <div id="bt-chart" class="bt-chart"></div>
+  <div id="bt-metrics" class="bt-metrics"></div>
+  <ul id="bt-warnings" class="bt-warnings"></ul>
+
+  <script is:inline type="application/json" id="bt-i18n" set:html={JSON.stringify(s.island)} />
+  <script is:inline type="application/json" id="bt-catalog" set:html={JSON.stringify(catalog)} />
+</ToolLayout>
+
+<script>
+  import { initBacktester } from '../../../lib/backtester-island.ts';
+
+  initBacktester();
+</script>

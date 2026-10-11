@@ -1,0 +1,158 @@
+{
+  "presets": [
+    {
+      "id": "buy-the-dip-aggressive",
+      "label": "Buy the Dip — Aggressive Grid",
+      "selector": "dip-entry",
+      "manager": "grid-aggressive",
+      "rules": {
+        "max_positions": 10,
+        "max_position_pct": 20.0,
+        "min_hold_days": 3
+      },
+      "default_universe": "sp500"
+    },
+    {
+      "id": "buy-the-dip-conservative",
+      "label": "Buy the Dip — Conservative",
+      "selector": "dip-entry",
+      "manager": "equal-weight",
+      "rules": {
+        "max_positions": 10,
+        "max_position_pct": 15.0,
+        "min_hold_days": 3
+      },
+      "default_universe": "sp500"
+    },
+    {
+      "id": "dogs-of-the-dow",
+      "label": "Dogs of the Dow — RSI Oversold Rotation",
+      "selector": "rsi-oversold",
+      "manager": "equal-weight",
+      "rules": {
+        "max_positions": 10,
+        "max_position_pct": 15.0,
+        "min_hold_days": 21
+      },
+      "default_universe": "dow30"
+    },
+    {
+      "id": "fear-greed",
+      "label": "Fear & Greed — Volatility-Sized Broad ETF",
+      "selector": "fear-greed",
+      "manager": "volatility-sized",
+      "rules": {
+        "max_positions": 5,
+        "max_position_pct": 30.0,
+        "min_hold_days": 1
+      },
+      "default_universe": "etf-broad"
+    },
+    {
+      "id": "golden-cross-dca",
+      "label": "Golden Cross S&P 500 — DCA Funding",
+      "selector": "golden-cross",
+      "manager": "equal-weight",
+      "rules": {
+        "max_positions": 20,
+        "max_position_pct": 10.0,
+        "min_hold_days": 5
+      },
+      "default_universe": "sp500"
+    },
+    {
+      "id": "insider-shadow",
+      "label": "Insider Shadow — Follow Smart Money",
+      "selector": "data-follow",
+      "manager": "equal-weight",
+      "rules": {
+        "max_positions": 10,
+        "max_position_pct": 15.0,
+        "min_hold_days": 5
+      },
+      "default_universe": "insiders"
+    },
+    {
+      "id": "pelosi-tracker",
+      "label": "Pelosi Tracker — Congressional Trades",
+      "selector": "data-follow",
+      "manager": "equal-weight",
+      "rules": {
+        "max_positions": 15,
+        "max_position_pct": 10.0,
+        "min_hold_days": 3
+      },
+      "default_universe": "congress"
+    },
+    {
+      "id": "rsi-contrarian-sp500",
+      "label": "RSI Contrarian — S&P 500",
+      "selector": "rsi-oversold",
+      "manager": "equal-weight",
+      "rules": {
+        "max_positions": 15,
+        "max_position_pct": 10.0,
+        "min_hold_days": 3
+      },
+      "default_universe": "sp500"
+    }
+  ],
+  "universes": [
+    {
+      "id": "sp500",
+      "label": "S&P 500"
+    },
+    {
+      "id": "dow30",
+      "label": "Dow 30"
+    },
+    {
+      "id": "nasdaq100",
+      "label": "Nasdaq 100"
+    },
+    {
+      "id": "cac40",
+      "label": "CAC 40"
+    },
+    {
+      "id": "dax",
+      "label": "DAX"
+    },
+    {
+      "id": "ftse100",
+      "label": "FTSE 100"
+    },
+    {
+      "id": "stoxx-600",
+      "label": "STOXX 600"
+    },
+    {
+      "id": "congress",
+      "label": "Congress (STOCK Act)"
+    },
+    {
+      "id": "insiders",
+      "label": "Insider buying"
+    },
+    {
+      "id": "high-short",
+      "label": "High short interest"
+    },
+    {
+      "id": "etf-broad",
+      "label": "Broad ETFs"
+    },
+    {
+      "id": "etf-sectors",
+      "label": "Sector ETFs"
+    }
+  ],
+  "date_bounds": {
+    "min": "2010-01-01",
+    "max": "2026-07-28"
+  },
+  "currencies": [
+    "EUR",
+    "USD"
+  ]
+}
