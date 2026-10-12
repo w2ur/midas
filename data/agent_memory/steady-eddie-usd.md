@@ -1,8 +1,8 @@
-The book is $13,289 and about 61% cash. No new money goes in until a name has held its low. I see a base after it holds; I don't call it in advance.
+The book is $13,352 and still mostly cash. I bought a base only after it held, and I floored it the same session I bought it.
 
-- LIN: I hold 2 shares at a $483.98 basis, both floored at $452. One now has a $512 ceiling, which is above the 508.64 close on 30 July, so it only fills if the whole gap gets repaired. The other share keeps compounding.
-- V: I hold 2 shares, both floored at $356. It closed at 385.45, through my $385 harvest rung, so that should fill on the next sweep, with $400 stacked above it.
-- MDT: I hold 4 shares, all floored at $84, with ceilings of $95 on 2 and $99 on 2. CB: 1 share, floored at $322 with a $358 ceiling. MSFT: 1 share, floored at $476 with a $545 ceiling. KO, PG and JNJ stay laddered. Every share has one exit above and one below. Never carry a gate in my head.
-- Watching AAPL at 324 on a closing basis. HD, MCD, UNH, GD and CMCSA are still making lows they can't hold.
-- Monsieur Forex puts the euro at 5.2pp of my +18.3%. My last count was 4.69pp of +17.15%. Either way, the FX leg isn't skill. I'm graded against SPY in dollars, and EUR Eddie's gap behind me is mostly currency.
-- The printed 7,713.35 still doesn't reconcile, and I still don't trust it.
+- HD: 3 shares at 290.62, one $276 floor on all three, under the 277.15 low of 1 October. If that low goes, the thesis goes, at about -5%. My view of its quality is recalled, not taken from my inputs.
+- V: the $385 harvest rung filled. I hold 1 share, re-floored at $356 (about +13% locked), with the $400 ceiling above it. A ladder sized for a book I no longer hold is a gate I'm carrying in my head.
+- PG sits 0.30 under its $153.50 rung. I re-cut its floors after a fill, not before one.
+- LIN, MDT, CB, MSFT, KO and JNJ: every share has one exit above and one below. LIN's $512 ceiling only fills if the whole gap gets repaired.
+- Watching AAPL at 324 on a closing basis. MCD, UNH, GD and CMCSA still can't hold their lows.
+- The euro is about 5pp of my return, and that isn't skill. I'm graded against SPY in dollars. The printed 7,713.35 still doesn't reconcile.

@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-12",
+  "conviction": 6,
+  "positions": [
+    {
+      "ticker": "NVDA",
+      "action": "SELL",
+      "size_eur": 0,
+      "entry_guidance": "Conditional exit of the full position: fires only on a print at or below 224.90 USD (the 224.92 confirmation level yolo-sapiens-usd named).",
+      "stop_loss": null,
+      "reasoning": "NVDA (226.32 USD) is 0.6% above the 224.92 level that yolo-sapiens-usd names as confirmation of its Nasdaq-rot thesis, after a run of lower lows. A break there would end the reason to hold, so this exit waits for confirmation and does not sell into noise today. A hedge through QQQS.L does not fit: a third of EUR 269 of Nasdaq exposure is about EUR 90, which is under the EUR 250 minimum.",
+      "trigger": {
+        "op": "<=",
+        "level": 224.9
+      },
+      "expires": "2026-10-23"
+    }
+  ],
+  "hold_reasoning": "Every other position is a HOLD. Cash is EUR 221.29 against the EUR 150 floor, so only about EUR 71 can be deployed, which is below any EUR 250 entry. The book also already holds six positions, so no new thesis can be bought without an exit first. BTC-EUR (EUR 410.75) is 2.7% over the ~EUR 400 cap. That drift is within tolerance and does not justify a taxable EUR realisation, given the PFU and the full-portfolio PVCT snapshot it would trigger, and no other crypto is held to rebalance into. 4GLD.DE (120.02) is well above goldfinger's 106.50 break. PHAG.L (54.77) sits mid-range, and goldfinger wants no action there. ALV.DE and AIR.PA have no analyst saying their thesis is breaking. The SLB position (EUR 0.15) is dust: selling it would cost more in the EUR 1.25 floor fee than it raises, and it would use up a trade slot.",
+  "render": "[Manager Decision]\n  conviction: 6/10\n  positions (1):\n    NVDA           SELL EUR 0  stop=none\n      entry:   Conditional exit of the full position: fires only on a print at or below 224.90 USD (the 224.92 confirmation level yolo-sapiens-usd named).\n      reason:  NVDA (226.32 USD) is 0.6% above the 224.92 level that yolo-sapiens-usd names as confirmation of its Nasdaq-rot thesis, after a run of lower lows. A break there would end the reason to hold, so this exit waits for confirmation and does not sell into noise today. A hedge through QQQS.L does not fit: a third of EUR 269 of Nasdaq exposure is about EUR 90, which is under the EUR 250 minimum."
+}

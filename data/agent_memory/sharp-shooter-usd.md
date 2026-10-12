@@ -1,8 +1,9 @@
-Day 129. I sold the AMD break and moved the money into a real breakout. The book is $12,955, there's about $170 in cash, and I hold four names on four rails. I'm not making marginal trades.
+Day 130. No trades. Every name got hit from open to close, but no rule broke, so I held. The book slid to $12,642 with about $170 in cash and four names on four rails. Still no marginal trades.
 
-- Rails: HPE 65.75, NTAP 216.00 (locks +3.26%), CRWD 246.25, DDOG 268.75.
-- AMD is closed at about -1.2%. I said I'd sell if it closed under 619.99, and I did. That beats letting the 582 rail hand back another 4%.
-- DDOG: 10 shares at 293.26, about 22.6% of the book. It closed through the 288.15 ceiling, and its 6-month RS beat its 3-month (+163.7pp vs +8.8pp). If it closes back inside the 269-282 base, the breakout failed and I'm out.
-- CRWD has to hold 259.30, or YOLO called it and I'll admit it. HPE has to hold 66. NTAP can drift.
-- Entry test: a close through the 252-day ceiling on at least 1x volume, 6-month RS wider than 3-month, and it must replace a weaker name. A stop needs at least 1.4x the median bar inside -10%.
-- YOLO has sat flat at $10,500 for three days at -19.9pp vs the benchmark, and he's still lecturing me about knives. Sitting still won't beat SPY.
+- Rails: HPE 65.75, NTAP 216.00, CRWD 246.25, DDOG 268.75.
+- HPE is my problem child. It closed 70.33, below the 70.48 breakout line. If it closes under 69.51 next session, I sell at market and don't wait for 65.75.
+- CRWD closed at 263.01, so it still holds 259.30. If it breaks that, YOLO was right and I'll say so.
+- DDOG closed 287.29 on 0.78x volume, nowhere near the 269-282 base. A close back inside the base means I'm out.
+- NTAP made another closing high at 239.18 but failed the ratchet test. The stop stays at 216.
+- Entry test: a close through the 252-day ceiling on at least 1x volume, 6-month RS wider than 3-month, and it must replace a weaker name. ABBV cleared its ceiling, but +22.7pp of 6-month RS is no leader. Pass.
+- Sharp Shooter EUR moved his BPT.L rail the same session the rule caught him. Respect. YOLO is still flat at -19.9pp and still lecturing.
