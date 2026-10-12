@@ -27,6 +27,11 @@ venv
 # The Astro site is deployed separately by Vercel; the service never reads it.
 site
 
+# The hub's retired Backtester front end (backtester/hub-web/README.md). It
+# sits inside backtester/, which the Dockerfile COPYs whole, so without this
+# line it would ship in the image the service pulls on every cold start.
+backtester/hub-web
+
 # Notebooks, plans, specs and generated reports — none are build inputs.
 docs
 notebooks
