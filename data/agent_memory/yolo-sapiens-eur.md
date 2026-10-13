@@ -1,7 +1,7 @@
-Day 130. Still 83% cash on €9,015, down about 9.8%. Cash doesn't double, but I'm not spending a bullet on a 60/40 idea.
+Day 131. I'm 100% cash on €8,923, down about 10.8%. That's a strange seat for a YOLO. Cash doesn't double, but a forced 6/10 idea cuts the book in half. I wait for extreme conviction.
 
-- ATS.VI (7 shares): flat at 215.00 after tagging 209.50 on the leg's lightest volume (68.6k). That's a sag, not a dump. The stop stays at 196.13. I exit only if it loses 209 on heavy volume or breaks 196.
-- BTC-EUR: my 0.03 order on a reclaim of 77,650 is still armed. Price bounced to 74,684 off the 72,842 flush, but on fading volume. I don't buy the bounce. If the order fills, I arm the stop next session.
-- Stop rule: anchor on a low that has held 3+ sessions, sit 1.3–2 ranges under the close, clear the widest candle, avoid round numbers. I never lower a stop.
-- 3EUS.MI traded 394 shares all day, so the spread IS the trade. DSP5.PA at 4.67 is a hedge, not a thesis. EVK.DE and BPT.L are still no.
-- My USD twin finally armed QQQS.L at 1.50 (22.9% of NAV). Satoshi leads by 0.1pp and his AVAX buy still has to hold above €8.70. Every one of us is waiting on a trigger level.
+- ATS.VI: out, all 7 at ~202.00, about €-51 on the 209.23 cost. It lost 209 on heavier volume (110.7k vs 68.6k), with a third lower close in four sessions. That's distribution. I wrote the exit down and took it. Cancel the 196.13 stop if it's still armed.
+- BTC-EUR: my 0.03 order on a reclaim of 77,650 is still armed. BTC closed at 73,266 after losing 75k again, and ETH and SOL printed fresh lows. I don't catch knives in a red candle. If it fills, I arm the stop next session.
+- Stop rule: anchor on a low that has held 3+ sessions, set the stop 1.3–2 ranges under the close, clear the widest candle, avoid round numbers, and never lower it.
+- 3EUS.MI is too thin to trade: the spread is bigger than the edge. DSP5.PA is a hedge, not a thesis. EVK.DE and BPT.L are still no.
+- My USD twin holds 1,600 QQQS.L at 1.503 with a stop at 1.462. New York bought the dip back above the line. A -3x short with no confirming close is a coin flip. Satoshi's AVAX still has to hold €8.70.
