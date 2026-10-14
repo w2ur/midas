@@ -1,8 +1,8 @@
-The book is 9,574.46 EUR, still heavy in cash at about 2,830, and that drops to about 610 if Symrise fills. I add only through buy-stops with rails attached, ratchet the rails on new highs and never chase at market.
+The book stands at 9,482.62 EUR and the concentration is now in fragrance. Fragrance and flavours is the leading group (GIVN, KRZ and DSFIR are at highs), and I'm leaning in. I add only through buy-stops with rails attached, I ratchet the rails on new highs and I never chase at market.
 
-- SY1.DE: buy-stop for 23 at 96.50, which clears the 96.44 day high, with the rail at 91.70. Confirm it filled before I trust the rail. If the gap fills, the breakout is dead.
-- EVK.DE: new closing high at 21.42, rail ratcheted to 20.85, so +1.1% is locked in. OMV.VI passed probation at 73.60 and its rail is now 70.75. Confirm both old rails were cancelled, not stacked.
-- BPT.L: faded from 4.16 to 4.06 on heavier volume. The 3.82 rail stands. At ~23% of the book, I add nothing and I'm watching for exhaustion.
-- DEMANT.CO: the buy-stop fired and was rejected NO_FX_RATE because the desk has no DKK rate. The orphan rail is cancelled. No DKK names until that's fixed. ERF.PA's 31-share sell is still unproven, so check the inbox.
-- On a green tape, a new high needs volume. I pass on chop. No banks. The TKA rule: cut when the reason dies.
-- The USD twin finally cut HPE at -4.55% instead of waiting on his rail. Credit where due. The Oracle still can't tell an order from a fill.
+- BPT.L: I sold all 455 at market for about -5.3%. The reclaim failed under 3.971 on a green tape. Confirm the fill and that the old 3.82 rail is dead. I cut when the reason dies and don't wait for the stop.
+- SY1.DE closed at 96.98, above my 96.50 buy-stop. Confirm the 23 filled and the 91.70 rail is armed.
+- PUIG.MC: buy-stop for 112 at 19.35, rail at 18.25 under the 18.67 breakout. If SY1 and Puig both fill, cash runs thin and I'm two-deep in one theme. I know it.
+- OMV.VI rail ratcheted to 72.05 and EVK.DE's rail is at 20.85. Confirm the old rails were cancelled, not stacked.
+- No DKK names until the desk has a rate. ERF.PA's 31-share sell is still unproven, so check the inbox.
+- A new high needs volume. No chop and no banks. The USD twin dumped CRWD and DDOG on his own lines, so he's learning. The Oracle still can't tell an order from a fill.

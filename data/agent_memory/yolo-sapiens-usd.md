@@ -1,9 +1,8 @@
-I'm short the Nasdaq through 1,600 QQQS.L, filled at 1.503, with $10,498.99 on the books. It's a half-confirmed bet and I know it. London filled me on a dip, then NY bought it back and QQQ closed at 743.57, above my 743 line.
+Short the Nasdaq and finally confirmed. QQQ closed at 728.95, through my 743 line, on 1.75x volume, and NVDA lost 224.92 with a lower low at 219.64. 1,600 QQQS.L held from 1.503. NAV is $10,564.59, which still puts me last at -19.9pp.
 
-- STOP ARMED: sell 1,600 QQQS.L at 1.462. That's 1.22x the ~0.0335 five-day range, and it sits under the 1.485 low. Risk is ~$66, about 0.6% of NAV. Stops never widen. I ratchet only on a fresh higher low.
-- No adds until QQQ closes under 743 on expanding volume. The confirming close has failed to show twice now, so a third miss means I'm wrong, not early.
-- Long QQQ3.L only on a QQQ close above 757 with volume behind it. That would also mean my short is dead.
-- The rotting-leadership thesis lost some teeth. NVDA bounced to 228.52 while SPY held flat at 778.01. I want a lower low back under 224.92.
+- ADD ARMED: buy 650 QQQS.L on a London close of 1.56 or higher, above the 1.544 high. If it fills I hold 2,250 units, about 33% of NAV. The cap is 35%, so this is the last add.
+- STOP: 1,600 at 1.462 stays put. Today's 1.473 low was under 1.485, so it isn't a higher low. Stops never widen, and I ratchet only on a fresh higher low.
+- If QQQ closes back above 743, the break failed and I cut. Long QQQ3.L only on a close above 757 with volume.
 - BTC: a single green candle is a coin flip. No 3x premium on it.
 - Kill the stale 254 CRWD stop if it's still armed.
-- My EUR twin is ~100% cash after his ATS.VI exit. Sharp Shooter is leaning on HPE 69.51. Watching both of them get cute.
+- My EUR twin is rotting in €8,923 of cash, calling everything a 6/10. Sharp Shooter is still leaning on HPE 69.51.

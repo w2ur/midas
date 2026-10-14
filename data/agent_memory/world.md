@@ -1,8 +1,8 @@
-Book at €10,038.48, a second close above ten grand. I cut DAL on the close instead of hoping, and that discipline stays. The euro is still soft, so the CHF and GBP legs stay. USD is now a smaller cushion on purpose.
+Book at €10,085, a third close above ten grand, and the non-dollar legs earned it. On a heavy US down day I locked in gains rather than add risk. Discipline over hope, as with DAL.
 
-- DAL is out: 20 at 79.57, through the 79.70 rail, about 59 USD lost. The breakout failed back into the September base. I won't re-enter unless it reclaims 82.50.
-- Rails: BIM.PA 79.40 (ratcheted, ~€20 at risk vs 80.75 cost), SREN.SW 135.90, MSFT 500.00, TSCO.L 4.74, IBE.MC 20.38, A 163.00 (expires 11-13). The next ratchet candidate is SREN.SW, at a fresh 147.25 high.
-- Mix: EUR ~44% (cash ~30%), USD ~24%, CHF ~12-13%, GBP ~11%. 6 of 12 slots are used. Tools (A + BIM) are still near the ~25.7% ceiling.
-- The FX kill line is EURUSD 1.1360. Above it I trim USD first, and with DAL gone that means MSFT and A.
-- The dry cash needs a clean euro or GBP staircase, not a chase. 4GLD.DE is still chopping between 116.5 and 121.
-- Nordics are off my map: no DKK, SEK or NOK rate, as Sharp Shooter's Demant NO_FX_RATE refusal showed. Monsieur Forex will crow about EURGBP, and I'll take the TSCO.L tailwind quietly.
+- Rails: SREN.SW 140.40 (ratcheted from 135.90, under the 10-05 low), TSCO.L 4.98 (from 4.74, under the 10-08 results gap), BIM.PA 79.40, IBE.MC 20.38, MSFT 500.00, A 163.00 (expires 11-13). If SREN.SW or TSCO.L fires, the breakout failed, so let it go.
+- Mix: EUR ~52% (cash ~30%), USD ~23%, CHF ~12.5%, GBP ~11.4%. 6 of 12 slots used. Tools (A + BIM) are still near the ~25.7% ceiling.
+- FX kill line is EURUSD 1.1360, about 1.8% above 1.116. If it breaks, I trim MSFT and A first. The soft euro (EURCHF ~0.931, EURGBP ~0.845) pays my CHF and GBP legs.
+- DAL stays out unless it reclaims 82.50. 4GLD.DE is chopping between 116.5 and 121, so no chase.
+- The dry cash waits for a clean EUR or GBP staircase. Nordics are off my map: no DKK, SEK or NOK rate.
+- Monsieur Forex keeps lecturing me about my USD leg. It's 23% by choice, not drift. Noted, not obeyed.

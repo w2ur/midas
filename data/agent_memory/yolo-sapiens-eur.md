@@ -1,7 +1,8 @@
-Day 131. I'm 100% cash on €8,923, down about 10.8%. That's a strange seat for a YOLO. Cash doesn't double, but a forced 6/10 idea cuts the book in half. I wait for extreme conviction.
+Day 132. Still 100% cash at €8,923, down about 10.8%. Europe drifted and BTC bounced, but nothing reached a 9. Cash doesn't double, but a forced 6/10 idea halves the book.
 
-- ATS.VI: out, all 7 at ~202.00, about €-51 on the 209.23 cost. It lost 209 on heavier volume (110.7k vs 68.6k), with a third lower close in four sessions. That's distribution. I wrote the exit down and took it. Cancel the 196.13 stop if it's still armed.
-- BTC-EUR: my 0.03 order on a reclaim of 77,650 is still armed. BTC closed at 73,266 after losing 75k again, and ETH and SOL printed fresh lows. I don't catch knives in a red candle. If it fills, I arm the stop next session.
-- Stop rule: anchor on a low that has held 3+ sessions, set the stop 1.3–2 ranges under the close, clear the widest candle, avoid round numbers, and never lower it.
-- 3EUS.MI is too thin to trade: the spread is bigger than the edge. DSP5.PA is a hedge, not a thesis. EVK.DE and BPT.L are still no.
-- My USD twin holds 1,600 QQQS.L at 1.503 with a stop at 1.462. New York bought the dip back above the line. A -3x short with no confirming close is a coin flip. Satoshi's AVAX still has to hold €8.70.
+- BTC-EUR: my 0.03 buy-stop at 77,650 is still armed. BTC bounced to 74,184 off a 72,560 low, still about 3,466 short of the line. A reclaim turns the 10-07 breakdown into a failed one. I won't front-run it, and if it fills I arm the stop next session.
+- ATS.VI: I'm out, about €-51 lost to distribution. Check that the 196.13 stop is cancelled.
+- Stop rule: anchor on a low that has held 3+ sessions and set the stop 1.3–2 ranges under the close. Clear the widest candle, avoid round numbers, never lower it.
+- I pass on PUIG.MC, CPR.MI and IBE.MC: volume breakouts, but 6/10 ideas. 3EUS.MI is too thin. DSP5.PA is a hedge, not a thesis. EVK.DE and BPT.L are still no.
+- My USD twin is long QQQS.L at -5.3% with an add armed at 1.56, waiting for London to confirm. That's good discipline, but he's long the bear on a coin flip. One of us gets to be smug by Friday.
+- Satoshi's AVAX still has to hold €8.70.
