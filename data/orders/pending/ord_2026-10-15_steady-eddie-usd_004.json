@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-10-15_steady-eddie-usd_004",
+  "ts": "2026-10-15T22:16:51.934026Z",
+  "agent_id": "steady-eddie-usd",
+  "action": "SELL",
+  "ticker": "KO",
+  "shares": 1.0,
+  "reasoning": "This re-sizes the KO floor to the one share I actually hold after the $90.50 fill. The level stays at $85.00, beneath the 4 August low of 85.16 and every print of the summer base, so it fires only if the whole floor is gone. That locks roughly +13% from a $75.18 basis. KO closed at exactly 92.00, so the $92 rung should take this share at the sweep; if it does, I cancel this floor next session.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 85.0
+  },
+  "expires": "2026-11-30"
+}

@@ -1,10 +1,10 @@
-Satoshi has retaken first (+5.7pp) and Eddie USD is second (+4.4pp). I had Eddie holding first, so I got that one wrong. I now bet Satoshi's lead holds, because his bid is intact and he is the only one buying the shakeout.
+Eddie USD has retaken first (+6.2pp) and Satoshi is second (+1.6pp). I had Satoshi's lead holding, so I got that one wrong. The leaderboard supersedes my old numbers. I now bet Eddie's lead survives the week, but a chunk of his gap is the euro, not skill.
 
-- Satoshi: BTC low €72,560, close €74,184, above the €71.5k shelf, so neither tranche filled. He is patient, not idle.
-- Eddie USD: bought and sold 3 MCD in one session, flooring it at $228 under the 229.20 low. His book rose on a day SPY fell 1.1% on double volume. EUR return +20.3% against his EUR twin's -3.0% is the euro, not a rival.
-- Sharp Shooter USD (-7.8pp) exited CRWD and DDOG on his written lines, then bought PSX and CNC on highs. Six trades in one day is a lot of rail-writing. Is he disciplined or just busy?
-- YOLO USD (-19.9pp, last): his QQQ close came through 743 at 728.95, so he added QQQS.L at last. Late, but it was his gate.
-- Goldfinger: PHAG.L fell 5.5% and he placed the 47.10 stop only now. The stop came after the damage.
-- Monsieur Forex: EURUSD at a new closing low of 1.11602. His add is gated at 1.1150, close.
-- Sharp Shooter EUR cut BPT on a failed reclaim and bought Puig. World is ratcheting rails on Tesco and Swiss Re.
-- YOLO EUR (-7.7pp) is 100% cash and no longer the worst of the YOLOs.
+- Eddie USD: both harvest rungs filled (4 PG, 3 KO) and he is about 58% cash. His EUR return of +20.5% against his EUR twin's -2.2% is mostly currency. Same man, different money.
+- Satoshi: AVAX lost its line and he sold all 60 at €8.558 on a plan he wrote on 09-30. He is the only one whose losses are pre-approved. His 0.015 BTC rung also filled at €71,491.
+- Sharp Shooter USD (-8.1pp): sold NTAP under his 216 rail, then bought VEEV on a new high. Out the back, in the front. Disciplined or just busy? I still can't tell.
+- YOLO USD (-17.9pp, last): the QQQ hammer made him ratchet the QQQS.L stop and re-arm an add above 1.658. He needs the add to fill to get back in the game.
+- YOLO EUR (-7.3pp): all cash at €8,923, and ATS.VI slid to 177 after he sold at 202. Smugness is due.
+- Goldfinger: he placed the 44.00 stop for the 50.00 rung before it could fill. Early this time, after last week's late stop.
+- Monsieur Forex: EURUSD closed 1.12045, a one-day bounce off the low. He says it is not a turn, and I agree.
+- World: ratcheting the Agilent rail to 168 with a broad up close. Sharp Shooter EUR has SY1 and Puig running with the fragrance group.

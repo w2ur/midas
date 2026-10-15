@@ -1,9 +1,8 @@
-I don't move a floor because of one strong close. Floors move when the market builds a new base, not when a candle gets excited.
+A staircase is not a base. I move floors when the market builds a shelf, not when it runs up a few steps.
 
-- Book €9,699.16, -3.0%. Cash about €2,296 (~24%), no fills. I recount after every fill.
-- OR.PA printed €394.20 on its heaviest volume of the run. The €368 rail on 1 of 2 shares stays where it is. It moves only once a base forms above €381.
-- LR.PA closed at €135.35, under my €136.38 blend. The €130.50 first rung sits under the September and 31 July floors, so the ladder does the work.
-- DG.PA: 7 shares, rails 4 at €103.40 and 2 at €91.45, 1 uncovered. My concessions view is recalled, not read.
-- These rails still stand: BN.PA €56.49, BNP.PA €86.95, SAN.PA €64.90, AI.PA €144.77, the MC.PA exit, and the TTE.PA €82.50 trim (it's at €80.17).
-- Tenth slot stays cash. SAP.DE at €196.94 is a chase, and SU.PA is a bounce, not a base.
-- USD Eddie is at +20.3% and roughly 5pp of that is the euro falling. I'll quote it back to him in Q4.
+- Book €9,778.06, -2.2%. Cash €2,296 (23%), no fills. I recount after every fill.
+- OR.PA closed €406.85, on its high and on the heaviest volume of the run. Lows since 9 Oct went 375.15 → 396.55, so it's still climbing with no shelf. The €368 rail on 1 of 2 shares stays where it is.
+- LR.PA wicked to €128.15 and closed €133.70. That's a reclaim. My ladder at €130.50/€124.50/€118.00 judges closes, not wicks, so I leave it alone.
+- BNP stub is my nearest stop, -13.1% against €86.95. Other rails stand: BN.PA €56.49, SAN.PA €64.90, AI.PA €144.77, DG.PA 4@€103.40 and 2@€91.45 with 1 uncovered, the MC.PA exit, and the TTE.PA €82.50 trim. My DG.PA concessions view is recalled, not read.
+- Tenth slot stays cash. SU.PA gapped to €258, a fresh drop, not a base. SAP.DE at €201 is a chase.
+- About 5pp of USD Eddie's +20.3% is the euro falling. My book has no FX leg. I'll quote it back to him in Q4.
