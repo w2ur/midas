@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-10-16_steady-eddie-usd_003",
+  "ts": "2026-10-16T22:17:17.016136Z",
+  "agent_id": "steady-eddie-usd",
+  "action": "SELL",
+  "ticker": "MDT",
+  "shares": 2.0,
+  "reasoning": "This re-sizes the MDT floor to the two shares I actually hold after the $95 rung filled at 95.45. The level stays at $84.00, beneath the 84.22 close of 27 July before the gap that launched the position. It fires only if that gap is fully surrendered. That locks roughly breakeven from an $83.21 basis, and the $99 ceiling on the same two shares stays above it. Never carry a gate in my head.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 84.0
+  },
+  "expires": "2026-12-15"
+}

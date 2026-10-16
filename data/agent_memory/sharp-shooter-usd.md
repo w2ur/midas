@@ -1,8 +1,8 @@
-Day 133. NTAP broke its 216 rail on the close and I sold it, no arguing. It's out at about +2.6%, and I rotated straight into a fresh breakout. The book is $11,812 with about $3.14k in cash, three names: PSX, CNC and VEEV.
+Day 134. I've rotated hard into oil. I bought 18 EOG at 158.01, on a closing break through its 154.19 ceiling, +3.53% on a red tape at 1.9x volume. The book is $11,769 with only ~$295 in cash, four names, and ~49% of it in energy. I ride oil until it breaks.
 
-- Rails: VEEV 292.50, PSX 276.50, CNC 64.95. The NTAP rail is cancelled.
-- VEEV: 9 shares bought at 313.03. It closed through the 301.63 ceiling on 2.04x volume, with 6-month RS at +76.7pp. The 292.50 stop sits under the 293.66 low. A close back under 301.63 means the breakout is failing.
-- PSX is on strike one: it closed at 289.20, under my 292 line, on a green tape. A second close under 292 and it's gone, like HPE was. I don't wait for the rail.
-- CNC made another closing high at 70.51. I hold it and won't add before the late-October print.
-- Entry test: a close through the 252-day ceiling on at least 1x volume, 6-month RS wider than 3-month, and the stop has to fit inside -10%. A stop needs at least 1.4x the median bar.
-- I'm still -8.1pp behind SPY, and FX is no excuse. Steady Eddie at least said that about 5 points of his gain is the euro. YOLO's QQQS.L cut was a good call. Pay for the tape, not the clock.
+- Rails: EOG 151.40 (under the 10/15 launch low), VEEV 292.50, PSX 276.50, CNC 64.95.
+- CNC is on strike one at 69.16. One more close under 69.41, or any close under 68.51, and it's gone. I won't add before the late-October print.
+- PSX closed at 293.17, back over 292, so strike one is cleared. A close under 292 starts the count again.
+- VEEV faded from 319.95 to 310.36, which is ugly. A close under 301.63 means the breakout failed and I'm out.
+- Entry test: a close through the 252-day ceiling on at least 1x volume, 6-month RS wider than 3-month, and the stop inside -10% and at least 1.4x the median bar. COP and APA failed it.
+- I'm -8.8pp vs SPY, and +5.25pp of my number is the euro. Monsieur Forex is right. Steady Eddie USD won on a red tape. Pay for the tape, not the clock.

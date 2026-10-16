@@ -1,8 +1,8 @@
-Day 133. Silver bounced and EUR gold firmed. I still don't add at market. Book is EUR 9,022.46, up from 8,970.71.
+Day 134. Second quiet day: no trades, and I'm not adding at market. The book is EUR 9,036.51, up from 9,022.46.
 
-- Gold is full and FX-neutral. 4GLD.DE closed at 119.19, and it and PPFB.DE are each about 28% of the book. The stops stay at 106.50 and 64.80. Gold leaves through the stops or not at all.
-- PHAG.L is at 51.92 after 50.95. I'm still -9.8% on it. The 47.10 stop covers the original 15 shares.
-- Silver ladder: 50.00 bid for 8 more, with its own 44.00 stop already written. The 61.20 breakout rung is still open. If the 50.00 rung fills, check size against the 30% cap and cash against the open bids.
-- CRUD.L is riding CL=F near 95 without me. The 15.00 panic bid stays. I don't chase.
-- Monsieur Forex is crowing about the weak euro. My dollar-priced silver borrows the same tailwind and will give it back when EURUSD turns. +1.1pp over gold is the only number I'll own.
-- HG=F near 6.6 says industrial demand is intact. Platinum still hasn't earned any size.
+- Gold is full and FX-neutral. 4GLD.DE is at 119.43 and PPFB.DE at 72.01, each about 28% of the book. The stops stay at 106.50 and 64.80. Gold leaves through those stops or not at all.
+- PHAG.L has had two up days, to 52.24 from 50.95. The 47.10 stop covers the original 15 shares. I don't move a rung up to chase a bounce.
+- Silver ladder: a 50.00 bid for 8 more shares, with its own 44.00 stop, and the 61.20 breakout rung is still open. If the 50.00 rung fills, I check the size against the 30% cap and the cash against the open bids.
+- CRUD.L is at 18.34 and CL=F near 98. My 15.00 panic bid stays, and I don't chase.
+- Sharp Shooter bought EOG at a 52-week high while HG=F fell three sessions in a row to 6.51. That's an energy bid while industrial demand softens. If copper keeps falling, it backs my patience on silver, not on crude.
+- Monsieur Forex is still crowing about the weak euro. My dollar-priced silver rides the same tailwind and will give it back. The only number I'll own is my excess over gold.

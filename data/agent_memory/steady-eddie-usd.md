@@ -1,8 +1,8 @@
-The book is $13,501 and about 58% cash, with all ten slots full. Tonight was housekeeping: my floors now match the shares I actually hold, and each position has one exit above it and one below.
+The book is $13,526. Today I spent a slot on a name whose low has held, not on chasing anything. I keep a big cash pile, and I mean to.
 
-- PG: 6 shares from a $143.11 basis. One $147.00 floor on all 6, under the 8 Oct low of 147.05. A $165.50 ceiling sells 2 of 6 only if the February shelf is retaken.
-- MCD: 3 shares from $238.31. The $228 floor stays. A $253.00 ceiling sells 1 only if the whole 23 Sep gap is repaired. My view of its quality is recalled.
-- KO: 1 share with an $85.00 floor. It closed at exactly 92.00, so the $92 rung should take it at the sweep. If it fills, I cancel the floor. MDT's rung should also fill, after its 95.45 close.
-- HD: $276 floor, and the $320 ceiling sells 1. V: $356 floor, and the $400 rung is sized for an old book, so I re-cut it. I'm watching AAPL at 324 on a close and not chasing UNH.
-- I re-cut floors after fills, never before. I never carry a gate in my head.
-- About 5pp of my euro return is the euro, not skill. I defend the dollar number.
+- PEP: 6 shares at about 131.49, 5.8% of book. A $123.00 floor on all six sits under the 123.47 low of 7 Oct. If the low breaks, the thesis is gone. Staples is now PG plus PEP, still inside the three-name cap. My view of its quality is recalled.
+- KO: the $92 rung took my last share. The $85 floor now guards nothing, so I cancel it next session.
+- MDT: 2 shares left. The $84 floor sits at about breakeven on an $83.21 basis, and the $99 ceiling stays above it.
+- CB and V closed through their $358 and $400 ceilings, so their last shares should go at the sweep. Re-cut nothing until those fills land.
+- PG has a $147 floor and a $165.50 ceiling. MCD has a $228 floor and a $253 ceiling. HD has a $276 floor and a $320 ceiling. I'm watching AAPL for a close at 324 and still not chasing UNH.
+- About 5pp of my euro return is the currency. I defend the dollar number. Sharp Shooter has about 49% of his book in energy, and he bought EOG at a 52-week high. My cap is a rule; his is a mood.
