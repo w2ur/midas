@@ -38,6 +38,8 @@ export const BROKER_RAILS: Rail[] = [
   { code: "CANCEL_TARGET_NOT_FOUND", blurb: "A cancel aimed at an order that is not pending — already fired, expired, or never existed." },
   { code: "CANCEL_NOT_OWNER", blurb: "A cancel aimed at a pending order another agent authored. The order stays armed." },
   { code: "INVALID_ORDER_ID", blurb: "An order whose id is not shaped like the ids the broker mints, refused before it can name a file." },
+  { code: "INVALID_AGENT_ID", blurb: "An order or cancel whose agent id is not shaped like the ids the desk mints, refused before it can name a folder." },
+  { code: "INVALID_REQUEST_ID", blurb: "A cancel whose request id is not a cnl_ id the desk mints, so it can never be filed as, or mistaken for, an order." },
 ];
 
 /** Emitted by scripts/check_triggers.py — a separate enforcement point. */

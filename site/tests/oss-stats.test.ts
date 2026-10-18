@@ -6,14 +6,15 @@ import { currentDayNumber } from "../src/lib/session";
 import { cadenceStats } from "../src/lib/cadence";
 
 describe("rails registry", () => {
-  it("carries the 24 broker codes", () => {
+  it("carries the 26 broker codes", () => {
     // 15 -> 19 on 2026-08-07 (reliability review W1): CURRENCY_UNRESOLVED,
     // PRICE_IMPLAUSIBLE, TRIGGER_LEVEL_IMPLAUSIBLE, VALUATION_UNAVAILABLE.
     // 19 -> 20 on 2026-09-25: TICKER_DENIED (the Manager's PRIIPs deny-list).
     // 20 -> 22 on 2026-10-03: INSTRUMENT_SUSPENDED, STALE_PRICE.
     // 22 -> 24 on 2026-10-18: CANCEL_NOT_OWNER, INVALID_ORDER_ID.
+    // 24 -> 26 on 2026-10-18: INVALID_AGENT_ID, INVALID_REQUEST_ID.
     // tests/test_reason_codes.py binds this file to the engine's own set.
-    expect(BROKER_RAILS).toHaveLength(24);
+    expect(BROKER_RAILS).toHaveLength(26);
   });
 
   it("carries the single watcher code", () => {
