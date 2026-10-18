@@ -2,8 +2,9 @@
 
 FastAPI service that runs strategy backtests on demand. Wraps the existing
 `engine/` codebase. Deployed to Google Cloud Run as a standalone service,
-consumed by the backtester tool on `william.revah.paris` via a Netlify
-proxy.
+deliberately left deployed and gated by its app secret. It has had no
+consumer since 2026-10-11, when the `william.revah.paris` Netlify proxy that
+called it was removed.
 
 ## Local dev
 
@@ -131,8 +132,8 @@ The pipeline (defined in `/cloudbuild.yaml`):
 2. Pushes the image to
    `europe-west1-docker.pkg.dev/$PROJECT_ID/backtester/midas-backtester`.
 3. Deploys it to Cloud Run reachable over IAM (`--allow-unauthenticated`) —
-   required so the Netlify proxy, which is not a GCP principal, can reach it
-   without a long-lived service-account key — with `BACKTESTER_SECRET`
+   chosen so a caller that is not a GCP principal needs no long-lived
+   service-account key — with `BACKTESTER_SECRET`
    injected from Secret Manager (`backtester-secret`) as the real lock:
    `/run` and `/catalog` require a matching `X-Backtester-Secret` header,
    alongside sensible resource defaults (1 GiB / 1 vCPU / 5 min timeout /
@@ -140,12 +141,11 @@ The pipeline (defined in `/cloudbuild.yaml`):
    secret and is reachable directly.
 
 Cloud Build prints the deployed service URL near the end of the output —
-something like `https://midas-backtester-xxxxxx-ew.a.run.app`. Save it; the
-site needs it on Vercel as `PUBLIC_BACKTESTER_URL`.
+something like `https://midas-backtester-xxxxxx-ew.a.run.app`.
 
 `/run` and `/catalog` answer only requests carrying `X-Backtester-Secret:
-$BACKTESTER_SECRET`; the `william.revah.paris` Netlify proxy is the sole
-holder of that secret.
+$BACKTESTER_SECRET`. The secret lives in Secret Manager (`backtester-secret`);
+no deployed component holds it today.
 
 ## Smoke-test the deployed service
 
