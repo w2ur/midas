@@ -36,6 +36,7 @@ Rejection reason codes:
 - CANCEL_NOT_OWNER: cancel request targeted a pending order another agent authored;
   pending file left in place
 - INVALID_ORDER_ID: outbox order whose order_id is not shaped like an id the broker mints
+  (filed under an id derived from the line, never under the junk id)
 - INVALID_AGENT_ID: order or cancel whose agent_id is not shaped like an id the broker mints
   (it becomes a folder name under portfolios/)
 - INVALID_REQUEST_ID: cancel whose request_id is not a cnl_* id in the minted alphabet
@@ -1018,11 +1019,16 @@ def fill_day(
 
     market_orders: list[Order] = []
     for o in orders:
-        if o.order_id in already_processed:
-            continue
         if not is_valid_order_id(o.order_id):
-            _emit(_reject(o.order_id, "INVALID_ORDER_ID"))
-            already_processed.add(o.order_id)
+            # Never filed under the junk id itself: it may be a path, a request
+            # id, or not even hashable. Same id derivation as the other refusals
+            # of an untrusted identity, so a resume refuses it once.
+            sink = _derived_id("invalid_order", o.order_id, o.agent_id, o.ts.isoformat())
+            if sink not in already_processed:
+                _emit(_reject(sink, "INVALID_ORDER_ID"))
+                already_processed.add(sink)
+            continue
+        if o.order_id in already_processed:
             continue
         if not is_valid_agent_id(o.agent_id):
             # The agent id becomes a folder name (portfolios/<id>/), so a path
