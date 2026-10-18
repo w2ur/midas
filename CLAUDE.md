@@ -4,7 +4,7 @@
 Personal AI fund manager that autonomously analyzes markets, makes investment decisions, and manages portfolios. Two execution engines: bt (Python) for deterministic strategies, Claude agents for analytical ones. Public narrative at `midas.revah.paris` (Astro site, Ring 3a). Streamlit dashboard for local exploration. Backtester API on Google Cloud Run.
 
 ## Tech Stack
-- Python 3.12+, bt (backtesting), yfinance (market data), pandas-ta (indicators)
+- Python 3.12 or 3.13 (`requires-python` is capped below 3.14 until pandas-ta is gone), bt (backtesting), yfinance (market data), pandas-ta (indicators)
 - Streamlit + Plotly (dashboard), pytest (testing)
 - Claude Code agents for analytical trading strategies
 
@@ -31,7 +31,7 @@ sandbox). Pinning the full transitive closure makes CI reproducible — a
 freshly-published wheel can't break a previously-green run without an explicit
 lock bump (origin: the 2026-06-28 pandas 3.0.4 segfault that an unpinned `>=`
 let in). To add/change a dep: edit `requirements.in`, then regenerate with
-`pip-compile --strip-extras -o requirements.txt requirements.in` (or seed from
+`uv pip compile requirements.in --python-version 3.12 --python-platform linux --no-header --no-annotate --strip-extras -o requirements.txt` (keeps the existing pins, then restore the header comment; or seed from
 the `Successfully installed …` line of a green CI run), and commit both files.
 
 ## Testing
