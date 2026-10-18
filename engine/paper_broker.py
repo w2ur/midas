@@ -1207,7 +1207,12 @@ def _execute_triggered_order(
         return None
 
     if not is_valid_agent_id(order.agent_id):
-        f = _reject(order.order_id, "INVALID_AGENT_ID")
+        # Filed under an id derived from the order, like the same refusal in
+        # fill_day: the agent id is untrusted, and so is the order id beside it.
+        f = _reject(
+            _derived_id("invalid_agent", order.order_id, order.agent_id),
+            "INVALID_AGENT_ID",
+        )
         f.trigger_fired = True
         return f
 
