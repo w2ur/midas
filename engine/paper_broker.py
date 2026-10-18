@@ -29,6 +29,8 @@ Rejection reason codes:
 - APPLY_TRADE_FAILED: PortfolioManager.apply_trade raised; broker continues with next order
 - TRIGGER_NO_EXPIRY: conditional order without an expires date (agent error)
 - CANCELLED_BY_AGENT: cancel request matched a pending order; pending file removed
+  (the only cancel outcome filed under the target's id; every other is filed
+  under the cancel's own request id)
 - CANCEL_TARGET_NOT_FOUND: cancel request targeted an order_id not in pending
   (or one that is not shaped like an id the broker mints)
 - CANCEL_NOT_OWNER: cancel request targeted a pending order another agent authored;
@@ -725,10 +727,10 @@ def _read_outbox_lines(
                 orders.append(Order.from_dict(raw))
             except (ValueError, KeyError, TypeError) as exc:
                 logger.warning("Invalid outbox order on line %d: %s", idx, exc)
-                oid = raw.get("order_id") if isinstance(raw, dict) else None
-                invalid_ids.append(
-                    oid or f"malformed_{trade_date.isoformat()}_{idx:03d}"
-                )
+                # Never the line's own order_id: it is agent-authored, so a bad
+                # line claiming another agent's future id would file a row under
+                # it and skip that order when it arrives.
+                invalid_ids.append(f"malformed_{trade_date.isoformat()}_{idx:03d}")
 
     return orders, invalid_ids
 
@@ -941,8 +943,8 @@ def fill_day(
     # are allowed to produce multiple inbox lines (the first removes/rejects,
     # subsequent ones see the pending file already gone → CANCEL_TARGET_NOT_FOUND).
     # The cross-run idempotency guard (checking already_processed) handles re-runs:
-    # on the second run, the target_order_id will already be in the inbox and the
-    # cancel entries are skipped.
+    # on the second run, a cancel that succeeded has its target_order_id in the
+    # inbox and any other has its request_id there, so the entries are skipped.
     for cancel in read_cancels(trade_date, cancels_dir=cancels_dir):
         if (
             cancel.target_order_id in already_processed
@@ -950,14 +952,20 @@ def fill_day(
         ):
             continue
         reason = _cancel_outcome(cancel, pending_dir=pending_dir)
-        # A refused cancel is recorded under the REQUEST id, never the target's:
-        # `execute_triggered_order` skips any order id already in the inbox, so a
-        # rejection filed under the target would let one agent disarm another's
-        # order just by asking, and a junk target id has no business in the ledger.
-        refused = reason == "CANCEL_NOT_OWNER" or not is_valid_order_id(
-            cancel.target_order_id
+        # Only a cancel that actually removed the pending file is filed under the
+        # TARGET id. Every other outcome is filed under the REQUEST id: order ids
+        # are predictable (`ord_{date}_{agent}_{seq}`) and `execute_triggered_order`
+        # skips any order id already in the inbox, so a "not found" row filed under
+        # a target would let one agent pre-file a row under another's future order
+        # and silently disarm it. A junk target id has no business in the ledger.
+        _emit(
+            _reject(
+                cancel.target_order_id
+                if reason == "CANCELLED_BY_AGENT"
+                else cancel.request_id,
+                reason,
+            )
         )
-        _emit(_reject(cancel.request_id if refused else cancel.target_order_id, reason))
 
     # --- Pass 2: read outbox and split conditional vs market ---
     orders, invalid_ids = _read_outbox_lines(trade_date, outbox_dir=outbox_dir)
