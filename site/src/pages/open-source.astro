@@ -133,9 +133,11 @@ function fmtInt(n: number): string {
       Every fill from 2026-06-29 onward is stamped with <code>executed_sha</code> — the git
       commit the broker was running when it executed (the 149 fills from the experiment's first
       ten weeks, 2026-04-17 to 2026-06-27, predate stamping and are not re-derivable this way).
-      Prices and index membership are committed to the repository, and a trading
-      session makes no outbound HTTP calls, so checking out that commit re-derives the exact
-      order and the exact price store the broker saw. Nothing about a stamped past decision
+      Prices, index membership and orders are committed to the repository, and the
+      broker's fill path makes no outbound HTTP calls, so checking out that commit re-derives
+      the exact order and the exact price store the broker saw. (An agent may run a capped
+      web search while it decides; that is recorded as self-reported provenance and is not
+      re-derivable.) Nothing about a stamped past decision
       depends on what a data provider says today.
     </p>
     <pre class="os-code"><code>git checkout &lt;executed_sha&gt;   # the desk, exactly as it was at fill time</code></pre>
