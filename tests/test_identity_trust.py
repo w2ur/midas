@@ -235,18 +235,21 @@ def test_a_cancel_whose_request_id_is_the_victims_order_id_does_not_disarm_it(de
 
 
 @pytest.mark.parametrize("agent_id", ["../x", "", "a b", None, 7, "x" * 200])
-def test_a_cancel_with_a_bad_agent_id_is_refused_under_its_request_id(desk, agent_id):
-    # Regression: 269dcab68
+def test_a_cancel_with_a_bad_agent_id_is_refused_under_a_derived_id(desk, agent_id):
+    # Regression: 269dcab68 (refused, not crashed); filed under a derived id since
+    # the identity-trust follow-up, so the README's claim holds for this code too.
     victim_id = "ord_2026-05-10_satoshi_003"
     save_pending(_conditional(victim_id), pending_dir=desk["pending"])
     append_cancel(TRADE_DATE, _cancel("cnl_2026-05-17_x_001", agent_id, victim_id))
 
     fills = fill_day(TRADE_DATE, desk["pm"])
 
-    assert [(f.order_id, f.reason) for f in fills] == [
-        ("cnl_2026-05-17_x_001", "INVALID_AGENT_ID")
-    ]
+    (row,) = fills
+    assert row.reason == "INVALID_AGENT_ID"
+    assert row.order_id != "cnl_2026-05-17_x_001"
+    assert is_valid_request_id(row.order_id)
     assert [o.order_id for o in list_pending(pending_dir=desk["pending"])] == [victim_id]
+    assert fill_day(TRADE_DATE, desk["pm"]) == []  # derived id keeps resume idempotent
 
 
 def test_request_ids_and_order_ids_live_in_disjoint_namespaces():
