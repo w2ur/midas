@@ -946,10 +946,13 @@ def fill_day(
     # on the second run, a cancel that succeeded has its target_order_id in the
     # inbox and any other has its request_id there, so the entries are skipped.
     for cancel in read_cancels(trade_date, cancels_dir=cancels_dir):
+        # Shape first, membership second: a dict or list target is unhashable, so
+        # testing it against the set raised TypeError and one malformed cancel
+        # crashed fill_day for every agent, on every resume.
         if (
-            cancel.target_order_id in already_processed
-            or cancel.request_id in already_processed
-        ):
+            is_valid_order_id(cancel.target_order_id)
+            and cancel.target_order_id in already_processed
+        ) or cancel.request_id in already_processed:
             continue
         reason = _cancel_outcome(cancel, pending_dir=pending_dir)
         # Only a cancel that actually removed the pending file is filed under the
