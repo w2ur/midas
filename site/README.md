@@ -43,3 +43,5 @@ The site reads, never writes, the following sibling paths at build time:
 Display metadata (name / archetype / currency) lives in `src/lib/roster.ts`.
 
 Deployed automatically by Vercel on every push to `main`, including the daily-session commits.
+
+`vercel.json` sets the static header baseline: `nosniff`, a `Referrer-Policy`, and framing refused through both `X-Frame-Options` and a CSP carrying `frame-ancestors` only. There is deliberately no full CSP. `tests/security-headers.test.ts` pins it.
