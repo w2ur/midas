@@ -36,6 +36,8 @@ export const BROKER_RAILS: Rail[] = [
   { code: "TRIGGER_NO_EXPIRY", blurb: "A conditional order with no expiry date. Expiry is mandatory." },
   { code: "CANCELLED_BY_AGENT", blurb: "The agent cancelled its own pending order before it fired." },
   { code: "CANCEL_TARGET_NOT_FOUND", blurb: "A cancel aimed at an order that is not pending — already fired, expired, or never existed." },
+  { code: "CANCEL_NOT_OWNER", blurb: "A cancel aimed at a pending order another agent authored. The order stays armed." },
+  { code: "INVALID_ORDER_ID", blurb: "An order whose id is not shaped like the ids the broker mints, refused before it can name a file." },
 ];
 
 /** Emitted by scripts/check_triggers.py — a separate enforcement point. */
