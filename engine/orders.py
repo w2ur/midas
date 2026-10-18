@@ -59,6 +59,12 @@ class Order:
     expires: str | None = None
 
     def __post_init__(self) -> None:
+        # Identifier-like fields are read from a file an agent writes. A list or
+        # number here used to reach ``.strip()`` in the deny-list pass and crash the
+        # batch for every agent; refused at construction it becomes a row.
+        for name in ("ticker", "currency"):
+            if not isinstance(getattr(self, name), str):
+                raise ValueError(f"Order.{name} must be a string")
         if not (self.shares > 0):
             raise ValueError(f"Order.shares must be > 0, got {self.shares}")
         if self.action not in ("BUY", "SELL"):

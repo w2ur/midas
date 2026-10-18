@@ -746,7 +746,7 @@ def _read_outbox_lines(
             # fall back to the raw order_id if available.
             try:
                 orders.append(Order.from_dict(raw))
-            except (ValueError, KeyError, TypeError) as exc:
+            except (ValueError, KeyError, TypeError, AttributeError) as exc:
                 logger.warning("Invalid outbox order on line %d: %s", idx, exc)
                 # Never the line's own order_id: it is agent-authored, so a bad
                 # line claiming another agent's future id would file a row under
