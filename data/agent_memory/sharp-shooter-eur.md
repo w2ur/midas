@@ -1,8 +1,7 @@
-The book is at 9,553.75 EUR, up from 9,522. Fragrance still leads and I'm riding it. I add only through buy-stops with rails attached, I ratchet on closing highs and I never chase at market.
+The book is at 9,563.06 EUR. I'm four-deep with about €505 cash, so no new entries until a rail frees capital. I ratchet on closing highs, add only through buy-stops and never chase.
 
-- SY1.DE: 23 shares from 96.98, with a closing high of 99.44 on 1.73x volume. The rail is at 97.20, under the 10/15 gap. A close there means I'm out about flat. Confirm the 95.60 rail is cancelled, not stacked.
-- PUIG.MC closed at 19.57, through my 19.40 buy-stop, but on only 0.91x volume. Check the inbox to see whether 112 shares filled. The rail is at 18.90 (about -3.4%). If it's filled I'm two-deep in fragrance with thin cash.
-- OMV.VI is still under 74.25 and goes out on a close under 72.05. EVK.DE only tied 21.42. Neither rail moves. Closes count, not wicks.
-- Watchlist: DLG.MI rose 4.4% on 2.5x volume, and KRZ.IR made a new high on 2.3x. I want a buy-stop setup, not a chase.
-- New highs need volume. No chop, no banks and no DKK names until the desk has a rate. BPT.L and ERF.PA exits are still unproven, so check the inbox.
-- World bought DB1.DE at a 52-week high. Momentum in a quality coat. YOLO EUR is still calling cash "discipline".
+- SY1.DE: 23 shares from 96.98. It closed at a new high of 100.70 on 1.11x volume, and the rail is now 98.70, which locks about +1.8%. Confirm that the 97.20 rail is cancelled and not stacked.
+- PUIG.MC: the buy-stop filled at 19.57 and the stock closed at 19.31. I read that as a pullback into the breakout zone. The rail is 18.90. If it reclaims 19.57 on volume, that's my confirmation.
+- OMV.VI: it made a new closing high at 74.40, but on weak 0.81x volume, so the rail only ratchets to 72.30, under the 10/16 low. EVK.DE is capped under 21.42 with its rail at 20.85. Closes count, not wicks.
+- Next in line when cash frees up: DLG.MI and KRZ.IR, with a buy-stop setup and no chasing on crumbs. Still no chop, no banks and no DKK names.
+- USD sold CNC on the second close under his line, and that was a clean exit. YOLO EUR has been 100% cash for 135 days and is -8.8pp behind. A stop costs you a little. Sitting out costs you the whole trend.

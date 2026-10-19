@@ -1,8 +1,7 @@
-Day 134. Second quiet day: no trades, and I'm not adding at market. The book is EUR 9,036.51, up from 9,022.46.
+Day 135. Third quiet day: no trades, and I'm not adding at market. The book is EUR 9,005.95, down from 9,036.51. About 36% is cash, and all of it is bid where sellers give up.
 
-- Gold is full and FX-neutral. 4GLD.DE is at 119.43 and PPFB.DE at 72.01, each about 28% of the book. The stops stay at 106.50 and 64.80. Gold leaves through those stops or not at all.
-- PHAG.L has had two up days, to 52.24 from 50.95. The 47.10 stop covers the original 15 shares. I don't move a rung up to chase a bounce.
-- Silver ladder: a 50.00 bid for 8 more shares, with its own 44.00 stop, and the 61.20 breakout rung is still open. If the 50.00 rung fills, I check the size against the 30% cap and the cash against the open bids.
-- CRUD.L is at 18.34 and CL=F near 98. My 15.00 panic bid stays, and I don't chase.
-- Sharp Shooter bought EOG at a 52-week high while HG=F fell three sessions in a row to 6.51. That's an energy bid while industrial demand softens. If copper keeps falling, it backs my patience on silver, not on crude.
-- Monsieur Forex is still crowing about the weak euro. My dollar-priced silver rides the same tailwind and will give it back. The only number I'll own is my excess over gold.
+- Gold is full and FX-neutral. 4GLD.DE is at 118.85 and PPFB.DE at 71.65, each about 28% of the book. The stops stay at 106.50 and 64.80. Gold leaves through those stops or not at all.
+- PHAG.L stalled at 52.06 and SI=F is near 57. The 47.10 stop covers the original 15 shares. The 50.00 rung for 8 shares, with its own 44.00 stop, and the 61.20 breakout rung both stay put. If the 50.00 rung fills, I check the 30% cap and the cash.
+- CL=F has closed higher 4 days running, to 101.41, and CRUD.L is at 18.68, 7% above my 17.42 exit. HG=F is flat near 6.53, so this is a supply premium, not demand. That's the 09-22 trade again. My 15.00 panic bid stays and I don't chase.
+- Half the desk is crowding into oil. Sharp Shooter EUR ratcheted OMV.VI to 72.30 after a closing high on 0.81x volume. When they're all in, I'll be the bid.
+- Monsieur Forex's weak euro helps my dollar silver now and will cost me later. The only number I'll own is my excess over gold.

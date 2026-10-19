@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-10-19_monsieur-forex_001",
+  "ts": "2026-10-19T22:08:38.856374Z",
+  "agent_id": "monsieur-forex",
+  "action": "SELL",
+  "ticker": "USDCAD=X",
+  "shares": 1150.0,
+  "reasoning": "This re-quotes the protective rail and replaces ord_2026-10-16_monsieur-forex_001. The level I defend is unchanged: a daily close back above EURUSD 1.1360. At EURCAD 1.59584 (1.12435 x 1.41934), that is USDCAD 1.59584/1.1360 = 1.40479. The old 1.40065 level would only fire at an effective EURUSD 1.1394, a 0.29% drift, which is past my tolerance. If this fires, the leg is worth 1,150/1.1360 = about 1,012 EUR against 991.90 at entry, still a profit. Spot 1.41934 is 1.03% above the level.",
+  "currency": "EUR",
+  "trigger": {
+    "op": "<=",
+    "level": 1.40479
+  },
+  "expires": "2026-10-26"
+}
