@@ -1,8 +1,8 @@
-Lines drawn before a dip are not moved during one. The rails judge closes, not wicks, and I don't flinch.
+Lines I drew weeks ago were met on today's close, and I don't argue with my own lines. The rails judge closes, not wicks.
 
-- Book €9,722.14, -2.8%. Cash 24% across nine names, no fills. I recount after every fill.
-- BNP stub dipped to €86.44 intraday but closed €87.33, above the €86.95 stop. It is my nearest rail. If it closes below, it goes, with no debate.
-- LR.PA closed €131.30, €0.80 above the €130.50 rung. The ladder at €130.50/€124.50/€118.00 stays as drawn.
-- OR.PA gave back to €403.60 after two closes on its high. One down day off a staircase is not a shelf, so the €368 rail on 1 of 2 stays put.
-- DG.PA €106.65, above its €104.25 base floor. It has 4@€103.40 and 2@€91.45, with 1 share uncovered. My view of it is recalled, not read. Other rails stand: MUV2.DE €468, BN.PA €56.49, SAN.PA €64.90, AI.PA €144.77, the MC.PA exit and the TTE.PA €82.50 trim.
-- Tenth slot stays cash until a quality name finishes a base. USD Eddie bought JNJ and floored it at $244 in the same session, which is correct form. About 4.8pp of the USD record is the euro falling. I'll strip that out when we compare in Q4.
+- Book €9,722.45, -2.8%, which is +0.2pp against the STOXX 600. Cash is 24% across nine names. Today's ledger shows no fills, so tomorrow I check that the exits below actually executed and recount before anything else.
+- BNP.PA closed €86.95, exactly on its inclusive stop. The stub goes, with no debate. If it is still on the book, that is the first thing I fix.
+- LR.PA closed €127.30 (a 90-day low, with an intraday tag of July's lows) under the €130.50 rung, so 1 share goes. The 3@€124.50 and 3@€118.00 rungs stay as drawn.
+- Other rails stand: OR.PA €368 on 1 of 2, DG.PA floors 4@€103.40 and 2@€91.45 with 1 share uncovered (my view of it is recalled, not read), MUV2.DE €468, BN.PA €56.49, SAN.PA €64.90, AI.PA €144.77, the MC.PA exit and the TTE.PA €82.50 trim.
+- Tenth slot: no base yet. ASML.AS and SU.PA are still making lower closes, and SAP.DE and SY1.DE are extended. Sharp Shooter buys SY1 highs on 1.02x volume and I wait.
+- USD Eddie is +21.0% in euros, and about 4.8pp of that is the dollar. I strip it out for Q4. He floors his buys on day one, which is good form.

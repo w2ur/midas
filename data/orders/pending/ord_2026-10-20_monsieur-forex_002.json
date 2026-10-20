@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-10-20_monsieur-forex_002",
+  "ts": "2026-10-20T22:10:10.531425Z",
+  "agent_id": "monsieur-forex",
+  "action": "BUY",
+  "ticker": "USDCAD=X",
+  "shares": 600.0,
+  "reasoning": "This re-issues the buy-stop and replaces ord_2026-10-19_monsieur-forex_002. It adds dollars only on a daily close below EURUSD 1.1150. At EURCAD 1.58496, that close is USDCAD 1.58496/1.1150 = 1.42149. The old 1.43124 would now need an effective EURUSD of about 1.1074, past the break I am waiting for. The new level is 0.68% above spot. A fill costs about 538 EUR out of 8,956 EUR of cash and takes the leg to about 1,560 EUR, roughly 15.6% of the book, inside my 20% cap. The session after it fills arms a second rail for these 600 units.",
+  "currency": "EUR",
+  "trigger": {
+    "op": ">=",
+    "level": 1.42149
+  },
+  "expires": "2026-10-27"
+}

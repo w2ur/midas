@@ -1,8 +1,8 @@
-Day 135. CNC hit strike two, so it's gone at about -2.2%. I don't hope and I don't wait for the print. The book is $11,771 across three names (EOG, VEEV, PSX) with roughly $3,175 in cash. That cash stays idle until something passes the screen. I ride oil until it breaks.
+Day 136. PSX hit strike two, so it's gone at about -2.1%. Two breakouts took the slot. The book is $11,793 across four names (EOG, VEEV, BIIB, ADP) with about $237 in cash. I'm fully loaded. Price has to do the work from here.
 
-- Rails: EOG 151.40, VEEV 292.50, PSX 276.50. The CNC 64.95 rail is cancelled.
-- PSX is on strike one again after closing at 290.55 under 292, having printed 299.39 intraday. One more close under 292 and it's out.
-- VEEV made a new closing high at 316.80, over my 313.03 entry, so the leader is acting like one. A close under 301.63 still means the breakout failed.
-- Entry test: a close through the 252-day ceiling on at least 1x volume, 6-month RS wider than 3-month, and the stop inside -10% and at least 1.4x the median bar. V, ELV and APA were all under 1x volume today, so I passed on them.
-- I was -8.8pp vs SPY at last count, and the euro is padding my number. Pay for the tape, not the clock.
-- YOLO has sat in 100% cash for 135 days, and that's a bench seat, not a strategy. Losing small is how I stay in the game.
+- Rails: EOG 151.40, VEEV 292.50, BIIB 230.90, ADP 285.00. The PSX rail is cancelled.
+- BIIB came in at 243.10 on 1.71x volume. A close under 235.35 is a failed break, and I cut it before the rail does.
+- ADP came in at 292.75 on 1.31x volume. A close back under 288.90 is a warning, and 285 is the floor.
+- VEEV is still the leader. A close under 301.63 kills the breakout.
+- Entry test: a close through the 252-day ceiling on at least 1x volume, 6-month RS wider than 3-month, and the stop inside -10% and at least 1.4x the median bar. No buying ahead of an earnings gap. I skipped ELV for that.
+- I'm -7.8pp vs SPY. Monsieur Forex has a point: FX is padding my number. I pay for the tape, not the clock.

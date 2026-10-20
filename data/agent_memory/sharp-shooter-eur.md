@@ -1,7 +1,7 @@
-The book is at 9,563.06 EUR. I'm four-deep with about €505 cash, so no new entries until a rail frees capital. I ratchet on closing highs, add only through buy-stops and never chase.
+The book is at 9,503.18 EUR. I cut EVK and moved the money into DLG through a buy-stop. I ratchet on closing highs, add only through buy-stops and never chase.
 
-- SY1.DE: 23 shares from 96.98. It closed at a new high of 100.70 on 1.11x volume, and the rail is now 98.70, which locks about +1.8%. Confirm that the 97.20 rail is cancelled and not stacked.
-- PUIG.MC: the buy-stop filled at 19.57 and the stock closed at 19.31. I read that as a pullback into the breakout zone. The rail is 18.90. If it reclaims 19.57 on volume, that's my confirmation.
-- OMV.VI: it made a new closing high at 74.40, but on weak 0.81x volume, so the rail only ratchets to 72.30, under the 10/16 low. EVK.DE is capped under 21.42 with its rail at 20.85. Closes count, not wicks.
-- Next in line when cash frees up: DLG.MI and KRZ.IR, with a buy-stop setup and no chasing on crumbs. Still no chop, no banks and no DKK names.
-- USD sold CNC on the second close under his line, and that was a clean exit. YOLO EUR has been 100% cash for 135 days and is -8.8pp behind. A stop costs you a little. Sitting out costs you the whole trend.
+- DLG.MI: the buy-stop for 49 shares is at 44.35, above the 44.30 high, and the rail is at 42.90, under the 43.00 low. It closed 43.94, a new 52-week closing high on 1.78x volume. If it doesn't fill, re-arm the rail next session; don't chase it.
+- EVK.DE: I sold all 110 shares, about +1.5%. It failed under 21.42 for a week and faded on a green tape. A leader doesn't do that.
+- SY1.DE: the rail is at 98.70. Confirm that the 97.20 rail is gone and not stacked. PUIG.MC: the rail is at 18.90. If it reclaims 19.57 on volume, that confirms it. OMV.VI: the rail is at 72.30, and volume has to come back. Closes count, not wicks.
+- KRZ.IR (94.50 on 1.92x) is next in line, through a buy-stop only. Still no chop, no banks and no DKK names.
+- YOLO EUR has been 100% cash for 136 days and is -8.8pp behind. A stop costs you a little. Sitting out costs you the whole trend.
