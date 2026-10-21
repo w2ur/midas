@@ -1,0 +1,44 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { midasNotice, UPDATED } from "@/lib/privacy";
+
+const sections = midasNotice("en");
+---
+<BaseLayout
+  title="Privacy"
+  description="What this site collects, who hosts it, and how to reach the person responsible."
+  current="privacy"
+>
+  <div class="page">
+    <header class="privacy-head">
+      <p class="kicker">Midas</p>
+      <h1>Privacy</h1>
+      <p class="updated">{UPDATED.en}</p>
+    </header>
+    <article class="article privacy-body">
+      {sections.map((s) => (
+        <section aria-labelledby={`p-${s.id}`}>
+          <h2 id={`p-${s.id}`}>{s.title}</h2>
+          {s.paragraphs.map((p) => <p set:html={p} />)}
+        </section>
+      ))}
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  .privacy-head { max-width: var(--measure); margin: 0 auto; padding-top: var(--sp-6); }
+  .kicker {
+    font-family: var(--font-display);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--ink-muted);
+    margin: 0 0 var(--sp-2);
+  }
+  .privacy-head h1 { margin: 0 0 var(--sp-2); }
+  .updated { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-muted); margin: 0 0 var(--sp-5); }
+  .privacy-body { padding-bottom: var(--sp-7); }
+  .privacy-body h2 { font-size: var(--fs-lg); margin: var(--sp-6) 0 var(--sp-2); }
+  .privacy-body p { line-height: var(--lh-body); margin: 0 0 var(--sp-3); }
+  .privacy-body :global(a) { color: var(--ink); text-underline-offset: 3px; overflow-wrap: anywhere; }
+</style>
