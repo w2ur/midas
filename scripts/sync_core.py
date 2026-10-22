@@ -128,6 +128,10 @@ LIVE_ONLY_TESTS = {
     # Same shape: drives scripts/check_session_freshness.py, the session-integrity
     # guard. Live CI infrastructure, not in CORE_SCRIPTS.
     "test_session_freshness.py",
+    # Same shape: drives scripts/check_leaderboard_consistency.py (and reads this
+    # repo's .github/), the session-integrity guard that the bundle and
+    # current.json carry one leaderboard. Not in CORE_SCRIPTS.
+    "test_check_leaderboard_consistency.py",
     # Imports app/, the Streamlit dashboard. Core ships the engine and the
     # orchestration, not this desk's local UI.
     "test_app_formatting.py",

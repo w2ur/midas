@@ -2,7 +2,7 @@ name: session-integrity
 
 # Enforces the load-bearing pipeline rules documented in CLAUDE.md:
 #  - A daily-session commit that publishes posts/blog/output MUST also
-#    rewrite agent journals (Step 8) and refresh baselines (Step 9).
+#    rewrite agent journals (Step 8) and refresh baselines (Step 4c).
 #    Step numbers match docs/triggers/weekday-session.md — the prose an
 #    operator reads next after this error. They disagreed until 2026-08-07,
 #    so the two diagnosis paths pointed at different steps.
@@ -316,23 +316,23 @@ jobs:
             echo "::error::Session commit publishes posts/blog/output but does NOT rewrite data/agent_memory/*.md (Step 8 skipped)."
             fail=1
           fi
-          # An empty diff is NOT evidence that Step 9 was skipped.
+          # An empty diff is NOT evidence that Step 4c was skipped.
           # A published baseline row is never rewritten (`merge_baseline_series`
           # keeps it and classifies a mismatch; `advance_coin_flip` appends
-          # new dates only), so a Step 9 that runs against a series already
+          # new dates only), so a Step 4c that runs against a series already
           # carrying the session's date writes nothing
           # — which is byte-identical, in the diff, to never having run. That
           # came apart on 2026-08-07: `a4dc9dce2 [restate]` rebuilt every
           # series earlier the same day, and both this guard and the inline
-          # copy in auto-merge-session failed a session whose Step 9 was
+          # copy in auto-merge-session failed a session whose baselines step was
           # correct. Ask the published state instead: a genuine skip leaves the
           # baselines behind the snapshots (the Apr 25 shape), a correct no-op
           # leaves them level. Stdlib only — no setup-python needed.
           if [[ $touches_baselines -eq 0 ]]; then
             if python3 scripts/check_session_freshness.py; then
-              echo "data/baselines/ unchanged, but every series is level with its snapshots — Step 9 ran and correctly wrote nothing."
+              echo "data/baselines/ unchanged, but every series is level with its snapshots — Step 4c ran and correctly wrote nothing."
             else
-              echo "::error::Session commit publishes posts/blog/output and the baseline series lag their snapshots (Step 9 skipped)."
+              echo "::error::Session commit publishes posts/blog/output and the baseline series lag their snapshots (Step 4c skipped)."
               fail=1
             fi
           fi
@@ -350,13 +350,34 @@ jobs:
             echo "::warning::Session commit does NOT write data/leaderboard/current.json in this commit — non-fatal (derived state; lands in a follow-up '… — leaderboard' commit or via the watcher)."
           fi
 
+          # One leaderboard per day (#116). The bundle and current.json are written
+          # from the same rows, so when this commit carries both they must be the
+          # same list. Read at $commit, not at the checkout: on the fallback path
+          # HEAD is a merge whose tree can already hold a newer current.json (the
+          # watcher's), which says nothing about this session. When the commit
+          # carries no current.json the warning above is the whole answer. An
+          # exit of 2 (a file unreadable) fails too: unknown is not consistent.
+          bundle=$(echo "$files" | grep -E '^data/output/[0-9]{4}-[0-9]{2}-[0-9]{2}\.json$' | sort | tail -n 1 || true)
+          if [[ -n "$bundle" && $touches_leaderboard -eq 1 ]] \
+            && git cat-file -e "$commit:$bundle" 2>/dev/null \
+            && git cat-file -e "$commit:data/leaderboard/current.json" 2>/dev/null; then
+            lb_root=$(mktemp -d)
+            mkdir -p "$lb_root/data/output" "$lb_root/data/leaderboard"
+            git show "$commit:$bundle" > "$lb_root/$bundle"
+            git show "$commit:data/leaderboard/current.json" > "$lb_root/data/leaderboard/current.json"
+            if ! python3 scripts/check_leaderboard_consistency.py --root "$lb_root"; then
+              echo "::error::Session commit publishes a daily bundle whose leaderboard differs from data/leaderboard/current.json."
+              fail=1
+            fi
+          fi
+
           if [[ $fail -ne 0 ]]; then
             echo ""
             echo "See CLAUDE.md > Session Cadence — 'Bundle is cadence-invariant' and 'Snapshots are keyed on the market date and are immutable across sessions'."
             exit 1
           fi
 
-          echo "Session integrity OK: manager-review (if authored) + artifacts + journals + baselines all present."
+          echo "Session integrity OK: manager-review (if authored) + artifacts + journals + baselines all present, one leaderboard."
 
   # End-of-run concerns get a consumer (J6/F6, 2026-09-25). The prompt tells
   # the orchestrator to report a wrong-looking step in one sentence and keep

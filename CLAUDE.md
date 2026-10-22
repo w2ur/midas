@@ -63,7 +63,12 @@ Warnings are errors, with the third-party exceptions named and justified in `pyp
 **Every guard must be able to fail, and must have a consumer.** A check nobody reads and a check that cannot go red are the same thing. The rest of the CI discipline — path filtering, push-with-retry, attestation dating, `sync_core.check()`'s two tiers, failure-issue alerting — is in the **`midas-ci-guards`** skill.
 **Published data is guarded in CI, not only in application code** —
 `session-integrity.yml` runs ledger-integrity, ledger cash-replay, baseline
-freshness (one-sided, reads the published *state*, never the diff) and
+freshness (one-sided, reads the published *state*, never the diff), the
+daily bundle's leaderboard equal to `data/leaderboard/current.json` on a
+commit carrying both (`scripts/check_leaderboard_consistency.py`, #116: a
+session that follows the prompt refreshes the baselines before it builds the board and
+publishes one list; the check fails when they differ, and holds only bundles the
+baselines-first prompt stamped, so sessions on the old prompt are skipped) and
 append-only on every commit that reaches main: a direct push triggers it, and
 every workflow that pushes main with GITHUB_TOKEN (which triggers nothing)
 dispatches it on the sha it pushed through `.github/actions/dispatch-session-integrity`.

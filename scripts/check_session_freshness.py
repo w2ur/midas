@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Assert Step 9 ran by reading published state, not the commit's diff.
+"""Assert Step 4c (baselines refresh) ran by reading published state, not the commit's diff.
 
 `session-integrity` (and the inline copy in `auto-merge-session`) used to
-answer "did Step 9 refresh the baselines?" by grepping the changed-file list
-for `^data/baselines/`. That proxy holds only while every Step 9 writes
+answer "did Step 4c refresh the baselines?" (Step 9 until 2026-10-22) by grepping the changed-file list
+for `^data/baselines/`. That proxy holds only while every refresh writes
 something, and `merge_baseline_series` is append-or-keep (published rows are
 kept, mismatches classified) — so a session whose series was already rebuilt
 earlier the same day appends nothing and looks
@@ -11,7 +11,7 @@ identical to a session that skipped the step. On 2026-08-07 commit
 `a4dc9dce2 [restate]` did exactly that, and both guards failed a correct
 session.
 
-The invariant that actually distinguishes the two: Step 9 builds the baseline
+The invariant that actually distinguishes the two: Step 4c builds the baseline
 series alongside the agent snapshots, so a *skip* leaves the baselines behind
 the snapshots — the Apr 25 shape the guard was built for — while a correct
 no-op leaves them level. A baseline may legitimately run *ahead* of a book (a
@@ -100,11 +100,11 @@ def main() -> int:
     stale = stale_baselines(args.root)
     if stale:
         print(
-            "Baseline series lag their snapshots (Step 9 skipped): " + ", ".join(stale),
+            "Baseline series lag their snapshots (Step 4c skipped): " + ", ".join(stale),
             file=sys.stderr,
         )
         print(
-            "See the midas-session-cadence skill — Step 9 builds data/baselines/ "
+            "See the midas-session-cadence skill — Step 4c builds data/baselines/ "
             "alongside the agent snapshots.",
             file=sys.stderr,
         )

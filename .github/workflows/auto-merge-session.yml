@@ -398,15 +398,15 @@ jobs:
           # MORE here: this one gates the merge. A published baseline row is
           # never rewritten (`merge_baseline_series` keeps it and classifies a
           # mismatch; `advance_coin_flip` appends new dates only), so a correct
-          # Step 9 against an already-current series writes nothing, and on
+          # Step 4c against an already-current series writes nothing, and on
           # 2026-08-07 that shape refused to
           # merge a good session — inert only because the direct push to main
           # had already succeeded. State, not diff.
           if [[ $touches_baselines -eq 0 ]]; then
             if python3 scripts/check_session_freshness.py; then
-              echo "data/baselines/ unchanged, but every series is level with its snapshots — Step 9 ran and correctly wrote nothing."
+              echo "data/baselines/ unchanged, but every series is level with its snapshots — Step 4c ran and correctly wrote nothing."
             else
-              echo "::error::Baseline series lag their snapshots (Step 9 skipped) — refusing to merge."
+              echo "::error::Baseline series lag their snapshots (Step 4c skipped) — refusing to merge."
               fail=1
             fi
           fi

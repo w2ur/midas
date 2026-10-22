@@ -270,15 +270,15 @@ workflow-shape and executed-action tests cover the rest:
   24 fills: every row present, joined cleanly, €2,057.65 wrong. The arithmetic is
   imported from `scripts/restate_valuations.py`, not reimplemented.
 - **baseline freshness** (`scripts/check_session_freshness.py`, 2026-08-07) —
-  the `check` job's Step 9 assertion. It used to grep the commit's changed-file
+  the `check` job's Step 4c assertion (Step 9 before 2026-10-22). It used to grep the commit's changed-file
   list for `^data/baselines/`, which is a proxy for the thing it cares about,
   and the two came apart the same day the append-or-refuse contract landed:
   `a4dc9dce2 [restate]` rebuilt every series that morning, so the evening
-  session's Step 9 ran against an already-current series, `merge_baseline_series`
+  session's baselines step ran against an already-current series, `merge_baseline_series`
   correctly wrote nothing, and both this guard and the inline copy in
   `auto-merge-session` failed a correct session. **The auto-merge one gates the
   merge** — it was inert only because the direct push to main had already
-  succeeded. A diff cannot answer "did Step 9 run"; the published state can: a
+  succeeded. A diff cannot answer "did Step 4c run"; the published state can: a
   genuine skip leaves the baselines *behind* the snapshots (the Apr 25 shape),
   a correct no-op leaves them level, and a restatement may legitimately run
   ahead, so the check is one-sided. Stdlib only, so no runner needs

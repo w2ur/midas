@@ -417,6 +417,8 @@ def test_cast_tests_reclaimed_into_manifest():
         # Drives scripts/check_session_freshness.py, the same shape: a
         # live-repo CI tool backing session-integrity, absent from CORE_SCRIPTS.
         "test_session_freshness.py",
+        # Drives scripts/check_leaderboard_consistency.py, the same shape.
+        "test_check_leaderboard_consistency.py",
         # Drives scripts/derive_legacy_benchmark_marks.py, a one-off read of
         # this repo's git history, and holds its committed sidecars to the
         # committed baselines; core ships neither.

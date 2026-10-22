@@ -1895,7 +1895,7 @@ def step_update_snapshots(market_payload: dict, writer: str | None = None) -> li
 
 @idempotent_step(skip_return=None)
 def step_build_baselines(to_date: date | None = None) -> None:
-    """Step 9a — Baselines.
+    """Step 4c — Baselines (Step 9a before 2026-10-22).
 
     Recomputes the passive benchmarks and the global reference for Day 1 →
     today (or the caller's ``to_date``), append-or-keep per date (engine.baselines.merge_baseline_series) —
@@ -1915,9 +1915,10 @@ def step_build_baselines(to_date: date | None = None) -> None:
     ``to_date`` caps the window at the market date of the snapshot the
     caller published (#89). The valuation-only refresh passes it: run on a
     weekday before the US close it used to write today-dated control rows at
-    the previous close, immutable, leaving the evening session's Step 9
-    nothing to append (the aborted 2026-10-05 session). The session passes
-    its market date too since the 2026-10-09 trigger prompt, whose Step 9
+    the previous close, immutable, leaving the evening session's baselines
+    step (Step 9, now Step 4c) nothing to append (the aborted 2026-10-05
+    session). The session passes
+    its market date too since the 2026-10-09 trigger prompt, whose baselines
     self-check runs ``scripts/check_session_freshness.py`` (every series level
     with its book) instead of requiring a change under ``data/baselines/``:
     on a weekday whose market date did not advance, the rows already exist
@@ -1925,7 +1926,7 @@ def step_build_baselines(to_date: date | None = None) -> None:
     this with no argument, which still dates the controls through the
     wall-clock day.
     """
-    print("\n=== Step 9a: Build baselines ===")
+    print("\n=== Step 4c: Build baselines ===")
     from engine.baselines import build_all_baselines
     from scripts.backfill_baselines import _max_positions_by_agent, _universes_by_agent
 

@@ -101,7 +101,7 @@ Repository: already cloned — the checkout is at /home/user/midas in the cloud
 sandbox (verified 2026-08-02). Work from the repo root; don't assume a path,
 `git rev-parse --show-toplevel` is authoritative.
 
-PROMPT_SHA256: 3ec9cc48e5f8e7ccb2c4354480e4d10055e867646785d2f82a1fdba7ce1e2f2b
+PROMPT_SHA256: 8846dd0e48469fdb59d7d89dd6f26b52c722f6b2dd3f9064b08eef91bc554a7a
 
 # Step 0 — Realign sandbox to current origin/main (CRITICAL, before anything else)
 git fetch origin main
@@ -391,6 +391,20 @@ response is a single JSON object (ManagerDecision). As soon as it returns:
     # still writes manager-review (audit), authors no orders. Do not treat an
     # empty manager-outbox as an error.
 
+# Step 4c — Baselines refresh (ALWAYS, BEFORE the leaderboard is built)
+    from scripts.daily_session import step_build_baselines
+    step_build_baselines(date.fromisoformat(market_payload["date"]))
+Then check that every series is level with its book's newest snapshot:
+    python scripts/check_session_freshness.py
+If it exits non-zero, this step was skipped — abort. Do NOT require a
+change under data/baselines/: on a day whose market date did not advance,
+the rows already exist and correctly nothing is appended (2026-10-05).
+# The leaderboard ranks on vs_benchmark_pp, so its rows depend on the
+# baselines. Built at Step 5 against the previous day's baselines and
+# rebuilt after the refresh, the bundle and data/leaderboard/current.json
+# published two different boards on 2026-10-13 (#116). Refresh first, build
+# the rows ONCE in Step 5, and reuse them in Steps 7, 8 and 9b.
+
 # Step 5 — Oracle narrative (DISPATCH — one Task call to the-oracle)
     from scripts.daily_session import (
         step_build_leaderboard, step_build_oracle_prompt, step_load_memories,
@@ -498,14 +512,10 @@ have returned, BEFORE step_save_memories:
 After this, every data/agent_memory/*.md (11 files) must show fresh mtimes.
 If any are unchanged, that agent's dispatch was skipped — abort.
 
-# Step 9 — Baselines refresh (ALWAYS, no conditional)
-    from scripts.daily_session import step_build_baselines
-    step_build_baselines(date.fromisoformat(market_payload["date"]))
-Then check that every series is level with its book's newest snapshot:
-    python scripts/check_session_freshness.py
-If it exits non-zero, this step was skipped — abort. Do NOT require a
-change under data/baselines/: on a day whose market date did not advance,
-the rows already exist and correctly nothing is appended (2026-10-05).
+# Step 9 — Baselines were refreshed in Step 4c
+Do NOT build them again here: the leaderboard of Steps 5, 7 and 8 was
+computed from the Step 4c baselines, and one more refresh is the way the
+two published boards come apart.
 
 # Step 9a — After-tax shadow ledger (ALWAYS, after baselines)
     from scripts.daily_session import step_build_tax_shadow
@@ -522,7 +532,14 @@ the rows already exist and correctly nothing is appended (2026-10-05).
 data/leaderboard/current.json must be (re)written by this call. The site's
 homepage live-leaderboard widget reads this file; per-day archive pages
 keep reading data/output/{today}.json. Reuses the `leaderboard` variable
-computed in Step 5 — do NOT recompute.
+computed in Step 5 — do NOT recompute. Then confirm it is the board the
+bundle published:
+    python scripts/check_leaderboard_consistency.py --stamp
+(--stamp records on the bundle that this session ran the baselines-first order;
+session-integrity only holds stamped bundles to the check, so a session on an
+older prompt is not failed for the order it was never told to follow.)
+If it exits non-zero, the bundle and current.json carry different rows —
+abort and report. (session-integrity runs the same check on the commit.)
 
 # Step 10 — Commit and push
 Commit data/ through the helper, passing every concern you will put in
@@ -607,7 +624,8 @@ explicitly forbids them:
 - "Now I'll rewrite the journals in each agent's voice" inline → MUST dispatch each journal-rewrite to its agent
 - "Now I'll write Oracle's blog + posts as the Oracle persona" → MUST dispatch with wrap_persona_prompt("the-oracle", ...)
 - "subagent_type='satoshi' returned 'Agent type not found' so I'll write the trades myself" → MUST switch to subagent_type="general-purpose" with wrap_persona_prompt; never inline
-- "Baselines already current — last snapshot dated …" → MUST run Step 9 as written (`step_build_baselines(market date)`, then `check_session_freshness.py`)
+- "Baselines already current — last snapshot dated …" → MUST run Step 4c as written (`step_build_baselines(market date)`, then `check_session_freshness.py`)
+- "The leaderboard looks stale after the baselines refresh — I'll rebuild it for current.json" → NO. Step 4c refreshes the baselines BEFORE Step 5 builds the rows; the bundle and current.json carry that one list. A rebuild after Step 9 is what published two different boards on 2026-10-13
 - "Building the leaderboard from snapshots.json in-place — I'll just diff first/last portfolio_value" → MUST call `step_build_leaderboard(portfolio_summaries, on=today)`. The first persisted snapshot is NOT inception for agents seeded with non-cash positions (Monsieur Forex, World). The helper anchors to €10k inception via `portfolio_mtm_eur`, matching `daily_log.py` and `baselines.py`. Hand-rolling here understated Monsieur Forex / World returns on 2026-05-15.
 - "Network blocked. Let me update today.json with today's BTC close" → MUST call `python scripts/fetch_market_data.py` (already store-only)
 - "Now I'll `git push` the session commit" → MUST call `step_git_commit_push(dry_run=False)`. A bare `git push` publishes the sandbox's throwaway branch (`claude/<slug>`) instead of advancing main — Apr 30 incident. The helper does the right thing: `HEAD:main` first, fallback to `HEAD` (sandbox branch) if the harness 403s the main push (2026-05-08 incident); the auto-merge-session workflow takes the fallback the rest of the way. Don't second-guess the helper.
