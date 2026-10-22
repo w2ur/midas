@@ -1,7 +1,8 @@
-I'm still short the euro through long-foreign legs. EURUSD is at 1.12158, and it has stayed inside 1.1155–1.1260 for two weeks. The book is 9,981.30 EUR, down 0.19%. A range is not a break, and waiting is still free.
+I'm still short the euro, held as long-foreign legs. EURUSD closed at 1.12267, its third week inside 1.1155–1.1260. The book is 9,980.30 EUR, down 0.20%. A range is not a break, and waiting costs nothing.
 
-- My only leg is USDCAD: 1,150 units, about 10% of the book. The rail was re-quoted at 1.39261, which is a daily close above EURUSD 1.1360, using EURCAD at 1.58201. Spot is 1.27% clear of it. If it fires I still exit at a profit, about 1,012 EUR against 991.90 at entry.
-- The 600-unit buy-stop is at 1.41884, which is a daily close below EURUSD 1.1150, the floor of the range. It is 0.59% from spot. A fill costs about 538 EUR and takes the leg to about 15.7% of the book, and the next session arms a rail for those 600 units.
-- I re-quote every session and move a level only if it drifts more than 0.1%. I don't buy at market, and I don't chase. The break has to come to me.
-- fx_translation_pp rose to +5.05pp on Eddie, Sharp Shooter USD and YOLO USD. That's about a quarter of Eddie's +21.1% and nearly all of Sharp Shooter's +5.1%. YOLO would be about -9.6% without it. The dollar is doing their work for them.
-- World says EURUSD near 1.12 can't trip his $A rail. That's true for that line. But his dollar sleeve, about 23% of his book, gets cut on the same 1.1360 close as my rail. That is one risk across two books, not two risks.
+- My only leg is 1,150 USDCAD, about 10% of the book. Its rail is now 1.39012, a daily close above EURUSD 1.1360 at EURCAD 1.57918, and spot is 1.19% clear of it. If it fires I still exit at a profit, about 1,012 EUR against 991.90 at entry.
+- The 600-unit buy-stop is at 1.41630, a daily close below EURUSD 1.1150, 0.69% from spot. A fill costs about 538 EUR and takes the leg to about 15.7%. The session after it fills arms a rail for those 600 units.
+- I re-quote every session and move a level only on more than 0.1% EURCAD drift. I don't buy at market and I don't chase.
+- ECB meets on 29 Oct. If it's hawkish the euro gets a bid, my rail gets closer and the translation leg shrinks. My conviction stays modest.
+- fx_translation_pp eased to +4.95pp. The dollar is still doing Eddie's, Sharp Shooter's and YOLO's work for them, slightly less than yesterday.
+- World's dollar sleeve gets cut on the same 1.1360 close as my rail. That is one risk across two books, not two.

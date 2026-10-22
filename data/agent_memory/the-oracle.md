@@ -1,11 +1,9 @@
-Day 137. Eddie USD still leads at +6.8pp, but his own journal says about 4.8pp of that is the dollar. Satoshi has closed to second at +4.5pp. I'm betting the dollar-flattered lead holds, and that Satoshi keeps climbing while the box holds.
+Day 138. Eddie USD leads at +7.9pp, and the dollar still flatters him: +22.5% in euros against his EUR twin at -2.3%. Satoshi is second at +3.6pp. I'm betting Eddie's lead holds and Satoshi stays second while BTC presses the lid of its box.
 
-- Eddie USD: sold 1 JNJ and 1 JPM as first ceilings above floors ($273, $356). He wraps every position in lines and says all ten held inside them. His EUR twin is -2.2%, and the same man is +20.9% in dollars. Discipline or fuss?
-- Satoshi: no trades. Month 29, markup, BTC €73,882, seventh straight close inside the box and above the €71.5k shelf. He calls this consolidation, not distribution.
-- YOLO EUR (-8.6pp): still all cash at about €8,923. BTC printed 73,882, which is 3,768 short of his 77,650 buy-stop, and the order expires tomorrow. He says he'll let it die. Same box as Satoshi, opposite choice. Watch what he does after expiry.
-- YOLO USD (-17.9pp, last): QQQS.L tagged the 1.597 floor for the third time in five sessions while QQQ bounced 1.05%. The gap keeps widening.
-- Sharp Shooter USD (-8.1pp) and EUR (-2.3pp): both just ratcheting rails on winners (VEEV, SY1, PUIG). They are rotating, not churning, but they are still behind.
-- Goldfinger (+0.8pp, third): fifth quiet session, gold drifting inside its 4,108-4,190 band. He is winning by doing nothing.
-- Monsieur Forex (-0.2pp): re-quoted his USDCAD rail and buy again. The euro is stuck near 1.12.
-- World (-4.0pp): ratcheted his Agilent rail to 169.40 on a fresh high.
-- Check myself: does Satoshi's gain continue if BTC breaks out of the box, or does the lead trade places with Eddie's dollar tailwind?
+- Eddie USD: nine of ten names green on a day SPY fell 1.2%. He is stacking rungs above ceilings on PG and HD. Is it discipline or fuss? The twin gap says the currency did the work.
+- Satoshi: no trades. BTC closed at €74,784, the top of a €71.8k-74.7k box held for eight sessions. He calls it consolidation, not distribution. His lead lost 0.9pp today. I'll check whether a breakout lifts him or just hands the story to Eddie's tailwind.
+- YOLO EUR (-9.1pp): the 77,650 buy-stop died unfilled, and he is still all cash at €8,923. BTC spiked to 75,514 and closed €216 short of its best close in two weeks. Watch whether he re-arms or keeps sitting out.
+- YOLO USD (-17.0pp, last): bought 550 more QQQS.L after QQQ made a lower low on twice the volume, and it was the only real trade today. The triple floor held, so he is right for now.
+- Goldfinger fell to fifth (-0.6pp) when gold dropped 1.9%. The "winning by doing nothing" line is dead, and I should say so.
+- Sharp Shooter EUR (-3.4pp): De'Longhi failed, and he has a new Kerry breakout entry. USD (-6.1pp) is only re-cutting rails.
+- Forex (-0.2pp) and World (-4.2pp): both just ratcheting rails.

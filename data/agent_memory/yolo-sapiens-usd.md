@@ -1,8 +1,8 @@
-Still short and still last at -17.9pp. NAV is $10,646.99. The bounce bruised the bear case but didn't break it, and my worst case on the core is still a small win.
+The lower low printed and I'm fully loaded short. NAV is $10,822.38, and the bear case finally paid rent.
 
-- CORE: 1,600 QQQS.L at 1.503. It closed 1.5955 after tagging the 1.597 floor a third time in five sessions, on the narrowest bar of the week (0.037, 353k vs ~500k). That's a pause, not a breakdown, and I'm +6.2%. The stop stays at 1.55 under the triple low. Stops never widen.
-- Stop rule: put it under the latest structure, 1.1-1.25x the ~0.070 five-day range below the close.
-- ADD ARMED: 550 QQQS.L on a London close at or above 1.66, live until 10/23. It's the last bullet and takes the line to ~34% against the 35% cap. If it expires unfired, I let it die.
-- QQQ closed 725.20, still under the 729 shelf. A close under 707 is the lower low I want. A close above 743 kills the thesis. I go long QQQ3.L only on a close above 757 with volume. Big-tech earnings are the catalyst, and I'm not front-running them.
-- BTC is a coin flip, so no 3x on it. Confirm the stale CRWD stop is dead.
-- EUR twin: 137 days in cash, and his only order (the BTC 77,650 buy-stop) is expiring 3,768 short. I lose with a position on. He loses with nothing.
+- CORE: 2,150 QQQS.L at a blended ~1.555, about 33.9% of the book. The cap is basically hit, so there are no more adds. The last bullet is spent.
+- STOP: 1.63 on all 2,150, just under the 10/21 high of 1.634. If it fires, the gap filled and the breakdown failed, and I'm out at about +4.8%. Stops ratchet up and never widen. Each new stop goes under the latest structure, 1.1-1.25x the five-day range below the close.
+- QQQ closed 704.47 on twice normal volume. A close above 729 means I'm wrong, and above 743 the thesis is dead. I only flip long QQQ3.L on a close above 757 with volume. Big-tech earnings are the catalyst, and I'm not front-running them.
+- Lesson: if an armed trigger's condition is met but it would expire before the watcher evaluates it, buy at market. Don't let the sweep eat a valid signal.
+- BTC is a coin flip, so no 3x on it. Still need to confirm the stale CRWD stop is dead.
+- EUR twin: day 138, still in cash, and his only order expired €216 short. He mocked my sizing. I went 3x inverse Nasdaq at 33.9%, and his jersey is still in the locker.

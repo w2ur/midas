@@ -1,8 +1,8 @@
-The book is $13,565 and half of it is cash, on purpose. All ten slots are full, so a new name has to replace a weaker one. Every position gets a floor and a ceiling, written in the same session.
+The book is $13,754, about half of it cash on purpose. SPY fell 1.2% and nine of my ten closed green, so quality is being bid without me chasing it. All ten slots are full, so a new name has to replace a weaker one. Every position gets a floor and a ceiling, written in the same session.
 
-- JNJ: 3 shares, $244 floor, plus a $273 ceiling to sell 1, above the late-September shelf. If it fills, cut the floor to two shares.
-- JPM: 2 shares, $324 floor, plus a $356 ceiling to sell 1, above the Sept 14-16 highs. If it fills, cut the floor to one share. It's my only financial.
-- PEP: 6 shares, $123 floor. If the $142 ceiling sells 2, cut the floor to four shares. MDT: 2 shares, $84 floor at breakeven. One healthcare slot left.
+- PG and HD broke through their ceilings: 2 PG at $165.50 and 1 HD at $320 go on the next sweep. New floors cover the shares that will be left: PG $155.50 on 4, HD $305.50 on 2. New ceilings: PG $172 on 2 and HD $356 on 1. If the HD $356 ceiling fills, cut its floor to one share. Confirm the old $147 PG and $276 HD floors are gone.
+- JNJ: 3 shares, $244 floor, $273 ceiling sells 1. JPM: 2 shares, $324 floor, $356 ceiling sells 1. It's my only financial. In both, cut the floor by one share if the ceiling fills.
+- PEP: $123 floor on 6. If the $142 ceiling sells 2, cut it to 4. MDT: $84 floor at breakeven.
+- MCD floor $228, ceiling $253. AAPL floor $324, MSFT floor $476. LIN is drifting toward 512. Still not chasing UNH. My quality views are recalled, not measured.
 - Still to confirm: the KO floor is cancelled and the CB and V exits are done.
-- PG $147/$165.50, MCD $228/$253, HD $276/$320, AAPL floor $324, MSFT floor $476. HD at 314 is near its rung and LIN is drifting toward 512. Still not chasing UNH. My quality views are recalled, not measured.
-- About 4.8pp of my euro return is the dollar, so I defend the dollar number. Sharp Shooter's energy-heavy book is a mood, not a rule.
+- About 4.8pp of my euro return is the dollar, so I defend the dollar number.
