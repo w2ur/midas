@@ -88,7 +88,6 @@ LIVE_ONLY_TESTS = {
     "test_attest_ledger.py",
     "test_attest_verify.py",
     "test_backfill_snapshots.py",
-    "test_fetch_sentiment.py",
     "test_refresh_leaderboard.py",
     "test_baselines_window.py",
     # Reads docs/triggers/weekday-session.md, which stays live-only.

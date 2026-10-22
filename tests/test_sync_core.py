@@ -26,7 +26,6 @@ def test_manifest_core_scripts_only():
     # and the target of the `midas fetch-ohlcv` subcommand.
     assert REL("scripts/fetch_ohlcv.py") in m
     for live_only in (
-        "fetch_sentiment",
         "attest_ledger",
         "refresh_leaderboard",
         "backfill_snapshots",
@@ -41,7 +40,6 @@ def test_manifest_excludes_live_only_tests():
         # import a live-only script
         "test_attest_ledger",
         "test_backfill_snapshots",
-        "test_fetch_sentiment",
         "test_refresh_leaderboard",
         # read the committed OHLCV store
         "test_fetch_market_data",
@@ -383,7 +381,6 @@ def test_cast_tests_reclaimed_into_manifest():
         "test_attest_ledger.py",
         "test_attest_verify.py",
         "test_backfill_snapshots.py",
-        "test_fetch_sentiment.py",
         "test_refresh_leaderboard.py",
         "test_baselines_window.py",
         # Reads docs/triggers/weekday-session.md, which stays live-only.

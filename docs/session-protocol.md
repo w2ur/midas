@@ -111,7 +111,7 @@ surprising, report it and stop; do not repair it mid-run.
 
 ## The steps
 
-Twenty-two functions in `scripts/daily_session.py`. They are described below in
+The `step_*` functions in `scripts/daily_session.py` are described below in
 **execution order**, grouped into phases. The authoritative list is the file
 itself — re-derive it rather than trusting any transcription, including this one:
 
@@ -150,12 +150,6 @@ yourself — prices are read from the committed store, and the broker's fill pat
 HTTP-free by design.
 **Ordering:** first step after the session is anchored; everything that values a
 position depends on it.
-
-### Retired — `step_check_sentiment_freshness`
-
-Not part of the sequence any more: the sentiment A/B it recorded has ended and
-nothing calls it. The helper remains only because the previous live prompt still
-calls it, and it goes with the sentiment cleanup after the owner re-pastes.
 
 ## Phase 2 — The trading round
 
