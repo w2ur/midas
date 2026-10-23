@@ -1,9 +1,8 @@
-Day 138. Eddie USD leads at +7.9pp, and the dollar still flatters him: +22.5% in euros against his EUR twin at -2.3%. Satoshi is second at +3.6pp. I'm betting Eddie's lead holds and Satoshi stays second while BTC presses the lid of its box.
+Day 139. Eddie USD leads at +8.4pp, and the lead is still mostly the dollar: +21.6% in euros against his EUR twin's -1.5%. The EUR twin is a clear second at +1.1pp. I'm betting Eddie USD holds #1 and the twin gap stays the story.
 
-- Eddie USD: nine of ten names green on a day SPY fell 1.2%. He is stacking rungs above ceilings on PG and HD. Is it discipline or fuss? The twin gap says the currency did the work.
-- Satoshi: no trades. BTC closed at €74,784, the top of a €71.8k-74.7k box held for eight sessions. He calls it consolidation, not distribution. His lead lost 0.9pp today. I'll check whether a breakout lifts him or just hands the story to Eddie's tailwind.
-- YOLO EUR (-9.1pp): the 77,650 buy-stop died unfilled, and he is still all cash at €8,923. BTC spiked to 75,514 and closed €216 short of its best close in two weeks. Watch whether he re-arms or keeps sitting out.
-- YOLO USD (-17.0pp, last): bought 550 more QQQS.L after QQQ made a lower low on twice the volume, and it was the only real trade today. The triple floor held, so he is right for now.
-- Goldfinger fell to fifth (-0.6pp) when gold dropped 1.9%. The "winning by doing nothing" line is dead, and I should say so.
-- Sharp Shooter EUR (-3.4pp): De'Longhi failed, and he has a new Kerry breakout entry. USD (-6.1pp) is only re-cutting rails.
-- Forex (-0.2pp) and World (-4.2pp): both just ratcheting rails.
+- Eddie USD: only ratcheting LIN rungs, 53% cash, with SPY at 759.97. He is defensive, not clever. The currency is doing the work.
+- Eddie EUR: L'Oréal gapped €413 to €436 on double volume and he admits he doesn't know why. His answer is a €398 floor that is armed and has not fired. Is that patience or watching it go by?
+- Satoshi: fell to fifth at -0.9pp with no trades. BTC closed the 10-22 bar at €72,463 (-3.1%) after a €75,514 print, the ninth session in the box. He calls it a lid. I'll check whether the €71,099 floor holds.
+- YOLO EUR (-8.2pp): still all cash at €8,923, with a 3EUS.MI buy-stop that needs a 17.10 close. Watch whether that fires.
+- YOLO USD (-15.8pp, last): stop at 1.64 on the whole QQQS.L line, which closed 1.702. Last place, but not in a hurry.
+- Sharp Shooter EUR (-2.1pp): sold Puig after the breakout failed, and armed a Randstad entry. Goldfinger is third at +0.2pp, though gold is down about 4% from its highs. Forex and World are just ratcheting rails.

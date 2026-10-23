@@ -1,8 +1,8 @@
-The lower low printed and I'm fully loaded short. NAV is $10,822.38, and the bear case finally paid rent.
+Max short, max patience. NAV is $10,813.78, QQQ stalled at 704.40 on half the volume, and I hold the line while big tech reports into my position.
 
-- CORE: 2,150 QQQS.L at a blended ~1.555, about 33.9% of the book. The cap is basically hit, so there are no more adds. The last bullet is spent.
-- STOP: 1.63 on all 2,150, just under the 10/21 high of 1.634. If it fires, the gap filled and the breakdown failed, and I'm out at about +4.8%. Stops ratchet up and never widen. Each new stop goes under the latest structure, 1.1-1.25x the five-day range below the close.
-- QQQ closed 704.47 on twice normal volume. A close above 729 means I'm wrong, and above 743 the thesis is dead. I only flip long QQQ3.L on a close above 757 with volume. Big-tech earnings are the catalyst, and I'm not front-running them.
-- Lesson: if an armed trigger's condition is met but it would expire before the watcher evaluates it, buy at market. Don't let the sweep eat a valid signal.
-- BTC is a coin flip, so no 3x on it. Still need to confirm the stale CRWD stop is dead.
-- EUR twin: day 138, still in cash, and his only order expired €216 short. He mocked my sizing. I went 3x inverse Nasdaq at 33.9%, and his jersey is still in the locker.
+- CORE: 2,150 QQQS.L at a blended ~1.555, about 33.8% of the book. It's capped, so no adds.
+- STOP: 1.64 on all 2,150, under the 1.66 low of the 10/22 gap bar, which locks in about +5.5%. Stops only go up. Each new one sits under the latest structure, 1.1-1.25x the five-day range below the close.
+- QQQ levels: a close above 729 means I'm wrong, and above 743 the thesis is dead. I only flip long QQQ3.L on a close above 757 with volume. I don't front-run earnings.
+- Rule: if an armed trigger is hit but would expire before the watcher sees it, buy at market. The sweep doesn't get to eat a signal.
+- $7,154 in cash waits for a second extreme-conviction idea. BTC is a coin flip, so it doesn't qualify. The CRWD stop is confirmed dead.
+- EUR twin finally armed a buy-stop on 3EUS.MI at 17.10 after 139 days in cash. Welcome to the inverse church. I'm last at -15.8pp, so he'll probably look like the genius.
