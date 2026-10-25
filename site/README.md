@@ -3,7 +3,7 @@
 Static site for `midas.revah.paris` — the public storytelling layer of the Midas experiment.
 
 ## Stack
-- Astro 5 (static)
+- Astro 7 (static, Node 24)
 - TypeScript strict
 - Vitest for loader tests
 - Vercel deploy
