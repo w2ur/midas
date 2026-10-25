@@ -82,7 +82,7 @@ assert_version_ok() {
     major="${ver%%.*}"
     minor="${ver##*.}"
     if ((major < MIN_MAJOR || (major == MIN_MAJOR && minor < MIN_MINOR))); then
-        die "venv runs Python $ver, need >= $MIN_MAJOR.$MIN_MINOR (pandas-ta breaks below it)"
+        die "venv runs Python $ver, need >= $MIN_MAJOR.$MIN_MINOR (requires-python floor)"
     fi
     echo "$ver"
 }

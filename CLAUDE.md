@@ -4,7 +4,7 @@
 Personal AI fund manager that autonomously analyzes markets, makes investment decisions, and manages portfolios. Two execution engines: bt (Python) for deterministic strategies, Claude agents for analytical ones. Public narrative at `midas.revah.paris` (Astro site, Ring 3a). Streamlit dashboard for local exploration. Backtester API on Google Cloud Run.
 
 ## Tech Stack
-- Python 3.12 or 3.13 (`requires-python` is capped below 3.14 until pandas-ta is gone), bt (backtesting), yfinance (market data), pandas-ta (indicators)
+- Python 3.12+ (live CI runs 3.12; the midas-core matrix runs 3.12–3.14), bt (backtesting), yfinance (market data), indicators in plain pandas (`engine/indicators.py` — RSI was inlined to drop pandas-ta and its numba pin)
 - Streamlit + Plotly (dashboard), pytest (testing)
 - Claude Code agents for analytical trading strategies
 

@@ -1454,7 +1454,7 @@ class TestRegressionCitations:
 # ---------------------------------------------------------------------------
 #
 # The service image installs a NARROWED package set (it imports only bt,
-# fastapi, uvicorn, pandas, pandas_ta, pydantic, yaml and yfinance), but every
+# fastapi, uvicorn, pandas, pydantic, yaml and yfinance), but every
 # version in it is copied verbatim from the root lockfile so the image runs
 # exactly what CI tested. That contract lived only in a comment at the top of
 # the file, and it had already been broken once: until 2026-08-05 four

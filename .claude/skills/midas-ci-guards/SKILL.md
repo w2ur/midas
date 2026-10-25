@@ -82,13 +82,12 @@ applies at all: every consumer (`PreRegistrationStatus`, `MethodologyFacts`,
 `oss-stats`, the homepage) calls `cadenceStats()` at build time, so no cadence
 figure is transcribed anywhere.
 
-**Warnings are errors, with three named third-party exceptions** (`pyproject.toml`
+**Warnings are errors, with named third-party exceptions** (`pyproject.toml`
 `filterwarnings`, 2026-08-07). The zero-warnings policy was being asserted, not
 enforced — 69 warnings had accumulated. `filterwarnings = ["error", …]` means any
-warning not on the list fails the suite; the three that are listed are
-unfixable from here (starlette's `TestClient` via `fastapi.testclient`,
-`pandas_ta` setting the deprecated `mode.copy_on_write` at import, and `bt`'s
-own chained assignment inside `get_transactions`). Matching is on the **message,
+warning not on the list fails the suite; the ones listed are unfixable from
+here (e.g. starlette's `TestClient` via `fastapi.testclient` and `bt`'s own
+chained assignment inside `get_transactions`). Matching is on the **message,
 not the module**, so an entry stops applying if upstream changes its text — a
 stale ignore surfaces as a red run rather than as silent over-suppression.
 **A hard gate on warnings is normally fragile and is safe here only because

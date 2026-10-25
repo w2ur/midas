@@ -14,10 +14,9 @@
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS builder
 
-# gcc/g++ stay in this stage. A few pins in requirements.txt have no cp312
-# manylinux wheel (peewee builds optional C speedups; pandas-ta is a beta
-# sdist), so the toolchain is genuinely needed to install — it is just never
-# needed to serve.
+# gcc/g++ stay in this stage. A pin in requirements.txt has no cp312 manylinux
+# wheel (peewee builds optional C speedups), so the toolchain is genuinely
+# needed to install — it is just never needed to serve.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc g++ \
     && rm -rf /var/lib/apt/lists/*

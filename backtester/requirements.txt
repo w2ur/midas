@@ -3,14 +3,14 @@
 #
 # The root requirements.txt is the full monorepo closure (6 workflows, local
 # dev, sandbox, the agents). The backtester service imports only bt, fastapi,
-# uvicorn, pandas, pandas_ta, pydantic, yaml and yfinance — installing the full
+# uvicorn, pandas, pydantic, yaml and yfinance — installing the full
 # closure put ccxt, plotly, streamlit, pydeck, lxml and pytest in the image for
 # nothing, on a service whose cold start is dominated by pulling its own image.
 #
 # Every version here is copied verbatim from the root requirements.txt, so the
 # image runs exactly the versions CI tests — this file narrows the package set,
 # it never resolves versions independently. Regenerate after a root lock bump:
-#   pip install bt fastapi uvicorn pandas pandas-ta pydantic pyyaml yfinance
+#   pip install bt fastapi uvicorn pandas pydantic pyyaml yfinance
 #   pip freeze  ->  intersect names with ../requirements.txt, keep its pins
 #
 # THIS LIST MUST BE THE COMPLETE CLOSURE, not just the direct dependencies.
@@ -40,16 +40,13 @@ h11==0.16.0
 idna==3.18
 joblib==1.5.3
 kiwisolver==1.5.0
-llvmlite==0.44.0
 markdown-it-py==4.2.0
 matplotlib==3.11.0
 mdurl==0.1.2
 multitasking==0.0.13
 narwhals==2.22.1
-numba==0.61.2
 numpy==2.2.6
 packaging==26.2
-pandas-ta==0.4.71b0
 pandas==3.0.3
 peewee==4.1.1
 pillow==13.0.0
