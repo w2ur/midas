@@ -58,7 +58,7 @@ protobuf==7.35.1
 # comment at their MarketDataFetcher() call sites). It cost 157.6 MB of
 # site-packages — libarrow.so 55.3 MB, libarrow_flight.so 26.9 MB,
 # libarrow_compute.so 19.0 MB, libparquet.so 12.8 MB — the largest single
-# package in the image after llvmlite. Verified: with pyarrow blocked at the
+# package in the image after llvmlite (since removed with pandas-ta). Verified: with pyarrow blocked at the
 # import hook, `import backtester.app` succeeds and pandas 3.0.3 is fully
 # functional; pandas only ever imported it opportunistically.
 pycparser==3.0

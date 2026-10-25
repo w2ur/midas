@@ -55,7 +55,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 # still import in a started container, not merely in a passing test suite.
 #
 # NOTE the same reasoning applied in advance to __pycache__ (143.4 MB), which
-# is likewise NOT pruned: the interpreter would re-compile pandas, scipy, numba
+# is likewise NOT pruned: the interpreter would re-compile pandas, scipy
 # and sklearn on every cold start, onto a tmpfs, burning the exact seconds this
 # file exists to save.
 RUN rm -rf /opt/venv/lib/python3.12/site-packages/pip \

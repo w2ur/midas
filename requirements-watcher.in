@@ -5,7 +5,7 @@
 # --crypto-only hourly, 24/7. Installing the full requirements.txt for it took
 # 48s of an 87s job whose actual work is ~6s — and GitHub bills every job rounded
 # UP to a whole minute, so that overhead was doubling the bill for every run.
-# The full lockfile carries matplotlib, scikit-learn, numba, plotly, streamlit,
+# The full lockfile carries matplotlib, scikit-learn, plotly, streamlit,
 # fastapi, bt and pytest; the crypto path imports none of them.
 #
 # These four are the measured minimum: import scripts.check_triggers fails
