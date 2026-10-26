@@ -78,6 +78,17 @@ describe("WCAG AA contrast — body/important text >= 4.5:1, both themes", () =>
     });
   }
 
+  // Regression: this commit — --ref was #1f7a86 in light, 4.33:1 on the raised
+  // leaderboard row (--bg-elev2): the benchmark label and its +x.xx% figure.
+  for (const surface of ["bg-elev", "bg-elev2"]) {
+    it(`--ref on --${surface} >= 4.5, both themes`, () => {
+      const t = token("ref");
+      const g = token(surface);
+      expect(ratio(t.dark, g.dark)).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(t.light, g.light)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
   it("--accent-ink on the amber fill (--accent) >= 4.5, both themes", () => {
     const a = token("accent");
     const ink = token("accent-ink");
