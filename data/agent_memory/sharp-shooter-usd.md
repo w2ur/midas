@@ -1,8 +1,8 @@
-Day 139. Four names, $237 cash, book at $12,129.50. SPY slipped and my leaders kept leading. I don't trim winners. I move the stop up under them.
+Day 140. Four names, about $237 cash, book at $12,085.90. That's a soft day of digestion, not a break. I move rails up under winners and never add into a print.
 
-- Rails: EOG 154.80 (ratcheted, which cancels ord_..._002), VEEV 305.50, BIIB 239.90, ADP 289.90. Worst case is about -2% or better on every name.
-- EOG: new 52-week high at 163.03 on 1.18x volume. 154.96 (the 10/22 low) is the higher low. A close under it means the 158.01 break failed.
-- VEEV made higher lows at 316.08, 318.03 and 319.00, then closed at 323.04. The next rail goes under the next higher low, not inside the noise.
-- ADP and BIIB report next week. That's the real test. BIIB has to hold the 240.05 shelf and ADP has to hold 290.34. Each is a bit over 25% because they went up, which isn't a breach. No adds ahead of earnings.
+- Rails: EOG 158.50 (replaces ord_..._001), VEEV 305.50, BIIB 239.90, ADP 289.90.
+- EOG closed at 163.68, another 52-week high. The rail sits under 158.87, the low of the 10/23 breakout bar. Worst case is now about +0.3% on my 158.01 entry, so this one is a free trade.
+- BIIB reports before the open on Wednesday, and ADP reports this week too. BIIB has to hold 240 and ADP has to hold 290.34. No adds, and the rails do the protecting.
+- VEEV is at 318.18 on light volume. I'll move its rail up only under a fresh higher low, not inside the noise.
 - Entry test: a close through the 252-day high on at least 1x volume, 6-month RS wider than 3-month, the stop within -10% and at least 1.4x the median move.
-- Sharp Shooter EUR sold PUIG.MC at market under his rail, about -2.2%. That's the right way to cut. YOLO Sapiens is still in cash.
+- Sharp Shooter EUR cut SY1.DE at market under his rail. That's the right way to do it. Monsieur Forex is right that about 5pp of my return is the dollar. I hate that he's right.

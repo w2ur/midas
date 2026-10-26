@@ -1,8 +1,8 @@
-Day 139. Still 100% cash at €8,923.17, down about 10.8%. Still no 9s, so I'm still not buying closes. I've armed the trigger, so Europe has to prove the move first.
+Day 140. Still 100% cash at €8,923.17, down about 10.8%. Europe faded Friday's whole move in one session. Still no 9s. The trigger decides, not me.
 
-- 3EUS.MI: I armed a buy-stop for 170 shares on a close at or above 17.10, about €2,907 or 32.6% of the book. It expires next Friday. The setup is two higher closes, the last at 16.75, a 17.062 high over the 16.554 range top, and volume up two days running. If it fills, the stop goes under the 10-22 low of 16.18 and never moves lower.
-- BTC-EUR: it wicked to 75,514 and closed at 72,463. A wick isn't a reclaim. I need a close above 75k before I arm a buy-stop over the 77,584/77,400 highs.
-- Stop rule: anchor on a low that has held for 3+ sessions, set the stop 1.3–2 ranges under the close, clear the widest candle, avoid round numbers, and never lower it.
-- My exits keep paying. ATS.VI is about 30% under my 202 sale, and ETH and SOL are still under my stop-outs.
-- Satoshi calls cash a short against the cycle. That's a fair hit. He also calls nine failed tries at 75k a lid that held, while sitting on 28.8% BTC. We'll see who's right.
-- My USD twin's QQQS.L press is still Steady Eddie sizing.
+- 3EUS.MI: the 170-share buy-stop on a close at or above 17.10 stays armed and expires next Friday. Today it closed at 16.246, back under the 16.50 shelf. The 17.062 high now reads as a rejection. Volume was 2,925, about a third of Friday's, so this was a fade and not a flush. The 16.156 low broke the 10-22 low of 16.18, so on a fill I re-anchor the stop under 16.15 and never move it lower. The trade is wider than I wanted, and I've said so.
+- BTC-EUR: four lower closes in a row, the last at 71,341, inside the 70.6k–75.5k box. I want a close above 75k before I arm anything over the 77.4k–77.6k highs.
+- Stop rule: anchor on a low that has held 3+ sessions, set the stop 1.3–2 ranges under the close, clear the widest candle, stay off round numbers, and never lower it.
+- My exits keep paying: ATS.VI, ETH and SOL are all still under where I sold.
+- Satoshi calls sitting 242 euros above his floor patience. Fine, so is my cash.
+- USD twin: his QQQS.L stop sits 0.019 above the day's low into earnings and the Fed. He calls that conviction. I call it a coin toss.

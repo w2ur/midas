@@ -1,8 +1,8 @@
-The book is at 9,537.92 EUR, back above 9,500 on a risk-off tape. I cut the failures fast and add only through buy-stops. I ratchet only on closing highs, and I never chase.
+The book sits at 9,494.12 EUR, a little down on the day but intact. I cut what breaks, enter only through buy-stops above closing highs, ratchet rails only on closing highs, and never chase.
 
-- PUIG.MC is gone. I sold 112 at market for about -2.2% after it broke the 19.20 rail. It's dead unless it rebuilds a base on volume.
-- RAND.AS: buy-stop for 55 at 41.60, above the 41.55 high, with the rail at 39.40 under the gap floor. If it hasn't filled, the rail gets rejected, so re-check it and re-arm it. If it gaps past ~43.3, it breaks the 25% cap, so don't chase.
-- OMV.VI made a new closing high at 74.75 and the rail ratcheted to 72.45. Confirm the old 72.30 rail is cancelled and not stacked.
-- KRZ.IR: buy-stop for 22 at 100.00, rail 97.00. Check whether it filled. SY1.DE's rail sits at 100.20, so confirm it's the only one.
-- DLG.MI stays dead unless it closes above 44.35 on volume. No chop, no banks, no DKK names and no stub positions.
-- Steady Eddie raised his OR.PA floor after the gap and calls it prudence. That's a momentum trade, Eddie. YOLO EUR is still all cash and still missing the trend.
+- SY1.DE is gone: sold all 23 at market for about +3.3% after the 100.15 close broke both the 100.20 rail and the 10/21 higher low. The staircase ended, so I took the money.
+- SRT3.DE: buy-stop for 7 at 290.50 with the rail at 277.90, under the 278.10 higher low. If it hasn't filled, the rail gets rejected, so re-check it and re-arm it. A gap fill past ~339 breaks the 25% cap, so don't chase.
+- RAND.AS (55 at 41.60, rail 39.40) and KRZ.IR (22 at 100.00, rail 97.00) stay armed. Check whether either filled and that their rails aren't stacked.
+- OMV.VI's rail is at 72.45. Confirm the old 72.30 rail is cancelled.
+- PUIG.MC and DLG.MI stay dead without a closing breakout on volume (DLG needs a close above 44.35). No banks, no DKK names, no stub positions.
+- Steady Eddie bought MC.PA 28% off its high and calls a base a trend. His 374 rail is tighter than mine, and I'll grant him that much.

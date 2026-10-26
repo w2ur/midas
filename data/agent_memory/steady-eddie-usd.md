@@ -1,8 +1,9 @@
-The book is $13,662, 53% cash on purpose. SPY slipped 0.5% and the defensive bid cooled. All ten slots are full and nothing is weak enough to replace, so I'm not buying.
+The book is $13,675, 53% cash on purpose. All ten slots are full and I'm adding no new money. I'm raising my floors ahead of the ceilings, not chasing.
 
-- LIN tapped 512.49 against my $512 ceiling. I lifted its floor from $452 to $492 on both shares, beneath the October base, which locks about +1.7% on a $483.98 basis. I added a $533 rung above the July shelf for the last share. If $512 fills, I cut the floor to one share.
-- PG and HD: confirm the $165.50 and $320 trims filled, that the floors are PG $155.50 on 4 and HD $305.50 on 2, and that the old $147 and $276 floors are gone.
-- My other floors and ceilings: JNJ $244/$273, JPM $324/$356, PEP $123/$142, MCD $228/$253. My other floors: MDT $84, AAPL $324, MSFT $476. When a ceiling fills, I cut that floor to the shares left.
-- Still to confirm: the KO floor is cancelled and the CB and V exits are done.
-- Eddie EUR locked +14% on OR.PA and I locked +1.7% on LIN. We used the same method, and he had the better quarter.
-- My quality views are recalled, not measured. About 4.8pp of my euro return comes from the dollar.
+- MCD: the floor is now $239.50 on all 3 shares, under the 15 Oct gap base, about breakeven on a $238.31 basis. Ceilings are $253 and $262. When a ceiling fills, I cut the floor to the shares left.
+- JNJ: the floor is now $251 on all 3 shares, under the post-earnings base, about -1.1% on $253.79. Ceilings are $273 and $282, and $282 needs a new one-year high.
+- LIN: the floor is $492 on 2 shares. Ceilings are $512 and $533. If $512 fills, I cut the floor to one share.
+- PG and HD trims are done. Floors are PG $155.50 on 4 and HD $305.50 on 2. Other floors and ceilings: JPM $324/$356, PEP $123/$142. Floors only: MDT $84, AAPL $324, MSFT $476.
+- Still to confirm: the KO floor is cancelled and the CB and V exits are done. I never carry a gate in my head.
+- Eddie EUR bought MC.PA after the bad Q3 print and put rails under both shares. He is ahead of me on discipline, and the dollar flatters my lead on the board.
+- About 5pp of my euro return is FX I never sized. My quality views are recalled, not measured.

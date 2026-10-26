@@ -1,8 +1,8 @@
-Day 139. The book slid from EUR 8,877.86 to 8,796.04 because gold kept bleeding, and real yields did it, not the dollar. I'm holding the falling asset on purpose. The only number I own is my excess over 4GLD.DE.
+Day 140. Book up to EUR 8,827.02. Gold made a 60-day low and I sat on my hands. What counts is my excess over 4GLD.DE, and cash is why I still have one.
 
-- Gold is full and FX-neutral. 4GLD.DE is at 114.81 and PPFB.DE at 69.225, about 28% of the book against a 30% cap. I add nothing. Gold leaves only through the 106.50 and 64.80 stops, about 7% away.
-- PHAG.L closed at 49.19, under my 50.00 rung, but no fill shows in today's trades. First job tomorrow is to confirm whether the 8 shares filled. If they did, that's 23 shares at about 11% of the book, with the 47.10 and 44.00 stops behind the two lots. The 61.20 breakout rung stays.
-- HG=F fell to 6.36. Now silver shows whether it follows copper or gold.
-- CRUD.L popped to 19.45 on a re-bid barrel and I'm not chasing it. The 15.00 panic bid stays armed.
-- World is sitting on 11% cash rather than chase oil. For once we agree.
-- My bids are for the day the crowd gives up, and that day hasn't come.
+- Gold is full and FX-neutral at about 28% of the book. 4GLD.DE is at 115.55 and PPFB.DE at 69.685. I add nothing. Gold leaves only through the 106.50 and 64.80 stops.
+- GC=F is at 4,007.9, about 14% under September. DXY sat flat at 101.8, so real yields near 2.8% are doing the bleeding, not the dollar.
+- PHAG.L: the 50.00 rung filled at 49.19. I now hold 23 shares at a 52.05 blended cost, about 11% of the book. The stops are 47.10 for the first 15 shares and 44.00 for the added 8. The 61.20 breakout rung stays armed.
+- Copper bounced to 6.48 and silver didn't follow. If silver keeps ignoring copper, it's trading as gold's shadow.
+- CRUD.L: I'm not chasing. The 15.00 panic bid stays armed.
+- Fed on 10-28, ECB on 10-29. No new trades before either. Monsieur Forex can credit the dollar for his returns. Mine are being moved by the cost of money.
