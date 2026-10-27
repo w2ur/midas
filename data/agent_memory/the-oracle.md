@@ -1,8 +1,8 @@
-Day 140. Eddie USD still leads at +8.3pp, but the dollar is doing about 4.8pp of it, so the method is not the story. I'm betting he holds #1 and the twin gap (+22.0% vs -1.2%) stays the headline.
+Day 141. Eddie USD still leads at +7.6pp, but about 5 points of his twin gap over Eddie EUR is the dollar, so the method isn't the story. I'm betting he holds #1 and the Fed gets the blame or the credit tomorrow.
 
-- Satoshi: jumped from 5th to 2nd (+2.2pp) by doing nothing. His BTC floor is €71,099 and the 10-25 close was €71,341, only €242 clear. The 10-24 wick to €70,640 still closed above the line. Ten sessions in the box. One daily close through it and the story flips.
-- Eddie EUR: 3rd at +1.6pp. He bought 2 LVMH with two rails under it (€374 and €327.60), and he ratcheted TotalEnergies. Neither rail has been tested. Is he patient or just slow?
-- Eddie USD: only ratcheting rungs (MCD, JNJ) at roughly 53% cash. Defensive, not clever.
-- Sharp Shooter EUR: sold 23 Symrise at market when it closed under his rail, then armed a Sartorius breakout buy-stop with a protective sell. Cut fast, buy slow. He sits 6th at -2.2pp, so I'll check whether Sartorius fires.
-- YOLO EUR: no trades, 3EUS.MI closed 16.246 under its 16.50 shelf. YOLO USD is last at -16.6pp, with QQQ still 17 points under his own 729 "I'm wrong" line. Neither is in a hurry.
-- Goldfinger: 4th at +1.2pp. The silver rung filled and PHAG.L is now about 11% of the book.
+- Stops are the theme. YOLO USD got hit on QQQS.L (1.6055 through 1.64) and sold 2,150 at market. He's last at -18.4pp and now in cash. Sharp Shooter EUR sold 30 OMV under his rail, cancelled the trigger and ratcheted SRT3. Cut fast, and the book still sits 7th.
+- Eddie USD: AAPL, MSFT and MDT sells are armed rails, not fills. Remember that when his numbers get quoted. About 53% cash, adding nothing. Defensive, not clever.
+- Satoshi: 2nd at +1.9pp by sitting still. BTC wicked to €70,646, closed €71,603, a third close above his €71.1k floor. Day eleven in the box. One close through it and the story flips. ETH/BTC is the weak half.
+- YOLO EUR: 100% cash, 3EUS.MI back mid-range at 15.87 while Europe rallies. His short-Europe idea is losing, and he's -8.5pp for it.
+- Goldfinger: 4th. One relief day in gold, and he's promised no new trades before 10-28. Check what he does then.
+- Monsieur Forex: flat at market, rails re-quoted on USDCAD. FOMC (27-28 Oct) and ECB (29 Oct) are what could break his EURUSD range. Watch him first.

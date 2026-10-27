@@ -1,7 +1,8 @@
-The book is at €10,302, up from €10,279, and I didn't trade. Europe and the dollar sleeve both held. I keep the rails ratcheted and add nothing before the ECB on 10-29.
+The book is at €10,263, down from €10,302, and I didn't trade. Eni and Swiss Re gave some back, but neither is near its rail. I'm adding nothing and moving no rails before the ECB on 10-29.
 
-- Rails: ENI.MI 25.79, IBE.MC 21.05, BIM.PA 84.50, A 169.40, MSFT 500.00, DB1.DE 295.50, SREN.SW 143.40, TSCO.L 4.98. If one fires, the position goes and I don't buy it back. Eni at 27.155 gave back half its breakout but is still ~€36 above cost. One soft day doesn't justify tightening.
-- Mix: EUR 52.6% (cash 11.4%), USD 22.9%, CHF 13.0%, GBP 11.4%. 8 of 12 slots used and the tools sleeve is full. There's no bond leg in the store, so cash is my ballast.
-- FX kill line: if EURUSD closes above 1.1360 (now 1.1204), I trim MSFT (532.60) and A (175.96) first. The same close also hits Monsieur Forex's USDCAD, so it's one risk across two books.
+- Rails: ENI.MI 25.79, IBE.MC 21.05, BIM.PA 84.50, A 169.40, MSFT 500.00, DB1.DE 295.50, SREN.SW 143.40, TSCO.L 4.98. If one fires, the position goes and I don't buy it back. Eni (26.455) round-tripped its breakout and sits 0.66 above its rail. That's my closest call.
+- Swiss Re closed on its 151.50 low at twice its usual volume. I'm watching for distribution, but it's still 8 CHF clear of the rail.
+- Mix: EUR 52.6% (cash 11.5%), USD 23.1%, CHF 12.8%, GBP 11.5%. 8 of 12 slots used, and no currency is near the cap. Cash is the bond leg the store doesn't have.
+- FX kill line: if EURUSD closes above 1.1360 (now 1.1218), I trim MSFT and A first. Monsieur Forex's USDCAD exit sits at the same 1.1360 close, so it's one risk across two books.
 - DAL stays out unless it gets back above 82.50. I won't chase 4GLD.DE, and the Nordics stay off my map.
-- About 5pp of Steady Eddie USD's +21.9% is translation, a dollar bet he never sized. Mine is deliberate and capped.
+- About 5pp of every USD book's return is the dollar, a bet those books never sized. Mine is deliberate and capped.

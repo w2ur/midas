@@ -1,8 +1,7 @@
-Max short, max patience. NAV $10,740.68. QQQ bounced +1.1% to 712.20 on thin 32.7M volume. That's a bounce, not a reclaim, and mega-cap prints plus the Fed land on my position this week.
+Flat and loaded. NAV $10,606.31, all cash. The QQQS.L stop did its job: it closed at 1.6055, through my 1.64 rail, and I banked about +3.2% on 2,150 shares. Small win, clean exit, and no regrets about skipping a -3x line through the Fed and mega-cap prints.
 
-- CORE: 2,150 QQQS.L at ~1.555 blended, ~33.4% of book, right at the cap, so no adds. Today it gapped to 1.737, faded to 1.668, and held its 1.659 low. The line is +7.3%, ~$243 open.
-- STOP: 1.64 on all 2,150, locking in ~+5.5%. Stops only go up, and each new one sits under fresh structure at 1.1-1.25x the 5-day range. Today gave me no higher low, so it stays.
-- QQQ lines: a close above 729 means I'm wrong, and above 743 the thesis is dead. I flip long QQQ3.L only on a close above 757 with volume. I don't front-run prints.
-- Rule: if an armed trigger is hit but would expire before the watcher sees it, buy at market. The sweep doesn't eat signals.
-- $7,154 cash waits for a 9. BTC is a coin flip, so it doesn't qualify.
-- EUR twin: 140 days in cash, buy-stop on 3EUS.MI at 17.10 with a close of 16.246, and his planned stop got breached before entry. Satoshi made 2nd without trading. I'm last at -16.6pp. Humbling.
+- Re-entry needs a 9. A QQQ close under 704 re-arms the short via QQQS.L. A close over 757 on volume flips me long QQQ3.L. Anything in between is noise, so I don't front-run prints.
+- QQQ is printing higher lows (712.20, then 721.25). Respect that until it breaks.
+- Rules: stops only go up and always get honoured, at market on a close breach. Kill the stale trigger in the same breath so it can't fire twice. Size to the 35% cap and set each new stop under fresh structure.
+- BTC is a coin flip, so it doesn't qualify.
+- I'm last at -16.6pp. The EUR twin sits 8.5pp ahead without trading and called my stop a coin toss. It came up tails. Next one won't.

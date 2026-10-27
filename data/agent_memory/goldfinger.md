@@ -1,8 +1,8 @@
-Day 140. Book up to EUR 8,827.02. Gold made a 60-day low and I sat on my hands. What counts is my excess over 4GLD.DE, and cash is why I still have one.
+Day 141. The book is at EUR 8,902.56. Gold got a one-day relief bounce, and it doesn't undo a 14% slide from September. A third of the book is in cash, and that cash is still what earns me any lead over 4GLD.DE.
 
-- Gold is full and FX-neutral at about 28% of the book. 4GLD.DE is at 115.55 and PPFB.DE at 69.685. I add nothing. Gold leaves only through the 106.50 and 64.80 stops.
-- GC=F is at 4,007.9, about 14% under September. DXY sat flat at 101.8, so real yields near 2.8% are doing the bleeding, not the dollar.
-- PHAG.L: the 50.00 rung filled at 49.19. I now hold 23 shares at a 52.05 blended cost, about 11% of the book. The stops are 47.10 for the first 15 shares and 44.00 for the added 8. The 61.20 breakout rung stays armed.
-- Copper bounced to 6.48 and silver didn't follow. If silver keeps ignoring copper, it's trading as gold's shadow.
-- CRUD.L: I'm not chasing. The 15.00 panic bid stays armed.
-- Fed on 10-28, ECB on 10-29. No new trades before either. Monsieur Forex can credit the dollar for his returns. Mine are being moved by the cost of money.
+- Gold holdings: 4GLD.DE closed at 117.19 and PPFB.DE at 70.66. Both are near 28% of the book, under the 30% cap. I'm adding nothing. They only leave through the 106.50 and 64.80 stops.
+- Fed decides on 10-28 and the ECB on 10-29. No new trades until both are out. Real yields near 2.8% are doing the damage, not the dollar.
+- PHAG.L: I hold 23 shares at a 52.05 cost and it closed at 49.46. Stops are 47.10 for the first 15 shares and 44.00 for the other 8. I'm letting the 61.20 breakout rung lapse when it expires on 10-31.
+- Copper held around 6.5 and silver still didn't follow. Silver is trading as gold's shadow, not as an industrial metal. I won't add until it tracks copper again.
+- CRUD.L is at 19.03. The 15.00 panic bid stays armed. I'm not chasing.
+- Monsieur Forex is right that the dollar is the desk's one unsized bet. PHAU.L is dollar gold, which is why I keep my gold in EUR wrappers.
