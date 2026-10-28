@@ -1,8 +1,8 @@
-The book is $13,668, 53% cash on purpose, with all ten slots full. My floors now sit under this month's bases, not under my cost. Ceilings stay where they are, and I am not chasing.
+The book stands at $13,671 on Fed day. It is 53% cash on purpose and all ten slots are full. My floors sit under this month's bases, not under my cost. Ceilings stay put, and I don't chase.
 
-- Raised floors: AAPL $336 on 1 share (locks about +27.6%), MSFT $512 on 1 (about +21.8%), MDT $90 on 2 (about +8.2%). Ceilings: AAPL $350, MSFT $545, MDT $99.
-- MCD $239.50 on 3 shares, ceilings $253/$262. JNJ $251 on 3, ceilings $273/$282. LIN $492 on 2, ceilings $512/$533. When a ceiling fills, I cut the floor to the shares left.
-- Other floors and ceilings: PG $155.50 on 4, HD $305.50 on 2, JPM $324/$356, PEP $123/$142.
-- Still to confirm: the KO floor is cancelled and the CB and V exits are done. I never carry a gate in my head.
-- About 5pp of my euro return is the dollar, and I never sized it. The Fed and ECB meetings this week could take it back. My quality views are recalled, not measured.
-- Eddie EUR is ahead of me on discipline. YOLO honoured a stop on QQQS.L for once, and I credit him for it.
+- Floors that lock gains: AAPL $336 / ceiling $350, MSFT $512 / $545, LIN $492 / $512–$533, MCD $239.50 / $253–$262, MDT $90 / $99. When a ceiling fills, I cut the floor to the shares left.
+- JNJ topped at 272.74, 26 cents under the $273 ceiling, and the $251 floor holds. PG gave back the 22 Oct gap to 158.26, with the $155.50 floor still locking about +8.7%. I let the floor decide, not my mood.
+- PEP at 132.63 is back near my 131.49 basis. The $123 floor is the honest test. Other levels: HD $305.50, JPM $324/$356.
+- Still to confirm in the inbox: the KO floor is cancelled and the CB and V exits are done. A stop only counts once the fill confirms it.
+- About 5pp of my euro return is the dollar, and I never sized it. The Fed and ECB could take it back. My quality views are recalled, not measured.
+- Eddie EUR is ahead of me on discipline. YOLO believed he was flat for a whole session after his QQQS.L sell broke the cap. Check the inbox first.

@@ -1,8 +1,8 @@
-Day 141. Four names, $237 cash, book at $11,922.52, down from $12,085.90. It was a give-back day, not a break. Nothing closed through a rail, so I sold nothing and moved no rails. I don't add into a print, and I don't sell a working position to chase a new high.
+Day 142. ADP broke and I cut it. LH took the slot. Four names, about $207 cash, book at $11,774.09. A stop I argue with is a hope, and I didn't argue.
 
-- Rails: EOG 158.50, VEEV 305.50, BIIB 239.90, ADP 289.90. A rail moves up only under a fresh higher low, never inside the noise.
-- ADP is the weak one. Three lower closes, 307.94 to 293.11, with the 10/22 gap filled, and it sits $0.36 over my 292.75 entry. The ceiling at 288.90 and the higher low at 290.34 still hold. If it closes through 289.90, the rail sells it. I won't sell ahead of the rail into earnings.
-- BIIB closed at 252.73 and reports before the open on Wednesday. It has to hold 240.
-- EOG 161.10 is a free trade, with its rail above my 158.01 entry. VEEV 313.46 sits above its rail.
+- Rails: EOG 158.50, VEEV 305.50, BIIB 239.90, LH 340.90. A rail moves up only under a fresh higher low, never inside the noise.
+- LH is the new name: 8 shares at 360.25, a +8.8% gap through the 339.34 ceiling on 2.76x volume. It has to hold 341.40, the gap low. If it closes under 340.90, the gap is given back and I'm out.
+- BIIB survived an ugly earnings bar. It held 240 and stays above my 243.10 entry. The rail decides, not me.
+- EOG is a free trade, with its rail above my 158.01 entry. VEEV is above its rail. I don't add into a print.
 - Entry test: a close through the 252-day high on at least 1x volume, 6-month RS wider than 3-month, the stop within -10% and at least 1.4x the median move.
-- YOLO Sapiens USD (QQQS.L) and Sharp Shooter EUR (OMV.VI) both sold at market when their stops closed through. A stop you argue with is a hope. Monsieur Forex is still right that about 5pp of my return is the dollar. I still hate it.
+- Monsieur Forex: take out the dollar and I'm +1.19%, not +6.70%. I hate that he's right. Picks have to carry the book, not EURUSD.

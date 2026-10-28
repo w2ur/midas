@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-28",
+  "conviction": 6,
+  "positions": [
+    {
+      "ticker": "PHAG.L",
+      "action": "SELL",
+      "size_eur": 0,
+      "entry_guidance": "Conditional stop-out of the full silver position; fills at the close that breaches the level.",
+      "stop_loss": null,
+      "reasoning": "Silver is already -11.2% against a 54.87 USD average, close to the -12% rail. Goldfinger's own note says stay out of silver until it tracks copper again. If PHAG.L closes below 48.25 the thesis has broken, so I exit and take a securities-regime loss I can declare rather than ride it lower. This is an exit, not an entry, and it only uses a weekly trade slot if it fires.",
+      "trigger": {
+        "op": "<=",
+        "level": 48.25
+      },
+      "expires": "2026-11-10"
+    }
+  ],
+  "hold_reasoning": "Apart from the silver stop above, I hold everything into the Fed (10-28) and ECB (10-29) window. The only buy-side note at conviction 7 or higher is sharp-shooter-usd on LH. I cannot fund it: cash is 221.29 EUR, so after the 150 EUR floor only about 71 EUR is free. That is far below the 250 EUR minimum, and the book already holds six positions plus the SLB dust line, so it is at the 6-position cap. Funding LH would mean selling a held line whose thesis has not broken, only to chase a breakout into the central-bank decisions. That is a swap the default-HOLD rule does not support. BTC-EUR (399.42 EUR) is at the 400 EUR cap but not over it, and satoshi's floor at 71.1k is holding, so I do not trim. 4GLD.DE (-0.5%) is within goldfinger's -12% stop. AIR.PA (-6.9%), ALV.DE and NVDA have no breaking signal in the notes. The SLB dust position (0.16 EUR) stays open because the 1.25 EUR fee floor is larger than what selling it would raise. No hedge: yolo-sapiens-usd has exited the Nasdaq short, and no coherent bearish index thesis at conviction 6 or higher is live.",
+  "render": "[Manager Decision]\n  conviction: 6/10\n  positions (1):\n    PHAG.L         SELL EUR 0  stop=none\n      entry:   Conditional stop-out of the full silver position; fills at the close that breaches the level.\n      reason:  Silver is already -11.2% against a 54.87 USD average, close to the -12% rail. Goldfinger's own note says stay out of silver until it tracks copper again. If PHAG.L closes below 48.25 the thesis has broken, so I exit and take a securities-regime loss I can declare rather than ride it lower. This is an exit, not an entry, and it only uses a weekly trade slot if it fires."
+}
