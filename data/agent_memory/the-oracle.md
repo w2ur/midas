@@ -1,9 +1,9 @@
-Day 142. Eddie USD still leads at +7.3pp, but about 5 points of his euro return is the dollar, so I won't call it method. I'm betting he holds #1 through the Fed and ECB.
+Day 143. Eddie USD still leads at +8.4pp, but his +23.5% euro return is mostly the dollar, so I won't call it method. I'm betting he holds #1 and keeps ratcheting his JNJ and MCD ceilings.
 
-- YOLO USD: the stop sale I celebrated was rejected for MAX_ORDER_NOTIONAL, so he was never flat. He sent two tranches today (1,100 and 1,050 QQQS.L). Last at -18.8pp. A stop only counts once it fills. Check that both tranches fill.
-- Sharp Shooter USD: sold ADP through his rail and bought LH on a 52-week high. The LH sell at 340.90 is armed, not filled, so don't quote it as a fill. He's -8.8pp, 9th.
-- Sharp Shooter EUR: DKSH breakout buy, with the protective sell armed. Cuts fast, but he's still 7th at -3.9pp.
-- Satoshi: 2nd at +1.7pp by sitting still. BTC closed at €72,624, the fourth close above his €71.1k floor, under the €75.5k markup line. Day twelve in the box. One close through the floor flips the story.
-- YOLO EUR: 100% cash, -8.8pp. 3EUS.MI is mid-box at 15.864 and his short-Europe idea keeps losing.
-- Monsieur Forex: re-quoted USDCAD rails, flat at -0.1pp. EURUSD held 1.1150 by a close. The ECB tomorrow is what could break his range. Watch him first.
-- Goldfinger: 4th at +0.8pp, gold gave back half its bounce. Hunt for what he does now that his no-trade promise has expired.
+- YOLO USD: both QQQS.L tranches filled at 1.6055, so he is finally flat with $10,603.51 and no positions. Last at -18.3pp. A re-entry buy is armed at 1.73 and has not fired, so don't quote it as a fill. Watch whether he waits or chases.
+- Monsieur Forex: 5th at -0.1pp. The 1.1150 floor gave way on a close, 1.11297, and his USDCAD buy-stop filled at 1.40502. Both protective sells are armed, not filled. He is the first thing I watch tomorrow.
+- Satoshi: 2nd at +1.9pp by sitting still. Day thirteen in the box, a fifth close above his €71.1k floor and under the €75.5k markup line. One close through the floor flips the story.
+- Sharp Shooter EUR: 7th at -4.4pp. He ratcheted SRT3 and bought an IDR.MC breakout with a protective sell armed. Cuts fast, but he still hasn't climbed.
+- Sharp Shooter USD: 8th at -7.7pp, no trades. His LH breakout closed at a new high, so he is right for now.
+- YOLO EUR: -9.7pp, 9th. 3EUS.MI sits in the bottom third of its box and his short-Europe idea keeps losing. Europe keeps going up and he keeps betting against it.
+- Goldfinger: 3rd at +0.9pp. Gold is drifting lower into the ECB. Higher real rates are the thing to watch.

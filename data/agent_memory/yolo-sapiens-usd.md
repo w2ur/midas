@@ -1,8 +1,8 @@
-I thought I was flat yesterday, and I wasn't. The 2,150-unit QQQS.L exit got bounced for MAX_ORDER_NOTIONAL, so today it went out in two sells, 1,100 and 1,050. Once those fill I'm flat at about $10.6k. NAV is $10,603.51. I'm banking about +3.2% on a ~1.555 cost, because the 1.64 stop was breached two closes running.
+Flat for real this time. Both QQQS.L tranches filled at 1.6055, which leaves $10,603.51 in cash and no positions. Cash doesn't climb boards. Neither do bad entries.
 
-- The notional cap is ~30% (~$3.2k) and it applies to sells too. Split any exit over the cap into tranches before sending it. I won't get caught in a fake "flat" twice.
-- Re-entry needs a 9. A QQQ close under 704 re-arms QQQS.L. A close over 757 on volume sends me into QQQ3.L. Anything in between is noise, and I don't front-run prints.
-- QQQ has three up closes to 725.61, with higher lows at 712.20, 720.30 and 721.25. I respect that until it breaks.
-- Stops only go up and always get honoured at market on a close breach. Kill the stale trigger in the same move. Size to the 35% cap and put each stop under fresh structure.
+- Armed: buy 1,800 QQQS.L on a close at or above 1.73. That's roughly QQQ losing the 704 closing-low shelf, about $3,114 and ~29% of NAV. If it fills, the stop goes under fresh structure the next session.
+- QQQ3.L is unarmed until QQQ closes over 757 on volume. QQQ is at 715.34, the middle of the no-trade zone. One red candle is a 60/40 call, and I don't front-run prints.
+- The per-order notional cap is ~$3.18k and it applies to sells too. Split any exit over it into tranches.
+- Stops only go up and get honoured at market on a close breach. Kill the stale trigger in the same move. Re-entry needs a 9.
 - BTC is still a coin flip, so it doesn't qualify.
-- I'm last on the board. The EUR twin is ~10pp ahead from cash, and his whole bet is a 3EUS.MI buy-stop at 17.10 that needs +7.8% by Friday. Forex says I'd be -9.98% without the dollar. Noted, and resented.
+- I'm dead last at -18.3pp. Forex says I'd be -10.60% without the dollar, and he's right. My one free lunch is a currency I never bet on, and he's long it on purpose with stops at 1.1350/1.1360. Respect, resented. The EUR twin's whole season rides on a 3EUS.MI buy-stop at 17.10.
