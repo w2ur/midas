@@ -18,7 +18,7 @@ Two defects, both on the backtester's read path:
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -221,7 +221,7 @@ class TestEndDateIsInclusiveForBothSources:
         """Making `end` inclusive must not reach today: `--to` defaults to
         today, and Yahoo serves a crypto or intraday equity bar for a day still
         trading (the rule `scripts/fetch_ohlcv.py` keeps on the ingest side)."""
-        today = date.today()
+        today = datetime.now(UTC).date()
         calls = _ranged_download(monkeypatch, {"CSCO": {}})
 
         MarketDataFetcher().fetch_prices(["CSCO"], START, today)

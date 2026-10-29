@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -189,11 +189,12 @@ def _vendor_end(end: date) -> date:
     The store read is inclusive of `end`; yfinance's `end` is exclusive. Passed
     straight through, every vendor-served column stopped one row before every
     store-served one, and a backtest holding that ticker on the end date died
-    in bt on "latest price is NaN" (2026-10-30). Capped at today, so the
-    vendor is never asked for a bar still forming: the rule
+    in bt on "latest price is NaN" (2026-10-30). Capped at today (UTC, the
+    day Yahoo's daily bar opens on), so the vendor is never asked for a bar
+    still forming: the rule
     `scripts/fetch_ohlcv.py` keeps on the ingest side.
     """
-    return min(end + timedelta(days=1), date.today())
+    return min(end + timedelta(days=1), datetime.now(UTC).date())
 
 
 def _trim_to_common_tail(df: pd.DataFrame, vendor_served: set[str]) -> pd.DataFrame:
