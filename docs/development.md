@@ -39,11 +39,10 @@ python scripts/run_backtest.py --all --from 2024-01-01
 python scripts/run_all_combos.py --universes etf-broad --from 2024-01-01
 ```
 
-`--to YYYY-MM-DD` sets the end date (default: today). A run can fail with
-`latest price is NaN for security …` when a position is still open on an end
-date for which that ticker has no usable price; ending a day earlier
-(`--to` yesterday) is the workaround today, and `sp500` strategies can fail
-this way on any end date. Backtest returns are
+`--to YYYY-MM-DD` sets the end date (default: today), inclusive. Prices come
+from the OHLCV store, with yfinance only for tickers the store does not cover
+from `--from`; that fallback never asks for today's still-forming bar, and a
+trailing day only one of the two sources holds is dropped. Backtest returns are
 **gross of costs**, and the CLI says so on every run (`GROSS_OF_COSTS`). On a
 universe whose constituents are today's list, such as `sp500`, it also warns
 of survivorship bias; prefer a stable universe (`dow30`, `etf-broad`) for
@@ -80,8 +79,7 @@ Create a JSON file in `data/strategies/`:
 }
 ```
 
-Then run it with `python scripts/run_backtest.py --strategy my-strategy`
-(add `--to` yesterday's date if it stops on the NaN error above).
+Then run it with `python scripts/run_backtest.py --strategy my-strategy`.
 
 Only fields the backtest engine applies are shown. `funding.monthly_addition` /
 `weekly_addition`, `rules.min_hold_days` and `dividends` are parsed and kept

@@ -157,3 +157,110 @@ class TestPartialStoreCoverage:
             ["AAPL", "GHOST"], START, END
         )
         assert list(df.columns) == ["AAPL"]
+
+
+# ---------------------------------------------------------------------------
+# The two sources must agree on what `end` means (2026-10-30)
+# ---------------------------------------------------------------------------
+
+
+def _ranged_download(monkeypatch: pytest.MonkeyPatch, closes: dict[str, dict[str, float]]) -> dict:
+    """A yfinance stand-in that honours `start`/`end` the way yfinance does:
+    `start` inclusive, `end` EXCLUSIVE. The fixture above ignores the range,
+    which is why the off-by-one between the two sources was invisible here."""
+    calls: dict = {"end": None}
+
+    def _download(tickers, start=None, end=None, **_kwargs):
+        calls["end"] = end
+        wanted = [tickers] if isinstance(tickers, str) else list(tickers)
+        dates = sorted(
+            {d for t in wanted for d in closes.get(t, {}) if start <= d < end}
+        )
+        cols = pd.MultiIndex.from_product([["Close"], wanted])
+        data = {("Close", t): [closes.get(t, {}).get(d) for d in dates] for t in wanted}
+        return pd.DataFrame(data, index=pd.to_datetime(dates), columns=cols).dropna(
+            how="all"
+        )
+
+    monkeypatch.setattr(md.yf, "download", _download)
+    return calls
+
+
+class TestEndDateIsInclusiveForBothSources:
+    """Regression: <fix commit> — `run_backtest.py` raised "Position is open
+    ... latest price is NaN" for a ticker the store held on the end date.
+
+    `_store_series` serves `[start, end]`; `yf.download` serves `[start, end)`.
+    A ticker whose store file starts after `start` (CSCO's 636 rows, most of
+    sp500's two-year backfills) went to the vendor and came back one row short,
+    so the frame's last row was NaN for every vendor-served column, on every
+    end date. Seen on dow30 2026-10-28 (CSCO, SHW) and sp500 2025-12-31 (442
+    of 503 columns).
+    """
+
+    def test_a_vendor_served_ticker_has_a_close_on_the_end_date(
+        self, store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _seed(store, "AAPL", {"2026-08-03": 212.0, "2026-08-06": 213.0, "2026-08-07": 214.0})
+        _ranged_download(
+            monkeypatch,
+            {"CSCO": {"2026-08-03": 110.0, "2026-08-06": 111.0, "2026-08-07": 112.0}},
+        )
+
+        df = MarketDataFetcher(cache_dir=tmp_path / "c").fetch_prices(
+            ["AAPL", "CSCO"], START, END
+        )
+
+        assert df.index[-1] == pd.Timestamp(END)
+        assert not df.iloc[-1].isna().any()
+        assert df.loc[pd.Timestamp(END), "CSCO"] == pytest.approx(112.0)
+
+    def test_the_vendor_is_never_asked_for_todays_forming_bar(
+        self, store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Making `end` inclusive must not reach today: `--to` defaults to
+        today, and Yahoo serves a crypto or intraday equity bar for a day still
+        trading (the rule `scripts/fetch_ohlcv.py` keeps on the ingest side)."""
+        today = date.today()
+        calls = _ranged_download(monkeypatch, {"CSCO": {}})
+
+        MarketDataFetcher().fetch_prices(["CSCO"], START, today)
+
+        assert calls["end"] == str(today)  # exclusive: yesterday is the newest bar
+
+    def test_a_trailing_date_only_one_source_holds_is_dropped(
+        self, store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The default `--to` (today) on a checkout whose store lags the
+        vendor by a day: the vendor serves 08-07, the store stops at 08-06.
+        Keeping 08-07 put a row in the frame on which every store-served
+        column was NaN (2026-10-29: 498 of 503 sp500 columns, CRL held)."""
+        _seed(store, "AAPL", {"2026-08-03": 212.0, "2026-08-06": 213.0})
+        _ranged_download(
+            monkeypatch,
+            {"CSCO": {"2026-08-03": 110.0, "2026-08-06": 111.0, "2026-08-07": 112.0}},
+        )
+
+        df = MarketDataFetcher(cache_dir=tmp_path / "c").fetch_prices(
+            ["AAPL", "CSCO"], START, date(2026, 8, 8)
+        )
+
+        assert df.index[-1] == pd.Timestamp("2026-08-06")
+        assert not df.iloc[-1].isna().any()
+
+    def test_a_single_source_frame_is_not_trimmed(
+        self, store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The control for the trim: with one source there is nothing to
+        reconcile, and a store column that stopped early (a stale or dead
+        symbol) must not cut every other column's history short."""
+        _seed(store, "AAPL", {"2026-08-03": 212.0, "2026-08-07": 214.0})
+        _seed(store, "DEAD", {"2026-08-03": 5.0, "2026-08-04": 5.0})
+        calls = _ranged_download(monkeypatch, {})
+
+        df = MarketDataFetcher(cache_dir=tmp_path / "c").fetch_prices(
+            ["AAPL", "DEAD"], START, END
+        )
+
+        assert calls["end"] is None  # the store covered both
+        assert df.index[-1] == pd.Timestamp(END)
