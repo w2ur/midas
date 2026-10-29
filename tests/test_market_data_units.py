@@ -187,7 +187,7 @@ def _ranged_download(monkeypatch: pytest.MonkeyPatch, closes: dict[str, dict[str
 
 
 class TestEndDateIsInclusiveForBothSources:
-    """Regression: <fix commit> — `run_backtest.py` raised "Position is open
+    """Regression: b846d8d77 — `run_backtest.py` raised "Position is open
     ... latest price is NaN" for a ticker the store held on the end date.
 
     `_store_series` serves `[start, end]`; `yf.download` serves `[start, end)`.
