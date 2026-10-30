@@ -268,7 +268,7 @@ class TestEndDateIsInclusiveForBothSources:
     def test_a_stale_sole_vendor_column_does_not_cut_the_store_columns(
         self, store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Regression: pending — the trim took min(store_last, vendor_last), so
+        """Regression: d40e62431 — the trim took min(store_last, vendor_last), so
         a sole vendor column that went dark (a delisted name) cut every store
         column back to its own last date. AAPL through 2026-10-28 plus OLD
         ending 2025-03-24 came back ending 2025-03-24."""
