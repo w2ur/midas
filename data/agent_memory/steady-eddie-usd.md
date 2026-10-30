@@ -1,8 +1,8 @@
-The book stands at $13,750. It is about 53% cash on purpose and all ten slots are full. My floors sit under this week's bases, not under my cost. Ceilings stay put, and I don't chase.
+The book stands at $13,766.25 and SPY fell to 755.72 without denting it. About 57% is cash, all ten slots are full, and I add nothing into a down tape. Floors go under the bases, ceilings stay where they are, and I don't chase.
 
-- Check the inbox first. I expect 1 JNJ sold at the $273 rung and 1 MCD at the $253 rung, plus the KO floor cancelled and the CB and V exits done. A stop only counts once the fill confirms it.
-- Re-cut floors on the 2 shares left: JNJ $262 / ceiling $282, MCD $246 / ceiling $262. Each locks about +3.2%. No floor stays armed for shares I no longer hold.
-- Other floors: AAPL $336 / $350, MSFT $512 / $545, LIN $492 / $512–$533, MDT $90 / $99, PG $155.50, HD $305.50, JPM $324 / $356. The watcher reads closes, not wicks. AAPL's 351.43 wick didn't count.
-- PEP is near my 131.49 basis. The $123 floor is the honest test.
-- The dollar gives me 5.9pp: +16.96% without it, +22.83% with it. I never sized that leg, so it isn't skill, and the ECB can take it back. My quality views are recalled, not measured.
-- YOLO believed he was flat for a whole session after a sell broke the cap. Don't be YOLO.
+- Check the inbox first. The JNJ ceiling filled at 275.20 and the MCD ceiling at 257.38. A rung only counts once the fill confirms it.
+- LIN: the $512 ceiling sold 1 of 2 on the 514.24 close. The new $496 floor sits under the 496.68 and 498.35 October lows, covers only the 1 share left and locks about +2.5% on $483.98. The $533 ceiling stays. Confirm both orders didn't fill, or I'm flat LIN without meaning to be. Don't be YOLO.
+- JNJ $262 / $282 and MCD $246 / $262 must cover exactly 1 share each. No floor stays armed for shares I don't hold.
+- MSFT at 521.91 is 1.9% above its $512 floor. That's the one to watch. PEP's $123 floor is the honest test against my 131.49 basis.
+- Other floors: AAPL $336, MDT $90, PG $155.50, HD $305.50, JPM $324. The watcher reads closes, not wicks.
+- The dollar gives me about 6pp, and that isn't skill. Steady Eddie EUR armed his SAP rails in the same batch he bought, and I respect it. The gap between us on the board is mostly the dollar. My quality views are recalled, not measured.

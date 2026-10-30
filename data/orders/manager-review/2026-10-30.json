@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-30",
+  "conviction": 6,
+  "positions": [
+    {
+      "ticker": "BTC-EUR",
+      "action": "SELL",
+      "size_eur": 0,
+      "entry_guidance": "Conditional: close the whole position only if BTC-EUR prints at or below 67,500 (confirmed breakdown of the base). No order otherwise.",
+      "stop_loss": 67500.0,
+      "reasoning": "Satoshi has flipped to reduce on BTC after it closed (69,551) under the 71.1k box floor, and yolo-sapiens-eur sees no long edge. Losing the 67.5k base would confirm the thesis is broken, so I protect the ~+16% gain on confirmation instead of selling into a possible bear trap today. No stablecoin price is in the store, so a crypto-to-crypto park is not available; the EUR disposal and its PFU charge are accepted only if the stop fires.",
+      "trigger": {
+        "op": "<=",
+        "level": 67500.0
+      },
+      "expires": "2026-11-12"
+    },
+    {
+      "ticker": "4GLD.DE",
+      "action": "SELL",
+      "size_eur": 0,
+      "entry_guidance": "Conditional: close the whole position only on a print at or below 106.50 EUR, Goldfinger's stated invalidation level.",
+      "stop_loss": 106.5,
+      "reasoning": "Goldfinger says the EUR-gold thesis is finished if 4GLD.DE goes through 106.50 (it closed at 112.37, against an average cost of 117.14). Parking the stop at that level carries out the originating analyst's break condition, and a fill there would crystallise a securities loss that can be carried forward.",
+      "trigger": {
+        "op": "<=",
+        "level": 106.5
+      },
+      "expires": "2026-11-12"
+    }
+  ],
+  "hold_reasoning": "No new entries. Deployable cash is 221.29 - 150 floor = 71 EUR, below the EUR 250 minimum. The book already holds 6 real lines plus SLB dust, so it is at the position limit. The only high-conviction setup is yolo-sapiens-usd's 9/10 Nasdaq short through QQQS.L. Treated as a hedge, it would be sized at a third of my Nasdaq exposure (NVDA, ~245 EUR), which is about EUR 82. That is below the EUR 250 floor and must not be rounded up, so I do not place it. NVDA, AIR.PA, ALV.DE and PHAG.L stay held: no originating analyst has flipped to exit and no stop level was given. I am not trading the SLB dust (0.16 EUR) because the EUR 1.25 fee floor costs more than the proceeds. The two orders above are conditional stops on held theses that are breaking. Neither fills unless its level prints, and if both fire they use the week's 2-trade budget.",
+  "render": "[Manager Decision]\n  conviction: 6/10\n  positions (2):\n    BTC-EUR        SELL EUR 0  stop=67500.0\n      entry:   Conditional: close the whole position only if BTC-EUR prints at or below 67,500 (confirmed breakdown of the base). No order otherwise.\n      reason:  Satoshi has flipped to reduce on BTC after it closed (69,551) under the 71.1k box floor, and yolo-sapiens-eur sees no long edge. Losing the 67.5k base would confirm the thesis is broken, so I protect the ~+16% gain on confirmation instead of selling into a possible bear trap today. No stablecoin price is in the store, so a crypto-to-crypto park is not available; the EUR disposal and its PFU charge are accepted only if the stop fires.\n    4GLD.DE        SELL EUR 0  stop=106.5\n      entry:   Conditional: close the whole position only on a print at or below 106.50 EUR, Goldfinger's stated invalidation level.\n      reason:  Goldfinger says the EUR-gold thesis is finished if 4GLD.DE goes through 106.50 (it closed at 112.37, against an average cost of 117.14). Parking the stop at that level carries out the originating analyst's break condition, and a fill there would crystallise a securities loss that can be carried forward."
+}

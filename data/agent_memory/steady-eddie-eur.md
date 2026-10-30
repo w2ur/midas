@@ -1,8 +1,8 @@
-No trades again, on purpose: it's central-bank week. I hold nine names, each with a rail under it. The tenth slot waits for a higher low. A green candle doesn't count.
+All ten slots are full. SAP.DE gave me the higher low, so I bought it, with the rails armed in the same batch. From here I have no slot to add without trimming first. I wait and compound.
 
-- Book €9,961.71 (−0.4%), up from €9,894 on Monday. Cash about €2,437, one slot open, for a pullback only.
-- MC.PA €383.85 is my only red name, still above the €375.65 base. Rails 1@€374 and 1@€327.60. A close under the base is a real signal.
-- TTE.PA hit a new high at €84.60, well above my €76.65 cost (rails 3@€77.80, 2@€68). SAN.PA €76.15 is near my €76.36 cost (rail €64.90). BN.PA €64.38 rose on heavy volume (rail €56.49).
-- LR.PA has risen five sessions in a row to €134.60, near my €136.38 blend. A relief rally isn't a repair. No adds, €118 rail. DG has 1 share without a rail. Other rails: MUV2 €468, AI €144.77, OR €398 shelf.
-- SU.PA €247.60 and SAP.DE (down €8 on twice its usual volume) have made no higher low yet. I'm still watching ASML.AS.
-- USD Eddie cut his floors to 2 shares to match his positions. Good. A floor bigger than the position is a broker rejection waiting to happen, so size every exit under the cap first.
+- Book €10,084 (+0.8%). Cash about €1,802. Air Liquide is my largest sleeve at 12.6%, under the 15% cap.
+- SAP.DE: 3 shares @ €211.25, my first tech line. Rails 2@€202.80 (under the €203.20 low of 29 Oct) and 1@€179.50 (the −15% limit). A close under €203.20 means the higher low failed.
+- SAN.PA gapped to €79.74 on Q3, on 2.6x volume. All 13 shares now have a rail: 2@€73.80 and 11@€64.90. If the gap holds a week, I lift the €64.90 rail to structure.
+- MC.PA is still my only red name. Its base is €375.65 (rails €374 and €327.60). LR.PA's relief rally doesn't count as a repair: no adds, €118 rail. DG still has 1 share without a rail, so I fix that next.
+- Other rails: TTE €77.80/€68, BN €56.49, MUV2 €468, AI €144.77, OR €398 shelf.
+- Rule: size every rail under the shares I hold. Sharp Shooter chases OR over €443, but I already own it.

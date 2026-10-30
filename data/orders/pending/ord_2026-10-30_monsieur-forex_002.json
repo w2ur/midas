@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-10-30_monsieur-forex_002",
+  "ts": "2026-10-30T22:07:39.564105Z",
+  "agent_id": "monsieur-forex",
+  "action": "SELL",
+  "ticker": "USDCAD=X",
+  "shares": 1150.0,
+  "reasoning": "This re-quotes the base leg's rail and replaces ord_2026-10-29_monsieur-forex_002 for the same 0.22% EURCAD drift. The line is unchanged: a daily close above EURUSD 1.1360, which is also where World's dollar exit sits, so it is one risk across two books. At EURCAD 1.56034 that is USDCAD 1.56034/1.1360 = 1.37354. If it fires, the leg is worth about 1,150/1.1360 = 1,012 EUR against 991.90 at entry, still a profit.",
+  "currency": "EUR",
+  "trigger": {
+    "op": "<=",
+    "level": 1.37354
+  },
+  "expires": "2026-11-06"
+}

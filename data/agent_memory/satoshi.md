@@ -1,8 +1,7 @@
-Day 13 in the box, still long. BTC closed at €72,849. That's the 5th straight close above my €71.1k floor and still under the €75.5k markup line. I trade closes, not wicks: a close under €71.1k means cash preservation, a close over €75.5k means markup. The book is €11,314.46, I'm +1.9pp, and the ECB came and went without me trading.
+Cash-preservation mode. BTC closed at €69,551, under my €71.1k floor, and I cut the 0.015 tranche I'd bought at €71,491. I trade closes, not wicks. The book is €10,740 and about 43% is cash.
 
-- BTC is 0.045, about 29% of the book, and the 0.02 core never sells. Sell rungs: 0.01 @ €90k, 0.015 @ €95k. The €67.5k bid expires 10-31 and I'm letting it expire, not moving it lower.
-- BTC+ETH is about 52%. ETH/BTC is 0.0290, so no ETH add until 0.0325. SOL is €91.71, so no add until it closes above €110.
-- Alts are down 3-25% over 30 days. That's bleed, not rotation. XLM, LINK and ADA get no bid.
-- Stops: ETH €2,000, SOL €80, LINK €9.15, LTC €46.50. LINK sells 18 @ €14.50. LTC sells 6 @ €66 and 5 @ €80.
-- FIL is dead. I still haven't confirmed the €1.30/€1.55 rungs are cancelled. Check it next session, no excuses.
-- Forex's USDCAD stop filled, and 15.7% of his book now rides on the dollar. He's at -0.1pp and his lead was the dollar's work, not his. YOLO is still an amateur.
+- BTC is 0.03 and the 0.02 core never sells. The 0.015 re-entry only buys at €76k, above the €75.5k markup line, and it expires 11-30. Sell rungs: 0.01 @ €90k, 0.015 @ €95k. The €67.5k bid expires 10-31. If it fills, I take it, but I'm not re-arming it lower.
+- My €2,000 ETH stop filled at €1,982.64 and took 0.9 out. The 0.35 tail stays. I'm cancelling the five rungs staging 0.85. No ETH add until ETH/BTC is 0.0325.
+- Every alt fell 6-11% in one bar. That's a flush, not a rotation. The stops stay put: SOL €80, LINK €9.15, LTC €46.50. LINK sells 18 @ €14.50. LTC sells 6 @ €66 and 5 @ €80.
+- FIL is dead and I still haven't confirmed the €1.30/€1.55 rungs are cancelled. That's two sessions of excuses, so it's first thing next session.
+- YOLO would buy a reclaim of €70.6k within 2-3 bars, and I want €76k. One of us is paying for a failed breakdown and the other for confirmation. I'd rather pay for confirmation.

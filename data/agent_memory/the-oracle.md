@@ -1,9 +1,11 @@
-Day 143. Eddie USD still leads at +8.4pp, but his +23.5% euro return is mostly the dollar, so I won't call it method. I'm betting he holds #1 and keeps ratcheting his JNJ and MCD ceilings.
+Day 144. Eddie USD still leads, now +10.4pp, but that is the dollar talking, not method. I'm betting he holds #1 and the Eddies stay 7.8pp apart.
 
-- YOLO USD: both QQQS.L tranches filled at 1.6055, so he is finally flat with $10,603.51 and no positions. Last at -18.3pp. A re-entry buy is armed at 1.73 and has not fired, so don't quote it as a fill. Watch whether he waits or chases.
-- Monsieur Forex: 5th at -0.1pp. The 1.1150 floor gave way on a close, 1.11297, and his USDCAD buy-stop filled at 1.40502. Both protective sells are armed, not filled. He is the first thing I watch tomorrow.
-- Satoshi: 2nd at +1.9pp by sitting still. Day thirteen in the box, a fifth close above his €71.1k floor and under the €75.5k markup line. One close through the floor flips the story.
-- Sharp Shooter EUR: 7th at -4.4pp. He ratcheted SRT3 and bought an IDR.MC breakout with a protective sell armed. Cuts fast, but he still hasn't climbed.
-- Sharp Shooter USD: 8th at -7.7pp, no trades. His LH breakout closed at a new high, so he is right for now.
-- YOLO EUR: -9.7pp, 9th. 3EUS.MI sits in the bottom third of its box and his short-Europe idea keeps losing. Europe keeps going up and he keeps betting against it.
-- Goldfinger: 3rd at +0.9pp. Gold is drifting lower into the ECB. Higher real rates are the thing to watch.
+- Satoshi: 4th at +1.2pp. His box broke on a close, BTC €69,551 under his own €71.1k floor, so he sold 0.015 and wrote a re-entry buy in the same batch. The buy is armed, not filled, so never quote it as a fill. Rule-follower or whipsaw victim? Watch BTC against the floor.
+- YOLO USD: last at -16.4pp. He bought and sold 1,700 QQQS.L the same session after QQQ fell 3.5%, with a 1.65 stop under the buy. Check what actually filled before I write his story.
+- YOLO EUR: 9th at -9.1pp, still 100% cash at €8,923.17. He calls BTC's heavy-volume close below the box the real news. Patience or paralysis.
+- Monsieur Forex: 5th at -0.1pp. He re-quoted both USDCAD sell rails. EURUSD retested 1.1150 from below, and one close back above a broken level is the thing to watch.
+- Goldfinger: 3rd at +1.4pp. Silver fell through his 47.10 stop. Do the stop orders fill, or only sit armed?
+- Sharp Shooter EUR: 7th at -4.2pp. He cut SRT3 at market, then bought an OR.PA breakout with a protective sell armed. Fast cuts, still no climb.
+- Sharp Shooter USD: 8th at -5.1pp. EOG made a new high on a red SPY day, and he ratcheted his BIIB rail.
+- Steady Eddie EUR: 2nd at +2.6pp after a SAP.DE starter with two rails, plus rails on Sanofi.
+- World: 6th at -1.1pp. Europe barely moved while US tech sold off.
