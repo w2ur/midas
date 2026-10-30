@@ -264,3 +264,72 @@ class TestEndDateIsInclusiveForBothSources:
 
         assert calls["end"] is None  # the store covered both
         assert df.index[-1] == pd.Timestamp(END)
+
+    def test_a_stale_sole_vendor_column_does_not_cut_the_store_columns(
+        self, store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Regression: pending — the trim took min(store_last, vendor_last), so
+        a sole vendor column that went dark (a delisted name) cut every store
+        column back to its own last date. AAPL through 2026-10-28 plus OLD
+        ending 2025-03-24 came back ending 2025-03-24."""
+        _seed(store, "AAPL", {"2026-08-03": 212.0, "2026-08-14": 214.0})
+        _ranged_download(monkeypatch, {"OLD": {"2026-08-03": 9.0, "2026-08-04": 9.5}})
+
+        df = MarketDataFetcher(cache_dir=tmp_path / "c").fetch_prices(
+            ["AAPL", "OLD"], START, date(2026, 8, 14)
+        )
+
+        assert df.index[-1] == pd.Timestamp("2026-08-14")
+        assert df.loc[pd.Timestamp("2026-08-14"), "AAPL"] == pytest.approx(214.0)
+
+    def test_a_weekend_sized_lag_between_the_sources_is_still_trimmed(
+        self, store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The store stops on a Friday, the vendor serves through the next
+        Tuesday (four calendar days): still the day-late shape, still trimmed."""
+        _seed(store, "AAPL", {"2026-08-03": 212.0, "2026-08-07": 214.0})
+        _ranged_download(
+            monkeypatch,
+            {"CSCO": {"2026-08-03": 110.0, "2026-08-07": 112.0, "2026-08-11": 113.0}},
+        )
+
+        df = MarketDataFetcher(cache_dir=tmp_path / "c").fetch_prices(
+            ["AAPL", "CSCO"], START, date(2026, 8, 12)
+        )
+
+        assert df.index[-1] == pd.Timestamp("2026-08-07")
+
+    def test_a_trim_names_the_dropped_dates_and_the_columns_to_stderr(
+        self,
+        store: Path,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        _seed(store, "AAPL", {"2026-08-03": 212.0, "2026-08-06": 213.0})
+        _ranged_download(
+            monkeypatch,
+            {"CSCO": {"2026-08-03": 110.0, "2026-08-06": 111.0, "2026-08-07": 112.0}},
+        )
+
+        MarketDataFetcher(cache_dir=tmp_path / "c").fetch_prices(
+            ["AAPL", "CSCO"], START, date(2026, 8, 8)
+        )
+
+        err = capsys.readouterr().err
+        assert "2026-08-07" in err
+        assert "1 vendor-served column" in err
+
+    def test_no_trim_prints_nothing(
+        self,
+        store: Path,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        _seed(store, "AAPL", {"2026-08-03": 212.0, "2026-08-07": 214.0})
+        _ranged_download(monkeypatch, {"CSCO": {"2026-08-03": 110.0, "2026-08-07": 112.0}})
+
+        MarketDataFetcher(cache_dir=tmp_path / "c").fetch_prices(["AAPL", "CSCO"], START, END)
+
+        assert capsys.readouterr().err == ""

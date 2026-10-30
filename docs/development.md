@@ -42,7 +42,11 @@ python scripts/run_all_combos.py --universes etf-broad --from 2024-01-01
 `--to YYYY-MM-DD` sets the end date (default: today), inclusive. Prices come
 from the OHLCV store, with yfinance only for tickers the store does not cover
 from `--from`; that fallback never asks for today's still-forming bar, and a
-trailing day only one of the two sources holds is dropped. Backtest returns are
+trailing day only one of the two sources holds is dropped (only when their
+last dates are within a few calendar days, and it is reported on stderr). That
+fixes the store-versus-vendor end-date gap and nothing else: a held store
+ticker whose own file lags the rest of the store (the day-late UCITS funds)
+can still give NaN on the last row. Backtest returns are
 **gross of costs**, and the CLI says so on every run (`GROSS_OF_COSTS`). On a
 universe whose constituents are today's list, such as `sp500`, it also warns
 of survivorship bias; prefer a stable universe (`dow30`, `etf-broad`) for
