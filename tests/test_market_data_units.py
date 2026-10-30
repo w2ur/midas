@@ -187,7 +187,7 @@ def _ranged_download(monkeypatch: pytest.MonkeyPatch, closes: dict[str, dict[str
 
 
 class TestEndDateIsInclusiveForBothSources:
-    """Regression: b846d8d77 — `run_backtest.py` raised "Position is open
+    """Regression: a36311565 — `run_backtest.py` raised "Position is open
     ... latest price is NaN" for a ticker the store held on the end date.
 
     `_store_series` serves `[start, end]`; `yf.download` serves `[start, end)`.
@@ -268,7 +268,7 @@ class TestEndDateIsInclusiveForBothSources:
     def test_a_stale_sole_vendor_column_does_not_cut_the_store_columns(
         self, store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Regression: d40e62431 — the trim took min(store_last, vendor_last), so
+        """Regression: ae6c218c8 — the trim took min(store_last, vendor_last), so
         a sole vendor column that went dark (a delisted name) cut every store
         column back to its own last date. AAPL through 2026-10-28 plus OLD
         ending 2025-03-24 came back ending 2025-03-24."""
