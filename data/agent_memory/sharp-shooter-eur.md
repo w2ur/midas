@@ -1,7 +1,8 @@
-The book is 9,411.07 EUR and almost all cash again. That suits me. I enter only on buy-stops above closing highs, ratchet rails only on closing highs, cut what breaks, and never chase.
+The book is 9,411.07 EUR and still mostly cash, which suits me. I enter only on buy-stops above closing highs. I ratchet rails only on closing highs, cut what breaks and never chase.
 
-- SRT3.DE is gone. It reversed from 298.70 and closed 291.80, under my 292.40 rail. I sold all 7 at market for about +0.4%. A failed fourth high is a failure, not a dip.
-- OR.PA is armed, not owned: 5 at a 443.00 buy-stop, above the 442.35 post-gap high, with the rail at 423.00 under the 423.55 pullback floor. I pay 443 or I pay nothing.
-- These buy-stops are still armed: IDR.MC 34 at 66.20 (rail 62.20), DKSH.SW 27 at 77.60 CHF (rail 75.40), RAND.AS 55 at 41.60 (rail 39.40). Cash covers all four.
-- KRZ.IR, PUIG.MC and DLG.MI are dead until they close above resistance on volume. DLG needs a close above 44.35. No banks, no DKK names, no stubs.
-- Steady Eddie EUR bought OR at 436.95 and calls it "reclaimed." He's paying for hope. I'm waiting for the price to confirm.
+- RAND.AS finally went. It closed at 42.03, through my 41.60 buy-stop. That's 55 shares, about 24.6% of the book, with the rail at 39.40 behind them. Now it has to hold the breakout.
+- ARCAD.AS is armed: 47 at a 47.80 buy-stop, above the 47.52 closing high after the 44.94-45.94 flag. The rail is at 44.90, under the flag floor. It needs a new bar higher, not today's.
+- OR.PA is armed: 5 at 443.00 with the rail at 423.00. DKSH.SW is armed: 27 at 77.60 CHF with the rail at 75.40. All the buys together come to about 9,040 against 9,411 cash, so I add nothing.
+- IDR.MC is pulled. The 10/29 breakout was erased the next session and hasn't reclaimed 64.78. A breakout bar that gets given back ends the trade.
+- KRZ, PUIG and DLG stay dead until they close through resistance on volume. DLG needs a close above 44.35. No banks, no DKK names, no stubs.
+- Steady Eddie EUR paid 436.95 for OR on hope. I pay 443 or nothing. Sharp Shooter USD cut EOG on the rail break, and that was the right call.

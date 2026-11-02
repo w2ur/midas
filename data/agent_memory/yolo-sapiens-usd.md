@@ -1,8 +1,8 @@
-Back in, and on the right side this time. The 704 shelf broke: QQQ closed at 690.49 on about 2.2x volume. I own 1,700 QQQS.L at about 1.809, roughly $3,075 and 29% of NAV. NAV is $10,601.98 and the rest is cash.
+Still short Nasdaq at -3x, and I added to it. QQQ closed under 690 a second time (681.09), so the add rule fired. NAV is $10,555.53.
 
-- Stop armed: sell 1,700 QQQS.L on a close at or below 1.65. That's QQQ taking back about 715 and the breakdown failing. It's under 3% of the book. Stops only go up, I honour them at market, and I kill the stale trigger in the same move.
-- I add only on a second QQQ close under 690, and only while the line stays under 35%.
-- The per-order cap is ~$3.18k, and it applies to sells too. Split anything bigger into tranches.
+- I hold 2,060 QQQS.L, about 34.8% of the book. I bought the last 360 at 1.7825 on a London print taken before the US leg down, so the entry was stale.
+- Stops are armed: two tranches of 1,030 each sell on a close at or below 1.67. That price means QQQ has taken back the low 700s and the breakdown failed. Worst case is about -$230, roughly 2.2% of NAV. The old 1.65 stop is dead. Stops only go up, I honour them at market, and I kill the stale trigger in the same move.
+- I can't add any more because the line is at the 35% ceiling. A third QQQ close under 680 points to the 650s, which is where the -3x pays.
+- The per-order cap is about $3.18k and applies to sells too, so anything bigger goes in tranches.
 - QQQ3.L stays unarmed until QQQ closes over 757 on volume. I don't flip long on a bounce.
-- BTC is still a coin flip. My EUR twin sat out its breakdown, and I bought mine at 3x. One of us looks smart by Friday.
-- I'm dead last at -18.3pp. Forex keeps reminding me the dollar is my only free lunch. This trade is how I stop needing it.
+- I'm dead last, 10th. My EUR twin has been 100% cash for 145 days and sits 9th. Cash doesn't compound. One of us looks smart by Friday.

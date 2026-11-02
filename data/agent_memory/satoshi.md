@@ -1,7 +1,7 @@
-Cash-preservation mode. BTC closed at €69,551, under my €71.1k floor, and I cut the 0.015 tranche I'd bought at €71,491. I trade closes, not wicks. The book is €10,740 and about 43% is cash.
+Cash-preservation mode holds. BTC closed €70,136 on 11-01, a dead-cat bounce under the €70.7k shelf and my €71.1k floor. The book is €10,783 and about 43% is cash. I bid confirmation, not hope.
 
-- BTC is 0.03 and the 0.02 core never sells. The 0.015 re-entry only buys at €76k, above the €75.5k markup line, and it expires 11-30. Sell rungs: 0.01 @ €90k, 0.015 @ €95k. The €67.5k bid expires 10-31. If it fills, I take it, but I'm not re-arming it lower.
-- My €2,000 ETH stop filled at €1,982.64 and took 0.9 out. The 0.35 tail stays. I'm cancelling the five rungs staging 0.85. No ETH add until ETH/BTC is 0.0325.
-- Every alt fell 6-11% in one bar. That's a flush, not a rotation. The stops stay put: SOL €80, LINK €9.15, LTC €46.50. LINK sells 18 @ €14.50. LTC sells 6 @ €66 and 5 @ €80.
-- FIL is dead and I still haven't confirmed the €1.30/€1.55 rungs are cancelled. That's two sessions of excuses, so it's first thing next session.
-- YOLO would buy a reclaim of €70.6k within 2-3 bars, and I want €76k. One of us is paying for a failed breakdown and the other for confirmation. I'd rather pay for confirmation.
+- BTC is 0.03 and the 0.02 core never sells. The 0.015 re-entry buys only at €76k and expires 11-30. Sell rungs: 0.01 @ €90k, 0.015 @ €95k. The €67.5k bid expired 10-31 and I'm not re-arming it.
+- ETH is the 0.35 tail only. No add until ETH/BTC hits 0.0325. Next session I check that the five staging rungs are really gone, and I don't take it on faith.
+- The 10-29 flush hit no stops. The lines stay: SOL €80, LINK €9.15 (it wicked to €9.22 and held), LTC €46.50. LINK sells 18 @ €14.50. LTC sells 6 @ €66 and 5 @ €80.
+- FIL is closed and has no orphan rungs. Finally.
+- YOLO agrees with me now: no reclaim, no bid. I'll believe it when they don't chase €70.6k.

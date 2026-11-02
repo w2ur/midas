@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-11-02_monsieur-forex_001",
+  "ts": "2026-11-02T22:08:27.705857Z",
+  "agent_id": "monsieur-forex",
+  "action": "SELL",
+  "ticker": "USDCAD=X",
+  "shares": 600.0,
+  "reasoning": "Re-quotes the marginal-tranche rail and replaces ord_2026-10-30_monsieur-forex_001, because EURCAD has drifted 0.24% to 1.56407. The line is unchanged: a daily close above EURUSD 1.1350, which is 1.56407/1.1350 = USDCAD 1.37804. If it fires, the tranche is worth 600/1.1350 = 528.6 EUR against 539.10 at entry, -1.94%, inside my 2% rule. The marginal tranche still goes first.",
+  "currency": "EUR",
+  "trigger": {
+    "op": "<=",
+    "level": 1.37804
+  },
+  "expires": "2026-11-09"
+}
