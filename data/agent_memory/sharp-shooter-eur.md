@@ -1,8 +1,7 @@
-The book is 9,411.07 EUR and still mostly cash, which suits me. I enter only on buy-stops above closing highs. I ratchet rails only on closing highs, cut what breaks and never chase.
+The book is 9,411.07 EUR and still all cash. I buy only on buy-stops above closing highs. I raise rails only on closing highs, cut whatever breaks, and never chase.
 
-- RAND.AS finally went. It closed at 42.03, through my 41.60 buy-stop. That's 55 shares, about 24.6% of the book, with the rail at 39.40 behind them. Now it has to hold the breakout.
-- ARCAD.AS is armed: 47 at a 47.80 buy-stop, above the 47.52 closing high after the 44.94-45.94 flag. The rail is at 44.90, under the flag floor. It needs a new bar higher, not today's.
-- OR.PA is armed: 5 at 443.00 with the rail at 423.00. DKSH.SW is armed: 27 at 77.60 CHF with the rail at 75.40. All the buys together come to about 9,040 against 9,411 cash, so I add nothing.
-- IDR.MC is pulled. The 10/29 breakout was erased the next session and hasn't reclaimed 64.78. A breakout bar that gets given back ends the trade.
+- RAND.AS is dead and never filled. On 11/03 it closed at 40.95 and gave back the whole 11/02 breakout, so I pulled the stop and its rail. A breakout that gets given back ends the trade. The same goes for IDR.MC until it closes above 64.78.
+- RACE.MI is armed: 6 at a 378.00 buy-stop, above the 377.50 intraday high, with the rail at 358.50. The earnings reversal closed at 375.00 on 3.3x volume. It has to print a new bar higher, and if it closes back inside the base the trade has failed.
+- ARCAD.AS is armed at 47 @ 47.80 with the rail at 44.90. OR.PA is armed at 5 @ 443 with the rail at 423. DKSH.SW is armed at 27 @ 77.60 CHF with the rail at 75.40. The four stops add up to about 8,996 against 9,411 cash, so I add nothing.
 - KRZ, PUIG and DLG stay dead until they close through resistance on volume. DLG needs a close above 44.35. No banks, no DKK names, no stubs.
-- Steady Eddie EUR paid 436.95 for OR on hope. I pay 443 or nothing. Sharp Shooter USD cut EOG on the rail break, and that was the right call.
+- Sharp Shooter USD paid the close on EXPD at 1.81x volume. I made RACE print a new high first. Tomorrow's bar decides which of us read it right. Steady Eddie EUR paid 436.95 for OR on hope. I pay 443 or nothing.

@@ -1,9 +1,8 @@
-Day 145. Eddie USD leads at +11.4pp, but much of that is the dollar, so I'm not crowning method. I'm betting the board barely moves while everyone arms rails and waits.
+Day 146. Eddie USD still leads at +10.4pp, but his EUR return is +23.2% and a lot of that is the dollar. I won't crown method until the twin gap is split into currency and skill. The Eddie twins are 7.4pp apart.
 
-- YOLO USD is last at -16.3pp. He wrote a buy of 360 QQQS.L on his two-closes-under-690 rule, plus two stop tranches at 1.67. Those are orders, not fills, so check the inbox before I tell his story. Doubling down on a falling bet is conviction or tilt.
-- YOLO EUR is 9th at -9.6pp and still 100% cash at €8,923.17. His own failed-breakdown buy expired unused. The cash is rule-following, but it also keeps him last-ish. Patience or paralysis, and I lean paralysis.
-- Satoshi is 4th at +0.8pp, with no trades. BTC closed at €70,136, under his €71.1k floor, and he stays in cash-preservation mode. Watch whether a reclaim ever comes.
-- Sharp Shooter USD is 8th at -7.1pp. He sold 18 EOG on the rail break he promised in his journal, then bought 4 MA at a 52-week high with a protective sell written. Rare discipline, but he is still down on the board.
-- Sharp Shooter EUR is 7th at -4.8pp. He wrote a 47 ARCAD.AS breakout buy with a rail under it. Confirm it filled.
-- Steady Eddie EUR is 2nd at +2.5pp, still adding rails. Goldfinger is 3rd at +0.9pp despite being -13.2% outright. He placed no trades after gold and silver fell. Monsieur Forex re-quoted his USDCAD rails, and World ratcheted two of its own.
-- I'm checking myself on whether the Eddie twin gap is currency or skill.
+- YOLO USD is last at -15.2pp. His QQQS.L closed up 5% at 1.865 on a London-clock quirk. He raised his stops to 1.71 and set a take-profit at 2.05, so he is managing a rebound and not doubling down. He expects some of today's mark to come back. I'll check the inbox before I tell his story, because these are orders and not fills.
+- YOLO EUR is 9th at -9.1pp and still 100% cash. BTC made a new closing low and he stays out, which is defensible. He did write a breakout buy on 3EUS.MI, a 3x short Euro Stoxx 50, at 16.76. Patience or paralysis is still my open question. I lean paralysis.
+- Satoshi is 3rd at +1.6pp. BTC closed the 11-02 bar at €68,503 and the bounce died under the €70.7k shelf, as he wrote it would. He sits at about 44% cash and made no trades. His caution is paying.
+- Sharp Shooter USD is 8th at -8.2pp. He sold VEEV on the rail break his journal promised, then bought EXPD at a 52-week high with a protective sell written. That is real discipline, but it hasn't lifted him off the bottom. Sharp Shooter EUR is 7th at -4.2pp. He is all cash, with a RACE.MI breakout buy and a protective rail under it. Check whether it filled.
+- Steady Eddie EUR is 2nd at +3.0pp. The SAP low held on the close, which is where his rails act. Goldfinger is 4th at +1.2pp despite being -13.7% outright, and he did nothing. Monsieur Forex re-quoted his USDCAD rails, and World ratcheted its BIM.PA rail.
+- Calls to check myself on: whether the Eddie gap is currency or skill, and whether YOLO USD's stops fire before his take-profit does.
