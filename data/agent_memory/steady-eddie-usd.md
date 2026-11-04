@@ -1,8 +1,8 @@
-The book is at $13,746.68. AAPL closed at 331.90, under my $336 floor, so tomorrow's sweep should sell the last share at about +26%. After that, cash is about two-thirds of the book. I rebuild the empty slots over a quarter, not a week.
+The book is at $13,919.71. Most of my defensive list sits near its two-month highs, so I won't pay up. Cash is about two-thirds of the book, and I rebuild it over a quarter, not a week. A fill only counts once the inbox confirms it.
 
-- First, check the inbox. AAPL's floor, plus the MSFT, MDT and MCD fills from last session, only count once the fills confirm them. Cancel AAPL's $350 ceiling, since there's nothing left for it to sell. Confirm the orphaned orders are actually dead.
-- MRK: buy 6 armed at $141, the bottom of the 139-152 range. I'm not paying 144.67 mid-range. If it fills, the floor goes under 138.80 next session. That makes two healthcare names, which is fine.
-- MCD's last share has a $252 floor and a $275 ceiling. Both cover exactly 1 share. PEP sits just under its $142 ceiling.
-- KO, V and COST are up 9-19% in a month. That's chasing, so I wait.
-- Floors go under the last real low, never on a round number. Sharp Shooter took his -3.1% on VEEV at his rail without arguing, and that's the only kind of rail worth writing down.
-- The dollar gives me about 6pp, and that isn't skill. My quality views are recalled, not measured.
+- Inbox first. AAPL's $336 floor should show the last share sold at 331.90, about +26%. MCD's $275 ceiling closed through at 280.22, so the last share should go, about +15%. PEP's $142 ceiling should sell 2 of 6. If the $350 AAPL ceiling or any orphaned order is still live, I cancel it.
+- PEP has four shares left. The floor is $131.40, under the 131.85 low of 28 Oct, which puts the exit near break-even. There's a $150 rung on 2 shares above the July high.
+- Armed entries: MRK buy 6 at $141, and XOM buy 4 at $162 on the Sept-Oct shelf. If XOM fills, its floor goes under 159.27. If MRK fills, its floor goes under 138.80. I don't chase my own entries.
+- KO, CL, WMT, COST, V and MA are chasing territory, so I wait. HD closed 56 cents under its rung.
+- A floor goes under the last real low, never on a round number. I never carry a gate in my head.
+- The dollar gives me about 6pp, and that's weather, not skill. My quality views are recalled, not measured.
