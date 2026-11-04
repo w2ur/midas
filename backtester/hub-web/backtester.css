@@ -1,0 +1,76 @@
+/* ========================================
+   BACKTESTER TOOL — /tools/backtester + /en/tools/backtester
+   Global rather than page-scoped: the two language pages share one island
+   module, and uPlot injects its own DOM at runtime, which Astro's scoped
+   styles cannot reach. Every selector here is `.bt-`-prefixed or a uPlot
+   class, both of which exist only on these two pages.
+   ======================================== */
+.bt-form { margin: 0.5rem 0 1.5rem; }
+/* The layout lives on the fieldset, which is what gets disabled until the
+   catalog resolves — hence the reset of the UA's border/margin/padding. */
+.bt-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.bt-fields label { display: flex; flex-direction: column; font-size: 0.85rem; gap: 0.25rem; color: var(--text-muted); }
+.bt-fields select, .bt-fields input {
+  font: inherit;
+  padding: 0.4rem 0.55rem;
+  color: var(--text-primary);
+  background: var(--bg-card, transparent);
+  border: 1px solid var(--border-component);
+  border-radius: 4px;
+}
+/* Same tokens as the site's canonical CTA (.nl-form button). --text-on-accent
+   exists precisely so the gold button and this one stopped sharing one token
+   (--text-on-btn, itself since deleted as dead — nothing var()'d it). */
+.bt-fields button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  color: var(--btn-primary-text);
+  background: var(--btn-primary-bg);
+  border: 1px solid var(--btn-primary-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+/* `brightness(0.95)` ASSOMBRISSAIT ce bouton depuis qu'il est passé au
+   vert profond : en sombre le geste était invisible. Même survol que la
+   tuile, pour que les trois CTA du site réagissent pareil. */
+.bt-fields button:hover { background: var(--btn-primary-bg-hover); border-color: var(--btn-primary-bg-hover); }
+.bt-fields button:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+/* Disabled is the normal state until the catalog resolves, not an edge case. */
+.bt-fields button:disabled { opacity: 0.55; cursor: not-allowed; }
+.bt-fields button:disabled:hover { filter: none; }
+.bt-status { color: var(--text-muted); font-size: 0.85rem; min-height: 1.2em; margin: 0.5rem 0; }
+.bt-chart { min-height: 320px; }
+.bt-metrics { display: flex; flex-wrap: wrap; gap: 1.25rem; margin: 1rem 0; }
+.bt-metric { display: flex; flex-direction: column; font-size: 0.8rem; color: var(--text-muted); }
+.bt-metric b { font-size: 1.15rem; color: var(--text-primary); }
+.bt-warnings { color: var(--text-primary); font-size: 0.8rem; list-style: none; padding: 0; margin: 0.5rem 0 0; }
+
+/* uPlot ships its own stylesheet, written for a light page with a white
+   background. Re-token the DOM it injects at runtime — the axis/grid colours
+   themselves are passed as options from the island, which reads the same
+   custom properties. */
+.bt-chart .u-legend {
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+.bt-chart .u-legend th,
+.bt-chart .u-legend td { border-color: var(--border-thin); }
+.bt-chart .u-over,
+.bt-chart .u-under { background: transparent; }
+.bt-chart .u-select { background: var(--accent-soft); }
+.bt-chart .u-cursor-x,
+.bt-chart .u-cursor-y { border-color: var(--border-medium); }
