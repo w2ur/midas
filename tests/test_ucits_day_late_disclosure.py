@@ -94,7 +94,7 @@ def _day_late(dates_of) -> set[str]:
 #: review r8 M1, r9 M2): the nightly fetch rewrites the store, so after any
 #: US-only holiday the reference symbols disagree about "the previous
 #: trading day" and a live derivation goes red with nothing wrong in the prose.
-DATA_COMMIT = "dc26dffdd"
+DATA_COMMIT = "4eb65029d"
 
 
 @pytest.mark.skipif(_is_shallow(), reason="shallow clone has no history to derive from")

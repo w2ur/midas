@@ -91,7 +91,7 @@ def test_module_ledger_record_and_totals() -> None:
 # ---------------------------------------------------------------------------
 # The ledger survives the process boundary.
 #
-# Regression: d7b276fe2 — the 2026-09-23 bundle recorded 0 dispatches against the 33 the
+# Regression: 9b743e9ab — the 2026-09-23 bundle recorded 0 dispatches against the 33 the
 # session really made. The orchestrator runs every step as its own
 # `python -c` process, so an in-memory ledger fed by one process was empty in
 # the process that assembled the bundle.
@@ -215,7 +215,7 @@ def _transcript(root: Path, session: str, agent: str, alias: str | None, models:
 
 
 class TestTranscriptModelCapture:
-    """Regression: a760dceba — the dispatch ledger recorded `model_id` from ANTHROPIC_DEFAULT_<ALIAS>_MODEL,
+    """Regression: 073cea434 — the dispatch ledger recorded `model_id` from ANTHROPIC_DEFAULT_<ALIAS>_MODEL,
     a prediction made before the dispatch that is null in the cloud, where the
     routine pins nothing — while each subagent transcript names the release
     that actually answered (J6 spec review, Important #1). The totals now read

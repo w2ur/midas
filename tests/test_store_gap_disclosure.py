@@ -19,7 +19,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ANCHOR = "store-gaps-2026-09-26"
 #: The `[data]` commit that inserted the recovered rows.
-BACKFILL_COMMIT = "c399a9d16"
+BACKFILL_COMMIT = "f6f386fdc"
 
 
 def _entry() -> str:
@@ -161,7 +161,7 @@ def test_the_sgln_mi_exposure_is_what_the_ledger_and_store_show() -> None:
 
 #: The commit that imported 3EUS.MI with its full vendor history, before the
 #: pre-consolidation rows were dropped.
-IMPORT_COMMIT = "c0abd31f1"
+IMPORT_COMMIT = "1681b254d"
 
 
 def _closes_text(text: str) -> dict[str, float]:
@@ -235,7 +235,7 @@ def test_the_sgln_mi_missed_days_are_what_the_store_shows() -> None:
 #: The `[data]` commit that recorded the accepted pre-day-one gaps. Pinned
 #: rather than read live (follow-up review r8 M2, r9 M2): a later full run can
 #: close out a departed symbol's entry, and the prose describes this commit.
-ACCEPT_COMMIT = "dc26dffdd"
+ACCEPT_COMMIT = "4eb65029d"
 
 
 @pytest.mark.skipif(_is_shallow(), reason="shallow clone has no history to derive from")

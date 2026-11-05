@@ -1,6 +1,6 @@
 """Store-level gap detection (`engine.store_gaps`).
 
-Regression: 634222b53 — follow-up money review r6, I1: a hole was detected
+Regression: 038da9661 — follow-up money review r6, I1: a hole was detected
 only from the rows the vendor served inside the night's own window. On the
 next night the one-day revision window never asked for that date again, the
 run exited 0, and `failure-issue` closed the alert as "Recovered" while the
@@ -132,7 +132,7 @@ class TestBucketCandidates:
         assert set(scan.bucket_candidates[("", "2026-09-22")]) == {f"US{i}" for i in range(5)}
 
     def test_a_us_date_spy_also_lacks_is_undecided_not_a_holiday(self) -> None:
-        # Regression: 82adee88d — follow-up review r7, I-1. A US holiday (Labor Day) and a
+        # Regression: ad6e7ce4d — follow-up review r7, I-1. A US holiday (Labor Day) and a
         # vendor hole that took SPY with it (09-22, had SPY not come back on
         # its own) are the same input here. SPY lacking the date used to mean
         # "closed", before any vendor probe; now it is a candidate, and the
@@ -155,7 +155,7 @@ class TestBucketCandidates:
         assert set(scan.bucket_candidates) == {(".L", "2026-09-17")}
 
     def test_a_date_no_other_equity_bucket_traded_is_still_undecided(self) -> None:
-        # Regression: 82adee88d — follow-up review r7, I-1. A hole across every equity
+        # Regression: ad6e7ce4d — follow-up review r7, I-1. A hole across every equity
         # bucket, or a European hole on a US holiday that also hits `.L`, left
         # no bucket holding the date, and it read as a holiday. A weekday a
         # non-calendar bucket lacks wholesale is undecided: both buckets go to
@@ -251,7 +251,7 @@ class TestLedger:
 
 
 class TestAcceptedEntries:
-    """Regression: 579af1cd4 — an acceptance must carry its reason."""
+    """Regression: bf1290730 — an acceptance must carry its reason."""
 
     ACCEPTED = {"status": "accepted", "reason": "split-basis rebase", "accepted_on": "2026-09-26"}
 

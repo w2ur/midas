@@ -1375,7 +1375,7 @@ class TestVendorWideHoleNeedsAPopulation:
 
 
 class TestExchangeWideHole:
-    """Regression: b4d562949 — J6 money review round 2, N4. MAX_HOLE_RATE is taken over
+    """Regression: 379ba3642 — J6 money review round 2, N4. MAX_HOLE_RATE is taken over
     every covered symbol (~1,320), so the vendor serving every `.PA` name (82)
     or every `.DE` name (83) with no close for D-1 read ~6% and exited 0 — the
     CAC and DAX books, and the Manager's DSP5.PA/BX4.PA hedges, priced a day
@@ -1443,7 +1443,7 @@ class TestExchangeWideHole:
     def test_a_crypto_hole_on_a_full_run_fails(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
-        """Regression: b3aaa4fb1 — follow-up money review r1, M1. Crypto shared the
+        """Regression: 9c2daa8f9 — follow-up money review r1, M1. Crypto shared the
         no-suffix bucket with ~590 US names: all 34 pairs holed read 34/640 =
         5.3% and a weekday full run exited 0 while every crypto book priced a
         day stale."""
@@ -1485,7 +1485,7 @@ class TestExchangeWideHole:
     def test_an_exchange_that_serves_nothing_fails_the_run(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
-        """Regression: 3dc232816 — follow-up money review r3, M5. The per-exchange rule
+        """Regression: 302c0f33f — follow-up money review r3, M5. The per-exchange rule
         counted only dates served with a NaN close. A vendor serving EMPTY
         frames for every `.PA` name was only `covered_failures`, rated over
         the whole universe (20 of 220 = 9.1% here, 74 of ~1,300 live), and the
@@ -1526,7 +1526,7 @@ class TestExchangeWideHole:
     def test_a_near_total_hole_on_a_small_exchange_fires(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Regression: cfafb84f1 — follow-up money review r2, N1. Below the 20-symbol
+        """Regression: 8eb6d8687 — follow-up money review r2, N1. Below the 20-symbol
         floor the rule needed EVERY covered name holed, and the real holes in
         the logs were near-total, not total: `.WA` 17 of 18 on 2026-09-17 and
         `.HE` 16 of 17 on 2026-09-22. One straggler hid the whole exchange."""
@@ -1616,7 +1616,7 @@ def _gap_vendor(series: dict[str, dict[str, list]], wide_only: dict[str, set[str
 
 
 class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
-    """Regression: 634222b53 — follow-up money review r6, I1. On night N the
+    """Regression: 038da9661 — follow-up money review r6, I1. On night N the
     vendor served `.DE` with no close for D and the run went red; on night N+1
     the store's last date was D-1, the one-day revision window asked for
     D-1..D+1, the vendor answered that short window with NO row for D, D+1 was
@@ -1733,7 +1733,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_refetched_row_the_tripwire_refuses_is_held_for_a_human(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Regression: 913a114a3 — the BYND shape: the store's 08-12 is on the
+        # Regression: 970773d18 — the BYND shape: the store's 08-12 is on the
         # pre-split basis and the vendor serves 08-13 on the post-split one. The refetch is insert-only;
         # it must not hand the refusal to the adjudication pass, whose
         # explained branch re-merges two years of history with the tripwire off.
@@ -1764,7 +1764,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_us_hole_that_takes_spy_with_it_is_held_red(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Regression: 82adee88d — the whole US bucket, SPY included, lacks D and the
+        # Regression: ad6e7ce4d — the whole US bucket, SPY included, lacks D and the
         # vendor still serves it without a close. SPY lacking D used to read
         # as a holiday before any vendor probe: exit 0, "Recovered".
         dates = _weekdays_to_end(4)
@@ -1824,7 +1824,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_held_no_close_gap_is_not_dropped_by_a_later_not_traded(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Regression: 294f9725c — follow-up review r7 (r2 M-1, r3 M1). The ledger holds
+        # Regression: 75c576f4f — follow-up review r7 (r2 M-1, r3 M1). The ledger holds
         # `no-close`: the vendor once served the date as a trading day. A
         # later wide refetch that simply omits the row is the request-shape
         # inconsistency in the other direction, not evidence of a holiday.
@@ -1842,7 +1842,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_held_no_close_gap_is_not_downgraded_by_an_empty_refetch(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Regression: 180656fcc — follow-up review r8 (r5 M1, r6 N-M1). Night 1 the
+        # Regression: 545653c85 — follow-up review r8 (r5 M1, r6 N-M1). Night 1 the
         # vendor serves the symbol nothing (UNFETCHED) and the entry was
         # rewritten `unfetched`, erasing the evidence; night 2 its series
         # omits the date and the `unfetched` entry cleared green.
@@ -1867,7 +1867,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_failed_holiday_probe_does_not_fan_out(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Regression: b11a112a1 — follow-up review r8 (r4 M1). When every probe of a
+        # Regression: 57f422bce — follow-up review r8 (r4 M1). When every probe of a
         # bucket-wide candidate failed, each lacking member got its own wide
         # refetch: 579 requests for US Labor Day, 719 `unfetched` entries
         # with every fetch failing, inside a job whose cancellation files no
@@ -1989,7 +1989,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_full_run_closes_out_the_gaps_of_a_symbol_that_left_the_universe(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
-        # Regression: 196ab0db7 — follow-up review r7 (r2 M-2). An entry for a symbol no
+        # Regression: df8a9621c — follow-up review r7 (r2 M-2). An entry for a symbol no
         # run fetches any more (3EUS.L after the swap) was kept forever and
         # never made anything red: an open gap parked in silence. A
         # full-universe run is the one that knows the symbol has left, so it
@@ -2011,7 +2011,7 @@ class TestStoreGapsAreHeldUntilTheStoreHoldsThem:
     def test_a_resolver_failure_closes_nothing_out(
         self, midas_data_root: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ) -> None:
-        # Regression: 808be83d2 — follow-up review r8 (r5 M2). A resolver that raises
+        # Regression: b3a54e318 — follow-up review r8 (r5 M2). A resolver that raises
         # (stoxx600.json missing, a corrupt universe file) is swallowed, and
         # every symbol only it names looked "departed": the full run deleted
         # their ledger entries, a human's accepted ones included, for good.
@@ -2054,7 +2054,7 @@ def test_the_store_gap_exit_is_deliberate_and_committable() -> None:
 
 
 class TestAnAcceptedGapIsGreen:
-    """Regression: 579af1cd4 — a gap a human has accepted as unfillable is
+    """Regression: bf1290730 — a gap a human has accepted as unfillable is
     green, with its reason on record. BYND 2026-08-13 is the first: the vendor
     serves it on the post-split basis against a pre-split 08-12, so filling it
     needs a basis rebase of the history, and that is not insert-only. Without
@@ -2213,7 +2213,7 @@ _NULL_ROW = [float("nan")] * 5 + [0]
 
 
 class TestTheVendorsNullRowIsNotAHoliday:
-    """Regression: 06e202664 — follow-up review r8 (r4 I1). The vendor serves a real
+    """Regression: d4cb4a0c2 — follow-up review r8 (r4 I1). The vendor serves a real
     trading day it has no price for as a NaN-close, zero-volume row, and
     yfinance's default `keepna=False` drops it. All 24 `.CO` files lack
     2026-03-23; the 1h bars show full Copenhagen sessions that day; the heal

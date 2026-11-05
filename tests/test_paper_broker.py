@@ -1453,7 +1453,7 @@ class TestValuationUnavailable:
 
 
 class TestDeniedTickers:
-    """Regression: c74f7e062 — J6 money review round 1, I3. The Manager's
+    """Regression: b6c976d46 — J6 money review round 1, I3. The Manager's
     `policy.blocklist` (SH, PSQ and the other PRIIPs-blocked US ETFs) was
     prose only: the broker never read it, and with `prose_override` set it
     was not even rendered, so `{"ticker": "SH", "action": "BUY"}` filled into
@@ -1479,7 +1479,7 @@ class TestDeniedTickers:
     def test_a_case_or_whitespace_variant_of_a_denied_ticker_is_refused(
         self, broker_env, variant
     ):
-        """Regression: 2de6c7039 — follow-up money review r1, M3. The rail compared the
+        """Regression: 5564be9f5 — follow-up money review r1, M3. The rail compared the
         raw ticker string, so a lower-case `sh` passed it; on a
         case-insensitive filesystem (a Mac, the demo desk's entry point) the
         store read `SH.jsonl` for it and the BUY filled. Refused regardless

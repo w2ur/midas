@@ -862,7 +862,7 @@ def test_a_landed_push_records_the_sha_main_holds(pushable_repo, tmp_path):
 
 
 def test_a_commit_the_rebase_empties_records_nothing(pushable_repo, tmp_path):
-    """Regression: 628cd9530 — follow-up money review r3, M2. Another writer landed the
+    """Regression: fe856f4b4 — follow-up money review r3, M2. Another writer landed the
     very change this run committed. The push is refused, `pull --rebase`
     drops the now-empty commit ("patch contents already upstream"), and the
     retry answers "Everything up-to-date" with exit 0 — HEAD is the OTHER
@@ -4296,7 +4296,7 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         self._audit_recording(_workflow_specs(), _main_writers())
 
     def test_a_writer_pushing_through_an_unknown_script_is_caught(self):
-        """Regression: eb78501e1 — follow-up money review r3, M4. The audit skipped any
+        """Regression: 1292f8fd3 — follow-up money review r3, M4. The audit skipped any
         step with no marker and asserted only a global `checked > 0`, so a
         new writer pushing from `python scripts/new_writer.py` (which records
         nothing) was never inspected, and the other seven satisfied the count."""
@@ -4413,7 +4413,7 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         assert calls.strip().endswith(f"-f sha={a}")
 
     def test_a_push_refused_after_a_rebase_dispatches_nothing(self, tmp_path):
-        """Regression: 34a0df778 — J6 money review round 5, M-a. The run committed C on
+        """Regression: e97c96297 — J6 money review round 5, M-a. The run committed C on
         S (= before); another writer landed M' on main; the push was refused,
         `pull --rebase` put C on top of M', and the retry was refused too.
         HEAD's parent is now M' — on main and ahead of `before` — and the
@@ -4532,7 +4532,7 @@ class TestEveryBotWriterDispatchesSessionIntegrity:
         assert out["result"] == "failed"
 
     def test_a_later_dispatch_of_another_commit_does_not_close_the_issue(self, tmp_path):
-        """Regression: ba37d862f — follow-up money review r3, M1. The "not dispatched"
+        """Regression: 6bb441686 — follow-up money review r3, M1. The "not dispatched"
         issue named ONE commit but was titled per workflow, so the next run
         that dispatched anything closed it as recovered while the commit it
         named was never checked. It is keyed to that commit now: only a
@@ -4707,7 +4707,7 @@ class TestSessionIntegrityAlertsByScope:
         return codes, out.read_text()
 
     def test_a_dispatched_commit_the_pin_could_not_verify_is_still_keyed(self, tmp_path):
-        """Regression: 6f994079c — J6 money review round 5, M-b. `target`'s fetch failed
+        """Regression: 63180b004 — J6 money review round 5, M-b. `target`'s fetch failed
         (or the sha sat deeper than its 200-commit window) on a dispatch
         naming a real commit: every guard was skipped, and the failure went to
         the STATE title, which the next green run of ANY commit closes as
@@ -4756,7 +4756,7 @@ class TestSessionIntegrityAlertsByScope:
     # --- follow-up review r1, M2: refused for good vs failed for now ------
 
     def test_a_sha_main_does_not_hold_is_refused_not_retried(self, tmp_path):
-        """Regression: 3190e0174 — follow-up money review r1, M2. A well-formed sha the pin
+        """Regression: e39a16991 — follow-up money review r1, M2. A well-formed sha the pin
         refuses DETERMINISTICALLY — more than 200 commits deep, a typo, a
         branch-only commit — was filed under the commit-scoped title, whose
         body says a green re-run closes it. No re-run of that sha can ever be
