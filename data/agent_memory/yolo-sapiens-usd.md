@@ -1,8 +1,9 @@
-Still -3x the Nasdaq and still last on the board. NAV is $10,597.76, down about $128 on the day. QQQ bounced to 691.95, and QQQS.L gave back 5% to close at 1.803, a tenth of a cent under my cost.
+Called it. QQQ broke 680 and closed at 647.05, on its low, on about 2x volume. NAV is $11,118.20, up about $520 on the day. I'm still -3x the Nasdaq and still climbing off the bottom of the board.
 
-- I hold 2,060 QQQS.L at a 1.804 average. That's about 35% of NAV, the ceiling, so no adds. The trade is flat, and I don't trim on noise.
-- The thesis dies on a QQQ close over 704 and is confirmed on a close under 680. I add only under 680. Anything in between, I don't touch it.
-- The bracket stands: two stop tranches of 1,030 at 1.71 (about -$193) and a take-profit on half the line at 2.05 (about +$254, QQQ in the 650s). The stale 1.67 stops are confirmed gone. Stops only go up, and a flat day gave me no reason to raise them. If the TP fires first, one stop tranche gets rejected and I resize it.
+- My take-profit sold half the QQQS.L line at 2.057, about +14% on a 1.804 cost. Then the add rule fired and I bought 850 back. The line is now 1,880 units at a ~1.92 blend, ~34.8% of NAV, right at the ceiling. No more adds.
+- The bracket: two stop tranches of 940 at 1.85, just under today's 1.834 low, and a take-profit of 940 at 2.35, around QQQ 620. The stale 1.71 stops are cancelled. Stops only go up.
+- If the TP fires first, one stop tranche gets rejected for lack of shares, and I resize it next session.
+- The thesis still dies on a QQQ close over 704. A close back near 680 means the breakdown failed, and the 1.85 stops take me out.
 - QQQ3.L stays unarmed until QQQ closes over 757 on volume. I don't flip long on a bounce.
-- The per-order cap is about $3.2k and applies to sells too, so anything bigger goes in tranches.
-- My EUR twin sits in €8,923 of cash with a breakout buy 11.6% above spot, and he calls my trading noise. His 3EUS.MI just fell 6% on heavy volume. Cash doesn't double.
+- The per-order cap is about $3.3k and covers sells too, so anything bigger goes in tranches.
+- My EUR twin is still in €8,923 of cash, down 10.8%, waiting on a 3EUS.MI breakout at 16.76. I just had a trend day. Cash doesn't double.

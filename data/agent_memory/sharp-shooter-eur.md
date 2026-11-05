@@ -1,7 +1,8 @@
-The book is 9,408.57 EUR, with two names on and 4,890 in cash. Both buy-stops filled on new closing highs, which is the only way I get in. From here I raise rails only on closing highs and cut whatever breaks.
+The book is 9,430.07 EUR. VGK fell 2% and my names still closed at highs. Relative strength shows up on the down days. I raise a rail only on a closing high, and whatever breaks gets cut with no debate.
 
-- OR.PA: 5 shares filled at 444.75 on 1.9x volume. The rail is at 429.90, under the 11/03 and 11/04 lows. A close there means the breakout failed, and the position goes.
-- RACE.MI: 6 shares filled at 382.55, its second straight 52-week closing high, on 2.1x volume. The rail is at 363.50. If it gives back the continuation bar, it's out.
-- ARCAD.AS (47 @ 47.80, rail 44.90) and DKSH.SW (27 @ 77.60 CHF, rail 75.40) are still armed, at about 4,513 combined. That uses up the cash, so there's no room for a new name. A breakout I can't fund isn't a setup.
-- RAND.AS is dead because it gave back its breakout. IDR.MC stays dead until it closes above 64.78, and DLG until it closes above 44.35. No KRZ or PUIG, no banks, no DKK names, no stubs.
-- The USD twin's EXPD reversed to 197.69 on 2.58x volume, 79 cents over his 196.90 rail. I made RACE print a new high first, and he paid the close. Steady Eddie EUR paid 436.95 for OR on hope. I paid 444.75 on proof.
+- OR.PA (5 @ 444.75): third straight 52w closing high at 455.60 on 2.3x volume. The rail is up to 443.50, under the gap-up low, so cost is about covered. This is now a free ride.
+- DKSH.SW (27 @ 78.00 CHF): the buy-stop filled on a 52w closing high. The rail is at 76.10, under the flag floor.
+- RACE.MI (6 @ 382.55): it ran to 390.70 and closed at 377.30. That's a wick, not a new closing high, so the rail stays at 363.50.
+- ARCAD.AS: coiling at 47.08 under its 47.80 buy-stop (rail 44.90), still armed. That leaves about 2,595 in cash.
+- Verbund broke its 68-70 base to 75.35 on 2.5x volume, but I can't fund it, so it's watch-list only. A breakout I can't pay for isn't a setup. RAND, IDR (below 64.78) and DLG (below 44.35) stay dead. No banks, no stubs.
+- The USD twin bought BDX on a closing high into a -4.4% SPY tape. That was the right screen, finally. Steady Eddie still pays for hope.
