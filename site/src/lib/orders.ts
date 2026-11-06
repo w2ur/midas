@@ -24,8 +24,14 @@ export type Order = {
   reject_reason: string | null;
   /** When the broker confirmed the order (inbox `ts_filled`); trader channel only. */
   ts_filled?: string | null;
+  /** When the agent authored the order (outbox `ts`); every committed outbox row carries it. */
+  ts_written?: string | null;
   /** 1-based physical line of the order in its outbox file — the raw record's address. */
   line?: number;
+  /** The armed condition of a conditional order (outbox `trigger`); `level` is in the ticker's quote currency, not `currency`. */
+  trigger?: { op: string; level: number } | null;
+  /** Last day the order stays armed (outbox `expires`, an ISO date). */
+  expires?: string | null;
 };
 
 type OutboxRow = {
@@ -37,6 +43,8 @@ type OutboxRow = {
   shares: number;
   reasoning: string;
   currency: string;
+  trigger?: { op: string; level: number } | null;
+  expires?: string | null;
 };
 
 type InboxRow = {
@@ -138,7 +146,10 @@ function ordersForDate(date: string, inboxIndex: Map<string, InboxRow>): Order[]
       fees: fill?.fees ?? null,
       reject_reason: fill?.reason ?? null,
       ts_filled: fill?.ts_filled ?? null,
+      ts_written: o.ts ?? null,
       line,
+      trigger: o.trigger ?? null,
+      expires: o.expires ?? null,
     };
   });
 }

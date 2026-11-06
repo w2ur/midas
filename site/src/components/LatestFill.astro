@@ -1,15 +1,15 @@
 ---
-// The front page's exhibit: one real fill, in the agent's own words, beside
-// the promise it proves. Picked by lib/latest-fill (newest broker confirmation
-// by a trading agent; never hidden on a quiet day). The rationale is the
-// agent's verbatim text, clamped to three lines with the rest one click away
+// The front page's exhibit: one real decision, in the agent's own words,
+// beside the promise it proves. Picked by lib/latest-fill's latestDecision
+// (the newest trader record of any status: filled, refused or pending). The rationale is the agent's verbatim text, clamped to two lines
+// with the rest one click away
 // — a machine voice, so Archivo, never the Oracle's serif. No amber: the card
 // is coloured by the agent's kit, and amber keeps its one meaning.
 import AgentCrest from "@/components/AgentCrest.astro";
 import type { Order } from "@/lib/orders";
 import { tickerSlug } from "@/lib/orders";
-import { rawRecordUrl } from "@/lib/latest-fill";
-import { formatPrice, formatShares, longDate } from "@/lib/format";
+import { decisionStamp, pendingCondition, rawRecordUrl, statusLine } from "@/lib/latest-fill";
+import { formatPrice, formatShares } from "@/lib/format";
 import { getAgent, type AgentId } from "@/lib/roster";
 import { isCrestId } from "@/lib/crests";
 
@@ -17,20 +17,12 @@ interface Props { order: Order & { agent_id: AgentId } }
 const { order: o } = Astro.props;
 
 const name = getAgent(o.agent_id).display_name;
-const filledDate = o.ts_filled ? o.ts_filled.slice(0, 10) : o.date;
-// A conditional order is written on one day and fires on another; say both.
-const firedLater = filledDate !== o.date;
+const status = statusLine(o);
 
-function stamp(iso: string | null | undefined, date: string): string {
-  if (!iso) return longDate(date);
-  return `${longDate(iso.slice(0, 10))}, ${new Date(iso).toISOString().slice(11, 16)} UTC`;
-}
+const when = decisionStamp(o);
 
-// Three lines hold ~115 characters on the narrowest phone, so anything longer
-// may be clamped there and gets the toggle. On a wide card a 120-character
-// rationale fits unclamped and opening the toggle shows the same text: a
-// harmless no-op, where the opposite error would hide the end of a rationale.
-const clamps = o.reasoning.length > 110;
+const filled = o.status === "filled";
+const condition = pendingCondition(o);
 // The record's own leading fields, in the file's key order and its
 // `json.dumps` spacing — an excerpt of the outbox line the link opens, not a
 // summary built for the card. Fill data lives in the inbox, not here.
@@ -44,8 +36,8 @@ function pyFloat(n: number): string {
 ---
 <aside class="latest-fill" data-agent={o.agent_id} aria-labelledby="lf-label">
   <header class="lf-head">
-    <h2 id="lf-label" class="lf-label">Latest fill</h2>
-    <time class="lf-when" datetime={o.ts_filled ?? o.date}>{stamp(o.ts_filled, o.date)}</time>
+    <h2 id="lf-label" class="lf-label">Latest decision</h2>
+    <time class="lf-when" datetime={when.datetime}>{when.text}</time>
   </header>
 
   <p class="lf-who">
@@ -56,25 +48,63 @@ function pyFloat(n: number): string {
   <p class="lf-trade">
     <span class={`lf-side ${o.action.toLowerCase()}`}>{o.action}</span>
     <a class="lf-tick" href={`/ticker/${tickerSlug(o.ticker)}`}>{o.ticker}</a>
-    <span class="lf-qty">{formatShares(o.shares)} sh @ {formatPrice(o.fill_price, o.fill_currency)}</span>
+    <span class="lf-qty">{formatShares(o.shares)} sh{filled && <> @ {formatPrice(o.fill_price, o.fill_currency)}</>}{condition && <> · {condition}</>}</span>
   </p>
   <p class="lf-status">
-    Filled by the paper broker{firedLater && <> · order written {longDate(o.date)}</>}
+    {status.label}{status.code && <>: <code>{status.code}</code></>}{status.writtenOn && <> · order written {status.writtenOn}</>}
   </p>
 
   <p class="lf-why">{o.reasoning}</p>
-  {clamps && (
-    <details class="lf-more">
-      <summary>Full rationale</summary>
-      <p class="lf-full">{o.reasoning}</p>
-    </details>
-  )}
+  <details class="lf-more">
+    <summary><span class="lf-show">Full rationale</span><span class="lf-hide">Hide rationale</span></summary>
+    <p class="lf-full">{o.reasoning}</p>
+  </details>
 
   <a class="lf-raw" href={rawRecordUrl(o)}>
     <span class="lf-raw-label">Raw order record</span>
     <code>{raw}</code>
   </a>
 </aside>
+
+<script is:inline>
+  // The toggle is always in the markup and server-rendered visible; it is
+  // hidden only when the paragraph, measured with its clamp lifted, is no taller than the clamped box. One script,
+  // placed right after the card so the first measurement runs before the next
+  // paint (a deferred module would shrink the hero after first paint), then
+  // re-run once fonts load and on resize, at most once per frame. Measured
+  // while closed (an open card hides the clamped copy). Without JS the toggle
+  // stays visible, a harmless no-op.
+  (function () {
+    var card = document.currentScript.previousElementSibling;
+    if (!card) return;
+    var more = card.querySelector(".lf-more");
+    var why = card.querySelector(".lf-why");
+    if (!more || !why) return;
+    function fit() {
+      if (more.open) return;
+      // Compare the clamped height with the text's own height, read with the
+      // clamp lifted, so the answer does not depend on how the browser lays
+      // out lines past a line-clamp. Same script turn: nothing paints between.
+      var clamped = why.clientHeight;
+      why.classList.add("lf-measure");
+      var full = why.scrollHeight;
+      why.classList.remove("lf-measure");
+      if (full <= clamped) card.setAttribute("data-fits", "");
+      else card.removeAttribute("data-fits");
+    }
+    fit();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    // fit() is skipped while open, so a resize in that state leaves data-fits
+    // stale: measure again when the card closes.
+    more.addEventListener("toggle", function () { if (!more.open) fit(); });
+    var queued = false;
+    window.addEventListener("resize", function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; fit(); });
+    });
+  })();
+</script>
 
 <style>
   .latest-fill {
@@ -158,18 +188,27 @@ function pyFloat(n: number): string {
     color: var(--ink);
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+  /* Applied for a moment by the script to read the text's full height. */
+  .lf-why.lf-measure {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: none;
   }
   /* The full text lives inside <details>, so the toggle works on its own; the
      clamped copy is hidden while it is open. A browser without :has() shows
      both, which still reads in full. */
   .latest-fill:has(.lf-more[open]) .lf-why { display: none; }
+  .latest-fill[data-fits] .lf-more { display: none; }
   .lf-more { margin: var(--sp-2) 0 0; }
   .lf-more[open] { margin-top: 0; }
   .lf-full {
     margin: 0;
+    overflow-wrap: anywhere;
     padding-top: var(--sp-3);
     border-top: 1px solid var(--rule);
     font-family: var(--font-display);
@@ -194,6 +233,8 @@ function pyFloat(n: number): string {
   }
   .lf-more summary::-webkit-details-marker { display: none; }
   .lf-more[open] summary { text-decoration-thickness: 2px; }
+  .lf-hide, .lf-more[open] .lf-show { display: none; }
+  .lf-more[open] .lf-hide { display: inline; }
   .lf-raw {
     display: block;
     margin-top: var(--sp-3);

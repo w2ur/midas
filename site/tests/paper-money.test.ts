@@ -55,6 +55,12 @@ describe("the front page states paper money", () => {
     const index = read("pages/index.astro");
     expect(index).toContain("every one the paper broker refuses");
     expect(index).toContain("refusable by the paper broker");
-    expect(read("components/LatestFill.astro")).toContain("Filled by the paper broker");
+    // The status copy lives in statusLine; the component renders it.
+    expect(read("lib/latest-fill.ts")).toContain("Filled by the paper broker");
+    // The component must actually put the label on the page: the expression
+    // sits inside the .lf-status paragraph, not merely somewhere in the file.
+    const status = read("components/LatestFill.astro").match(/<p class="lf-status">([\s\S]*?)<\/p>/);
+    expect(status).not.toBeNull();
+    expect(status![1]).toContain("{status.label}");
   });
 });

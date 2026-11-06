@@ -6,8 +6,10 @@ import { getAgent, isTradingAgent } from "@/lib/roster";
 
 export const prerender = true;
 
-// The front page's exhibit, for william.revah.paris: the newest broker-confirmed
-// fill by a trader, read by the hub at ITS build time for the Midas story page.
+// For william.revah.paris: the newest broker-confirmed fill by a trader, read by
+// the hub at ITS build time for the Midas story page. This endpoint deliberately
+// keeps the fill-only contract (latestFill); the front page's card uses
+// latestDecision, which takes the newest record of any status.
 // Like /latest.json and /oracle-latest.json, a loader failure answers with an
 // empty payload rather than a 500, so a bad ledger read hides the hub's card
 // instead of breaking a page in another repo.

@@ -27,7 +27,7 @@ import { loadLatest } from "@/lib/output";
 import { loadCurrentLeaderboard } from "@/lib/leaderboard";
 import { loadBlogLatest, excerpt } from "@/lib/blog";
 import { loadAllOrders } from "@/lib/orders";
-import { latestFill, byFillTimeDesc } from "@/lib/latest-fill";
+import { latestDecision, byFillTimeDesc } from "@/lib/latest-fill";
 import { isTradingAgent, getAgent, TRADING_AGENTS } from "@/lib/roster";
 import { loadGlobalReference, returnPct } from "@/lib/baselines";
 import { countWord } from "@/lib/facts";
@@ -55,16 +55,18 @@ const measured = leaderboardRows.filter((r) => r.vs_benchmark_pp != null);
 const beating = measured.length > 0 ? measured.filter((r) => (r.vs_benchmark_pp as number) > 0).length : null;
 
 const allOrders = loadAllOrders();
-// The hero exhibit: the newest fill by a trader, in its own words.
-const leadFill = latestFill(allOrders, isTradingAgent);
+// The hero exhibit: the newest trader decision (fill, genuine broker refusal
+// or pending order, by resolution time), in its own words. Cancellations and
+// expiries are housekeeping and never lead.
+const leadDecision = latestDecision(allOrders, isTradingAgent);
 
 // Six rows: on wide screens the tape shares a row with the Oracle's column,
 // and six two-line rows about match the column's height (three left half the
 // row empty).
 const TAPE_ROWS = 6;
-// Ordered by confirmation time, the same key as the hero's fill, so the fill
-// the hero leads with is the tape's first row rather than buried under rows
-// authored later but filled earlier.
+// Fills only, newest confirmation first. The hero can lead with a refusal or
+// a pending order, which this tape never shows, so its first row is not
+// necessarily the hero's record.
 const recentTrades = allOrders
   .filter((o) => o.status === "filled")
   .sort(byFillTimeDesc)
@@ -118,7 +120,7 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
       Every order they place is published the same day. So is every one the paper broker refuses.
       Every book runs against a passive benchmark and a coin flip.
     </p>
-    {leadFill && <div class="hero-exhibit"><LatestFill order={leadFill} /></div>}
+    {leadDecision && <div class="hero-exhibit"><LatestFill order={leadDecision} /></div>}
     <div class="hero-facts">
       <MethodologyFacts only={["money", "sessions", "fills", "skill"]} compact />
     </div>
@@ -290,6 +292,12 @@ const retCls = managerRet === null ? "" : managerRet > 0 ? "pos" : managerRet < 
   .hero {
     padding: var(--sp-7) var(--gutter) var(--sp-6);
     border-bottom: 1px solid var(--rule);
+  }
+  /* Phone: main already pads 2rem under the rail, and the hero's own 3rem
+     on top of it left 80px of ground above the h1, pushing the decision
+     card's rationale below a 390×844 first screen. */
+  @media (max-width: 40rem) {
+    .hero { padding-top: var(--sp-4); }
   }
   .hero {
     display: grid;
