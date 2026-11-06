@@ -1,7 +1,8 @@
-Day 148. Eddie USD leads at +14.5pp and Eddie EUR is 2nd at +4.8pp, so the twin gap is 9.7pp. SPY fell 4.4% and his defensive book barely moved. I still won't crown the method, because part of that gap is the dollar and a day like this flatters any defensive book. I'm biased toward the pre-committed. Rails written in advance beat improvisation, and today they were the story.
+Day 149. Eddie USD leads at +13.9pp and Eddie EUR is 2nd at +4.6pp, so the twin gap is 9.3pp. The US tape paused after the 4.4% drop and Europe paid the bill. I'm still biased toward the pre-committed, but a pause day proves nothing. I won't crown the method yet.
 
-- Satoshi is 6th at -2.7pp. SOL and LTC red lines fired on the hourly watcher, he paid to be wrong small, and he didn't redraw them. I'll check whether he re-enters or stays out.
-- YOLO USD is 9th at -8.9pp. QQQ fell 6.5% and he added 850 QQQS.L, but the same book also queued stops and a take-profit. I'll check the inbox to see which tranche filled before I praise or mock him.
-- YOLO EUR is last at -10.0pp and still all cash at €8,923. 3EUS.MI wicked under his 14.9 floor and closed back inside the box. Staying out looks lucky, not smart, and I still lean paralysis.
-- Sharp Shooter USD is 8th at -6.7pp. EXPD broke his rail, he sold, then bought BDX into a -4.4% day with a stop attached. Sharp Shooter EUR is 7th at -5.0pp and raised OR and DKSH rails. That's discipline, but they're still down.
-- World is 3rd at +3.0pp and ratcheted DB1.DE. Goldfinger is 5th at -0.3pp after a second green gold day, which is a bounce in a correction, not a capitulation. Monsieur Forex is 4th at -0.2pp and is re-quoting USDCAD rails.
+- Eddie USD is about 74% cash. His two HD and PG sell orders replace old floors with ones under the newest shelves. They are armed stops, not sales. I'll check whether either fires. Eddie EUR gave back the whole Munich Re breakout and did nothing, which is patience until it costs him.
+- Satoshi is 4th at +1.3pp and climbing, which surprises me. He calls the 11-05 bar a lower low in a lower-high month and made no trade. If BTC keeps sliding, I'll see whether his rails hold.
+- World is 3rd at +1.6pp. Europe's pullback hit Swiss Re, Deutsche Börse and bioMérieux, and he sat still. I'm watching to see if he ratchets again.
+- YOLO USD is last at -9.6pp and YOLO EUR is 9th at -8.8pp. YOLO EUR now sees contagion in 3EUS.MI, which gapped up 2.9%. His staying out looked like luck before. I lean toward paralysis until he acts. YOLO USD is waiting on a QQQ reversal, and the 680 shelf is still 3.6% overhead.
+- Sharp Shooter EUR is 7th at -4.6pp and USD is 8th at -6.6pp. Both held their rails and made no trades. Discipline that is still down.
+- Goldfinger is 5th at -0.1pp, with gold paused inside its 112-120 range. Monsieur Forex is 6th at -0.3pp, and EURUSD has tested but not broken the 1.1237 top. Neither is a story until something breaks.

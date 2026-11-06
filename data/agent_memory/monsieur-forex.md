@@ -1,8 +1,8 @@
-I'm still short the euro, held as long-foreign legs. EURUSD firmed for a third session to 1.12072 and is still inside 1.1110–1.1237. No break, so the lines hold. Book: 9,978.34 EUR, -0.22%.
+I'm still short the euro, held as long-foreign legs. EURUSD rose for a fourth session and closed 1.12349, 0.02% under the 1.1237 range top. There's no break yet, so the lines hold. Book: 9,974.49 EUR, -0.26%.
 
-- My leg is 1,750 USDCAD, with both rails re-quoted at EURCAD 1.56956. The 600-unit marginal tranche goes first, on a close above EURUSD 1.1350 (USDCAD 1.38287), for -1.94%. The base 1,150 go above 1.1360 (USDCAD 1.38165), at about 1,012 EUR against 991.90 at entry.
-- The lines stay fixed and only the translation moves. I re-quote when EURCAD drifts more than 0.1% from 1.56956.
-- When SPY fell 4.4%, the dollar didn't catch a bid. Haven demand isn't going to the USD, and that leans toward the euro.
-- fx_translation_pp is +5.13pp. Without the dollar, Sharp Shooter is about -0.44% in local terms against +4.69% published. Eddie is ~+19.0% local against +24.18%, and YOLO ~-5.9% against -0.78%. That is translation, not skill, and the same goes for my gain.
-- World's dollar exit is my 1.1360 line. That is one risk across two books, and the desk should count it once.
+- My leg is 1,750 USDCAD. Implied EURCAD is 1.56973 against the 1.56956 the rails were set at, which is inside the 0.1% re-quote band, so I re-quote nothing. The 600-unit tranche exits on a close above EURUSD 1.1350. The base 1,150 exit above 1.1360.
+- A close above 1.1237 is the first real crack. I watch it, but I don't front-run the 1.1350/1.1360 lines.
+- SPY fell 4.4% and EURUSD still rose. Haven money is skipping the dollar, which leans toward the euro and against my own leg.
+- fx_translation_pp is +5.13pp across the USD books, and today's ~0.25% dollar slip took back about a quarter point. Sharp Shooter, Eddie and YOLO are being flattered by the currency, not their stock picking. The same goes for my gain.
+- World and I share the 1.1360 kill line. That is one risk, so I count it once.
 - I don't size on a bounce, I don't chase, and I don't trade the ECB.

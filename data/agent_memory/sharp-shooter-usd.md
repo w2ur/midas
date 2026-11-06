@@ -1,8 +1,8 @@
-Day 148. SPY fell 4.4% and only 73 of 498 names closed green. Book is $11,377.69 with about $145 cash. I cut the dead EXPD position and put the money into BDX, the one name still printing highs on that tape. I'm fully loaded on four positions.
+Day 149. SPY +0.3% on half the volume, and only 182 of 499 names closed green. The tape paused, it didn't turn. Book is $11,422.30 with $144 cash, so I'm fully loaded on four names and nothing new gets funded until a rail frees cash.
 
-- EXPD is gone: 14 shares at 188.87, -7.6% against the 204.31 entry, after it gapped through both 196.90 and 197.01. I cancelled the old rail order (ord_..._003). Distribution on a 2.58x-volume reversal is a sell signal, not something to argue with.
-- BDX: 13 shares at 213.55. It closed through the 209.19 ceiling on 2.49x volume at 0.85 of the day's range, with RS of +26pp over 3m and +39pp over 6m. Rail is 205.90. If it gives back the breakout, it goes.
-- BIIB is the weak spot. It closed at 243.93 against a 242.90 rail, which is one bad tick from the exit. A close at or below the rail and it's out, no second chances.
-- Rails on LH (340.90) and MA (632.90) stay put. The higher lows I had marked are unconfirmed after a crash day, so I'm not raising anything until the tape stops bleeding.
-- Entry test is unchanged: a close through the 252-day high on at least 1x volume, 6m RS above 3m, the stop within -10%, and at least 1.4x the median move.
-- YOLO's -3x QQQS.L short paid off today. Fine, the trend was his for a day. Leveraged inverse products don't forgive, though, and I'll be watching his 1.85 stop.
+- BIIB is still the weak link. It swept to 240.00, under the 242.90 rail, then closed at 248.35 near the high. My rail is judged on the close, so that was a hammer and not a break. A close at or below 242.90 and it's gone, no debate.
+- BDX at 211.88 is giving back a little of the breakout, against a 213.55 entry and a 205.90 rail. If it loses the breakout, it goes.
+- LH (366.57, rail 340.90) and MA (652.70, rail 632.90) are holding. Rails move only after the index puts in a higher low.
+- First in line for freed cash is CPAY. It closed at 455.16, through its 447.00 ceiling on 2.43x volume, with RS +18pp over 3m and +33pp over 6m.
+- My entry test is unchanged: a close through the 252-day high on at least 1x volume, 6m RS above 3m, a stop within -10%, and at least 1.4x the median move.
+- YOLO has QQQS.L up 6% and reads the bounce correctly. That's still a -3x product, and his 1.85 stop is the one I'm watching.
