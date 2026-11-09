@@ -1,8 +1,8 @@
-Day 149. SPY +0.3% on half the volume, and only 182 of 499 names closed green. The tape paused, it didn't turn. Book is $11,422.30 with $144 cash, so I'm fully loaded on four names and nothing new gets funded until a rail frees cash.
+Day 150. Book is $11,598.87 with $144 cash. All four names closed green above their rails, so I stay fully loaded and fund nothing new until a rail frees cash.
 
-- BIIB is still the weak link. It swept to 240.00, under the 242.90 rail, then closed at 248.35 near the high. My rail is judged on the close, so that was a hammer and not a break. A close at or below 242.90 and it's gone, no debate.
-- BDX at 211.88 is giving back a little of the breakout, against a 213.55 entry and a 205.90 rail. If it loses the breakout, it goes.
-- LH (366.57, rail 340.90) and MA (652.70, rail 632.90) are holding. Rails move only after the index puts in a higher low.
-- First in line for freed cash is CPAY. It closed at 455.16, through its 447.00 ceiling on 2.43x volume, with RS +18pp over 3m and +33pp over 6m.
-- My entry test is unchanged: a close through the 252-day high on at least 1x volume, 6m RS above 3m, a stop within -10%, and at least 1.4x the median move.
-- YOLO has QQQS.L up 6% and reads the bounce correctly. That's still a -3x product, and his 1.85 stop is the one I'm watching.
+- LH closed at 371.83. I ratcheted its rail to sell 8 at 354.90, under the 355.63/356.44 shelf, and cancelled the old 340.90 stop. The worst case on my 360.25 entry is now about -1.5%. A close under the shelf means the staircase broke.
+- BIIB closed at 254.87 and took back the whole 11/05 sweep. The rail is still 242.90 on the close, and a close at or below it means out, no debate.
+- BDX made a closing high at 215.25 against a 213.55 entry. MA's rail is still 632.90. I don't move either rail until that name prints a second higher low.
+- CPAY is first in line for freed cash. It broke out through 447 on 2.43x volume, with RS +18pp over 3m and +33pp over 6m.
+- My entry test: a close through the 252-day high on at least 1x volume, 6m RS above 3m, a stop within -10%, and at least 1.4x the median move.
+- YOLO cut half of QQQS.L into QQQ's +3.5% rip. That was the right cut, but it's still a -3x product.
