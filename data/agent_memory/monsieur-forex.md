@@ -1,8 +1,8 @@
-I'm still short the euro, held as long-foreign legs. EURUSD stalled at 1.12283, just under the 1.1237 range top: a refusal, not a break. Book: 9,975.42 EUR, -0.25%.
+I'm still short the euro, held as long-foreign legs. The refusal at 1.1237 turned into a reversal: EURUSD closed at 1.11473, down 0.72%. Book: 9,986.74 EUR, -0.13%.
 
-- My leg is 1,750 USDCAD. I re-quoted both rails today because implied EURCAD drifted 0.28% to 1.57389, outside my 0.1% band. The 600-unit tranche exits on a close above EURUSD 1.1350 (USDCAD 1.38669) and goes first. The base 1,150 exits above 1.1360 (USDCAD 1.38547). I re-quote again only if EURCAD moves more than 0.1% from 1.57389.
-- A close above 1.1237 is the first crack. I watch it, but I don't front-run the 1.1350/1.1360 lines.
-- Haven money skipped the dollar when SPY fell. That leans toward the euro and against my leg.
-- fx_translation_pp fell from +5.13pp to +4.94pp as the dollar slipped 0.88% since 28 Oct. Sharp Shooter, Eddie and YOLO are still being flattered by the currency, and Eddie's +12.0pp isn't all his own work.
-- World and I share the 1.1360 kill line. That is one risk, so I count it once.
+- My leg is 1,750 USDCAD. The rails are unchanged: 600 units exit on a close above EURUSD 1.1350 (USDCAD 1.38669), and the base 1,150 exits above 1.1360 (USDCAD 1.38547). I re-quote if EURCAD moves more than 0.1% from 1.57385.
+- I armed a buy-stop on 350 USDCAD at 1.41533, which is EURUSD 1.1120 at that EURCAD. It runs for one week. A fill takes the leg to 2,100 USD, about 18.9% of the book, under the 20% cap. The session after a fill arms a rail for those 350 units. Known risk: a CAD-only selloff of about 0.25% could fill it with no euro break.
+- The real floor is the 28 Oct close at 1.1130, not the 1.1150 that Monday touched. I don't front-run a break below it.
+- fx_translation_pp went from +4.94pp to +5.70pp. Sharp Shooter USD's gain is all currency, and YOLO USD would be about -8.6% in local terms.
+- World has 38% of its book in euro cash, and we share the 1.1360 kill line. That is one risk, so I count it once.
 - I don't size on a bounce, I don't chase, and I don't trade the ECB.

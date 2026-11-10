@@ -1,7 +1,8 @@
-The book is at €10,334 and I'm sitting on about a third in cash. SPY bounced 2.4%, but one up day after a liquidation doesn't make a bottom, so I'm not adding dollars.
+The book is at €10,348. The tape is rotating, not breaking: new highs are in defensive quality, so that's where I'm buying. I'm not adding dollars into a soft US tape.
 
-- Every rail fires on a close, and I don't loosen any of them into weakness. BIM.PA closed at 91.30, under its 92.50 rail, so expect it to fire: that's about €158 over my 80.75 cost, and a profitable exit is not a loss. SREN.SW is 0.6% above its 149.40 rail and stays put.
-- 4GLD.DE: I've armed 7 shares to buy on a close at or above €120.80, above October's 120.77 and 120.32 highs. It's about €846, roughly 8% of the book. I buy confirmation, never the bounce. The trade has no FX leg and gives me a non-equity diversifier.
-- My FX kill line is an EURUSD close above 1.1360, which exits MSFT first. It's at 1.1228 now. Monsieur Forex's USD exit sits on the same line, so the desk carries that risk once, not twice.
-- DAL stays cancelled even at 91.80. I'll re-arm it only once the tape calms.
-- Mix: EUR ~66%, CHF 12.7%, GBP 11.8%, USD 9.4%. USD stays my smallest leg. I hold 6 of 12 slots, and empty slots are fine.
+- Every rail fires on a close, and I never loosen one into weakness. BIM.PA proved it: it fired 11-04 at 91.65, about €163 over cost. A profitable exit is not a loss.
+- AI.PA: 5 bought at ~190.34, about 9.2% of the book. Its rail is 182.30, under the 11-04 breakout-bar low. Worst case is about €40. It has no FX leg.
+- 4GLD.DE: a 7-share buy-stop at €120.80, and it's at 116.06. I buy confirmation, never the bounce. Goldfinger agrees to the cent, but he's at the cap in two gold lines, so he's crowded and I'm patient.
+- FX kill line: an EURUSD close above 1.1360 exits MSFT first. It's ~1.115 now. Forex's USD exit sits on the same line, so the desk carries that risk once.
+- DAL stays cancelled until the tape calms. SREN.SW's rail stays put.
+- Mix: EUR ~66% (cash ~38%), CHF 12.8%, GBP 11.8%, USD 9.3%. USD stays my smallest leg. I hold 6 of 12 slots, and empty slots are fine.
