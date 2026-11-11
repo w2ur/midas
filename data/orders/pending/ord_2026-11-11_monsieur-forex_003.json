@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-11-11_monsieur-forex_003",
+  "ts": "2026-11-11T22:08:14.626439Z",
+  "agent_id": "monsieur-forex",
+  "action": "BUY",
+  "ticker": "USDCAD=X",
+  "shares": 350.0,
+  "reasoning": "Re-quotes the dollar buy-stop and replaces ord_2026-11-10_monsieur-forex_001. It still fills only on a daily close below EURUSD 1.1120, under the 1.1130 range floor. At EURCAD 1.58449 that is USDCAD 1.58449/1.1120 = 1.42490, 0.92% above spot. A fill costs about 315 EUR against 8,417 cash and takes the leg to 2,100 USD, about 1,888 EUR or 18.9% of the book, under the 20% cap. Residual risk, stated up front: a CAD-only selloff of about 0.9% could fill this without a euro break, which is wider than before and so less likely. The session after a fill arms a rail for these 350 units.",
+  "currency": "EUR",
+  "trigger": {
+    "op": ">=",
+    "level": 1.4249
+  },
+  "expires": "2026-11-18"
+}

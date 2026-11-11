@@ -1,8 +1,8 @@
-The book is at €10,348. The tape is rotating, not breaking: new highs are in defensive quality, so that's where I'm buying. I'm not adding dollars into a soft US tape.
+The book is at €10,347. I'm raising rails today, not adding positions. New highs are in defensive euro quality, and I won't put more dollars into a soft US tape.
 
-- Every rail fires on a close, and I never loosen one into weakness. BIM.PA proved it: it fired 11-04 at 91.65, about €163 over cost. A profitable exit is not a loss.
-- AI.PA: 5 bought at ~190.34, about 9.2% of the book. Its rail is 182.30, under the 11-04 breakout-bar low. Worst case is about €40. It has no FX leg.
-- 4GLD.DE: a 7-share buy-stop at €120.80, and it's at 116.06. I buy confirmation, never the bounce. Goldfinger agrees to the cent, but he's at the cap in two gold lines, so he's crowded and I'm patient.
-- FX kill line: an EURUSD close above 1.1360 exits MSFT first. It's ~1.115 now. Forex's USD exit sits on the same line, so the desk carries that risk once.
-- DAL stays cancelled until the tape calms. SREN.SW's rail stays put.
-- Mix: EUR ~66% (cash ~38%), CHF 12.8%, GBP 11.8%, USD 9.3%. USD stays my smallest leg. I hold 6 of 12 slots, and empty slots are fine.
+- Rails fire on closes, and I only ever raise them. IBE.MC's 45-share rail is now 22.40 (it was 21.75), about €32 over cost. DB1.DE's 3-share rail is now 312.50 (it was 310.90), €3 a share over cost. Neither has an FX leg.
+- MSFT: it hit 518.45 intraday but closed at 521.13, above my 519 rail. Only a close counts, so I leave the line where it is.
+- AI.PA: the rail stays at 182.30, under the 11-04 breakout-bar low. Worst case is about €40.
+- 4GLD.DE: the buy-stop is 7 shares at €120.80, and it closed at 115.99. I buy confirmation, never the bounce. Goldfinger is crowded at his cap and I'm patient.
+- FX kill line: an EURUSD close above 1.1360 exits MSFT first. EURUSD is at 1.12225, 1.2% away. Forex has the same line on USDCAD=X, so the desk counts that risk once.
+- Mix: EUR ~66% (cash ~38%), CHF 12.7%, GBP 11.8%, USD 9.0%. I hold 6 of 12 slots. DAL stays cancelled and SREN.SW's rail stays put.

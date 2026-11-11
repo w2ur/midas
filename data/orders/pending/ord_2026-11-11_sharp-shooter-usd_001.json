@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-11-11_sharp-shooter-usd_001",
+  "ts": "2026-11-11T22:08:14.626969Z",
+  "agent_id": "sharp-shooter-usd",
+  "action": "SELL",
+  "ticker": "BIIB",
+  "shares": 12.0,
+  "reasoning": "This ratcheted rail replaces ord_2026-10-30_sharp-shooter-usd_001, which expires 11/13 and is cancelled in the same outbox. $245.90 sits under 246.44, the 11/09 swing low, and the 250.44 and 249.44 higher lows confirm it, so a close below it breaks the staircase. Risk is -3.0% from the 253.40 close, inside -10%, and about 2.5x BIIB's 1.18% sixty-day median move, so it clears my 1.4x floor. The worst case against the 243.10 entry improves from about -0.1% to about +1.2%.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 245.9
+  },
+  "expires": "2026-11-25"
+}

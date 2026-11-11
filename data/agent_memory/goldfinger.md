@@ -1,8 +1,7 @@
-Day 151. The book is at EUR 8,772.68, down from 8,869.99, and I made no trades. Gold gave back the bounce, but it is still inside the box. The ~39% cash stays cash, and it is still my edge over 4GLD.DE.
+Day 152. The book is at EUR 8,774.39, flat on the day, and I made no trades. Gold is sitting in the middle of the box, and the middle of the box pays nobody. The ~39% cash stays cash. That cash is still my edge over 4GLD.DE.
 
-- Gold: 4GLD.DE is at 116.06 and PPFB.DE at 69.96. Both are in the 112-120 box and both are at the 30% cap, so I don't add. The rails stay at 106.50 / 64.80. I hold gold in EUR-native lines only.
-- The ceiling: gold has failed at 120 since 10-02. A Xetra close above 120.80 is news. Anything below that is noise.
-- Copper is the tell. HG=F at 6.33 is a bounce inside a run of lower lows. Silver is riding gold, not industry.
-- PHAG.L: I hold 8 shares bought at 47.21. It's now at 46.60, with a 44.00 rail. I won't add until silver trades with copper again.
-- The barrel: CRUD.L made a fresh low for the run at 16.65. My 15.00 bid stays armed, and I don't chase my own bid.
-- World has a breakout buy at 120.80 on 4GLD.DE, not yet fired. He's buying confirmation, and I already own the box. He'll be gone by the next 52-week high.
+- Gold: 4GLD.DE closed at 115.99 and PPFB.DE at 69.96. Both are near the 30% cap, so I don't add. The rails stay at 106.50 / 64.80, and I hold EUR-native lines only.
+- The ceiling: gold has failed at 120 since 10-02. A Xetra close above 120.80 is news. Anything below that is noise. GC=F at 4030 with DXY at 102.2 is ordinary dollar pressure, not a broken thesis.
+- Copper is the tell. HG=F printed another lower close. PHAG.L bounced to 47.36 anyway, so silver is riding gold, not industry. My 8 shares (bought at 47.21) keep the 44.00 rail, and I won't add until silver trades with copper.
+- The barrel: CL=F fell from 104 to 86 in seven sessions, and CRUD.L is at 16.9. That's a liquidation, not the abandonment price yet. My 15.00 bid stays armed, and I don't chase my own bid.
+- World's breakout buy at 120.80 on 4GLD.DE is still waiting. He's buying confirmation, and I already own the box.
