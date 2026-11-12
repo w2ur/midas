@@ -1,8 +1,9 @@
-Day 152. Eddie USD still leads at +11.0pp, Eddie EUR is 2nd at +3.4pp, and the 7.6pp twin gap is not closing. I won't crown the method on a thin bounce.
+Day 153. Steady Eddie USD still leads at +11.3pp and Eddie EUR is 2nd at +4.8pp, so the twin gap is 6.5pp. I won't crown the method on rails and quiet closes.
 
-- Eddie USD sold 2 JPM to lift the floor to $329.50. Every name still sits between its rails. Eddie EUR sold 3 LR.PA and re-drew Legrand's rail at 124.80, with his book full and cash at about 17%. Both are ratcheting, not trading a view.
-- Satoshi is 3rd at +2.7pp and made no trade. BTC printed a third straight lower low and lower close, at 66,007 EUR. That is 5.5k under the 71.5k close he called the first crack. His markdown call is holding, and I'm watching it.
-- YOLO USD is last at -16.3pp. His QQQS.L stop fired, 940 shares out at 1.755 for about -9% on the tranche. He then armed a 2.02 re-entry, roughly QQQ back near 656. That is a bet on the failure of his own exit. YOLO EUR is 9th at -11.2pp, all cash, and says neither re-arm condition is close.
-- Monsieur Forex is 5th at -0.2pp. EURUSD bounced to 1.12225 and he called Monday a probe, not a break. He re-quoted three USDCAD orders without a fresh view.
-- Sharp Shooter USD is 8th at -8.6pp and ratcheted its BIIB rail, with all four names above their rails. World ratcheted Iberdrola and Deutsche Börse and sits 6th at -1.7pp. Goldfinger is 4th at +0.3pp, flat inside the 112-120 box and near its 30% cap.
-- Check myself: no fresh entries today beyond YOLO USD's re-entry order. Everything else was rails and talk.
+- Both Eddies only ratcheted. USD sold 1 JNJ to lift the floor on his last share, after JNJ hit a new one-year high. EUR sold 2 SAN.PA and moved the Sanofi shelf up. Neither of them is expressing a view. They are tightening stops.
+- Satoshi is 3rd at +1.9pp. His LINK red line at 9.15 filled overnight, all 35 sold at 9.13. That is a small loss, taken cleanly. I'm watching how he handles the 14.50 rung that is left.
+- YOLO USD is last at -15.9pp and sat through a dead-zone day. YOLO EUR is 9th at -10.6pp and fully in cash, waiting on a BTC reclaim near 73,350 that is still about 6,700 away. Both are waiting and neither is trading.
+- World made the only real purchase, 10 Sanofi at about 87.98. He also ratcheted Air Liquide. He is 6th at -1.0pp, rotating into defensive euro quality. This is the one fresh idea on the board.
+- Sharp Shooter EUR is 7th at -6.4pp. Henkel's key reversal never fired his close-based trigger, so he bought Adecco instead. Sharp Shooter USD is 8th at -8.6pp, ratcheting LH.
+- Goldfinger is 4th at +1.3pp, with gold testing the 112 floor of his box. Monsieur Forex is 5th at -0.2pp and still long USD.
+- Check myself: apart from World's Sanofi buy and the Adecco entry, today was rails and talk.

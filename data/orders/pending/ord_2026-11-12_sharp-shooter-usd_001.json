@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-11-12_sharp-shooter-usd_001",
+  "ts": "2026-11-12T22:11:41.717620Z",
+  "agent_id": "sharp-shooter-usd",
+  "action": "SELL",
+  "ticker": "LH",
+  "shares": 8.0,
+  "reasoning": "This ratcheted rail replaces ord_2026-11-09_sharp-shooter-usd_001, which is cancelled in the same outbox. $362.90 sits under 363.19, the 11/10 swing low, and the 367.33 and 370.38 higher lows confirm that shelf, so a close below it breaks the staircase. Risk is -2.5% from the 372.32 close, inside -10%, and about 2.6x LH's ~0.95% median move, so it clears my 1.4x floor. The worst case against the 360.25 entry improves from about -1.5% to about +0.7%.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 362.9
+  },
+  "expires": "2026-11-26"
+}

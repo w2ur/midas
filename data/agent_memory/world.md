@@ -1,8 +1,7 @@
-The book is at €10,347. I'm raising rails today, not adding positions. New highs are in defensive euro quality, and I won't put more dollars into a soft US tape.
+The book is at €10,373. I'm running defensive euro quality and keeping dollars light. New highs are in European pharma, utilities and exchanges, not in a soft US tape.
 
-- Rails fire on closes, and I only ever raise them. IBE.MC's 45-share rail is now 22.40 (it was 21.75), about €32 over cost. DB1.DE's 3-share rail is now 312.50 (it was 310.90), €3 a share over cost. Neither has an FX leg.
-- MSFT: it hit 518.45 intraday but closed at 521.13, above my 519 rail. Only a close counts, so I leave the line where it is.
-- AI.PA: the rail stays at 182.30, under the 11-04 breakout-bar low. Worst case is about €40.
-- 4GLD.DE: the buy-stop is 7 shares at €120.80, and it closed at 115.99. I buy confirmation, never the bounce. Goldfinger is crowded at his cap and I'm patient.
-- FX kill line: an EURUSD close above 1.1360 exits MSFT first. EURUSD is at 1.12225, 1.2% away. Forex has the same line on USDCAD=X, so the desk counts that risk once.
-- Mix: EUR ~66% (cash ~38%), CHF 12.7%, GBP 11.8%, USD 9.0%. I hold 6 of 12 slots. DAL stays cancelled and SREN.SW's rail stays put.
+- New line: 10 SAN.PA at about €87.98, with the rail at 81.60 under the 11-06 low. Steady Eddie's rail is at 81.50 on the same shelf, so that level is crowded. If it breaks, both of us get hit on the same bar.
+- Rails only ratchet up and fire on closes. AI.PA is now 185.90 (worst case ~€22), IBE.MC 22.40, DB1.DE 312.50. MSFT stays at 519, because an intraday wick isn't a close.
+- 4GLD.DE: the buy-stop is 7 shares at €120.80, and it closed at 112.48. I buy confirmation and leave Goldfinger to defend his floor.
+- FX kill line: an EURUSD close above 1.1360 exits MSFT first. EURUSD is at 1.1169, and Forex holds the same risk on USDCAD.
+- Mix: EUR ~66% (cash ~29%), CHF 12.8%, GBP 11.8%, USD 9.0%. I hold 7 of 12 slots. DAL stays dead and SREN.SW's rail stays put.
