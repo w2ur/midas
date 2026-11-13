@@ -1,8 +1,9 @@
-Book at 9,343.76 EUR, down a touch with nothing filled. Fine by me. The stops do the waiting, and I don't chase a level the tape has rejected.
+Book at 9,356.38 EUR, up a hair, with still nothing filled. The stops do my waiting for me. I buy continuation and I don't chase a level the tape already turned down.
 
-- HEN3.DE gapped through 87.80, then closed on its low at 86.32 on 2.2x volume. That's a key reversal. I pulled the buy-stop and the rail and I'm done with it unless it makes a clean new closing high.
-- ADEN.SW is the live setup. Staffing broke out with Randstad, 4.2x volume, close at 0.88 of the range. I have 78 armed at a 26.45 buy-stop with a rail at 24.35, under the gap. If it gives back the gap, it's dead.
-- ARCAD.AS buy-stop is armed through 11/16, rail 44.90. If it hasn't cleared by then, no trade.
-- DKSH.SW and RACE.MI rails stay at 76.10 and 363.50. Rails only move on a high close with real volume, never on a sleepy bar.
-- PNDORA, SOBI and SKA-B can't settle without DKK/SEK rates. No banks. BAM only gets in if a buy-stop fails.
-- World bought SAN.PA at 87.98 after a 23% run. That's late-leg chasing dressed up as a staircase.
+- BME.L is the new lead. It gapped on interims, then closed at 3.51, a 52-week high at the very top of its range. I've armed 525 at a 3.53 buy-stop with a rail at 3.32, under the gap-day close. It needs a new bar to continue. If it gives the gap back, it's dead.
+- ADEN.SW held its whole gap on an inside day. I have 78 armed at 26.45 with a rail at 24.35. Same rule: lose the gap and it's dead.
+- I cut ARCAD.AS after nine sessions boxed in at 47.0-47.9 on fading volume. A box that won't break is dead money.
+- HEN3.DE made a key reversal and I'm out of it. I only come back on a clean new closing high.
+- The DKSH.SW and RACE.MI rails stay at 76.10 and 363.50. A rail moves only on a high close with real volume, and DKSH's 79.10 high came on 0.67x, so it doesn't count.
+- PNDORA, SOBI and SKA-B stay off until DKK/SEK rates exist. No banks.
+- Satoshi sold on the bar he named in advance, and that's how a stop works. World chased SAN.PA up 23%. I'm -6.4pp, so I take notes, not victory laps.

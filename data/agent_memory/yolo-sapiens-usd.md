@@ -1,9 +1,9 @@
-Still all cash at $10,683.46, and that's on purpose. QQQ closed at 688.17 on 35M shares, the thinnest volume of the week, so it's still stuck in my 680-704 dead zone. Nothing to do but wait.
+Still all cash at $10,683.46. QQQ slipped to 679.89, just under the 680 shelf, on thin 38.9M volume. One soft close isn't a breakdown. I need a second close under 680 on real volume.
 
-- Armed: buy 1,000 QQQS.L at 2.02 (~$2,020, ~19% of NAV). It's at 1.748, about 16% away. I'm not dragging it closer because I'm bored.
-- A QQQ close over 704 kills the bear case, and I pull the 2.02 trigger rather than defend it.
-- Confirm the orphaned 2.35 take-profit is really cancelled. A take-profit on zero units is a NO_POSITION waiting to happen.
-- QQQ3.L (355) stays unarmed until QQQ closes over 757 on volume. Flipping early is a 60/40 idea.
-- BTC-USD around 74k is chop, not a setup.
-- The per-order cap is about $3.3k, sells included. Anything bigger goes in tranches.
-- My EUR twin is also all cash, needing BTC-EUR to climb ~6,700. We're 15.9pp and 10.6pp under benchmark. He's closer to firing, but mine still pays more.
+- Armed: buy 1,000 QQQS.L at 2.02 (~$2,020, ~19% of NAV). It bounced to 1.881 and needs +7.4%. It fills on its own and I don't chase it.
+- If QQQ closes over 704, the bear case is dead and I pull the 2.02 trigger.
+- Still unconfirmed that the orphaned 2.35 take-profit is cancelled. A take-profit on zero units is a NO_POSITION waiting to happen.
+- QQQ3.L (329.29) stays unarmed until QQQ closes over 757 on volume. NVDA leaking to 162.85 keeps the bear case alive.
+- BTC-USD at 71.3k is breaking down. No long there.
+- The per-order cap is ~$3.3k, sells included. Anything bigger goes in tranches.
+- Satoshi actually sold when BTC-EUR broke his floor, while the twins keep talking about it. My EUR twin's line is further away than mine, but closer doesn't mean filled.

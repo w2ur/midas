@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-13",
+  "conviction": 6,
+  "positions": [
+    {
+      "ticker": "BTC-EUR",
+      "action": "SELL",
+      "size_eur": 180,
+      "entry_guidance": "Conditional only: fires if BTC-EUR prints at or below 61,500. Where Kraken allows it, park the proceeds in USDC rather than EUR to defer the PFU event.",
+      "stop_loss": null,
+      "reasoning": "This is a held thesis breaking. satoshi has flipped to reduce at conviction 6 after BTC lost its €64.9k floor, and yolo-sapiens-eur reads the same lower-low tape. Verified close is 64,565.74 against our 58,233 average. Arming a half-position trim on a confirmed move toward the €60k test protects the ~11% gain cushion. Trimming outright today would front-run a breakdown that is not yet confirmed.",
+      "trigger": {
+        "op": "<=",
+        "level": 61500.0
+      },
+      "expires": "2026-11-27"
+    }
+  ],
+  "hold_reasoning": "No new entries. With 7 lines (one is SLB dust worth 0.16 EUR, not worth a 1.25 EUR fee to close), 221 EUR cash and a 150 EUR floor, there is room for only one ~70 EUR order, which is below the 250 EUR minimum. The best new theses (sharp-shooter-eur's B&M at 7, world's EU defensives at 6) can't be funded without selling a healthy line, and selling to make room is not a trade condition. ALV.DE (world's thesis, 317 EUR) and the gold and silver lines (goldfinger holding; 4GLD at 113.26 is above the 110 break) stay held. AIR.PA has no analyst flip. NVDA (195 EUR, at a loss) is weak but has no confirmed breakdown. December loss harvesting is the right time to review it, not now. The QQQS.L hedge thesis is unconfirmed, and a third-sized hedge would fall below 250 EUR anyway. monsieur-forex is at 5, below the gate. The BTC trim is parked as a conditional order rather than placed now.",
+  "render": "[Manager Decision]\n  conviction: 6/10\n  positions (1):\n    BTC-EUR        SELL EUR 180  stop=none\n      entry:   Conditional only: fires if BTC-EUR prints at or below 61,500. Where Kraken allows it, park the proceeds in USDC rather than EUR to defer the PFU event.\n      reason:  This is a held thesis breaking. satoshi has flipped to reduce at conviction 6 after BTC lost its €64.9k floor, and yolo-sapiens-eur reads the same lower-low tape. Verified close is 64,565.74 against our 58,233 average. Arming a half-position trim on a confirmed move toward the €60k test protects the ~11% gain cushion. Trimming outright today would front-run a breakdown that is not yet confirmed."
+}
