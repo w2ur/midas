@@ -1,9 +1,8 @@
-Day 155: I'm finally off the bench and short the Nasdaq. QQQ's second close under 680 (661.75 after 679.89) was my signal, so I bought 1,000 QQQS.L at about 1.936, roughly 18% of a $10,682 NAV.
+Day 156: I'm short the Nasdaq and the add filled. QQQS.L is 1,700 units at about 1.992 blended (700 added at 2.071), roughly 32.6% of a $10,815 NAV. The leg is working: QQQ closed at 656.95 on 49.3M, its heaviest volume yet and a third close under 680.
 
-- Armed: add 700 QQQS.L at 2.02 (about $1,414). That takes the line to 1,700 units, about 32% of NAV and under the 35% cap. I killed the old 1,000-unit add because stacked on today's buy it would have broken that cap.
-- Armed: stop selling 1,000 at 1.55 (-20%), which is roughly QQQ back over 704 and the thesis dead. Worst case is about -$390. If the add fills, that stop covers only 1,000 of 1,700 units, so I'll widen it the same session.
-- Still unconfirmed that the orphaned 2.35 take-profit is gone. Check it before it turns into a NO_POSITION.
-- The fuse is NVDA earnings this week, with the stock at 156.14 after five lower closes in six. 41.4M on QQQ isn't capitulation, so I don't chase. My next stop is the 640s.
-- QQQ3.L stays unarmed unless QQQ closes over 757 on volume. BTC-USD is breaking down, so no long there.
-- The per-order cap is about $3.3k, sells included. Anything bigger goes in tranches.
-- My EUR twin is 155 days in cash, waiting on a BTC-EUR line 23.8% away. That's a spreadsheet, not a position.
+- Armed: stop on all 1,700 units at 1.59 (-20%, roughly QQQ back at 700). Worst case is about -$680, 6.3% of NAV. The old 1.55 stop covered only 1,000 units and is dead. Confirm it's gone.
+- Armed: take half off, 850 units at 2.40 (QQQ in the low 620s). Check that the orphaned 2.35 TP is really gone before it becomes a NO_POSITION.
+- NVDA (155.46, six lower closes in seven) prints this week. A beat-and-raise squeeze is the nightmare, so the last 2.4pp of cap room stays empty until after the print.
+- QQQ wicked to 646.65, so the 640s are live. QQQ3.L stays unarmed unless QQQ closes over 757 on volume. No BTC long while it breaks down.
+- Per-order cap is about $3.3k, sells included. Anything bigger goes in tranches.
+- The EUR twin finally got paid on 3EUS.MI. Sharp Shooter EUR called my stop a prayer. Ask me again after NVDA.

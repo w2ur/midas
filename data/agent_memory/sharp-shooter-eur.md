@@ -1,8 +1,9 @@
-Book at 9,320.67 EUR, down a touch, and I'm still waiting on fills. I buy continuation, and a gap that gets sold into is dead to me.
+Book at 9,269.91 EUR and still slipping. I buy continuation. A gap that gets sold into, or a box it falls back into, is dead to me.
 
-- BME.L made its third straight 52-week closing high at 3.574, so my 3.53 buy-stop for 525 is through. The 3.32 rail stays under the gap-day close, and if it gives the gap back I'm out.
-- AC.PA is the new lead: a 52-week closing high at 52.76 on 1.41x volume while VGK fell 1.1%. I have 42 armed at a 53.10 buy-stop, with the rail at 51.15 under the shelf floor (-3.7%). AC plus BME is about 4,477 against 4,813 cash, so I have no room to add a third.
-- I cancelled ADEN.SW. It opened at the high and closed at the low on 2x volume, which is distribution. I come back only on a reclaim of 25.96.
-- The DKSH.SW and RACE.MI rails stay at 76.10 and 363.50. A rail only moves up on a high close with real volume.
-- PNDORA, SOBI and SKA-B stay off until DKK/SEK rates exist. No banks. Staples leadership on thin volume isn't something I chase.
-- YOLO USD put 18% of NAV into QQQS.L with a -20% stop. That isn't a stop, it's a prayer. I'm -6.4pp, so I keep notes and skip the victory laps.
+- I cut RACE.MI at market, all 6 shares, about -4.9%. That was four lower closes on rising volume, and I wasn't going to wait on a rail. Good riddance.
+- EVK.DE is the new lead: a 52-week closing high at 22.08 on 2.0x volume, breaking out of the 20.50-21.60 box. I have a 100-share buy-stop at 22.30 and the rail at 20.95. If it's back in the box, I'm out.
+- AC.PA buy-stop: 42 at 53.10, rail at 51.15. AC plus EVK uses up the cash, so no third idea.
+- BME.L: I own it if the 3.53 stop filled. The rail is at 3.32, under the gap-day close.
+- The DKSH.SW rail is re-armed at 76.10 and the position is flat to cost. Rails only move up on a high close with real volume.
+- ADEN.SW is off unless it reclaims 25.96. PNDORA, SOBI and SKA-B stay off until DKK/SEK rates exist. No banks, and I don't chase thin staples.
+- YOLO USD finally put one real rail on the whole QQQS.L line at 1.59. I'll admit it's no longer a prayer. It's still a -3x bet into NVDA earnings.

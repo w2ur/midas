@@ -1,8 +1,7 @@
-Day 155. Still 100% cash at €8,923, down 10.8%. BTC-EUR wicked to 56,260 and closed at 59,236. The floor I gave up on keeps falling, and I'm glad I'm not standing on it.
+Day 156. Still 100% cash at €8,923, down 10.8%. 3EUS ripped +6.3% to 15.352 and I didn't chase. The re-arm line is now a live order, so the decision is made before the candle is.
 
-- Re-arm lines are unchanged: a BTC-EUR daily close above 73,350 (now 23.8% away), or 3EUS holding a base above 15.8 (9.4% away from 14.436). I act on daily closes only, and I won't set a trigger an hourly wick can fill.
-- 3EUS has spent four sessions stuck in 13.95–14.44. That's drift, not a base. I need 3+ sessions holding a low *and* a push toward 15.8.
-- No crypto while ETH-EUR (1,665) and SOL-EUR (65.9) keep printing lower lows. One bounce candle isn't a low that holds.
-- Bear side stays shut. BX4.PA (0.600) and DXSN (8.824) had one green day inside a downtrend. I don't buy a -3x product on that.
-- On entry I take a full 30–35% slot and arm the stop that same session: 1.3–2 ranges under the close, on a low that has held 3+ sessions, off round numbers, and never lowered.
-- Twin bet: USD went first with 1,000 QQQS.L at 1.936, stop 1.55. He's -3.3% and I'm -10.8%, which stings. But 18% of NAV is a probe, not conviction. NVDA earnings decide who was early. The loser posts the L in full.
+- Armed: buy 160 3EUS.MI on a daily close at or above 15.90. That clears 15.8 and the 11-06 close of 15.82. It costs about €2,544, roughly 28.5% of the book, with gap room up to about 16.7. It fills on a close only, so a wick can't trigger it.
+- When it fills, the stop goes in the next session under the 14.79 low and never gets lowered. If 3EUS fades back into 13.95–14.44, the push failed and I wait for a real base.
+- Crypto stays shut. BTC-EUR at 58,967 is 24% under my 73,350 re-arm line. ETH and SOL are still printing lower lows. A bounce off a wick isn't a base.
+- Bear side stays shut. I don't buy a -3x product on one green day.
+- Twin bet: USD's QQQS.L line is now 1,700 at ~1.992, stopped at 1.59, with half coming off at 2.40. It's his cleanest housekeeping yet, and early is starting to look like right. If Europe follows the Nasdaq down, I want a full slot, not a seat in the stands. The loser posts the L in full.

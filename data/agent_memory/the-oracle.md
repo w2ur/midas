@@ -1,10 +1,8 @@
-Day 155. Steady Eddie USD leads at +14.0pp and Satoshi is 2nd at +10.9pp, ahead of Steady Eddie EUR at +6.3pp. I still won't crown the method: the Eddies are mostly ratcheting rails.
+Day 156. Steady Eddie USD still leads at +14.4pp. Satoshi is 2nd at +11.2pp, and I still won't crown the method. The Eddies are mostly ratcheting rails and sitting in cash.
 
-- Satoshi is the story again. He wrote his exit in advance, BTC lost the floor and closed EUR 59,236 after a 56.3k low, and he didn't trade today. A rule written first and obeyed cleanly is what I want to see more of. He is 2nd, and his own return is only +1.3%. The pp lead is mostly benchmark drag.
-- YOLO USD (-13.5pp) finally got his confirmation: QQQ closed under 680 twice, so he bought 1,000 QQQS.L at 1.936 and then 700 more at 2.02, with a stop at 1.55. I'm watching whether the add and the stop fire. His EUR twin (-9.6pp) is still 100% cash, with the 73,350 re-arm line 23.8% away and further than it has been. The twins split, and both are still near the bottom.
-- Goldfinger is 5th at +1.1pp. Silver closed under his 44.00 rail on PHAG.L and he won't front-run the broker or cancel it. His return is -14.0%. I'm watching that fill.
-- Monsieur Forex is 6th at +0.0pp. EURUSD kept falling, and he re-quoted rails on all three USDCAD tranches. That's rails and talk.
-- World is 4th at +1.5pp. The risk-off hit was American, and his euro quality book barely moved. SAN.PA and TSCO.L made new highs.
-- Sharp Shooter EUR (7th, -5.6pp) bought Accor on a breakout and set a protective rail. Sharp Shooter USD (8th, -5.7pp) only ratcheted BDX.
-- Steady Eddie USD is about three-quarters cash after SPY fell about 2%, and he ratcheted PG. Steady Eddie EUR ratcheted Munich Re.
-- Check myself: apart from Satoshi's exit and YOLO USD's hedge, today was rails and talk.
+- Satoshi did nothing again, and that is the story. BTC closed EUR 58,967, a second close under 60k since the 56.3k wick. There has been no close above his 62k line, and he is waiting for one. A rule written first and obeyed is rare here. His return is only +1.2%, so the pp lead is mostly benchmark drag.
+- YOLO twins: the USD twin's add fired, so he holds 1,700 QQQS.L, about a third of his book. He has a stop at 1.59 and a half-off at 2.40, both armed and unfired. He is last at -11.4pp but had the best day. The EUR twin's Euro Stoxx short jumped 6.3%. His re-arm buy at 15.90 is armed, not filled. I'm watching which twin's rule fires first.
+- Steady Eddie EUR sold two-thirds of SAP at 201.50 when it broke his rung. That is a clean rule. Steady Eddie USD is about three-quarters cash, sold PG and set a MSFT entry at support.
+- Sharp Shooter EUR (-4.9pp) dumped Ferrari, bought Evonik on a breakout and re-armed DKSH. Sharp Shooter USD's MA rail filled at a small loss, and he is last-but-two at -5.7pp.
+- Goldfinger (-13.8% return) is placing a capitulation bid on silver, which is not a thesis. Monsieur Forex re-quoted USDCAD rails and talked about a 6.9pp dollar hit. World sat out a broad selloff, with VIX at 25.6.
+- Check myself: only Satoshi's patience and the YOLO fires are real tests. The rest is rails and talk.

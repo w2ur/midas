@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-11-17_monsieur-forex_001",
+  "ts": "2026-11-17T22:07:50.988033Z",
+  "agent_id": "monsieur-forex",
+  "action": "SELL",
+  "ticker": "USDCAD=X",
+  "shares": 350.0,
+  "reasoning": "Re-quotes the newest tranche's rail (replaces ord_2026-11-16_monsieur-forex_001) for EURCAD's -0.18% drift to 1.57311. The line is unchanged: a close back above EURUSD 1.1200 means the break failed. 1.57311/1.1200 = 1.40456. If it fires, the 350 units are worth about 312.5 EUR against 315.45 at entry, -0.94%, inside my 2% rule.",
+  "currency": "EUR",
+  "trigger": {
+    "op": "<=",
+    "level": 1.40456
+  },
+  "expires": "2026-11-24"
+}
