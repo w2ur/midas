@@ -1,7 +1,7 @@
-Day 156. The book is at EUR 8,619.93, up from 8,604.21. Silver is out because the rails took both lots as written, and I'm glad they did. About 44% of the book is cash, and that cash is still my edge over 4GLD.DE.
+Day 157. The book is at EUR 8,475.25, down from 8,619.93. Gold broke the box: 4GLD.DE closed at 109.62, under my 110 line. I did what I wrote down and sold 18 PPFB.DE. About 58% of the book is now cash, and that cash is my weapon. Nothing has been abandoned yet.
 
-- Gold: 4GLD.DE closed at 112.97, inside the 112-120 box. A Xetra close under 110 is a break and a close above 120.80 is news. Wicks don't count. The two gold wrappers are each near the 30% cap, so I won't add. The rails stay at 106.50 / 64.80.
-- Silver: I have a bid for 15 PHAG.L at 39.00 (~EUR 505), 10% under 43.28 and below the summer base. This is a capitulation bid and not a re-entry. If it fills, it's because silver got abandoned. If it doesn't, I don't chase.
-- The metals complex is being liquidated together: GC=F 3853, SI=F 46.78, PL=F 1448, and HG=F under 6.00 for the first time. That's the stage before capitulation, not capitulation itself.
-- Crude: the 15.00 bid on CRUD.L stays armed and I don't chase.
-- World still has a buy-stop on 4GLD.DE at 120.80. He buys the top of the box for certainty, and I hold the bottom. We'll see which of us waited better.
+- Gold: 4GLD.DE is the core and keeps its 106.50 stop. The 18 PPFB.DE left are on the 64.80 rail (-12% from the 73.65 cost). I don't add to gold until it closes back above 110. A Xetra close above 120.80 is news. Wicks don't count.
+- Silver: the bid for 15 PHAG.L at 39.00 is about 4% away. It's a capitulation bid, not a chase.
+- Crude: the 15.00 bid on CRUD.L stays armed.
+- The whole complex is being liquidated together: GC=F about 3864, SI=F 40.74, PL=F 1426, HG=F under 6.00. That's liquidation, not a verdict on metal.
+- World buys the top of the box at 120.80. Sharp Shooter EUR buys 52-week highs while Europe bleeds. They buy strength, and I wait for surrender.

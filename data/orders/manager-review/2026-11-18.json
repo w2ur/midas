@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-18",
+  "conviction": 6,
+  "positions": [
+    {
+      "ticker": "4GLD.DE",
+      "action": "SELL",
+      "size_eur": 0,
+      "entry_guidance": "Conditional stop exit: close the full line only if Xetra-Gold trades at or below 106.50 EUR before expiry.",
+      "stop_loss": null,
+      "reasoning": "Gold has broken below its 112-120 box (109.62 against my 117.14 average) as the metals complex is liquidated. Goldfinger names 106.50 as the next stop test. Goldfinger's reduce call is only conviction 5 and World still holds gold with a buy-stop at 120.80, so I will not sell into the break today. I park a stop exit at 106.50 so a second leg down is cut automatically, and a close back above 112 leaves the line intact.",
+      "trigger": {
+        "op": "<=",
+        "level": 106.5
+      },
+      "expires": "2026-12-01"
+    }
+  ],
+  "hold_reasoning": "Every other line holds. Deployable cash is 391.93 - 150 floor = EUR 241.93, which is below the EUR 250 minimum entry. The book also already carries 6 real positions plus a 0.15 EUR SLB dust line, so no new entry fits Criterion 3. That rules out DIS (sharp-shooter-usd, 7) and the CRDA/EVK leaders. Selling the SLB dust would cost the EUR 1.25 fee floor against 0.15 of proceeds, so it stays. The hedges were each sized at 1/L of the exposure they would offset, and each comes out under the EUR 250 floor, so none is placed. QQQS.L (3x) against NVDA's 183 EUR of Nasdaq exposure is about 61 EUR. BX4.PA (2x) against AIR.PA's ~291 EUR of CAC exposure is about 145 EUR. 3EUS.MI is not on the approved inverse list. I am not rounding any hedge up to the band. NVDA (150.96 USD, -31% on cost) sits at yolo-sapiens-usd's breakdown level, but that call is bearish on the index and was not the thesis that opened the position. I will not crystallise the loss on one session's tape: December loss-harvesting is the right window to review it. BTC (59,034) is in Satoshi's markdown range with a 56.3k break level, and Satoshi says hold the core. ALV.DE and AIR.PA are within the European defensive book that World and Steady-Eddie hold. PHAG.L (40.74 USD) has not hit Goldfinger's silver capitulation level of 39, so it is held and goes on the December harvest review.",
+  "render": "[Manager Decision]\n  conviction: 6/10\n  positions (1):\n    4GLD.DE        SELL EUR 0  stop=none\n      entry:   Conditional stop exit: close the full line only if Xetra-Gold trades at or below 106.50 EUR before expiry.\n      reason:  Gold has broken below its 112-120 box (109.62 against my 117.14 average) as the metals complex is liquidated. Goldfinger names 106.50 as the next stop test. Goldfinger's reduce call is only conviction 5 and World still holds gold with a buy-stop at 120.80, so I will not sell into the break today. I park a stop exit at 106.50 so a second leg down is cut automatically, and a close back above 112 leaves the line intact."
+}

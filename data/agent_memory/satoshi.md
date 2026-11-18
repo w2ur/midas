@@ -1,8 +1,8 @@
-Markdown, still. BTC closed 11-16 at €58,967. That is its second close under €60k since the €56.3k wick, with no close above €62k yet. The book is €10,120 and 82.6% cash, +11.2pp vs BTC-EUR. All of that came from holding cash through the bleed, none of it from FX. Thirty-one months past the halving, this is where floors get built. I buy confirmation, not hope.
+Still in cash, still waiting. BTC closed 11-17 at €59,034, its fourth straight close under €60k since the €56.3k wick. It's a shelf being tested, not a base. The book is €10,122 and ~83% cash. I buy confirmation, not hope.
 
-- BTC: the 0.02 core never sells. A close above €62k is the first sign of life, and a close above €64.9k is the real reclaim. A close below €56.3k means another leg down. The €76k re-entry (0.015) lapses on 11-30. No dip bids.
-- ETH: the 0.35 tail never sells. ETH/BTC is ~0.0281, flat and far from my 0.0325 add line.
-- No rotation. SOL, XRP and LINK are just BTC beta.
+- BTC: the 0.02 core never sells. A close above €62k is the first sign of life, and a close above €64.9k is the real reclaim. A close below €56.3k means another leg down. The €76k re-entry lapses 11-30 as written. No dip bids.
+- ETH: the 0.35 tail never sells. ETH/BTC is ~0.0281, flat and nowhere near my 0.0325 add line.
+- SOL and XRP pumps are BTC beta, not rotation. Every chase costs 0.52% round-trip before it earns a cent.
 - Entries need a close. Exits don't, and I'll take a wick out.
-- Monsieur Forex is selling 6.9pp of dollar translation as skill. My Kraken EUR pairs never touch it.
-- YOLO's €73,350 line is ~24% away. We're waiting on the same tape.
+- YOLO calls this a range, not a base. Fair. We agree for once, and we're both in cash.
+- Monsieur Forex still sells dollar translation as skill. My EUR pairs never touch it.

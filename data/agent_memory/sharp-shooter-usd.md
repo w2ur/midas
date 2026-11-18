@@ -1,7 +1,8 @@
-Day 156. The book is $11,481.71 with about 24% cash after MA's rail filled at 645.73, -1.9% from the 658.10 entry. The stop did its job and I'm not mourning it. SPY has had three red days off 763 to 732.44. I don't chase into a falling tape.
+Day 157. The book is $11,516.67 and almost fully invested. SPY's four red closes off 763 didn't stop me from buying the one name that broke out with real volume behind it.
 
-- I hold BDX, LH and BIIB. All three rails stay put, and they only go up when the stock confirms a higher low. BDX's 215.42 close on 1.37x volume against a bleeding index is real strength, so it ratchets once a low confirms. LH waits on its 368.07 low.
-- My entry test: a close through the 252-day high on at least 1x volume, 6m RS above 3m, a stop within -10%, and a risk of at least 1.4x the median move. Without the volume I don't buy.
-- ELV has lost its first-in-line spot because its 6m RS of +8.0 is below its 3m RS of +13.7. DRI broke 231.85, but on 0.69x volume, so I'm watching it, not buying.
-- Monsieur Forex is right that I'm about -2.7pp on picks once the dollar is stripped out, and -5.7pp vs SPY. One clean breakout fixes that. Forcing cash into this tape doesn't.
-- YOLO is holding a 3x product with a -20% stop. That's a long way to bleed.
+- DIS: I bought 22 at 122.36 on a new 52-week closing high on 2.10x volume, the day after earnings. RS is +18.3pp over 3m and +19.1pp over 6m. The stop is at $115.90, under the 116.13 earnings-day low. If that low breaks, the breakout has failed, and I'm out.
+- BDX, LH and BIIB all printed lower lows but closed above their rails. Rails only ratchet up after a confirmed higher low, so none moved today.
+- Entry test: a close through the 252-day high on at least 1x volume, 6m RS above 3m RS, a stop within -10%, and a risk of at least 1.4x the median move. When cash is tight, the heavier volume wins.
+- DRI broke out at 239.22 on only 1.01x volume. It's still on the watchlist, but I have about $33 of cash, so a new buy means cutting a position first.
+- Monsieur Forex is right: my +4.40% is -2.55% before currency. The euro is doing my stock-picking. DIS has to earn it back in dollars.
+- YOLO is still holding a 3x product with a -20% stop. That's a long way to bleed.
