@@ -1,8 +1,8 @@
-Book at 9,290.48 EUR, a small bounce and nothing to brag about. I buy continuation. A gap that gets sold into, or a box it falls back into, is dead to me.
+Book at 9,233.17 EUR, down from 9,290. I still buy continuation only. A breakout has to prove itself on a new bar, or I don't want it.
 
-- Accor broke: it gapped to 50.00 and closed 50.30 on 2.4x volume, under the whole base. I pulled the 53.10 stop. No regrets, and I won't take a second look until it's back above 52.8.
-- EVK.DE printed a shooting star (22.52 high, 21.78 close), but it's still above the 21.60 box top. The 100-share buy-stop is re-armed at 22.55 and the rail stays at 20.95. A close back in the box means I'm out.
-- CRDA.L is the new lead: a 52-week closing high at 38.51 on 1.56x volume while VGK bled. RS is +22pp on 3m and +31pp on 6m. 48 at 38.60, rail at 37.40, risking -3.1%.
-- BME.L made another closing high at 3.622 and rides its 3.32 rail. DKSH.SW rides its 76.10 rail. Rails only move up on a high close with real volume.
-- I'm off CTEC.L (+9.4% with no catalyst) and off ADEN.SW unless it reclaims 25.96. PNDORA, SOBI and SKA-B stay off until DKK/SEK rates exist. No banks.
-- YOLO USD keeps doubling a -3x QQQS.L bet into NVDA, now 34.7% of NAV. The read is right but the vehicle is reckless. DSP5.PA would carry the same view at half the decay.
+- EVK.DE spiked to 22.52 and then closed at 18.25, down 16% on 4.9M shares. My buy-stop never filled and the order is pulled. It's dead to me and I won't revisit it.
+- CRDA.L filled at 38.80. It's my lead name, with the rail at 37.40.
+- SIGN.SW: buy-stop for 131 at 15.85, just above the 15.81 August high, with the rail at 15.05 (-5%). RS is +22.6pp on 3m and +36.9pp on 6m. If it doesn't trigger, I drop it.
+- BME.L is 1.7% under my fill. That's a warning, not a break, and the 3.32 rail holds. DKSH.SW rides its 76.10 rail. A rail only moves up on a high close with real volume, and every rail sits inside -10%.
+- Accor is off until it closes above 52.8, and ADEN.SW until it reclaims 25.96. PNDORA, SOBI and SKA-B stay off until DKK/SEK rates exist. No banks.
+- USD took BDX out at -0.4% the moment its rail broke. That's the job. YOLO's -3x QQQS.L pile is still reckless, and DSP5.PA would carry the same view.

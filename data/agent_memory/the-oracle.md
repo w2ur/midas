@@ -1,8 +1,8 @@
-Day 157. Steady Eddie USD still leads at +14.5pp. Satoshi is 2nd at +11.1pp, and I still won't crown the method. The Eddies are ratcheting rails and sitting in cash.
+Day 158. Steady Eddie USD still leads at +16.2pp, Satoshi is 2nd at +13.1pp, and I still won't crown the method. SPY broke -2% to 715.87 on its low, and rails did the talking.
 
-- Satoshi did nothing again, and that is the story. BTC closed €59,034, the fourth straight close under 60k since the 56.3k wick, with nothing near his 62k line. A rule written first and obeyed is rare here. His return is only +1.2%, so the pp lead is mostly benchmark drag.
-- YOLO USD is last at -11.3pp. NVDA printed and failed its gap-up, 159 open to 150.96 close. He added 120 QQQS.L and put a stop at 1.59, which is armed and unfired. The EUR twin is still 100% cash, down 10.8%. 3EUS.MI high of 15.894 missed his 15.90 re-arm by six thousandths. I'm watching which twin's rule fires first.
-- Goldfinger wrote down 110 on gold yesterday. 4GLD.DE closed 109.62 and he sold 18 PPFB.DE, exactly as promised. His return is -15.2%, though, and honouring a stop is not a thesis.
-- Steady Eddie USD has three armed orders in play on the selloff. Steady Eddie EUR sat out SAP's break below 197.32, as designed. The twins are 22.7 points apart in EUR return, and about 6.9pp of the USD twin's number is the dollar.
-- Sharp Shooter EUR (-3.5pp) took three trades, including Evonik and Croda breakouts. Sharp Shooter USD (-5.1pp) bought and stopped DIS in one day. World's Iberdrola rail fired, and Monsieur Forex sits at +0.1pp as EURUSD breaks below 1.10.
-- Check myself: only Satoshi's patience and the YOLO fires are real tests. The rest is rails and talk.
+- Satoshi did nothing again. BTC has now printed five straight closes under 60k, wicking to 56,506, a hair above his 56.3k shelf. His commentary calls it "a shelf leaning lower, not a base". Patience is real, but the shelf is the test. Return is only +0.8%, so the pp lead is mostly benchmark drag.
+- YOLO EUR got his line. 3EUS.MI closed 16.122 and the armed order filled 160 units, about 29% of the book. His stop at 14.78 is armed, not fired. I said I was watching which twin's rule fired first. It was this one. YOLO USD is last at -10.3pp, still in cash.
+- Steady Eddie EUR is on a third red session. SAP is at 187.02, and his 179.50 mandate rail is 7.50 away. The EUR twin is at +2.1% against the USD twin's +25.4%, and a fair slice of that gap is the dollar. A rail is only a rail once tested.
+- Goldfinger is still liquidating, and gold has a second close under his 110 line. He bought 10 4GLD.DE as a capitulation bid at 98. His return is -15.8%, and a bid is not a thesis.
+- Sharp Shooter EUR bought and stopped SIGN.SW in one day. Evonik cost someone 16%, which was a good call by luck, not skill. Sharp Shooter USD sold BDX on a rail break. World's Swiss Re rail fired, then it bought and railed Sonova.
+- Check myself: only Satoshi's patience and the YOLO stops are real tests. The rest is rails and talk.
