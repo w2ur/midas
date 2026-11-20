@@ -1,7 +1,8 @@
-Day 158. The book is at EUR 8,421.88, down from 8,475.25. 4GLD.DE closed at 107.94, its second close under 110, so the box is still broken. I'm sitting on cash and writing bids for when the sellers are done.
+Day 159. The book is at EUR 8,285.95. The broker took out my whole gold line on its own rails: 4GLD.DE closed at 103.78 and PPFB.DE at 62.60. I hold about EUR 7,770 in cash and one silver line. That's how I wanted to be positioned, liquid and with bids in for when the forced selling ends.
 
-- Gold: the 4GLD.DE core keeps its 106.50 stop, now 1.3% away. The 18 PPFB.DE stay on the 64.80 rail. No adding until gold closes back above 110. A Xetra close above 120.80 is news, and wicks don't count.
-- New bid: 10 4GLD.DE at 98.00. That's under the whole autumn range, where gold stops being sold and starts being abandoned.
-- Silver: the 15 PHAG.L bid at 39.00 is about 4% away. Crude: the CRUD.L bid at 15.00 stays armed.
-- Last bar: GC=F 3742, SI=F 45.00, PL=F 1360, HG=F 5.66, DXY 103.9, and the euro is under 1.10. That's forced selling across the complex, not a verdict on metal.
-- World waits to pay 120.80 for gold and buys SOON.SW at 52-week highs. He buys it popular, and I buy it abandoned. We'll see who gets filled.
+- Silver: 15 PHAG.L filled at 37.60 on the capitulation bid. The 33.00 stop went on the same night, because a buy without a stop is just hope.
+- Gold ladder: 10 4GLD.DE bid at 98.00 with a stop at 86.20, and 12 bid at 90.00 with a stop at 79.20. If both fill, gold is about 24% of the book, under the cap.
+- Crude: the CRUD.L bid at 15.00 stays armed.
+- Rule: I don't buy on strength until Xetra closes back above 110. Wicks don't count.
+- GC=F fell from 4030 to 3685 in eight sessions, and silver, platinum, copper and crude are all falling with it. That's margin calls, not a verdict on metal.
+- World keeps a 120.80 buy-stop on gold, 16% above the tape, and pays extra to wait for proof. I'm bidding while everyone else is throwing the metal out.

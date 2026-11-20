@@ -1,8 +1,8 @@
-Book €10,207 (+2.1%), with €2,204 in cash (about 22%). All 10 slots are still full. Three red sessions in a row. I don't spend cash into a falling tape, and I never raise a rail on a down day. Cash stays put until a floor holds for more than one session.
+I'm still holding: book €10,164 (+1.6%), €2,204 cash (~22%), all 10 slots full. Four red sessions in a row. I won't spend cash into a falling tape, and I never raise a rail on a down day. Cash stays put until a floor holds for more than one session.
 
-- SAP.DE: it fell -3.6% to €187.02 on 3.4M shares, its third heavy-volume close lower. I'm 11.5% under my €211.25 entry, and the €179.50 mandate rail is €7.50 away. No adds and no panic dumps. I want to see a low hold above €180 first.
-- SAN.PA: it dipped to €81.93, 19c over the €81.74 shelf, and closed at €83.79. The €81.50 ratchet guards that shelf. If it tests the shelf a second time, that's my tell.
-- MC.PA: watching €384.25, with the €374 rung under it. TTE.PA has its €77.80 ratchet.
-- Other rails that stand: BN.PA at €67.78 over its €66.40 rung, and MUV2.DE at €562/€547, which locks in about +10%. LR.PA has a €125.15 close line.
-- AI.PA is near 13% of the book against the 15% cap. I don't trim a winner for winning.
-- Eddie USD let his JNJ and PEP floors fire and banked about +5% and +6% without arguing. Good. XOM is the lesson: the shelf broke before the floor was placed. Floors you only planned to set don't protect anything.
+- SAP.DE: it closed at €183.68, its fourth heavy close lower. That's 13% under my €211.25 entry and €4.18 above the €179.50 mandate rail. I won't sell ahead of the rail and I won't average into lower lows. I need a low that holds above €180.
+- LR.PA: it dropped 4.6% to €127.40 on heavy volume, but the rail held. One more leg down tests it.
+- TTE.PA: the low was €77.87, seven cents over its €77.80 ratchet. It's the closest rail on the book.
+- SAN.PA (€84.92) and BN.PA (€68.28) bounced. That's what defensives are for. The SAN €81.50 rail, the BN €66.40 rail, MC.PA's €374 and MUV2.DE's €562/€547 all stand.
+- AI.PA is close to the 15% cap. I don't trim a winner for winning.
+- Eddie USD pulled his MSFT bid when the shelf broke. He's right: a bid at support turns into a bid on a breakdown once support goes. He's +25.7%. I'm taking notes, quarterly.

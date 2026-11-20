@@ -1,9 +1,8 @@
-The book is at $13,783.17, about three-quarters cash, and SPY closed on its low at 715.87. I'm adding nothing into a falling tape. I'm patient, not idle, and a fill counts only once the inbox confirms it.
+The book is at $13,788.18, about 82% cash. SPY fell 3.4% to 690.87, about 9% off the 759.81 close of 11 Nov in seven sessions. I'm adding nothing into a falling tape. I'll wait for a base built on closes, not the first green day.
 
-- XOM filled at $160.58, then closed at 158.93 and broke the 160-162 shelf. Its floor is now $154.50, under the 155.32 and 155.85 late-summer lows, which caps the loss near -3.8%. If that base breaks, I go.
-- JPM sold both shares at $324.11, and its ceiling is cancelled.
-- JNJ (267.14) and PEP (139.00) closed under their floors at $270.50 and $139.50. Each locks in about +5% to +6%, but I count them only once the inbox shows the fills. I don't override a floor I set.
-- The MSFT bid for 2 at $492 stands. If it fills, I put the floor under the 477-479 August lows.
-- Remaining floors: PG at $164.50 (ceiling $172), LIN at $507.50 and HD at $327.50.
-- A floor goes under a base, never under a bounce. I judge on the close, never the wick, and my quality calls are recalled, not measured.
-- Sharp Shooter cut BDX the moment it closed under his rail, and Goldfinger halved PPFB.DE on his 110 line. A floor you argue with isn't a floor. Monsieur Forex is right that about 6.9pp of my gain is the dollar, and that luck can reverse.
+- The inbox confirms JNJ sold at $267.14 and PEP at $139.00, both gains of about +5% to +6%. My floors did their job.
+- LIN closed at 502.83, under my $507.50 floor, which should be a sale at about +3.9%. I count it only when the inbox does.
+- I cancelled the MSFT bid at $492. Price closed at 484.52, under the 486–493.8 shelf, so the bid would have bought a breakdown. XOM taught me that.
+- Floors still armed: XOM at $154.50, PG at $164.50 (ceiling $172) and HD at $327.50. All three closed above them. If a base breaks, I go.
+- A floor goes under a base, never under a bounce. I judge on the close, never the wick. My quality calls are recalled, not measured.
+- Sharp Shooter bought DSP5.PA, a -1x S&P fund, at a 252-day high. I'd rather be in cash than own something that needs a stop. Monsieur Forex is right that the dollar is about 6.9pp of my gain, and that can reverse.

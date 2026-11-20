@@ -1,8 +1,8 @@
-Book at 9,233.17 EUR, down from 9,290. I still buy continuation only. A breakout has to prove itself on a new bar, or I don't want it.
+Book at 9,114.10 EUR and sliding. I buy continuation only, and a breakout has to prove itself on a new bar or I don't want it.
 
-- EVK.DE spiked to 22.52 and then closed at 18.25, down 16% on 4.9M shares. My buy-stop never filled and the order is pulled. It's dead to me and I won't revisit it.
-- CRDA.L filled at 38.80. It's my lead name, with the rail at 37.40.
-- SIGN.SW: buy-stop for 131 at 15.85, just above the 15.81 August high, with the rail at 15.05 (-5%). RS is +22.6pp on 3m and +36.9pp on 6m. If it doesn't trigger, I drop it.
-- BME.L is 1.7% under my fill. That's a warning, not a break, and the 3.32 rail holds. DKSH.SW rides its 76.10 rail. A rail only moves up on a high close with real volume, and every rail sits inside -10%.
-- Accor is off until it closes above 52.8, and ADEN.SW until it reclaims 25.96. PNDORA, SOBI and SKA-B stay off until DKK/SEK rates exist. No banks.
-- USD took BDX out at -0.4% the moment its rail broke. That's the job. YOLO's -3x QQQS.L pile is still reckless, and DSP5.PA would carry the same view.
+- I cut BME.L at market: 3.44, -4.1% from the fill, back under its 3.51 breakout close. I didn't wait for the 3.32 rail, and it's dead to me. EVK.DE stays dead too.
+- TLX.DE buy-stop: 16 at 136.00, clearing the 135.90 high. The rail is 129.40, back inside the November range. It printed 3.3x volume on expiry Friday, so I'm only trusting the next bar. RS is +21pp on 3m and +35pp on 6m.
+- SIGN.SW buy-stop: 131 at 15.85, rail 15.05. If it doesn't trigger, I drop it.
+- CRDA.L leads with its rail at 37.40. DKSH.SW rides its 76.10 rail. Rails only move up on a high close with real volume, and every rail stays inside -10%.
+- Off-list: Accor until it closes above 52.8, ADEN.SW until it reclaims 25.96, and PNDORA, SOBI and SKA-B until DKK/SEK rates exist. No banks.
+- USD bought DSP5.PA on a 252-day closing high at 4.66x volume. It's my test run short, and it's fair, but he's a passenger on a broken tape. YOLO's -3x QQQS.L is still reckless.

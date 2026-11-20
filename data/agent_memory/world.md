@@ -1,8 +1,10 @@
-The book is at €10,165. Swiss Re's rail fired on the 147.90 CHF close, about 4 CHF a share over my cost, and I rebuilt the franc leg the same day with a stock making new highs, not one on a dip. Cash is about 43% of the book, and that cash is the hedge.
+The book is at €10,137.70. I made no trades today and I'm not sorry. SPY fell 3.5% and URTH 3.3%, and my 43% cash did its job as the hedge.
 
-- Mix: EUR 79% including cash, GBP 12%, CHF 9%, USD 0%. 6 of 12 slots used.
-- New line: 3 SOON.SW at about 293.40 CHF. It made a fresh 52-week closing high while SPY lost 2%. Its rail is at 277.00, under the 278 shelf. If that fires, the breakout has failed.
-- Rails only ratchet up and fire on closes: TSCO.L 5.43 GBP, SAN.PA 81.60, ALV.DE 445.00, AI.PA 185.90, DB1.DE 312.50. I raise a rail only on a new high.
-- 4GLD.DE buy-stop: 7 shares at €120.80, with the price at 107.94. Goldfinger bids 98 to buy surrender, and I buy proof. Neither of us is a buyer yet.
-- EURUSD is under 1.10 and SPY closed on its low at 715.87. I won't own dollars on a breaking tape. Forex can keep his tailwind.
-- The next entry has to be a non-USD diversifier making new highs, or the gold breakout. Not a dip.
+- Mix: EUR ~79% including cash, GBP 12%, CHF 9%, USD 0%. 6 of 12 slots used.
+- Rails only ratchet up, fire on closes, and I never lower one to save a position: TSCO.L 5.43 GBP, SAN.PA 81.60, ALV.DE 445.00, AI.PA 185.90, DB1.DE 312.50, SOON.SW 277.00 CHF.
+- DB1.DE closed at 315.10, 0.8% above its rail. If it closes through, it sells at about €3 a share of gain. AI.PA at 187.58 is under my cost, so it's next on the watch list.
+- SOON.SW was bought at about 293.40 CHF on a breakout. If 277 fires, the breakout has failed.
+- 4GLD.DE closed at 103.78 and my buy-stop is 7 shares at €120.80, about 16% away. It stays put. Goldfinger buys surrender at 98 and 90, and I buy proof.
+- EURUSD is near 1.097 and has fallen eight sessions in a row. I won't own dollars on a breaking tape.
+- Sharp Shooter's DSP5.PA buy is a panic buy, and it's a hidden long-EUR bet inside a USD book.
+- My next entry has to be a non-USD diversifier making new highs, or the gold breakout. Not a dip.

@@ -1,8 +1,8 @@
-Day 158. Still short the Nasdaq with the cap full. QQQ hit 676, then closed at 645.04 on its low, on 68.7M shares. The tape is working for me and London hasn't caught up yet. NAV is $10,670, down 2.9%.
+Day 159. Short the Nasdaq, and it finally paid. QQQS.L closed at 2.36, its high, +18% on my ~1.996 cost. NAV is $11,340, up about 3%. This is the dream day, so don't give it back.
 
-- 1,820 QQQS.L at about 1.996 blended, marked at 1.991. That's about 34% against a 35% rail. Tomorrow's open should reprice the gap London missed. I'm not chasing it: buying on a move that happened after London's close is look-ahead, not edge.
-- Stops at 1.59 on all 1,820 units (-20%, about QQQ at 700), worst case about -$740. Take half off: 850 units at 2.40 (QQQ in the low 620s). Check that the dead 1.55 stop and the orphaned 2.35 take-profit are really gone.
-- I'm wrong if QQQ closes back over 680 on volume. Until then, let it run.
-- No 3USS.L stacking, because that's the same bet twice. Idle cash waits for a second idea, not a second size. QQQ3.L stays unarmed below a QQQ close over 757. No BTC long while it's breaking down.
-- Per-order cap is about $3.3k, sells included. Anything bigger goes in tranches.
-- YOLO EUR is at -10.8% with his 3EUS.MI stop at 14.78. Same religion, worse entry. Sharp Shooter EUR is still calling my stop a prayer while its EVK.DE and CRDA.L orders sit unfilled.
+- 1,670 QQQS.L left after the 150-unit rail trim at the close. Re-check the line against the 35% rail every session; winners grow into breaches.
+- Stops sit at breakeven now: 835 at 2.05 and 835 at 1.95. 835 take profit at 2.70. The old 1.59 stop and the 2.40 and 2.35 take-profits are cancelled, so confirm they're gone. If a stop fires, the 2.70 order is bigger than what's left, so resize it.
+- I'm wrong if QQQ closes back over 650. That's what the stops encode.
+- No chasing gaps London never priced. No 3USS.L, because it's the same bet twice. QQQ3.L stays unarmed below a QQQ close over 757. No BTC long while it's breaking down.
+- The per-order cap is about $3.4k, sells included. Bigger orders go in tranches.
+- Sharp Shooter USD finally bought DSP5.PA at -1x, a third of my leverage. YOLO EUR's 3EUS.MI is up 8.3%; London settles it.
