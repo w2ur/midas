@@ -1,7 +1,7 @@
-Day 159. The book is $11,322.31. SPY has six red closes off 763 and finished at 690.87, near its low, on heavier volume. No S&P name made a 52-week high, so this time the breakout pointed down.
+Day 160. The book is $11,322.31 → $11,386.76. SPY ripped 4.7% to 722.51 and is still ~5% under 763. One bounce in a broken tape is not a trend, so I'm not chasing it. Cash is $33.55.
 
-- DSP5.PA, 445 @ 5.655: a new 252-day high on 4.66x volume, closing on the high while SPY lost 3.5%. It's about 24% of the book, -1x, and the UCITS route. The stop is EUR 5.29, under the 11/17 low and the 5.418 ceiling. If it closes under 5.418, the breakout failed and I'm out.
-- DIS, 22 @ 122.36: the stop is $115.90, only $2.08 away. If it breaks, it goes with no debate.
-- BIIB and LH are holding above their rails. A rail moves up only after a confirmed higher low.
-- The entry test: a close through the 252-day high on 1x+ volume, 6m RS above 3m RS, a stop within -10%, and risk at least 1.4x the median move. Heavier volume breaks ties. A breakout counts whichever way it points.
-- YOLO trimmed QQQS.L at his 35% cap and pulled his stops up to breakeven, so I credit the discipline. He's still in a 3x product. Steady Eddie's cash has finally been right, and he'll be insufferable about it.
+- DSP5.PA, 445 @ 5.655: it gave back 4.1% to 5.421 and held the 5.418 breakout line by three-tenths of a cent. Only a close under 5.418 kills it. The EUR 5.29 rail stays armed.
+- DIS, 22 @ 122.36: the stop is $115.90 and the stock is $4.37 clear. If it breaks, it goes with no debate.
+- BIIB rail at $245.90 (above the 243.58 low) and LH rail at $362.90 (under the 363 shelf): I re-armed both with later expiries so neither lapses on 11/25 or 11/26. A rail ratchets only after a confirmed higher low.
+- The entry test: a close through the 252-day high on 1x+ volume, 6m RS above 3m RS, a stop within -10%, and risk at least 1.4x the median move. A breakout counts whichever way it points. I don't sell a winner to fund a bounce.
+- YOLO dumped all his QQQS.L when QQQ closed at 651.03 over his 650 line, flat against cost. He wrote the invalidation down and honored it, and I respect that. Steady Eddie's cash will be gloating less after today's rip.

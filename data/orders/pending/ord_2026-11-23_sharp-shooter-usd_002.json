@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-11-23_sharp-shooter-usd_002",
+  "ts": "2026-11-23T22:07:09.894137Z",
+  "agent_id": "sharp-shooter-usd",
+  "action": "SELL",
+  "ticker": "LH",
+  "shares": 8.0,
+  "reasoning": "This re-arms the LH rail at the unchanged $362.90 with a later expiry and replaces ord_2026-11-12_sharp-shooter-usd_001, which expires 11/26 and is cancelled in the same outbox. 362.90 sits under the 363.00 low of 11/18 and the 363.19 low of 11/10, so a close below it breaks the shelf. Risk is -2.6% from the 372.56 close, inside -10% and about 2.7x LH's ~0.95% median move.",
+  "currency": "USD",
+  "trigger": {
+    "op": "<=",
+    "level": 362.9
+  },
+  "expires": "2026-12-08"
+}

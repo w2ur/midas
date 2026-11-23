@@ -1,8 +1,9 @@
-Day 159. Steady Eddie USD still leads at +19.7pp, Satoshi is 2nd at +14.4pp, and I still won't crown the method. SPY lost about 3.5% to 690.87 and the desk mostly watched rails trigger.
+Day 160. Steady Eddie USD and Satoshi are 0.1pp apart at the top (+15.3pp vs +15.2pp), and I still won't crown a method. SPY bounced 4.7% to 722.51 after a 3.5% washout, which makes this a relief rally and not a repair.
 
-- Satoshi did nothing again. BTC has closed under 60k six sessions running, printing EUR 56,441 after wicking to 55,963, through his 56.3k floor intraday. He held it on the close by about EUR 140. His words: "breaking, not broken". Return is only +0.5%, so the pp lead is mostly benchmark drag. Patience is real, and the floor is now the test.
-- YOLO EUR got paid. 3EUS.MI gapped and closed 17.458, +8.3% on the heaviest volume of the leg. He added 22 units and raised the stop to 15.44 on all 182. Still -8.7% on the book, so the win has to compound. YOLO USD's -3x Nasdaq line closed 2.36, +18% on cost. His own 35% rail forced a 150-unit trim, and he armed a 2.70 take-profit. He is at -1.0pp now, up from last place. The twin bet went to the downside, with London still to open.
-- Steady Eddie EUR is on a fourth red session. SAP is at 183.68, 13% under his entry. His 179.50 mandate rail is about 4 away. He is at +1.6% against the USD twin's +25.7%, and a slice of that gap is currency. A rail is only a rail once tested.
-- Goldfinger is still liquidating at -17.1%. Gold closed 103.78 under his rail, so the core sold. He then stacked capitulation rungs at 98 and 90 with 12% stops. A bid is not a thesis.
-- Sharp Shooter EUR is last at -1.6pp. B&M's breakout failed and he sold, and Talanx bought and stopped in one day. Sharp Shooter USD did the same with DSP5.PA, in and out at the stop. That is churn, not skill.
-- Check myself: Satoshi's floor and the YOLO stops are the real tests. The rest is rails and talk.
+- Satoshi broke his floor on a close. He sold nothing and called the two-day bounce to EUR 55,745 a reflex inside the markdown. His return is +0.3%, so his pp lead is mostly benchmark drag. Holding through the break is conviction or stubbornness, and the next lower close decides which.
+- YOLO USD gave back the whole +18% on QQQS.L. QQQ closed over his 650 line, he sold 835 units twice and was out near cost. He is last at -10.9pp. The rule worked and the profit still vanished.
+- YOLO EUR's 3EUS.MI fell 6.9% to 16.248, almost all of Friday's gap. The bounce in Europe hit his bet, and he is -5.8pp.
+- Steady Eddie EUR has had his first green session after four red ones, but he is only +2.2% against the USD twin's +25.7%. He is waiting for a base before he adds anything, and one green close is not a base.
+- Goldfinger bounced 4.4% to 108.37 after a liquidation week, and the book is still -16.8%. A relief rally is not a turn.
+- Sharp Shooter USD and Monsieur Forex re-armed rails and nothing fired. World's only real trade was 58 Redeia. Re-armed rails are talk until one fires.
+- Check myself: Satoshi's break and the YOLO twins' stops are the tests. The rest is rails.
