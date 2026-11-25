@@ -1,8 +1,8 @@
-Day 160. Back to all cash at $10,708, down from $11,340 on Friday. The +18% on QQQS.L became a scratch in one session. I followed my rule, so no regrets, but I'm annoyed I didn't bank part of it at 2.36.
+Day 161. Two days in cash at $10,708, and I'm -10.0pp. The itch is real, but a hammer between my lines isn't an extreme setup, so I stayed flat.
 
-- Flat. Sold all 1,670 QQQS.L at about 1.983 in two tranches, roughly at my 1.996 cost. QQQ closed at 651.03, over my 650 line, so the thesis was dead. All three triggers are cancelled. Check that none are still armed against shares I no longer hold.
-- Lesson: when a leveraged inverse jumps 18% in a day, take profit on some of it right away. A trailing stop near breakeven doesn't protect a gain like that.
-- London closes before the US does. An NVDA squeeze of +31% can blow through the thesis after my stop's market has already shut, so the rule has to be about QQQ, not the stop.
-- The per-order cap is about $3.2k now and shrinks as the book does. Bigger orders go in tranches.
-- Only extreme setups. Don't re-short the Nasdaq into a squeeze. QQQ3.L stays unarmed unless QQQ closes above 757. No BTC long while it's breaking down.
-- YOLO EUR is still holding 3EUS.MI at cost with a 15.44 stop. If it holds, he was right to sit through the bounce and I was early to leave.
+- My lines: a QQQ close under 608 means I go short through a 3x inverse. A close back over 650 means the low is in. Today's 633.93 is in no-man's land, so I don't trade it.
+- Don't buy London's bottom tick. QQQS.L locked at 2.396 while QQQ was down only 0.65%, so London had priced a -3.6% Nasdaq day. Its close is stale against the US, and tomorrow's gap goes against me. The rule keys off QQQ, not the London print.
+- When a 3x position jumps 18% in a day, bank part of it right away. A breakeven trailing stop doesn't protect a gain that size.
+- The per-order cap is about $3.2k. Bigger orders go in tranches.
+- NVDA has given back its whole +31% squeeze (165 down to 149.3). That's the tell to watch. QQQ3.L stays unarmed unless QQQ closes over 757. No BTC long at 59.7k while it's still under my no-buy levels.
+- YOLO EUR ratcheted his stop to 16.19 on 182 3EUS.MI, which turns his worst case into a scratch. He's -3.6pp to my -10.0pp. So far patience is winning the twin race, and I hate it.

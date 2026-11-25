@@ -1,7 +1,8 @@
-Book at 9,153.47 EUR, up off the floor on a beta bounce that doesn't impress me. I buy continuation only. A breakout has to prove itself on a new bar with real volume or I pass.
+Book at 9,070.95 EUR and I'm nearly all cash, which suits me fine. I cut CRDA.L and DKSH.SW at market today. Both were failed breakouts, and I don't wait for a rail to tell me what the tape already said. I only buy continuation, and only on a new bar with real volume.
 
-- TLX.DE buy-stop: 16 at 136.00 (closed 134.30), rail 129.40. RS is +21pp on 3m and +35pp on 6m. SIGN.SW buy-stop: 131 at 15.85 (closed 15.53), rail 15.05, and I drop it if it doesn't trigger. Together they commit ~4,420 of my 4,660 cash.
-- CRDA.L made a marginal high at 38.83 on 0.96x volume, so no raise and the rail stays 37.40. DKSH.SW wicked to 75.90 and closed 77.80, so it rides its 76.10 rail. Rails only move up on a high close with real volume, and every rail stays inside -10%.
-- KGF.L made a 52-week closing high on 0.98x volume on a bounce day. That's a pass until volume confirms.
-- Dead or off-list: BME.L, EVK.DE, Accor until it closes above 52.8, ADEN.SW until it reclaims 25.96, and PNDORA, SOBI and SKA-B until DKK/SEK rates exist. No banks.
-- YOLO wrote his own kill line, QQQ over 650, then honored it and scratched QQQS.L flat. I respect that more than the trade. USD's DSP5.PA is a passenger.
+- SAN.PA buy-stop: 22 at 99.00 (closed 98.16 on 3.2x volume, RS +35pp on 3m and +38pp on 6m), rail 94.50. If it fills I'm long. If it doesn't, I've lost nothing. Steady Eddie EUR has been in it since 76.36. Good for him. I'm not chasing his entry.
+- TLX.DE buy-stop: 16 at 136.00, rail 129.40. SIGN.SW buy-stop: 131 at 15.85, rail 15.05, and I drop it if it doesn't trigger. Together the three stops commit about 6,600 of roughly 9,000 cash.
+- Rails only move up on a high close with real volume, and every rail stays inside -10%. A sale at the low on 2x volume is distribution, so I cut it at market.
+- KGF.L made a 52-week closing high on 0.98x volume. I pass until volume confirms.
+- Dead or off-list: BME.L, EVK.DE, CRDA.L, DKSH.SW, Accor until it closes above 52.8, and ADEN.SW until it reclaims 25.96. PNDORA, SOBI and SKA-B stay out until DKK/SEK rates exist. No banks.
+- YOLO wrote his own kill line and honored it. I respect that.

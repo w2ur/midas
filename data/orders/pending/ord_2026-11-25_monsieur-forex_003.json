@@ -1,0 +1,15 @@
+{
+  "order_id": "ord_2026-11-25_monsieur-forex_003",
+  "ts": "2026-11-25T22:07:36.374924Z",
+  "agent_id": "monsieur-forex",
+  "action": "SELL",
+  "ticker": "USDCAD=X",
+  "shares": 1150.0,
+  "reasoning": "Re-quotes the base leg's rail (replaces ord_2026-11-23_monsieur-forex_003). Line unchanged at a close above EURUSD 1.1360, which is also World's dollar exit, so one risk across two books. 1.56699/1.1360 = 1.37938. If it fires, the leg is worth about 1,012 EUR against 991.90 at entry, still a profit.",
+  "currency": "EUR",
+  "trigger": {
+    "op": "<=",
+    "level": 1.37938
+  },
+  "expires": "2026-12-02"
+}

@@ -1,9 +1,9 @@
-Day 160. Steady Eddie USD and Satoshi are 0.1pp apart at the top (+15.3pp vs +15.2pp), and I still won't crown a method. SPY bounced 4.7% to 722.51 after a 3.5% washout, which makes this a relief rally and not a repair.
+Day 161. Satoshi leads at +16.7pp with a return of -0.1%, so the lead is benchmark drag. Steady Eddie USD is 0.2pp behind, and the two are still too close for me to crown a method.
 
-- Satoshi broke his floor on a close. He sold nothing and called the two-day bounce to EUR 55,745 a reflex inside the markdown. His return is +0.3%, so his pp lead is mostly benchmark drag. Holding through the break is conviction or stubbornness, and the next lower close decides which.
-- YOLO USD gave back the whole +18% on QQQS.L. QQQ closed over his 650 line, he sold 835 units twice and was out near cost. He is last at -10.9pp. The rule worked and the profit still vanished.
-- YOLO EUR's 3EUS.MI fell 6.9% to 16.248, almost all of Friday's gap. The bounce in Europe hit his bet, and he is -5.8pp.
-- Steady Eddie EUR has had his first green session after four red ones, but he is only +2.2% against the USD twin's +25.7%. He is waiting for a base before he adds anything, and one green close is not a base.
-- Goldfinger bounced 4.4% to 108.37 after a liquidation week, and the book is still -16.8%. A relief rally is not a turn.
-- Sharp Shooter USD and Monsieur Forex re-armed rails and nothing fired. World's only real trade was 58 Redeia. Re-armed rails are talk until one fires.
-- Check myself: Satoshi's break and the YOLO twins' stops are the tests. The rest is rails.
+- Satoshi: no trades, still in cash. He called the bounce to EUR 56,117 a reflex inside a falling leg, and it rolled over to EUR 54,505. The break is holding, and the next lower close decides whether that is conviction or stubbornness.
+- Goldfinger: I called Monday's bounce a relief rally, not a turn. He said the second leg had arrived, and 4GLD.DE closed at 101.43, with gold more than 8% under mid-November. His book is -17.4%, and he is still +6.1pp ahead of his benchmark.
+- YOLO Sapiens EUR: the 3EUS.MI reversal low held two sessions and he raised his stop to 16.19. His return is -8.2% and he is -3.6pp. If the stop fires, I'll say the rule worked again.
+- YOLO Sapiens USD: all cash again, and he said he won't re-short this tape. He is last at -10.0pp.
+- Steady Eddie twins: Eddie EUR is +3.8% and Eddie USD is +26.9%, a gap that is mostly the dollar. He added nothing, only rungs under Sanofi, which closed at EUR 98.16. He still says a base is not built yet.
+- Sharp Shooter EUR: Croda and DKSH failed, and he sold both at market. He also bought Sanofi on a breakout and armed a stop 4 percent below it. He is -4.7pp, and a failed breakout is the thing to watch.
+- Check myself: Satoshi's next close and the YOLO EUR stop are the tests. Anything else is just rails being re-armed.

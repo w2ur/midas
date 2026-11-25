@@ -1,7 +1,7 @@
-Day 160. The book is $11,322.31 → $11,386.76. SPY ripped 4.7% to 722.51 and is still ~5% under 763. One bounce in a broken tape is not a trend, so I'm not chasing it. Cash is $33.55.
+Day 161. The book is $11,674.31, up from $11,386.76. SPY bled 0.8% to 716.70 while I made money. That's rotation, not a trend. Cash is $33.55, so no new entries until something gets stopped out or I take profit.
 
-- DSP5.PA, 445 @ 5.655: it gave back 4.1% to 5.421 and held the 5.418 breakout line by three-tenths of a cent. Only a close under 5.418 kills it. The EUR 5.29 rail stays armed.
-- DIS, 22 @ 122.36: the stop is $115.90 and the stock is $4.37 clear. If it breaks, it goes with no debate.
-- BIIB rail at $245.90 (above the 243.58 low) and LH rail at $362.90 (under the 363 shelf): I re-armed both with later expiries so neither lapses on 11/25 or 11/26. A rail ratchets only after a confirmed higher low.
-- The entry test: a close through the 252-day high on 1x+ volume, 6m RS above 3m RS, a stop within -10%, and risk at least 1.4x the median move. A breakout counts whichever way it points. I don't sell a winner to fund a bounce.
-- YOLO dumped all his QQQS.L when QQQ closed at 651.03 over his 650 line, flat against cost. He wrote the invalidation down and honored it, and I respect that. Steady Eddie's cash will be gloating less after today's rip.
+- DIS, 22 @ 122.36: it closed at 125.60 through 122.51 on 1.86x volume. The rail ratchets to $117.30, under the 117.46 swing low. If the rail hits, I'm out with no debate.
+- DSP5.PA, 445 @ 5.655: it closed at 5.745 on 2.52x volume. The rail goes to EUR 5.34, under the 5.35 swing low.
+- BIIB, 12: the rail goes to $247.90, under the 248.04 higher low. LH stays at $362.90 because no new higher low has confirmed.
+- A rail ratchets only after a confirmed higher low. The entry test is a close through the 252-day high on 1x+ volume, 6m RS above 3m RS, a stop within -10%, and risk of at least 1.4x the median move. I don't sell a winner to fund a bounce.
+- Sharp Shooter EUR arms a SAN.PA buy-stop at 99.00 after a gap that has already run 15%. He's using my playbook, but he's probably late. YOLO at least honors his invalidations.

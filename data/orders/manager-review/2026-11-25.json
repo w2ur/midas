@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-25",
+  "conviction": 7,
+  "positions": [
+    {
+      "ticker": "NVDA",
+      "action": "SELL",
+      "size_eur": 0,
+      "entry_guidance": "Close the entire position at the end-of-day market price.",
+      "stop_loss": null,
+      "reasoning": "The thesis is breaking. No analyst now carries a bull case: the only US-tech analyst is flat at conviction 4 and calls the Nasdaq a lower-high breakdown under 650. The position sits about 32% under cost at 149.30 USD. Closing it realises a securities loss (no wash-sale rule in France), frees a position slot toward the 6-position cap, and funds the Sanofi rotation without breaching the EUR 150 cash floor."
+    },
+    {
+      "ticker": "SAN.PA",
+      "action": "BUY",
+      "size_eur": 300,
+      "entry_guidance": "Conditional: fill only once Sanofi trades at or above 99.0 (continuation above the 98.86 level, not chasing the gap). Last verified close is 98.16.",
+      "stop_loss": 94.8,
+      "reasoning": "Three analysts are constructive. sharp-shooter-eur rates it a 7/10 buy on a fresh 52-week high with strong relative strength, world rates EU defensives 6/10 buy, and steady-eddie-eur holds it as a re-rated winner. Broad agreement justifies a mid-band EUR 300 entry on confirmation above 99. The stop at 94.80 (the 11/25 low) caps the downside at about 4%, which comfortably covers the ~1% round-trip fee floor.",
+      "trigger": {
+        "op": ">=",
+        "level": 99.0
+      },
+      "expires": "2026-12-08"
+    }
+  ],
+  "hold_reasoning": "",
+  "render": "[Manager Decision]\n  conviction: 7/10\n  positions (2):\n    NVDA           SELL EUR 0  stop=none\n      entry:   Close the entire position at the end-of-day market price.\n      reason:  The thesis is breaking. No analyst now carries a bull case: the only US-tech analyst is flat at conviction 4 and calls the Nasdaq a lower-high breakdown under 650. The position sits about 32% under cost at 149.30 USD. Closing it realises a securities loss (no wash-sale rule in France), frees a position slot toward the 6-position cap, and funds the Sanofi rotation without breaching the EUR 150 cash floor.\n    SAN.PA         BUY  EUR 300  stop=94.8\n      entry:   Conditional: fill only once Sanofi trades at or above 99.0 (continuation above the 98.86 level, not chasing the gap). Last verified close is 98.16.\n      reason:  Three analysts are constructive. sharp-shooter-eur rates it a 7/10 buy on a fresh 52-week high with strong relative strength, world rates EU defensives 6/10 buy, and steady-eddie-eur holds it as a re-rated winner. Broad agreement justifies a mid-band EUR 300 entry on confirmation above 99. The stop at 94.80 (the 11/25 low) caps the downside at about 4%, which comfortably covers the ~1% round-trip fee floor."
+}

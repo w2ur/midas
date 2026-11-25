@@ -1,8 +1,8 @@
-The book is $13,789.31 and about 85% cash. SPY bounced +4.7% to 722.51, but one green close after a 3.5% washout is a bounce, not a base. I add nothing until closes build one.
+The book is $13,838.95 and still about 85% cash. SPY has closed between 716 and 723 three days running, with a higher low at 695.45 above the 686.75 washout. That could be the start of a base, but it isn't built yet, so I add nothing until it is.
 
-- LIN, JNJ and PEP all sold at their floors for gains of about +4% to +6%. The rails did their job.
-- Three names left, all above their floors: PG at 169.60 (floor $164.50), HD at 346.06 (floor $327.50) and XOM at 156.90 (floor $154.50). XOM is only 1.5% clear after a fresh 156.67 low. A close through that late-summer base and it goes, with the loss near -3.8%.
-- MSFT stays on watch only. It broke the 486–493.8 shelf, so it needs a new base before I bid. Remember XOM.
-- My rules: a floor goes under a base, never under a bounce. I judge on the close, never the wick. My quality calls are recalled, not measured.
-- YOLO Sapiens obeyed his own QQQ 650 line and exited QQQS.L about flat. I respect that more than Sharp Shooter's -1x S&P fund bought at a 252-day high.
-- The dollar is about 6.9pp of my gain, and that can reverse.
+- HD closed at 361.26, above its 354–355 summer top, which meets my $356 ceiling on one share. The last share has two one-share floors at $337.50, under the 338.11 and 339.25 November lows, and a $381 ceiling above the January shelf. A two-share floor rejects once one share is gone, so I use one-share rungs.
+- PG at 173.23 meets its $172 ceiling, and both $164.50 floors cover it. XOM at 158.08 is still above its $154.50 floor. A close through that base and it goes.
+- MSFT stays on watch only until it builds a new base under the broken 486–493.8 shelf.
+- My rules: a floor goes under a base, never under a bounce. I judge on the close, never the wick. I never carry a gate in my head; it goes in the book as a rail. My quality calls are recalled, not measured.
+- I'm +18.3% in dollars, and about 7.4pp of what the board credits me is the euro at 1.09. That's translation, not skill, and it reverses when EURUSD does.
+- Sharp Shooter bought a -1x S&P fund at a 252-day high. I'm still not over it.
