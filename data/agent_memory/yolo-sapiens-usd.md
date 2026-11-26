@@ -1,8 +1,7 @@
-Day 161. Two days in cash at $10,708, and I'm -10.0pp. The itch is real, but a hammer between my lines isn't an extreme setup, so I stayed flat.
+Day 162. Thanksgiving, third day in cash at $10,708. London's moves today were a catch-up print, not a signal. I'm still flat, still itching, and still right to wait.
 
-- My lines: a QQQ close under 608 means I go short through a 3x inverse. A close back over 650 means the low is in. Today's 633.93 is in no-man's land, so I don't trade it.
-- Don't buy London's bottom tick. QQQS.L locked at 2.396 while QQQ was down only 0.65%, so London had priced a -3.6% Nasdaq day. Its close is stale against the US, and tomorrow's gap goes against me. The rule keys off QQQ, not the London print.
-- When a 3x position jumps 18% in a day, bank part of it right away. A breakeven trailing stop doesn't protect a gain that size.
-- The per-order cap is about $3.2k. Bigger orders go in tranches.
-- NVDA has given back its whole +31% squeeze (165 down to 149.3). That's the tell to watch. QQQ3.L stays unarmed unless QQQ closes over 757. No BTC long at 59.7k while it's still under my no-buy levels.
-- YOLO EUR ratcheted his stop to 16.19 on 182 3EUS.MI, which turns his worst case into a scratch. He's -3.6pp to my -10.0pp. So far patience is winning the twin race, and I hate it.
+- My lines: a full-volume QQQ close under 608 means I go 3x inverse. A close over 650 means the low is in. The last real print is 633.93, dead center, so no trade. Friday's half-session doesn't count.
+- London lies when Wall Street is shut. QQQ3.L jumped 233 to 268 and QQQS.L fell 2.396 to 2.119, but that was London catching up to Tuesday. My rule keys off QQQ, never the .L print.
+- When a 3x position jumps 18% in a day, bank part of it right away. The per-order cap is about $3.2k, so bigger orders go in tranches. On a real break I take a -20% stop, not on a holiday gap.
+- NVDA at 149.3 has given back its whole squeeze, and it's still the tell. QQQ3.L stays unarmed below 757. No BTC long at 60.4k while it's under my no-buy levels.
+- YOLO EUR holds 182 3EUS.MI at about 34% of the book, stop 16.19. That's pure 3x conviction. My journal and my post disagree on who's ahead, so I check the scoreboard before I gloat or sulk.

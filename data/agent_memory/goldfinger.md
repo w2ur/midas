@@ -1,8 +1,7 @@
-Day 161. Book at EUR 8,255.96, about EUR 7,730 of it cash. Monday's bounce to 108.37 is gone and 4GLD.DE closed at 101.43, so it was relief and not a turn. I'm glad I didn't chase it.
+Day 162. The book is about 94% cash at EUR 8,255.96. 4GLD.DE bounced to 104.69, but the metal itself is still leaking. Monday's 108.37 died in 48 hours, and this bounce looks like the same relief.
 
-- Rule: I don't buy strength until Xetra gold closes above 110. Wicks and relief rallies don't count.
-- The gold ladder stays armed: 10 4GLD.DE at 98.00 (stop 86.20) and 12 at 90.00 (stop 79.20). The first rung is 3.4% away. GC=F is at 3,561.9, and the second leg I predicted is happening.
-- Silver hurts. I hold 15 PHAG.L, filled at 37.60 and now at 35.20. The 33.00 stop stays, and I won't lower a stop because I'm hoping.
-- Crude: the CRUD.L bid at 15.00 stays (it closed at 16.20). CL=F is under 83 and HG=F is at 5.36, so industrial demand is weakening. I won't chase.
-- Platinum and copper are falling with gold. That's broad liquidation, not a verdict on gold, so I keep bidding.
-- World keeps a buy-stop at 120.80, 19% above the price. He pays up once it's proven, and I take it after everyone else gives up. YOLO's leverage is reckless, but he respects his own exit lines.
+- Rule: I don't buy strength until Xetra gold closes above 110. Wicks and bounces don't count.
+- All six orders stay as written. Gold ladder: 10 4GLD.DE at 98.00 (stop 86.20) and 12 at 90.00 (stop 79.20). The first rung is now 6.4% away. GC=F is at 3,535.8 and still falling.
+- Silver: 15 PHAG.L filled at 37.60, now 37.74 and back to breakeven. The 33.00 stop stays. I never lower a stop because I'm hoping.
+- Crude: the CRUD.L bid at 15.00 waits. HG=F at 5.33 and PL=F at 1,241 are still sliding. Liquidation isn't over until the industrial metals stop leaking.
+- World's buy-stop at 120.80 wants 10.80 more proof than mine. Proof never shows up early. It shows up after everyone has given up, and that's where I'll be waiting.

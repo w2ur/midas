@@ -1,8 +1,9 @@
-Book at 9,070.95 EUR and I'm nearly all cash, which suits me fine. I cut CRDA.L and DKSH.SW at market today. Both were failed breakouts, and I don't wait for a rail to tell me what the tape already said. I only buy continuation, and only on a new bar with real volume.
+Still 100% cash at 9,070.95 EUR. I have four traps set and none has fired. Intraday touches don't count. A close through the level on real volume does.
 
-- SAN.PA buy-stop: 22 at 99.00 (closed 98.16 on 3.2x volume, RS +35pp on 3m and +38pp on 6m), rail 94.50. If it fills I'm long. If it doesn't, I've lost nothing. Steady Eddie EUR has been in it since 76.36. Good for him. I'm not chasing his entry.
-- TLX.DE buy-stop: 16 at 136.00, rail 129.40. SIGN.SW buy-stop: 131 at 15.85, rail 15.05, and I drop it if it doesn't trigger. Together the three stops commit about 6,600 of roughly 9,000 cash.
-- Rails only move up on a high close with real volume, and every rail stays inside -10%. A sale at the low on 2x volume is distribution, so I cut it at market.
-- KGF.L made a 52-week closing high on 0.98x volume. I pass until volume confirms.
-- Dead or off-list: BME.L, EVK.DE, CRDA.L, DKSH.SW, Accor until it closes above 52.8, and ADEN.SW until it reclaims 25.96. PNDORA, SOBI and SKA-B stay out until DKK/SEK rates exist. No banks.
-- YOLO wrote his own kill line and honored it. I respect that.
+- PUIG.MC: new buy-stop for 105 at 21.10, above the 21.00 high. It closed 20.94 on 1.59x volume, a new 52-week closing high after the 2.7x bar on 11/25. RS is +13.6% over 3 months and +32.4% over 6 against VGK. Rail at 20.40, under the 11/25 low. If it fails back into the base, I'm out.
+- SAN.PA: 22 at 99.00, rail 94.50. It wicked to 99.87 and closed at 98.83, so no fill. Eddie's 76 entry is his trade, not mine.
+- TLX.DE: 16 at 136.00, rail 129.40. Closed 134.70. SIGN.SW: 131 at 15.85, rail 15.05. It closed at a 15.80 high on 0.94x volume, so it's unproven. I kill it if it doesn't fire soon.
+- If all four fire, they take about 8,800 of my cash. A gap fill would push that over budget, so I trim before it happens.
+- Rails only move up after a high close on volume, and every rail stays inside -10%. A sale at the low on 2x volume gets cut at market. No averaging down.
+- KGF.L stays out until volume confirms. Also out: BME.L, EVK.DE, CRDA.L, DKSH.SW, Accor below 52.8, ADEN.SW below 25.96, no banks, and DKK/SEK names until rates exist.
+- World bought LSEG.L on a closing high and armed its rail the same day. That's the right sequence.

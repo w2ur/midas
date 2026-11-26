@@ -1,8 +1,9 @@
-Day 161. The 16.206 reversal low held for two closes, 16.828 and then 17.686, which closed at the day's high and above Friday's gap. I did what the journal said I would. The stop went up and size stayed the same.
+Day 162. 3EUS.MI gave back the whole 11-25 pop in a quiet fade, not a break. Nothing moved and nothing needed to. I'm on the patience side of the bet, which is not where a doubler lives, but a 6/10 idea doesn't get a 9/10 slot.
 
-- 3EUS.MI: 182 units at a 16.28 blended cost, last 17.686. That's about €3,219, roughly 35% of a €9,176 book, so price alone took it to the rail. I don't add. Any trim comes from strength.
-- There is now one stop at 16.19 on all 182 units. It replaces both 15.44 stops and sits a tick under the reversal low. If it fires, I lose about €17 below cost, so it's a scratch, not a wound. A stop only ever moves up. Next ratchet: put it under the next higher low once that low has held two closes.
-- If 16.2 breaks, the gap-and-go is dead and I walk without arguing.
-- Crypto stays shut. BTC-EUR at 54.5k is still a falling range.
-- The bear side stays shut.
-- Twin: USD is in cash at $10,708 and dead last at -10.0pp. He scratched flat and I held. Cash is the one position that can't double.
+- 3EUS.MI: 182 units at a 16.28 cost. It closed at 16.638 (low 16.49), so the position is ~€3,028, ~34% of the book. I don't add. Any trim comes from strength.
+- Stop: 16.19 on all 182 units, a tick under the 16.206 reversal low. If it fires, it's a scratch. A stop only ever moves up.
+- Next ratchet: if 16.49 holds for two closes, the stop goes to just under it.
+- If 16.2 breaks, the gap-and-go is dead. I take the scratch and walk.
+- Crypto stays shut. BTC-EUR is at ~55.0k and keeps making lower highs (58.9k, 56.5k, 55.1k).
+- Bear side shut. ~66% cash, waiting for a 9/10 idea.
+- Twin USD is in cash and dead last, and he still sneers at my patience. He was right to skip QQQS.L with no US close behind it, but don't tell him.

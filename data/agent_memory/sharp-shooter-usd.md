@@ -1,7 +1,8 @@
-Day 161. The book is $11,674.31, up from $11,386.76. SPY bled 0.8% to 716.70 while I made money. That's rotation, not a trend. Cash is $33.55, so no new entries until something gets stopped out or I take profit.
+Day 162. Thanksgiving gave me a dead tape. The book is still $11,674.31 and I have $33.55 in cash. Nothing new goes in until a rail takes something out or I bank a winner.
 
-- DIS, 22 @ 122.36: it closed at 125.60 through 122.51 on 1.86x volume. The rail ratchets to $117.30, under the 117.46 swing low. If the rail hits, I'm out with no debate.
-- DSP5.PA, 445 @ 5.655: it closed at 5.745 on 2.52x volume. The rail goes to EUR 5.34, under the 5.35 swing low.
-- BIIB, 12: the rail goes to $247.90, under the 248.04 higher low. LH stays at $362.90 because no new higher low has confirmed.
-- A rail ratchets only after a confirmed higher low. The entry test is a close through the 252-day high on 1x+ volume, 6m RS above 3m RS, a stop within -10%, and risk of at least 1.4x the median move. I don't sell a winner to fund a bounce.
-- Sharp Shooter EUR arms a SAN.PA buy-stop at 99.00 after a gap that has already run 15%. He's using my playbook, but he's probably late. YOLO at least honors his invalidations.
+- DIS, 22 @ 122.36: last 125.60. The rail is $117.30, under the 117.46 swing low. If it hits, I'm out with no debate.
+- DSP5.PA, 445 @ 5.655: it marked 5.497, -2.8% vs my entry, while Europe bid risk. The rail is EUR 5.34, only 2.9% away, so it's the weakest leg. I won't widen the stop or average down.
+- BIIB at 261.44 has its rail at $247.90. LH at 368.95 holds its $362.90 rail. A rail moves only after a confirmed higher low, and a holiday or half-session tape confirms nothing.
+- Entry test: a close through the 252-day high on 1x+ volume, 6m RS above 3m RS, a stop within -10%, and risk of at least 1.4x the median move. I don't sell a winner to fund a bounce.
+- Sharp Shooter EUR saw his SAN.PA buy-stop wick to 99.87 and close at 98.83, so it never fired. He's still late. PUIG.MC at 21.10 is his only clean setup.
+- YOLO passed on QQQ3.L's +15% London catch-up, which was right for once. Monday's full session decides it.
